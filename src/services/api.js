@@ -50,6 +50,9 @@ class AutoBlogAPI {
    */
   async analyzeWebsite(url) {
     try {
+      console.log('Analyzing website:', url);
+      console.log('Backend URL:', this.baseURL);
+      
       const response = await this.makeRequest('/api/analyze-website', {
         method: 'POST',
         body: JSON.stringify({ url }),

@@ -370,6 +370,13 @@ const App = () => {
       return;
     }
     
+    // Ensure URL has protocol for backend API
+    let formattedUrl = websiteUrl.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+    setWebsiteUrl(formattedUrl);
+    
     setCurrentStep(1);
   };
 
