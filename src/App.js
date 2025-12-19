@@ -1155,6 +1155,11 @@ ${post.content}
     const analysis = stepResults.websiteAnalysis;
     const isComplete = currentStep >= 2;
     
+    // Detect if analysis seems generic/limited (likely JavaScript-heavy site)
+    const seemsLimited = analysis.businessType === 'Technology' && 
+                        analysis.description && 
+                        analysis.description.toLowerCase().includes('javascript');
+    
     return (
       <Card 
         style={{ 
@@ -1186,6 +1191,22 @@ ${post.content}
             </Button>
           )}
         </div>
+
+        {seemsLimited && (
+          <div style={{
+            padding: '12px',
+            backgroundColor: '#fff7e6',
+            border: '1px solid #ffd591',
+            borderRadius: '8px',
+            marginBottom: '16px'
+          }}>
+            <Text style={{ fontSize: '14px' }}>
+              ⚠️ <strong>Limited Analysis:</strong> This website appears to require JavaScript to display content. 
+              The analysis above is based on limited information. You can click "Edit" above to provide more details about your business, 
+              or continue with the generic recommendations below.
+            </Text>
+          </div>
+        )}
         
         <Row gutter={[12, 12]}>
           <Col xs={24} sm={12}>
