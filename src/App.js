@@ -363,10 +363,30 @@ const App = () => {
       return;
     }
     
-    // Basic URL validation
-    const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
-    if (!urlPattern.test(websiteUrl)) {
-      message.error('Please enter a valid website URL');
+    // Improved URL validation that works better on mobile
+    const normalizedUrl = websiteUrl.trim().toLowerCase();
+    
+    // Debug logging for mobile troubleshooting
+    console.log('URL Validation Debug:', {
+      originalUrl: websiteUrl,
+      normalizedUrl: normalizedUrl,
+      userAgent: navigator.userAgent,
+      isMobile: /Mobile|Android|iPhone|iPad/.test(navigator.userAgent)
+    });
+    
+    // More flexible URL pattern that handles various cases
+    const urlPattern = /^(https?:\/\/)?([a-z0-9\-]+\.)*[a-z0-9\-]+\.[a-z]{2,}(\/.*)?$/i;
+    
+    // Additional check for basic domain structure
+    const hasValidDomain = /[a-z0-9\-]+\.[a-z]{2,}/i.test(normalizedUrl);
+    
+    console.log('URL Pattern Tests:', {
+      urlPatternTest: urlPattern.test(normalizedUrl),
+      hasValidDomain: hasValidDomain
+    });
+    
+    if (!urlPattern.test(normalizedUrl) || !hasValidDomain) {
+      message.error('Please enter a valid website URL (e.g., example.com)');
       return;
     }
     
