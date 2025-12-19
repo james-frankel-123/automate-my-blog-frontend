@@ -286,6 +286,28 @@ const App = () => {
       setIsLoading(true);
       setScanningMessage('Generating trending topics with AI...');
 
+      // Show skeleton topics immediately for better UX
+      const skeletonTopics = Array.from({ length: 5 }, (_, i) => ({
+        id: i + 1,
+        trend: "Loading...",
+        title: "Generating trending topic...",
+        subheader: "AI is creating a compelling topic description...",
+        image: "loading",
+        popularity: "Loading...",
+        category: "Loading...",
+        isLoading: true
+      }));
+
+      setStepResults(prev => ({
+        ...prev,
+        trendingTopics: skeletonTopics
+      }));
+
+      // Advance to step 3 immediately to show skeleton cards
+      setTimeout(() => {
+        setCurrentStep(3);
+      }, 500);
+
       const { businessType, targetAudience, contentFocus } = stepResults.websiteAnalysis;
 
       // Call real backend API
@@ -305,11 +327,10 @@ const App = () => {
         }));
       }
 
-      // Move to next step after loading
+      // Complete loading (step 3 already set above)
       setTimeout(() => {
         setIsLoading(false);
-        setCurrentStep(3);
-      }, 1500);
+      }, 1000);
 
     } catch (error) {
       console.error('Trending topics error:', error);
@@ -1378,14 +1399,10 @@ app.post('/api/autoblog-webhook', async (req, res) => {
             )}
           </Row>
           
-          <div style={{ textAlign: 'center', marginTop: '20px' }}>
-            <Button 
-              type="primary" 
-              onClick={() => setCurrentStep(3)}
-              style={{ backgroundColor: stepResults.websiteAnalysis.brandColors.primary, borderColor: stepResults.websiteAnalysis.brandColors.primary }}
-            >
-              Continue to Trend Discovery
-            </Button>
+          <div style={{ textAlign: 'center', marginTop: '20px', padding: '20px', backgroundColor: '#f0f8ff', borderRadius: '8px' }}>
+            <Text style={{ fontSize: '16px' }}>
+              ✨ Analysis complete! Automatically generating trending topics...
+            </Text>
           </div>
         </Card>
       )}
@@ -1447,29 +1464,48 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                 <Col key={topic.id} xs={24} md={12} lg={12}>
                   <Radio value={topic.id} style={{ width: '100%' }}>
                     <Card 
-                      hoverable
+                      hoverable={!topic.isLoading}
                       cover={
-                        <img 
-                          alt={topic.title} 
-                          src={topic.image} 
-                          style={{ height: '200px', objectFit: 'cover' }}
-                        />
+                        topic.isLoading ? (
+                          <div style={{ height: '200px', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Spin size="large" />
+                          </div>
+                        ) : (
+                          <img 
+                            alt={topic.title} 
+                            src={topic.image} 
+                            style={{ height: '200px', objectFit: 'cover' }}
+                          />
+                        )
                       }
                       style={{ 
                         border: selectedTopic === topic.id ? `2px solid ${stepResults.websiteAnalysis.brandColors.primary}` : '1px solid #f0f0f0',
-                        margin: '8px 0'
+                        margin: '8px 0',
+                        opacity: topic.isLoading ? 0.7 : 1
                       }}
                     >
-                      <div style={{ marginBottom: '12px' }}>
-                        <Tag color="blue">{topic.category}</Tag>
-                        <Tag color="green">{topic.popularity}</Tag>
-                      </div>
-                      <Title level={4} style={{ marginBottom: '8px', fontSize: '16px' }}>
-                        {topic.title}
-                      </Title>
-                      <Paragraph style={{ color: '#666', fontSize: '14px' }}>
-                        {topic.subheader}
-                      </Paragraph>
+                      {topic.isLoading ? (
+                        <>
+                          <div style={{ marginBottom: '12px' }}>
+                            <div style={{ height: '22px', backgroundColor: '#f5f5f5', borderRadius: '4px', marginBottom: '8px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                          </div>
+                          <div style={{ height: '24px', backgroundColor: '#f5f5f5', borderRadius: '4px', marginBottom: '12px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                          <div style={{ height: '40px', backgroundColor: '#f5f5f5', borderRadius: '4px', animation: 'pulse 1.5s ease-in-out infinite' }}></div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ marginBottom: '12px' }}>
+                            <Tag color="blue">{topic.category}</Tag>
+                            <Tag color="green">{topic.popularity}</Tag>
+                          </div>
+                          <Title level={4} style={{ marginBottom: '8px', fontSize: '16px' }}>
+                            {topic.title}
+                          </Title>
+                          <Paragraph style={{ color: '#666', fontSize: '14px' }}>
+                            {topic.subheader}
+                          </Paragraph>
+                        </>
+                      )}
                     </Card>
                   </Radio>
                 </Col>
