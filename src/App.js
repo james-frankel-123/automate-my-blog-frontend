@@ -378,9 +378,7 @@ const App = () => {
     }
   };
 
-  const handleTopicSelect = (topicId) => {
-    setSelectedTopic(topicId);
-  };
+  // Removed handleTopicSelect - now using direct generateContent calls
 
   const editStepResults = (stepNumber) => {
     setEditingStep(stepNumber);
@@ -452,8 +450,8 @@ const App = () => {
     setCurrentStep(1);
   };
 
-  const generateContent = async () => {
-    if (!selectedTopic) {
+  const generateContent = async (topicId) => {
+    if (!topicId) {
       message.warning('Please select a topic first');
       return;
     }
@@ -465,12 +463,13 @@ const App = () => {
     }
     
     try {
+      setSelectedTopic(topicId); // Set the selected topic for loading state
       setIsLoading(true);
       setScanningMessage('Generating your blog post with AI...');
       
       // Find the selected topic from either real or mock topics
       const topics = stepResults.trendingTopics || mockTopics;
-      const selectedTopicData = topics.find(t => t.id === selectedTopic);
+      const selectedTopicData = topics.find(t => t.id === topicId);
       
       if (!selectedTopicData) {
         throw new Error('Selected topic not found');
@@ -504,7 +503,7 @@ const App = () => {
       
       // Fall back to mock content on error
       const topics = stepResults.trendingTopics || mockTopics;
-      const topic = topics.find(t => t.id === selectedTopic);
+      const topic = topics.find(t => t.id === topicId);
       const businessName = stepResults.websiteAnalysis.businessName || 'your business';
       const fallbackContent = `# ${topic.title}
 
@@ -1672,17 +1671,11 @@ app.post('/api/autoblog-webhook', async (req, res) => {
             Choose Your First Post
           </Title>
           
-          <Radio.Group 
-            value={selectedTopic} 
-            onChange={(e) => handleTopicSelect(e.target.value)}
-            style={{ width: '100%' }}
-          >
-            <Row gutter={window.innerWidth <= 767 ? [8, 8] : [16, 16]}>
-              {(stepResults.trendingTopics || mockTopics).map((topic) => (
-                <Col key={topic.id} xs={24} md={12} lg={12}>
-                  <Radio value={topic.id} style={{ width: '100%' }}>
-                    <Card 
-                      hoverable={!topic.isLoading}
+          <Row gutter={window.innerWidth <= 767 ? [8, 8] : [16, 16]}>
+            {(stepResults.trendingTopics || mockTopics).map((topic) => (
+              <Col key={topic.id} xs={24} md={12} lg={12}>
+                <Card 
+                  hoverable={!topic.isLoading}
                       cover={
                         topic.isImageLoading ? (
                           <div style={{ 
@@ -1801,37 +1794,35 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                           <Title level={4} style={{ marginBottom: '8px', fontSize: '16px' }}>
                             {topic.title}
                           </Title>
-                          <Paragraph style={{ color: '#666', fontSize: '14px' }}>
+                          <Paragraph style={{ color: '#666', fontSize: '14px', marginBottom: '16px' }}>
                             {topic.subheader}
                           </Paragraph>
+                          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                            <Button
+                              type="primary"
+                              size="large"
+                              onClick={() => generateContent(topic.id)}
+                              loading={isLoading && selectedTopic === topic.id}
+                              style={{
+                                backgroundColor: stepResults.websiteAnalysis.brandColors.primary,
+                                borderColor: stepResults.websiteAnalysis.brandColors.primary,
+                                width: '100%'
+                              }}
+                            >
+                              Generate Blog Post
+                            </Button>
+                          </div>
                         </>
                       )}
                     </Card>
-                  </Radio>
                 </Col>
               ))}
             </Row>
-          </Radio.Group>
 
           <div style={{ textAlign: 'center', marginTop: '30px' }}>
-            <Space>
-              <Button onClick={resetDemo} icon={<ReloadOutlined />}>
-                Start Over
-              </Button>
-              <Button 
-                type="primary" 
-                size="large" 
-                onClick={generateContent}
-                loading={isLoading}
-                disabled={!selectedTopic}
-                style={{ 
-                  backgroundColor: stepResults.websiteAnalysis.brandColors.primary, 
-                  borderColor: stepResults.websiteAnalysis.brandColors.primary 
-                }}
-              >
-                Generate Full Content
-              </Button>
-            </Space>
+            <Button onClick={resetDemo} icon={<ReloadOutlined />}>
+              Start Over
+            </Button>
           </div>
         </div>
       )}
