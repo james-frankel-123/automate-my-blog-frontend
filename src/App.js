@@ -271,7 +271,6 @@ const App = () => {
         ...prev,
         trendingTopics: skeletonTopics
       }));
-      console.log('Set skeleton topics:', skeletonTopics.length, skeletonTopics);
 
       // Advance to step 3 immediately to show skeleton cards (Skip loading screens)
       setTimeout(() => {
@@ -282,7 +281,6 @@ const App = () => {
 
       // Call real backend API
       const topics = await autoBlogAPI.getTrendingTopics(businessType, targetAudience, contentFocus);
-      console.log('API returned topics:', topics?.length || 0, topics);
       
       if (topics && topics.length > 0) {
         // Ensure we only use first 2 topics
