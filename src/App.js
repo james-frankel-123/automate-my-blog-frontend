@@ -1580,8 +1580,8 @@ app.post('/api/autoblog-webhook', async (req, res) => {
           />
         )}
         
-        {/* Progressive Business Overview Card */}
-        {currentStep >= 1 && (
+        {/* Progressive Business Overview Card - Only show after analysis is complete */}
+        {currentStep >= 2 && (
           <div style={{ marginBottom: '20px' }}>
             {renderBusinessOverview()}
           </div>
