@@ -1211,597 +1211,314 @@ ${post.content}
                         analysis.description && 
                         analysis.description.toLowerCase().includes('javascript');
 
-    // Extract domain for market positioning insights
+    // Extract domain for business context
     const domain = websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
     
     return (
-      <div style={{ marginBottom: '30px' }}>
+      <Card 
+        style={{ 
+          border: `2px solid ${analysis.brandColors.primary}`,
+          borderRadius: '12px',
+          background: `linear-gradient(135deg, ${analysis.brandColors.secondary}15, #ffffff)`,
+          marginBottom: '30px'
+        }}
+      >
         {/* Company Header */}
-        <Card 
-          style={{ 
-            border: `2px solid ${analysis.brandColors.primary}`,
-            borderRadius: '12px',
-            background: `linear-gradient(135deg, ${analysis.brandColors.secondary}15, #ffffff)`,
-            marginBottom: '20px'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <div>
-              <Title 
-                level={3} 
-                style={{ 
-                  margin: 0, 
-                  color: analysis.brandColors.primary,
-                  fontSize: '24px',
-                  fontWeight: 600,
-                  marginBottom: '4px'
-                }}
-              >
-                {analysis.businessName || 'Business Profile'}
-              </Title>
-              <Text style={{ fontSize: '16px', color: '#666' }}>
-                {domain} • {analysis.businessType}
-              </Text>
-            </div>
-            {isComplete && (
-              <Button 
-                icon={<SettingOutlined />} 
-                onClick={() => editStepResults(1)}
-                type="link"
-                style={{ color: analysis.brandColors.primary }}
-              >
-                Edit Analysis
-              </Button>
-            )}
-          </div>
-
-          {seemsLimited && (
-            <div style={{
-              padding: '16px',
-              backgroundColor: '#fff7e6',
-              border: '1px solid #ffd591',
-              borderRadius: '8px',
-              marginBottom: '20px'
-            }}>
-              <Text style={{ fontSize: '14px' }}>
-                ⚠️ <strong>Limited Website Content Detected:</strong> This appears to be a JavaScript-heavy site with minimal crawlable content. 
-                Our AI has made educated inferences based on available signals. Click "Edit Analysis" to enhance accuracy with your business details.
-              </Text>
-            </div>
-          )}
-
-          {/* Value Proposition */}
-          <div style={{ 
-            padding: '20px', 
-            backgroundColor: analysis.brandColors.primary + '08', 
-            borderRadius: '12px',
-            border: `1px solid ${analysis.brandColors.primary}20`,
-            marginBottom: '20px'
-          }}>
-            <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
-              <span style={{ marginRight: '8px' }}>🎯</span>
-              Value Proposition & Market Position
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <div>
+            <Title 
+              level={3} 
+              style={{ 
+                margin: 0, 
+                color: analysis.brandColors.primary,
+                fontSize: '24px',
+                fontWeight: 600,
+                marginBottom: '4px'
+              }}
+            >
+              {analysis.businessName || 'Business Profile'}
             </Title>
-            <Text style={{ fontSize: '15px', lineHeight: '1.6' }}>
-              <strong>{analysis.businessName}</strong> operates in the {analysis.businessType.toLowerCase()} space, 
-              primarily serving <strong>{analysis.targetAudience.toLowerCase()}</strong>. 
-              {analysis.description ? (
-                <span> {analysis.description}</span>
-              ) : (
-                <span> Based on industry analysis, this business likely focuses on {analysis.contentFocus?.toLowerCase() || 'delivering specialized services to their target market'}.</span>
-              )}
+            <Text style={{ fontSize: '16px', color: '#666' }}>
+              {domain} • {analysis.businessType}
             </Text>
           </div>
-        </Card>
-
-        {/* Business Intelligence Grid */}
-        <Row gutter={[20, 20]}>
-          {/* Market Opportunity */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.secondary}60`,
-                borderRadius: '12px'
-              }}
+          {isComplete && (
+            <Button 
+              icon={<SettingOutlined />} 
+              onClick={() => editStepResults(1)}
+              type="link"
+              style={{ color: analysis.brandColors.primary }}
             >
-              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>📈</span>
-                Market Opportunity Analysis
-              </Title>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Industry Growth Potential:</Text>
-                <br />
-                <Text>The {analysis.businessType.toLowerCase()} sector shows strong digital content demand, particularly for {analysis.targetAudience.toLowerCase()} demographics.</Text>
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Content Gap Analysis:</Text>
-                <br />
-                <Text>Competitors likely under-serve educational content around {analysis.contentFocus?.toLowerCase() || 'specialized industry topics'}, creating SEO opportunities.</Text>
-              </div>
-            </Card>
+              Edit
+            </Button>
+          )}
+        </div>
+
+        {seemsLimited && (
+          <div style={{
+            padding: '16px',
+            backgroundColor: '#fff7e6',
+            border: '1px solid #ffd591',
+            borderRadius: '8px',
+            marginBottom: '20px'
+          }}>
+            <Text style={{ fontSize: '14px' }}>
+              ⚠️ <strong>Limited Website Content:</strong> This appears to be a JavaScript-heavy site. 
+              Click "Edit" above to provide more details about your business for better content recommendations.
+            </Text>
+          </div>
+        )}
+
+        {/* Business Overview */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} md={12}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.primary + '08', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.primary}20`,
+              height: '100%'
+            }}>
+              <Text strong style={{ color: analysis.brandColors.primary, fontSize: '16px', marginBottom: '8px', display: 'block' }}>
+                What They Do
+              </Text>
+              <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                {analysis.description || `${analysis.businessName} operates in the ${analysis.businessType.toLowerCase()} space, focusing on ${analysis.contentFocus?.toLowerCase() || 'delivering specialized services'}.`}
+              </Text>
+            </div>
           </Col>
 
-          {/* Digital Presence Insights */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.accent}60`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.accent, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>🔍</span>
-                Digital Presence Intelligence
-              </Title>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.accent }}>SEO Foundation:</Text>
-                <br />
-                <Text>Domain authority building opportunity through consistent, {analysis.brandVoice.toLowerCase()} content targeting industry-specific queries.</Text>
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.accent }}>Content Strategy Gap:</Text>
-                <br />
-                <Text>Lacks systematic content approach for capturing {analysis.targetAudience.toLowerCase()} search traffic across the buyer journey.</Text>
-              </div>
-            </Card>
+          <Col xs={24} md={12}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.accent + '08', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.accent}20`,
+              height: '100%'
+            }}>
+              <Text strong style={{ color: analysis.brandColors.accent, fontSize: '16px', marginBottom: '8px', display: 'block' }}>
+                Target Audience
+              </Text>
+              <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                {analysis.targetAudience}
+              </Text>
+            </div>
           </Col>
 
-          {/* Brand DNA */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.primary}40`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>🎨</span>
-                Brand DNA & Communication Style
-              </Title>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Voice & Tone:</Text>
-                <br />
-                <Text>{analysis.brandVoice} communication style builds trust with {analysis.targetAudience.toLowerCase()}</Text>
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Content Approach:</Text>
-                <br />
-                <Text>Focus on {analysis.contentFocus?.toLowerCase() || 'educational, solution-oriented content'} that positions as industry thought leader</Text>
-              </div>
-            </Card>
+          <Col xs={24} md={12}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.secondary + '30', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.secondary}60`,
+              height: '100%'
+            }}>
+              <Text strong style={{ color: analysis.brandColors.primary, fontSize: '16px', marginBottom: '8px', display: 'block' }}>
+                Brand Voice
+              </Text>
+              <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                {analysis.brandVoice} communication style
+              </Text>
+            </div>
           </Col>
 
-          {/* Keyword Opportunities */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.secondary}60`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>🔑</span>
-                Strategic Keyword Intelligence
-              </Title>
-              {analysis.keywords && analysis.keywords.length > 0 ? (
-                <div>
-                  <Text style={{ marginBottom: '12px', display: 'block' }}>
-                    High-opportunity keywords for content targeting:
-                  </Text>
-                  <Space wrap style={{ marginBottom: '16px' }}>
-                    {analysis.keywords.slice(0, 6).map((keyword, index) => (
-                      <Tag 
-                        key={index} 
-                        color={analysis.brandColors.primary}
-                        style={{ 
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          padding: '4px 8px'
-                        }}
-                      >
-                        {keyword}
-                      </Tag>
-                    ))}
-                  </Space>
-                  <Text style={{ fontSize: '13px', fontStyle: 'italic' }}>
-                    These represent untapped search volume opportunities in your market segment.
-                  </Text>
-                </div>
-              ) : (
-                <Text>
-                  Keyword research needed to identify high-value search terms in the {analysis.businessType.toLowerCase()} space 
-                  that {analysis.targetAudience.toLowerCase()} are actively searching for.
-                </Text>
-              )}
-            </Card>
+          <Col xs={24} md={12}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.primary + '06', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.primary}15`,
+              height: '100%'
+            }}>
+              <Text strong style={{ color: analysis.brandColors.primary, fontSize: '16px', marginBottom: '8px', display: 'block' }}>
+                Content Focus
+              </Text>
+              <Text style={{ fontSize: '14px', lineHeight: '1.5' }}>
+                {analysis.contentFocus || `Educational content about ${analysis.businessType.toLowerCase()}`}
+              </Text>
+            </div>
           </Col>
         </Row>
 
-        {/* Strategic Insights Summary */}
-        <Card 
-          style={{ 
+        {/* Keywords if available */}
+        {analysis.keywords && analysis.keywords.length > 0 && (
+          <div style={{ 
             marginTop: '20px',
-            background: `linear-gradient(135deg, ${analysis.brandColors.primary}08, ${analysis.brandColors.accent}05)`,
-            border: `1px solid ${analysis.brandColors.primary}20`,
-            borderRadius: '12px'
-          }}
-        >
-          <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-            <span style={{ marginRight: '8px' }}>💡</span>
-            Key Strategic Insights
-          </Title>
-          <Row gutter={[16, 8]}>
-            <Col xs={24} md={8}>
-              <div style={{ textAlign: 'center', padding: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '24px', display: 'block' }}>3-6 months</Text>
-                <Text style={{ fontSize: '13px' }}>Content ROI timeline</Text>
-              </div>
-            </Col>
-            <Col xs={24} md={8}>
-              <div style={{ textAlign: 'center', padding: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.accent, fontSize: '24px', display: 'block' }}>15-25%</Text>
-                <Text style={{ fontSize: '13px' }}>Typical traffic increase</Text>
-              </div>
-            </Col>
-            <Col xs={24} md={8}>
-              <div style={{ textAlign: 'center', padding: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '24px', display: 'block' }}>High</Text>
-                <Text style={{ fontSize: '13px' }}>Content opportunity score</Text>
-              </div>
-            </Col>
-          </Row>
-        </Card>
-      </div>
+            padding: '16px', 
+            backgroundColor: '#f8f9fa', 
+            borderRadius: '8px'
+          }}>
+            <Text strong style={{ color: analysis.brandColors.primary, fontSize: '16px', marginBottom: '12px', display: 'block' }}>
+              Key Topics & Keywords
+            </Text>
+            <Space wrap>
+              {analysis.keywords.map((keyword, index) => (
+                <Tag 
+                  key={index} 
+                  color={analysis.brandColors.primary}
+                  style={{ 
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    padding: '4px 8px'
+                  }}
+                >
+                  {keyword}
+                </Tag>
+              ))}
+            </Space>
+          </div>
+        )}
+      </Card>
     );
   };
 
   const renderContentStrategy = () => {
     const analysis = stepResults.websiteAnalysis;
-    
-    // Generate specific search volume estimates based on business type
-    const getEstimatedSearchVolume = (businessType) => {
-      const volumeMap = {
-        'healthcare': '12-25K',
-        'technology': '15-30K', 
-        'parenting': '8-15K',
-        'wellness': '10-20K',
-        'education': '6-12K',
-        'finance': '20-35K'
-      };
-      return volumeMap[businessType.toLowerCase()] || '8-18K';
+
+    // Generate specific content ideas based on keywords
+    const generateContentIdeas = () => {
+      if (!analysis.keywords || analysis.keywords.length === 0) {
+        return [
+          {
+            keyword: `${analysis.businessType.toLowerCase()} guide`,
+            title: `Complete Guide to ${analysis.businessType} for ${analysis.targetAudience}`,
+            searchIntent: 'Educational - people learning about your industry'
+          },
+          {
+            keyword: `best ${analysis.businessType.toLowerCase()}`,
+            title: `Best ${analysis.businessType} Solutions: What ${analysis.targetAudience} Need to Know`,
+            searchIntent: 'Comparison - people evaluating options'
+          }
+        ];
+      }
+
+      return analysis.keywords.slice(0, 6).map((keyword, index) => {
+        const templates = [
+          { title: `Complete Guide to ${keyword}`, searchIntent: 'Educational - people learning' },
+          { title: `${keyword}: What You Need to Know`, searchIntent: 'Informational - seeking answers' },
+          { title: `Best ${keyword} Strategies for ${analysis.targetAudience}`, searchIntent: 'Solution-focused - ready to act' },
+          { title: `${keyword} Mistakes to Avoid`, searchIntent: 'Problem-aware - looking for guidance' },
+          { title: `How to Choose the Right ${keyword}`, searchIntent: 'Decision-stage - comparing options' },
+          { title: `${keyword} Explained: A ${analysis.brandVoice} Approach`, searchIntent: 'Educational with brand positioning' }
+        ];
+        
+        const template = templates[index % templates.length];
+        return {
+          keyword,
+          title: template.title,
+          searchIntent: template.searchIntent
+        };
+      });
     };
 
-    // Generate conversion rate estimates
-    const getConversionInsights = (businessType) => {
-      const industryMap = {
-        'healthcare': { rate: '3-5%', value: 'consultation bookings' },
-        'technology': { rate: '2-4%', value: 'demo requests' },
-        'parenting': { rate: '4-7%', value: 'newsletter signups' },
-        'wellness': { rate: '5-8%', value: 'program enrollments' },
-        'education': { rate: '3-6%', value: 'course inquiries' },
-        'finance': { rate: '2-3%', value: 'consultation requests' }
-      };
-      return industryMap[businessType.toLowerCase()] || { rate: '3-5%', value: 'qualified leads' };
-    };
-
-    const searchVolume = getEstimatedSearchVolume(analysis.businessType);
-    const conversionData = getConversionInsights(analysis.businessType);
+    const contentIdeas = generateContentIdeas();
     
     return (
-      <div style={{ marginBottom: '30px' }}>
-        {/* Strategy Header */}
-        <Card 
-          style={{ 
-            marginBottom: '24px',
-            border: `2px solid ${analysis.brandColors.accent}`,
-            borderRadius: '12px',
-            background: `linear-gradient(135deg, ${analysis.brandColors.accent}08, #ffffff)`
-          }}
-        >
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <Title 
-              level={3} 
-              style={{ 
-                margin: 0, 
-                color: analysis.brandColors.accent,
-                fontSize: '24px',
-                fontWeight: 600,
-                marginBottom: '8px'
-              }}
-            >
-              🚀 Strategic Content Roadmap
-            </Title>
-            <Text style={{ fontSize: '16px', color: '#666' }}>
-              Precision-targeted content strategy to capture high-intent {analysis.targetAudience.toLowerCase()}
+      <Card 
+        style={{ 
+          border: `2px solid ${analysis.brandColors.accent}`,
+          borderRadius: '12px',
+          background: `linear-gradient(135deg, ${analysis.brandColors.accent}06, #ffffff)`,
+          marginBottom: '30px'
+        }}
+      >
+        {/* Header */}
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <Title 
+            level={3} 
+            style={{ 
+              margin: 0, 
+              color: analysis.brandColors.accent,
+              fontSize: '24px',
+              fontWeight: 600,
+              marginBottom: '8px'
+            }}
+          >
+            📊 Content Strategy
+          </Title>
+          <Text style={{ fontSize: '16px', color: '#666' }}>
+            Specific keywords and content ideas to capture {analysis.targetAudience.toLowerCase()}
+          </Text>
+        </div>
+
+        {/* Target Keywords */}
+        <div style={{ marginBottom: '24px' }}>
+          <Title level={5} style={{ color: analysis.brandColors.accent, marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '8px' }}>🎯</span>
+            Target Keywords
+          </Title>
+          {analysis.keywords && analysis.keywords.length > 0 ? (
+            <Space wrap style={{ marginBottom: '12px' }}>
+              {analysis.keywords.map((keyword, index) => (
+                <Tag 
+                  key={index} 
+                  color={analysis.brandColors.accent}
+                  style={{ 
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    padding: '6px 12px'
+                  }}
+                >
+                  {keyword}
+                </Tag>
+              ))}
+            </Space>
+          ) : (
+            <Text style={{ color: '#666', fontStyle: 'italic' }}>
+              Keyword opportunities identified for {analysis.businessType.toLowerCase()} industry
             </Text>
-          </div>
+          )}
+        </div>
 
-          {/* Strategic Overview */}
-          <div style={{ 
-            padding: '20px', 
-            backgroundColor: analysis.brandColors.accent + '06', 
-            borderRadius: '12px',
-            border: `1px solid ${analysis.brandColors.accent}15`,
-            marginBottom: '20px'
-          }}>
-            <Text style={{ fontSize: '15px', lineHeight: '1.7' }}>
-              <strong>Strategic Opportunity:</strong> Our analysis reveals a significant content gap in the {analysis.businessType.toLowerCase()} space. 
-              Your competitors are missing educational content that <strong>{analysis.targetAudience.toLowerCase()}</strong> are actively searching for. 
-              This presents a prime opportunity to capture market share through strategic content positioning.
-            </Text>
-          </div>
-        </Card>
-
-        {/* Strategy Components Grid */}
-        <Row gutter={[24, 24]}>
-          {/* Audience Intelligence */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.accent}40`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.accent, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>🎯</span>
-                Audience Intelligence & Search Behavior
-              </Title>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.accent }}>Search Intent Analysis:</Text>
-                <br />
-                <Text>{analysis.targetAudience} typically search during problem-awareness phase, using long-tail keywords related to {analysis.contentFocus?.toLowerCase() || 'industry solutions'}. Peak search times: weekday evenings and weekends.</Text>
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.accent }}>Pain Point Mapping:</Text>
-                <br />
-                <Text>Primary frustrations include lack of trusted guidance and overwhelming options. Content addressing specific {analysis.businessType.toLowerCase()} concerns will resonate strongly.</Text>
-              </div>
-              <div style={{ 
-                padding: '12px', 
-                backgroundColor: analysis.brandColors.accent + '08', 
-                borderRadius: '8px',
-                marginTop: '12px'
-              }}>
-                <Text strong style={{ fontSize: '16px', color: analysis.brandColors.accent }}>Monthly Search Volume: {searchVolume}</Text>
-                <br />
-                <Text style={{ fontSize: '13px' }}>Estimated monthly searches for your target keywords</Text>
-              </div>
-            </Card>
-          </Col>
-
-          {/* Content Funnel Strategy */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.primary}40`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>🎢</span>
-                Content Funnel Strategy
-              </Title>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Top of Funnel (Awareness):</Text>
-                <br />
-                <Text>Educational content about {analysis.contentFocus?.toLowerCase() || analysis.businessType.toLowerCase()} fundamentals. Target: "how to", "what is", "guide to" keywords.</Text>
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Middle of Funnel (Consideration):</Text>
-                <br />
-                <Text>Comparison guides, case studies, and solution-oriented content. Target: "best", "vs", "reviews" keywords.</Text>
-              </div>
-              <div style={{ marginBottom: '12px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Bottom of Funnel (Decision):</Text>
-                <br />
-                <Text>Service-specific content, pricing guides, and conversion-focused pieces targeting high-intent searchers.</Text>
-              </div>
-            </Card>
-          </Col>
-
-          {/* Traffic Capture Tactics */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.secondary}60`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>📈</span>
-                Traffic Capture & SEO Tactics
-              </Title>
-              {analysis.keywords && analysis.keywords.length > 0 && (
-                <div style={{ marginBottom: '16px' }}>
-                  <Text strong style={{ color: analysis.brandColors.primary }}>High-Opportunity Keywords:</Text>
-                  <br />
-                  <Space wrap style={{ margin: '8px 0' }}>
-                    {analysis.keywords.slice(0, 4).map((keyword, index) => (
-                      <Tag 
-                        key={index} 
-                        color={analysis.brandColors.primary}
-                        style={{ borderRadius: '12px', fontSize: '12px' }}
-                      >
-                        {keyword}
-                      </Tag>
-                    ))}
-                  </Space>
-                  <Text style={{ fontSize: '13px', display: 'block', marginTop: '8px' }}>
-                    Competition level: Low to Medium • Search volume: {searchVolume}/month combined
+        {/* Content Ideas */}
+        <div style={{ marginBottom: '24px' }}>
+          <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '8px' }}>💡</span>
+            Content Ideas to Capture Traffic
+          </Title>
+          <Row gutter={[16, 16]}>
+            {contentIdeas.map((idea, index) => (
+              <Col key={index} xs={24} lg={12}>
+                <div style={{ 
+                  padding: '16px', 
+                  backgroundColor: '#f8f9fa', 
+                  borderRadius: '8px',
+                  border: '1px solid #e9ecef',
+                  height: '100%'
+                }}>
+                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+                    "{idea.keyword}"
+                  </Text>
+                  <Text style={{ fontSize: '15px', marginBottom: '8px', display: 'block', fontWeight: 500 }}>
+                    {idea.title}
+                  </Text>
+                  <Text style={{ fontSize: '13px', color: '#666', fontStyle: 'italic' }}>
+                    {idea.searchIntent}
                   </Text>
                 </div>
-              )}
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Content Distribution Strategy:</Text>
-                <br />
-                <Text>Multi-channel approach: Blog SEO + social proof + email nurturing + {analysis.brandVoice.toLowerCase()} engagement tactics.</Text>
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Featured Snippet Opportunities:</Text>
-                <br />
-                <Text>Target FAQ-style content and structured data for {analysis.businessType.toLowerCase()} "how-to" queries to capture position zero.</Text>
-              </div>
-            </Card>
-          </Col>
+              </Col>
+            ))}
+          </Row>
+        </div>
 
-          {/* Conversion Optimization */}
-          <Col xs={24} lg={12}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.accent}40`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.accent, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>💰</span>
-                Conversion Optimization Strategy
-              </Title>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.accent }}>Trust-Building Elements:</Text>
-                <br />
-                <Text>Integrate social proof, credentials, and {analysis.brandVoice.toLowerCase()} testimonials. Essential for {analysis.targetAudience.toLowerCase()} conversion psychology.</Text>
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.accent }}>CTA Strategy:</Text>
-                <br />
-                <Text>Strategic placement of service-relevant calls-to-action using {analysis.brandVoice.toLowerCase()} language that resonates with your audience.</Text>
-              </div>
-              <div style={{ 
-                padding: '12px', 
-                backgroundColor: analysis.brandColors.accent + '08', 
-                borderRadius: '8px'
-              }}>
-                <Text strong style={{ fontSize: '16px', color: analysis.brandColors.accent }}>
-                  Expected Conversion Rate: {conversionData.rate}
-                </Text>
-                <br />
-                <Text style={{ fontSize: '13px' }}>
-                  Industry benchmark for {conversionData.value} from blog content
-                </Text>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Competitive Analysis & Success Metrics */}
-        <Row gutter={[24, 24]} style={{ marginTop: '24px' }}>
-          {/* Competitive Advantage */}
-          <Col xs={24} lg={14}>
-            <Card 
-              style={{ 
-                height: '100%',
-                border: `1px solid ${analysis.brandColors.primary}30`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>⚔️</span>
-                Competitive Content Analysis & Your Advantage
-              </Title>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Content Gap We've Identified:</Text>
-                <br />
-                <Text>
-                  Top competitors in {analysis.businessType.toLowerCase()} are publishing generic, surface-level content. 
-                  They're missing in-depth, {analysis.brandVoice.toLowerCase()} content that actually helps {analysis.targetAudience.toLowerCase()}.
-                </Text>
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Your Differentiation Strategy:</Text>
-                <br />
-                <Text>
-                  Position as the {analysis.brandVoice.toLowerCase()} authority by publishing comprehensive, actionable content 
-                  that competitors won't invest time creating. Focus on {analysis.contentFocus?.toLowerCase() || 'practical solutions'}.
-                </Text>
-              </div>
-              <div style={{ marginBottom: '16px' }}>
-                <Text strong style={{ color: analysis.brandColors.primary }}>Content Quality Advantage:</Text>
-                <br />
-                <Text>
-                  While competitors post 800-word fluff pieces, your strategy focuses on 1,500+ word authoritative guides 
-                  that Google and {analysis.targetAudience.toLowerCase()} will prioritize.
-                </Text>
-              </div>
-            </Card>
-          </Col>
-
-          {/* Success Metrics */}
-          <Col xs={24} lg={10}>
-            <Card 
-              style={{ 
-                height: '100%',
-                background: `linear-gradient(135deg, ${analysis.brandColors.accent}08, ${analysis.brandColors.primary}05)`,
-                border: `1px solid ${analysis.brandColors.accent}30`,
-                borderRadius: '12px'
-              }}
-            >
-              <Title level={5} style={{ color: analysis.brandColors.accent, marginBottom: '16px', display: 'flex', alignItems: 'center' }}>
-                <span style={{ marginRight: '8px' }}>📊</span>
-                Success Metrics & Timeline
-              </Title>
-              <div style={{ marginBottom: '16px' }}>
-                <Row gutter={[12, 12]}>
-                  <Col xs={12}>
-                    <div style={{ textAlign: 'center', padding: '12px' }}>
-                      <Text strong style={{ color: analysis.brandColors.accent, fontSize: '20px', display: 'block' }}>Month 1-2</Text>
-                      <Text style={{ fontSize: '12px' }}>Content foundation & initial SEO gains</Text>
-                    </div>
-                  </Col>
-                  <Col xs={12}>
-                    <div style={{ textAlign: 'center', padding: '12px' }}>
-                      <Text strong style={{ color: analysis.brandColors.primary, fontSize: '20px', display: 'block' }}>Month 3-4</Text>
-                      <Text style={{ fontSize: '12px' }}>Ranking improvements & traffic growth</Text>
-                    </div>
-                  </Col>
-                  <Col xs={12}>
-                    <div style={{ textAlign: 'center', padding: '12px' }}>
-                      <Text strong style={{ color: analysis.brandColors.accent, fontSize: '20px', display: 'block' }}>Month 5-6</Text>
-                      <Text style={{ fontSize: '12px' }}>Lead generation & conversion optimization</Text>
-                    </div>
-                  </Col>
-                  <Col xs={12}>
-                    <div style={{ textAlign: 'center', padding: '12px' }}>
-                      <Text strong style={{ color: analysis.brandColors.primary, fontSize: '20px', display: 'block' }}>25-40%</Text>
-                      <Text style={{ fontSize: '12px' }}>Expected organic traffic increase</Text>
-                    </div>
-                  </Col>
-                </Row>
-              </div>
-            </Card>
-          </Col>
-        </Row>
-
-        {/* Strategic Call-to-Action */}
-        <Card 
-          style={{ 
-            marginTop: '24px',
-            background: `linear-gradient(135deg, ${analysis.brandColors.primary}06, ${analysis.brandColors.accent}04)`,
-            border: `2px solid ${analysis.brandColors.primary}20`,
-            borderRadius: '12px'
-          }}
-        >
-          <div style={{ textAlign: 'center' }}>
-            <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px' }}>
-              🎯 Ready to Dominate Your Content Strategy?
-            </Title>
-            <Text style={{ fontSize: '15px', lineHeight: '1.6', marginBottom: '16px', display: 'block' }}>
-              This analysis represents just 5% of what our full content strategy delivers. Our system creates 
-              SEO-optimized content specifically designed to capture {analysis.targetAudience.toLowerCase()} and convert them into {conversionData.value}.
-            </Text>
-            <Text style={{ fontSize: '14px', fontStyle: 'italic', color: '#666' }}>
-              Next: See exactly how this strategy translates into high-converting blog content tailored to your brand voice →
-            </Text>
-          </div>
-        </Card>
-      </div>
+        {/* How This Captures Traffic */}
+        <div style={{ 
+          padding: '20px', 
+          backgroundColor: analysis.brandColors.primary + '08', 
+          borderRadius: '8px',
+          border: `1px solid ${analysis.brandColors.primary}20`
+        }}>
+          <Title level={5} style={{ color: analysis.brandColors.primary, marginBottom: '12px', display: 'flex', alignItems: 'center' }}>
+            <span style={{ marginRight: '8px' }}>🚀</span>
+            How This Captures Your Target Audience
+          </Title>
+          <Text style={{ fontSize: '15px', lineHeight: '1.6' }}>
+            Each blog post targets specific keywords that <strong>{analysis.targetAudience.toLowerCase()}</strong> are 
+            searching for. When they Google these terms, your content appears in search results. The {analysis.brandVoice.toLowerCase()} 
+            tone builds trust, and strategic calls-to-action guide them toward {analysis.contentFocus?.toLowerCase() || 'your services'}.
+          </Text>
+        </div>
+      </Card>
     );
   };
 
