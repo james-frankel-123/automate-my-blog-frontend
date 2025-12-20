@@ -30,6 +30,24 @@ const App = () => {
   const [strategyCompleted, setStrategyCompleted] = useState(false);
   const [blogGenerating, setBlogGenerating] = useState(false);
   
+  // Post state and content strategy management
+  const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
+  const [contentStrategy, setContentStrategy] = useState({
+    goal: 'awareness', // 'awareness', 'consideration', 'conversion', 'retention'
+    voice: 'expert', // 'expert', 'friendly', 'insider', 'storyteller'
+    template: 'problem-solution', // 'how-to', 'problem-solution', 'listicle', 'case-study', 'comprehensive'
+    length: 'standard' // 'quick', 'standard', 'deep'
+  });
+  const [showStrategyGate, setShowStrategyGate] = useState(false);
+  const [showExportWarning, setShowExportWarning] = useState(false);
+  
+  // Demo mode for testing (bypass payment gates)
+  const [demoMode, setDemoMode] = useState(
+    process.env.REACT_APP_DEMO_MODE === 'true' || 
+    window.location.search.includes('demo=true') ||
+    localStorage.getItem('automyblog_demo_mode') === 'true'
+  );
+  
   // Step results storage
   const [stepResults, setStepResults] = useState({
     websiteAnalysis: {
@@ -579,6 +597,11 @@ ${post.content}
 `;
 
     downloadFile(markdown, `${post.slug}.md`, 'text/markdown');
+    
+    // Lock the post after export
+    setPostState('exported');
+    setPreviewMode(true); // Force to preview mode
+    message.success('Post exported and locked. Generate a new post to make further changes.');
   };
 
   const exportAsHTML = () => {
@@ -641,6 +664,11 @@ ${post.content}
 </html>`;
 
     downloadFile(html, `${post.slug}.html`, 'text/html');
+    
+    // Lock the post after export
+    setPostState('exported');
+    setPreviewMode(true); // Force to preview mode
+    message.success('Post exported and locked. Generate a new post to make further changes.');
   };
 
   const exportAsJSON = () => {
@@ -670,6 +698,11 @@ ${post.content}
       `${post.slug}.json`, 
       'application/json'
     );
+    
+    // Lock the post after export
+    setPostState('exported');
+    setPreviewMode(true); // Force to preview mode
+    message.success('Post exported and locked. Generate a new post to make further changes.');
   };
 
   const exportCompletePackage = () => {
@@ -692,6 +725,17 @@ ${post.content}
     setUserAccount(null);
     setShowEmailGate(false);
     setShowSignupGate(false);
+    
+    // Reset new state variables
+    setPostState('draft');
+    setContentStrategy({
+      goal: 'awareness',
+      voice: 'expert',
+      template: 'problem-solution',
+      length: 'standard'
+    });
+    setShowStrategyGate(false);
+    setShowExportWarning(false);
     setStepResults({
       websiteAnalysis: {
         businessType: 'Child Wellness & Parenting',
@@ -749,6 +793,83 @@ ${post.content}
   };
 
   const progressPercent = ((currentStep + 1) / 5) * 100;
+
+  // Content Strategy Helper Functions
+  const getStrategyDisplayText = (type, value) => {
+    const options = {
+      goal: {
+        awareness: 'Awareness',
+        consideration: 'Consideration',
+        conversion: 'Conversion',
+        retention: 'Retention'
+      },
+      voice: {
+        expert: 'Professional Expert',
+        friendly: 'Friendly Guide',
+        insider: 'Industry Insider',
+        storyteller: 'Storyteller'
+      },
+      template: {
+        'how-to': 'How-To Guide',
+        'problem-solution': 'Problem-Solution',
+        'listicle': 'Listicle',
+        'case-study': 'Case Study',
+        'comprehensive': 'Comprehensive Guide'
+      },
+      length: {
+        quick: 'Quick Read (800-1000 words)',
+        standard: 'Standard (1200-1500 words)',
+        deep: 'Deep Dive (2000+ words)'
+      }
+    };
+    return options[type]?.[value] || value;
+  };
+
+  const handleStrategyChange = (type, value) => {
+    if (postState === 'exported') {
+      message.warning('This post has been exported and is locked. Generate a new post to make changes.');
+      return;
+    }
+
+    if (!demoMode && !userAccount) {
+      setShowStrategyGate(true);
+      return;
+    }
+
+    setContentStrategy(prev => ({
+      ...prev,
+      [type]: value
+    }));
+
+    message.info('Regenerating content with new strategy...');
+    // TODO: Trigger content regeneration with new strategy
+  };
+
+  const canEditPost = () => {
+    return postState === 'draft';
+  };
+
+  const toggleDemoMode = () => {
+    const newDemoMode = !demoMode;
+    setDemoMode(newDemoMode);
+    localStorage.setItem('automyblog_demo_mode', newDemoMode.toString());
+    message.info(newDemoMode ? 'Demo mode activated' : 'Demo mode deactivated');
+  };
+
+  // Add keyboard shortcut for demo mode
+  React.useEffect(() => {
+    const handleKeyPress = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'D') {
+        event.preventDefault();
+        toggleDemoMode();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyPress);
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [demoMode]);
 
   // Helper function for auto-scrolling to next section
   const scrollToNextSection = (stepNumber) => {
@@ -1458,6 +1579,41 @@ app.post('/api/autoblog-webhook', async (req, res) => {
         keywords="AI blog generation, automated content creation, AI writing, content marketing, blog automation, trending topics, content strategy"
         canonicalUrl="/"
       />
+
+      {/* Demo Mode Banner */}
+      {demoMode && (
+        <div style={{ 
+          backgroundColor: '#ff4500', 
+          color: 'white', 
+          padding: '12px 20px', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          textAlign: 'center',
+          border: '2px solid #ff6500'
+        }}>
+          <Text strong style={{ color: 'white', fontSize: '16px' }}>
+            🚧 DEMO MODE ACTIVE
+          </Text>
+          <div style={{ marginTop: '4px' }}>
+            <Text style={{ color: 'white', fontSize: '14px' }}>
+              All premium features unlocked for testing • Payment gates bypassed • Press Ctrl+Shift+D to toggle
+            </Text>
+            <Button 
+              size="small" 
+              type="text" 
+              onClick={toggleDemoMode}
+              style={{ 
+                color: 'white', 
+                marginLeft: '12px', 
+                border: '1px solid white',
+                fontSize: '12px'
+              }}
+            >
+              Exit Demo Mode
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Header with Integrated Website Input */}
       <div style={{ 
@@ -2323,6 +2479,183 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               </Space>
             </div>
 
+            {/* Content Strategy Panel */}
+            {canEditPost() && (
+              <div style={{ 
+                marginBottom: '20px',
+                border: `2px solid ${previewMode ? '#e8e8e8' : stepResults.websiteAnalysis.brandColors.primary}`,
+                borderRadius: '12px',
+                overflow: 'hidden'
+              }}>
+                <div style={{ 
+                  backgroundColor: previewMode ? '#fafafa' : stepResults.websiteAnalysis.brandColors.primary + '10',
+                  padding: '16px',
+                  borderBottom: '1px solid #e8e8e8'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text strong style={{ 
+                      fontSize: '16px',
+                      color: previewMode ? '#666' : stepResults.websiteAnalysis.brandColors.primary 
+                    }}>
+                      🎯 Content Strategy
+                    </Text>
+                    {demoMode && (
+                      <div style={{ 
+                        backgroundColor: '#ff4500', 
+                        color: 'white', 
+                        padding: '4px 8px', 
+                        borderRadius: '4px', 
+                        fontSize: '12px', 
+                        fontWeight: 'bold' 
+                      }}>
+                        DEMO MODE
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div style={{ padding: '16px' }}>
+                  {previewMode ? (
+                    // Preview Mode: Show strategy but not editable (teaser)
+                    <div>
+                      <Row gutter={[16, 8]}>
+                        <Col span={12}>
+                          <Text style={{ fontSize: '13px', color: '#999' }}>Goal:</Text>
+                          <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                            {getStrategyDisplayText('goal', contentStrategy.goal)}
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <Text style={{ fontSize: '13px', color: '#999' }}>Voice:</Text>
+                          <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                            {getStrategyDisplayText('voice', contentStrategy.voice)}
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <Text style={{ fontSize: '13px', color: '#999' }}>Template:</Text>
+                          <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                            {getStrategyDisplayText('template', contentStrategy.template)}
+                          </div>
+                        </Col>
+                        <Col span={12}>
+                          <Text style={{ fontSize: '13px', color: '#999' }}>Length:</Text>
+                          <div style={{ fontSize: '15px', fontWeight: 500 }}>
+                            {getStrategyDisplayText('length', contentStrategy.length)}
+                          </div>
+                        </Col>
+                      </Row>
+                      <div style={{ 
+                        marginTop: '16px', 
+                        padding: '12px', 
+                        backgroundColor: '#f0f8ff', 
+                        borderRadius: '6px',
+                        textAlign: 'center'
+                      }}>
+                        <Text style={{ fontSize: '14px', color: '#1890ff' }}>
+                          💡 Want to optimize for conversion or try a different approach?
+                        </Text>
+                        <br />
+                        <Text style={{ fontSize: '13px', color: '#666' }}>
+                          Switch to Edit Mode to customize your content strategy ↗
+                        </Text>
+                      </div>
+                    </div>
+                  ) : (
+                    // Edit Mode: Interactive controls
+                    <div>
+                      <Row gutter={[16, 16]}>
+                        <Col span={12}>
+                          <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                            Content Goal
+                          </Text>
+                          <Select
+                            value={contentStrategy.goal}
+                            style={{ width: '100%' }}
+                            onChange={(value) => handleStrategyChange('goal', value)}
+                          >
+                            <Select.Option value="awareness">Awareness - Build brand recognition</Select.Option>
+                            <Select.Option value="consideration">Consideration - Build trust, compare solutions</Select.Option>
+                            <Select.Option value="conversion">Conversion - Drive sales, generate leads</Select.Option>
+                            <Select.Option value="retention">Retention - Engage existing customers</Select.Option>
+                          </Select>
+                        </Col>
+                        <Col span={12}>
+                          <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                            Voice & Tone
+                          </Text>
+                          <Select
+                            value={contentStrategy.voice}
+                            style={{ width: '100%' }}
+                            onChange={(value) => handleStrategyChange('voice', value)}
+                          >
+                            <Select.Option value="expert">Professional Expert - Authoritative, data-driven</Select.Option>
+                            <Select.Option value="friendly">Friendly Guide - Conversational, supportive</Select.Option>
+                            <Select.Option value="insider">Industry Insider - Technical, insider knowledge</Select.Option>
+                            <Select.Option value="storyteller">Storyteller - Narrative-driven, emotional</Select.Option>
+                          </Select>
+                        </Col>
+                        <Col span={12}>
+                          <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                            Content Template
+                          </Text>
+                          <Select
+                            value={contentStrategy.template}
+                            style={{ width: '100%' }}
+                            onChange={(value) => handleStrategyChange('template', value)}
+                          >
+                            <Select.Option value="how-to">How-To Guide - Step-by-step, actionable</Select.Option>
+                            <Select.Option value="problem-solution">Problem-Solution - Identify issue, provide solution</Select.Option>
+                            <Select.Option value="listicle">Listicle - Top X tips/strategies/tools</Select.Option>
+                            <Select.Option value="case-study">Case Study - Real example, results-focused</Select.Option>
+                            <Select.Option value="comprehensive">Comprehensive Guide - In-depth, authoritative</Select.Option>
+                          </Select>
+                        </Col>
+                        <Col span={12}>
+                          <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                            Content Length
+                          </Text>
+                          <Select
+                            value={contentStrategy.length}
+                            style={{ width: '100%' }}
+                            onChange={(value) => handleStrategyChange('length', value)}
+                          >
+                            <Select.Option value="quick">Quick Read - 800-1000 words</Select.Option>
+                            <Select.Option value="standard">Standard - 1200-1500 words</Select.Option>
+                            <Select.Option value="deep">Deep Dive - 2000+ words</Select.Option>
+                          </Select>
+                        </Col>
+                      </Row>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Post Status Banner for Exported Posts */}
+            {postState === 'exported' && (
+              <div style={{ 
+                marginBottom: '20px',
+                padding: '16px',
+                backgroundColor: '#f6ffed',
+                border: '1px solid #b7eb8f',
+                borderRadius: '8px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  <CheckOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
+                  <Text strong style={{ color: '#52c41a' }}>Content Successfully Exported</Text>
+                </div>
+                <Text style={{ fontSize: '14px', color: '#666' }}>
+                  This post has been exported and is now locked. To make changes, please generate a new post.
+                </Text>
+                <div style={{ marginTop: '12px' }}>
+                  <Text strong style={{ fontSize: '13px', color: '#389e0d' }}>Final Strategy: </Text>
+                  <Text style={{ fontSize: '13px' }}>
+                    {getStrategyDisplayText('goal', contentStrategy.goal)} | {getStrategyDisplayText('voice', contentStrategy.voice)} | {getStrategyDisplayText('template', contentStrategy.template)}
+                  </Text>
+                </div>
+              </div>
+            )}
+
             {previewMode ? (
               <div style={{ minHeight: '600px' }}>
                 <Title level={4} style={{ marginBottom: '16px', color: stepResults.websiteAnalysis.brandColors.primary }}>
@@ -2354,13 +2687,20 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                 <Button 
                   type="primary" 
                   size="large" 
-                  onClick={() => setCurrentStep(8)}
+                  onClick={() => {
+                    if (postState === 'exported') {
+                      message.warning('This post has already been exported and is locked.');
+                      return;
+                    }
+                    setShowExportWarning(true);
+                  }}
+                  disabled={postState === 'exported'}
                   style={{ 
                     backgroundColor: stepResults.websiteAnalysis.brandColors.primary, 
                     borderColor: stepResults.websiteAnalysis.brandColors.primary 
                   }}
                 >
-                  Download Your Content
+                  {postState === 'exported' ? 'Post Exported & Locked' : 'Download Your Content'}
                 </Button>
               </Space>
             </div>
@@ -2776,6 +3116,196 @@ app.post('/api/autoblog-webhook', async (req, res) => {
             </Button>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Export Warning Modal */}
+      <Modal
+        title="⚠️ Export & Lock Content"
+        open={showExportWarning}
+        onCancel={() => setShowExportWarning(false)}
+        footer={null}
+        width={500}
+        centered
+      >
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ 
+            backgroundColor: '#fff2e8', 
+            padding: '20px', 
+            borderRadius: '12px', 
+            margin: '16px 0', 
+            border: '1px solid #ffccc7' 
+          }}>
+            <Text strong style={{ color: '#fa541c', fontSize: '16px' }}>
+              ⚠️ Important: Once exported, this post will be permanently locked
+            </Text>
+            <div style={{ marginTop: '12px', textAlign: 'left' }}>
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Current Strategy:</strong><br/>
+                Goal: {getStrategyDisplayText('goal', contentStrategy.goal)} <br/>
+                Voice: {getStrategyDisplayText('voice', contentStrategy.voice)} <br/>
+                Template: {getStrategyDisplayText('template', contentStrategy.template)}
+              </Text>
+            </div>
+          </div>
+          
+          <Paragraph>
+            After export, you <Text strong>cannot make any further edits</Text> to this blog post. 
+            To create variations or make changes, you'll need to generate a new post.
+          </Paragraph>
+          
+          <div style={{ backgroundColor: '#f6ffed', padding: '16px', borderRadius: '8px', margin: '16px 0', border: '1px solid #b7eb8f' }}>
+            <Text strong style={{ color: '#52c41a' }}>✅ You'll be able to download in these formats:</Text>
+            <ul style={{ textAlign: 'left', marginTop: '8px', marginBottom: '0' }}>
+              <li>Markdown (.md) - Perfect for Jekyll, Hugo, GitHub Pages</li>
+              <li>HTML (.html) - Copy-paste ready for any CMS</li>
+              <li>JSON (.json) - For developers and API integrations</li>
+            </ul>
+          </div>
+        </div>
+        
+        <Row gutter={16}>
+          <Col span={12}>
+            <Button 
+              size="large" 
+              block
+              onClick={() => setShowExportWarning(false)}
+              style={{ marginBottom: '12px' }}
+            >
+              ← Back to Editing
+            </Button>
+          </Col>
+          <Col span={12}>
+            <Button 
+              type="primary" 
+              size="large" 
+              block
+              style={{ 
+                backgroundColor: '#fa541c',
+                borderColor: '#fa541c',
+                marginBottom: '12px'
+              }}
+              onClick={() => {
+                setShowExportWarning(false);
+                setCurrentStep(8);
+              }}
+            >
+              Continue to Export
+            </Button>
+          </Col>
+        </Row>
+      </Modal>
+
+      {/* Content Strategy Customization Gate Modal */}
+      <Modal
+        title="🎯 Advanced Content Customization"
+        open={showStrategyGate}
+        onCancel={() => setShowStrategyGate(false)}
+        footer={null}
+        width={600}
+        centered
+      >
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ 
+            backgroundColor: '#f0f8ff', 
+            padding: '20px', 
+            borderRadius: '12px', 
+            margin: '16px 0', 
+            border: '1px solid #d6e7ff' 
+          }}>
+            <Text strong style={{ color: '#1890ff', fontSize: '16px' }}>
+              Your current blog post strategy:
+            </Text>
+            <div style={{ marginTop: '12px', textAlign: 'left' }}>
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Goal:</strong> {getStrategyDisplayText('goal', contentStrategy.goal)} <br/>
+                <strong>Voice:</strong> {getStrategyDisplayText('voice', contentStrategy.voice)} <br/>
+                <strong>Template:</strong> {getStrategyDisplayText('template', contentStrategy.template)} <br/>
+                <strong>Length:</strong> {getStrategyDisplayText('length', contentStrategy.length)}
+              </Text>
+            </div>
+          </div>
+          
+          <Title level={3} style={{ marginBottom: '8px' }}>
+            Unlock Content Strategy Customization
+          </Title>
+          <Paragraph>
+            Customize your content to <Text strong>optimize for conversion</Text>, try different voices, 
+            or experiment with various content frameworks.
+          </Paragraph>
+          
+          <div style={{ backgroundColor: '#fff7e6', padding: '16px', borderRadius: '8px', margin: '16px 0', border: '1px solid #ffd591' }}>
+            <Text strong style={{ color: '#fa8c16' }}>✨ With Pro Content Customization:</Text>
+            <ul style={{ textAlign: 'left', marginTop: '8px', marginBottom: '0' }}>
+              <li><strong>Goal Optimization:</strong> Switch between awareness, consideration, conversion, and retention focuses</li>
+              <li><strong>Voice Variations:</strong> Try professional expert, friendly guide, insider, or storyteller tones</li>
+              <li><strong>Content Templates:</strong> How-to guides, problem-solution, listicles, case studies, comprehensive guides</li>
+              <li><strong>Length Control:</strong> Quick reads, standard posts, or deep-dive content</li>
+              <li><strong>Unlimited Regenerations:</strong> Perfect your content with multiple attempts</li>
+              <li><strong>A/B Testing:</strong> Generate multiple variations to test</li>
+            </ul>
+          </div>
+        </div>
+        
+        <Row gutter={16}>
+          <Col span={12}>
+            <Button 
+              type="primary" 
+              size="large" 
+              block
+              style={{ 
+                backgroundColor: '#52c41a',
+                borderColor: '#52c41a',
+                marginBottom: '12px'
+              }}
+              onClick={() => {
+                setShowStrategyGate(false);
+                message.success('Pro features unlocked! (Demo simulation)');
+                // In real implementation, this would trigger payment flow
+              }}
+            >
+              Start 7-Day Free Trial
+            </Button>
+            <Text style={{ fontSize: '12px', color: '#666', display: 'block', textAlign: 'center' }}>
+              Then $9/month • Cancel anytime
+            </Text>
+          </Col>
+          <Col span={12}>
+            <Button 
+              size="large" 
+              block
+              style={{ marginBottom: '12px' }}
+              onClick={() => {
+                setShowStrategyGate(false);
+                message.success('Pro features unlocked! (Demo simulation)');
+                // In real implementation, this would trigger payment flow
+              }}
+            >
+              Subscribe Now - $9/month
+            </Button>
+            <Text style={{ fontSize: '12px', color: '#666', display: 'block', textAlign: 'center' }}>
+              Full access immediately
+            </Text>
+          </Col>
+        </Row>
+        
+        {demoMode && (
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <Button 
+              type="text" 
+              onClick={() => {
+                setShowStrategyGate(false);
+                setContentStrategy(prev => ({
+                  ...prev,
+                  goal: contentStrategy.goal // Keep the attempted change
+                }));
+                message.info('Demo mode: Payment gate bypassed');
+              }}
+              style={{ color: '#ff4500', fontWeight: 'bold' }}
+            >
+              🔧 Demo Mode - Skip Payment
+            </Button>
+          </div>
+        )}
       </Modal>
     </div>
   );
