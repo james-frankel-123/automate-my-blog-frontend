@@ -1645,7 +1645,20 @@ ${post.content}
                         How This Connects
                       </Title>
                       <Text style={{ fontSize: '13px', lineHeight: '1.5' }}>
-                        {analysis.connectionMessage || `${analysis.businessName || 'Your business'} understands when ${analysis.decisionMakers || analysis.targetAudience} are dealing with ${scenario.problem.toLowerCase()}. Through ${analysis.brandVoice.toLowerCase()} content that addresses this specific challenge, you become the trusted resource they turn to for guidance and solutions.`}
+                        {analysis.connectionMessage ? (
+                          analysis.connectionMessage
+                        ) : (
+                          <>
+                            When ${analysis.decisionMakers || analysis.targetAudience} search for{' '}
+                            {scenario.searchTerms.map((term, idx) => (
+                              <Text key={idx} strong style={{ color: analysis.brandColors.accent }}>
+                                "{term}"{idx < scenario.searchTerms.length - 1 ? ', ' : ''}
+                              </Text>
+                            ))}, your {analysis.brandVoice.toLowerCase()} content addressing{' '}
+                            <Text strong>{scenario.problem.toLowerCase()}</Text> positions you as the trusted expert they need.
+                            Your content becomes their solution.
+                          </>
+                        )}
                       </Text>
                     </div>
                   </Card>
