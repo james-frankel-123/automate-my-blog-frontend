@@ -1602,233 +1602,286 @@ ${post.content}
           });
 
           return (
-            <Row gutter={[24, 24]}>
-              {enhancedTopics.map((topic, index) => (
-                <Col key={topic.id || index} xs={24} lg={12}>
-                  <Card 
-                    style={{ 
-                      border: `2px solid ${analysis.brandColors.primary}20`,
-                      borderRadius: '12px',
-                      overflow: 'hidden'
-                    }}
-                    bodyStyle={{ padding: '0' }}
-                    cover={
-                      topic.image && (
-                        <div style={{ position: 'relative' }}>
-                          <img 
-                            alt={topic.title} 
-                            src={topic.image}
-                            style={{ 
-                              width: '100%', 
-                              height: '200px', 
-                              objectFit: 'cover'
-                            }}
-                          />
-                          <div style={{
-                            position: 'absolute',
-                            top: '12px',
-                            right: '12px',
-                            background: 'rgba(0,0,0,0.8)',
-                            color: 'white',
-                            padding: '6px 10px',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            fontWeight: 500
-                          }}>
-                            Topic #{topic.id}
-                          </div>
-                        </div>
-                      )
-                    }
-                  >
-                    <div style={{ padding: '20px' }}>
-                      {/* Topic Title and Description */}
-                      <Title level={4} style={{ 
-                        color: analysis.brandColors.primary, 
-                        marginBottom: '8px',
-                        fontSize: '18px',
-                        lineHeight: '1.4'
-                      }}>
-                        {topic.title}
-                      </Title>
-                      
-                      <Text style={{ 
-                        fontSize: '14px', 
-                        color: '#666', 
-                        lineHeight: '1.5',
-                        display: 'block',
-                        marginBottom: '16px'
-                      }}>
-                        {topic.subheader}
-                      </Text>
-
-                      {/* Action Buttons */}
-                      <Space direction="vertical" style={{ width: '100%' }}>
-                        <Button 
-                          type="primary"
-                          size="large"
-                          block
-                          style={{
-                            backgroundColor: analysis.brandColors.primary,
-                            borderColor: analysis.brandColors.primary,
-                            borderRadius: '8px',
-                            height: '44px',
-                            fontWeight: 600
-                          }}
-                          onClick={() => generateContent(topic.id)}
-                          icon={<EditOutlined />}
-                        >
-                          Generate Post
-                        </Button>
-                        
-                        <Collapse 
-                          ghost
-                          style={{ 
-                            backgroundColor: 'transparent',
-                            border: 'none'
-                          }}
-                        >
-                          <Collapse.Panel 
-                            header={
-                              <Text style={{ 
-                                color: analysis.brandColors.accent, 
-                                fontWeight: 500,
-                                fontSize: '14px'
-                              }}>
-                                📊 Explain the Strategy
-                              </Text>
-                            }
-                            key="strategy"
-                            style={{ 
-                              backgroundColor: analysis.brandColors.accent + '05',
+            <div>
+              <Row gutter={[24, 24]}>
+                {/* Only show first 2 topics */}
+                {enhancedTopics.slice(0, 2).map((topic, index) => (
+                  <Col key={topic.id || index} xs={24} lg={12}>
+                    <Card 
+                      style={{ 
+                        border: `2px solid ${analysis.brandColors.primary}20`,
+                        borderRadius: '12px',
+                        overflow: 'hidden'
+                      }}
+                      bodyStyle={{ padding: '0' }}
+                      cover={
+                        topic.image && (
+                          <div style={{ position: 'relative' }}>
+                            <img 
+                              alt={topic.title} 
+                              src={topic.image}
+                              style={{ 
+                                width: '100%', 
+                                height: '200px', 
+                                objectFit: 'cover'
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              top: '12px',
+                              right: '12px',
+                              background: 'rgba(0,0,0,0.8)',
+                              color: 'white',
+                              padding: '6px 10px',
                               borderRadius: '6px',
-                              border: `1px solid ${analysis.brandColors.accent}20`
+                              fontSize: '13px',
+                              fontWeight: 500
+                            }}>
+                              Topic #{topic.id}
+                            </div>
+                          </div>
+                        )
+                      }
+                    >
+                      <div style={{ padding: '20px' }}>
+                        {/* Topic Title and Description */}
+                        <Title level={4} style={{ 
+                          color: analysis.brandColors.primary, 
+                          marginBottom: '8px',
+                          fontSize: '18px',
+                          lineHeight: '1.4'
+                        }}>
+                          {topic.title}
+                        </Title>
+                        
+                        <Text style={{ 
+                          fontSize: '14px', 
+                          color: '#666', 
+                          lineHeight: '1.5',
+                          display: 'block',
+                          marginBottom: '16px'
+                        }}>
+                          {topic.subheader}
+                        </Text>
+
+                        {/* Action Buttons */}
+                        <Space direction="vertical" style={{ width: '100%' }}>
+                          <Button 
+                            type="primary"
+                            size="large"
+                            block
+                            style={{
+                              backgroundColor: analysis.brandColors.primary,
+                              borderColor: analysis.brandColors.primary,
+                              borderRadius: '8px',
+                              height: '44px',
+                              fontWeight: 600
+                            }}
+                            onClick={() => generateContent(topic.id)}
+                            icon={<EditOutlined />}
+                          >
+                            Generate Post
+                          </Button>
+                          
+                          <Collapse 
+                            ghost
+                            style={{ 
+                              backgroundColor: 'transparent',
+                              border: 'none'
                             }}
                           >
-                            {/* Strategy Content */}
-                            <div style={{ padding: '16px 0' }}>
-                              
-                              {/* Target Persona */}
-                              <div style={{ marginBottom: '16px' }}>
-                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                  👥 Target Persona
+                            <Collapse.Panel 
+                              header={
+                                <Text style={{ 
+                                  color: analysis.brandColors.accent, 
+                                  fontWeight: 500,
+                                  fontSize: '14px'
+                                }}>
+                                  📊 Explain the Strategy
                                 </Text>
-                                <Text style={{ fontSize: '13px' }}>
-                                  <strong>Decision Makers:</strong> {analysis.decisionMakers || analysis.targetAudience}
-                                  {analysis.endUsers && analysis.endUsers !== (analysis.decisionMakers || analysis.targetAudience) && (
-                                    <>
-                                      <br />
-                                      <strong>End Users:</strong> {analysis.endUsers}
-                                    </>
-                                  )}
-                                </Text>
-                              </div>
-
-                              {/* Customer Problem */}
-                              <div style={{ marginBottom: '16px' }}>
-                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                  🔍 Customer Problem
-                                </Text>
-                                <Text style={{ fontSize: '13px' }}>
-                                  {topic.scenario.customerProblem}
-                                </Text>
-                              </div>
-
-                              {/* How They Search */}
-                              <div style={{ marginBottom: '16px' }}>
-                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                  💬 How They Search
-                                </Text>
-                                <Space wrap>
-                                  {topic.scenario.customerLanguage && topic.scenario.customerLanguage.map((term, termIndex) => (
-                                    <Tag 
-                                      key={termIndex}
-                                      color={analysis.brandColors.accent}
-                                      style={{ fontSize: '12px', borderRadius: '4px' }}
-                                    >
-                                      "{term}"
-                                    </Tag>
-                                  ))}
-                                </Space>
-                              </div>
-
-                              {/* SEO Keywords */}
-                              {topic.scenario.seoKeywords && topic.scenario.seoKeywords.length > 0 && (
+                              }
+                              key="strategy"
+                              style={{ 
+                                backgroundColor: analysis.brandColors.accent + '05',
+                                borderRadius: '6px',
+                                border: `1px solid ${analysis.brandColors.accent}20`
+                              }}
+                            >
+                              {/* Strategy Content */}
+                              <div style={{ padding: '16px 0' }}>
+                                
+                                {/* Target Persona */}
                                 <div style={{ marginBottom: '16px' }}>
                                   <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                    🔑 SEO Keywords
+                                    👥 Target Persona
+                                  </Text>
+                                  <Text style={{ fontSize: '13px' }}>
+                                    <strong>Decision Makers:</strong> {analysis.decisionMakers || analysis.targetAudience}
+                                    {analysis.endUsers && analysis.endUsers !== (analysis.decisionMakers || analysis.targetAudience) && (
+                                      <>
+                                        <br />
+                                        <strong>End Users:</strong> {analysis.endUsers}
+                                      </>
+                                    )}
+                                  </Text>
+                                </div>
+
+                                {/* Customer Problem */}
+                                <div style={{ marginBottom: '16px' }}>
+                                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                                    🔍 Customer Problem
+                                  </Text>
+                                  <Text style={{ fontSize: '13px' }}>
+                                    {topic.scenario.customerProblem}
+                                  </Text>
+                                </div>
+
+                                {/* How They Search */}
+                                <div style={{ marginBottom: '16px' }}>
+                                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                                    💬 How They Search
                                   </Text>
                                   <Space wrap>
-                                    {topic.scenario.seoKeywords.map((keyword, keywordIndex) => (
+                                    {topic.scenario.customerLanguage && topic.scenario.customerLanguage.map((term, termIndex) => (
                                       <Tag 
-                                        key={keywordIndex}
-                                        color={analysis.brandColors.primary}
+                                        key={termIndex}
+                                        color={analysis.brandColors.accent}
                                         style={{ fontSize: '12px', borderRadius: '4px' }}
                                       >
-                                        {keyword}
+                                        "{term}"
                                       </Tag>
                                     ))}
                                   </Space>
                                 </div>
-                              )}
 
-                              {/* Strategic Timing */}
-                              {analysis.searchBehavior && (
+                                {/* SEO Keywords */}
+                                {topic.scenario.seoKeywords && topic.scenario.seoKeywords.length > 0 && (
+                                  <div style={{ marginBottom: '16px' }}>
+                                    <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                                      🔑 SEO Keywords
+                                    </Text>
+                                    <Space wrap>
+                                      {topic.scenario.seoKeywords.map((keyword, keywordIndex) => (
+                                        <Tag 
+                                          key={keywordIndex}
+                                          color={analysis.brandColors.primary}
+                                          style={{ fontSize: '12px', borderRadius: '4px' }}
+                                        >
+                                          {keyword}
+                                        </Tag>
+                                      ))}
+                                    </Space>
+                                  </div>
+                                )}
+
+                                {/* Strategic Timing */}
+                                {analysis.searchBehavior && (
+                                  <div style={{ marginBottom: '16px' }}>
+                                    <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                                      🎯 Strategic Timing
+                                    </Text>
+                                    <Text style={{ fontSize: '13px' }}>
+                                      {analysis.searchBehavior}
+                                    </Text>
+                                  </div>
+                                )}
+
+                                {/* Business Alignment */}
+                                {topic.scenario.conversionPath && (
+                                  <div style={{ marginBottom: '16px' }}>
+                                    <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                                      💼 Business Alignment
+                                    </Text>
+                                    <Text style={{ fontSize: '13px' }}>
+                                      {topic.scenario.conversionPath}
+                                    </Text>
+                                  </div>
+                                )}
+
+                                {/* Strategic CTAs */}
                                 <div style={{ marginBottom: '16px' }}>
                                   <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                    🎯 Strategic Timing
+                                    🚀 Strategic CTAs
                                   </Text>
                                   <Text style={{ fontSize: '13px' }}>
-                                    {analysis.searchBehavior}
+                                    {analysis.websiteGoals 
+                                      ? `Include CTAs driving toward: ${analysis.websiteGoals.toLowerCase()}`
+                                      : `Include CTAs that guide readers toward your primary conversion goals`
+                                    }
                                   </Text>
                                 </div>
-                              )}
 
-                              {/* Business Alignment */}
-                              {topic.scenario.conversionPath && (
-                                <div style={{ marginBottom: '16px' }}>
-                                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                    💼 Business Alignment
-                                  </Text>
-                                  <Text style={{ fontSize: '13px' }}>
-                                    {topic.scenario.conversionPath}
-                                  </Text>
-                                </div>
-                              )}
-
-                              {/* Strategic CTAs */}
-                              <div style={{ marginBottom: '16px' }}>
-                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                  🚀 Strategic CTAs
-                                </Text>
-                                <Text style={{ fontSize: '13px' }}>
-                                  {analysis.websiteGoals 
-                                    ? `Include CTAs driving toward: ${analysis.websiteGoals.toLowerCase()}`
-                                    : `Include CTAs that guide readers toward your primary conversion goals`
-                                  }
-                                </Text>
+                                {/* Conversion Path */}
+                                {analysis.blogStrategy && (
+                                  <div>
+                                    <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
+                                      📈 Conversion Path
+                                    </Text>
+                                    <Text style={{ fontSize: '13px' }}>
+                                      {analysis.blogStrategy}
+                                    </Text>
+                                  </div>
+                                )}
                               </div>
-
-                              {/* Conversion Path */}
-                              {analysis.blogStrategy && (
-                                <div>
-                                  <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                    📈 Conversion Path
-                                  </Text>
-                                  <Text style={{ fontSize: '13px' }}>
-                                    {analysis.blogStrategy}
-                                  </Text>
-                                </div>
-                              )}
-                            </div>
-                          </Collapse.Panel>
-                        </Collapse>
-                      </Space>
-                    </div>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
+                            </Collapse.Panel>
+                          </Collapse>
+                        </Space>
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+              
+              {/* See More Ideas CTA - Only show if there are more than 2 topics available */}
+              {enhancedTopics.length > 2 && (
+                <div style={{ 
+                  marginTop: '32px', 
+                  textAlign: 'center',
+                  padding: '24px',
+                  background: `linear-gradient(135deg, ${analysis.brandColors.accent}08, ${analysis.brandColors.primary}08)`,
+                  borderRadius: '12px',
+                  border: `2px dashed ${analysis.brandColors.accent}40`
+                }}>
+                  <BulbOutlined style={{ 
+                    fontSize: '32px', 
+                    color: analysis.brandColors.accent, 
+                    marginBottom: '12px',
+                    display: 'block'
+                  }} />
+                  <Title level={4} style={{ 
+                    margin: '0 0 8px 0', 
+                    color: analysis.brandColors.primary 
+                  }}>
+                    Want More Content Ideas?
+                  </Title>
+                  <Text style={{ 
+                    fontSize: '16px', 
+                    color: '#666',
+                    display: 'block',
+                    marginBottom: '20px'
+                  }}>
+                    Get {enhancedTopics.length - 2} more strategic topic ideas with detailed customer psychology insights
+                  </Text>
+                  <Button 
+                    size="large"
+                    style={{
+                      backgroundColor: analysis.brandColors.accent,
+                      borderColor: analysis.brandColors.accent,
+                      color: 'white',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      height: '48px',
+                      padding: '0 32px',
+                      fontSize: '16px'
+                    }}
+                    onClick={() => setShowSignupGate(true)}
+                    icon={<LockOutlined />}
+                  >
+                    See More Ideas
+                  </Button>
+                </div>
+              )}
+            </div>
           );
         })()}
 
@@ -2825,7 +2878,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
 
       {/* Signup Gate Modal */}
       <Modal
-        title="Create Your Free Account"
+        title="Unlock All Content Ideas"
         open={showSignupGate}
         onCancel={() => setShowSignupGate(false)}
         footer={null}
@@ -2833,18 +2886,19 @@ app.post('/api/autoblog-webhook', async (req, res) => {
         centered
       >
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <EditOutlined style={{ fontSize: '48px', color: '#6B8CAE', marginBottom: '16px' }} />
-          <Title level={3}>Generate Your First Blog Post</Title>
+          <BulbOutlined style={{ fontSize: '48px', color: '#6B8CAE', marginBottom: '16px' }} />
+          <Title level={3}>Get Your Complete Content Strategy</Title>
           <Paragraph>
-            Get your <Text strong>one free blog post</Text> by creating an account! You'll be able to edit, customize, and download your AI-generated content.
+            Create a free account to unlock <Text strong>all content ideas</Text> with detailed customer psychology insights and strategic guidance.
           </Paragraph>
           <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', margin: '16px 0', border: '1px solid #d6e7ff' }}>
             <Text strong style={{ color: '#1890ff' }}>🎉 What you'll get with your free account:</Text>
             <ul style={{ textAlign: 'left', marginTop: '8px', marginBottom: '0' }}>
-              <li>One complete AI-generated blog post</li>
+              <li>All content topics with customer psychology analysis</li>
+              <li>Complete strategic breakdown for each topic</li>
+              <li>Generate unlimited blog posts</li>
               <li>Full editing and customization tools</li>
               <li>Multiple download formats (HTML, Markdown, etc.)</li>
-              <li>Brand-styled content with your colors</li>
             </ul>
           </div>
         </div>
@@ -2888,7 +2942,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               block
               style={{ marginBottom: '12px' }}
             >
-              Create Account & Continue
+              Unlock All Content Ideas
             </Button>
             <Button 
               type="text" 
