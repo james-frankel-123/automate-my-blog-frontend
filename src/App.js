@@ -41,6 +41,11 @@ const App = () => {
   const [showStrategyGate, setShowStrategyGate] = useState(false);
   const [showExportWarning, setShowExportWarning] = useState(false);
   
+  // Customer strategy selection
+  const [selectedCustomerStrategy, setSelectedCustomerStrategy] = useState(null);
+  const [showMoreStrategiesGate, setShowMoreStrategiesGate] = useState(false);
+  const [strategySelectionCompleted, setStrategySelectionCompleted] = useState(false);
+  
   // Demo mode for testing (bypass payment gates)
   const [demoMode, setDemoMode] = useState(
     process.env.REACT_APP_DEMO_MODE === 'true' || 
@@ -86,8 +91,8 @@ const App = () => {
 
   const steps = [
     { title: 'Analyzing Website', icon: <ScanOutlined />, description: 'Scanning your website to understand your business' },
-    { title: 'Building Strategy', icon: <SearchOutlined />, description: 'Creating content strategy based on your audience' },
-    { title: 'Generating Ideas', icon: <BulbOutlined />, description: 'Creating compelling blog post previews with AI', requiresLogin: true },
+    { title: 'Selecting Strategy', icon: <SearchOutlined />, description: 'Choose your target customer strategy' },
+    { title: 'Generating Ideas', icon: <BulbOutlined />, description: 'Creating targeted blog post previews', requiresLogin: true },
     { title: 'Creating Content', icon: <EditOutlined />, description: 'AI is writing your personalized blog post', requiresLogin: true },
     { title: 'Editing Content', icon: <EyeOutlined />, description: 'Review and customize your blog post', requiresLogin: true }
   ];
@@ -451,9 +456,9 @@ const App = () => {
       setBlogGenerating(true);
       setScanningMessage('Generating your blog post with AI...');
       
-      // Move to Step 4 and show skeleton loading
-      setCurrentStep(4);
-      scrollToNextSection(4);
+      // Move to Step 5 and show skeleton loading
+      setCurrentStep(5);
+      scrollToNextSection(5);
       
       // Find the selected topic from either real or mock topics
       const topics = stepResults.trendingTopics || [];
@@ -463,11 +468,13 @@ const App = () => {
         throw new Error('Selected topic not found');
       }
 
-      // Call real backend API to generate content
+      // Call real backend API to generate content with selected strategy context
       const blogPost = await autoBlogAPI.generateContent(
         selectedTopicData, 
         stepResults.websiteAnalysis,
-        'Make this engaging and actionable for the target audience.'
+        selectedCustomerStrategy ? 
+          `Focus on ${selectedCustomerStrategy.customerProblem}. Target customers who search for: ${selectedCustomerStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedCustomerStrategy.conversionPath}` :
+          'Make this engaging and actionable for the target audience.'
       );
       
       if (blogPost && blogPost.content) {
@@ -496,7 +503,7 @@ const App = () => {
       message.error(`Failed to generate content: ${error.message}`);
       
       // No fallback content - return to previous step on error
-      setCurrentStep(2);
+      setCurrentStep(3);
       setBlogGenerating(false);
       setIsLoading(false);
     } finally {
@@ -736,6 +743,11 @@ ${post.content}
     });
     setShowStrategyGate(false);
     setShowExportWarning(false);
+    
+    // Reset customer strategy selection
+    setSelectedCustomerStrategy(null);
+    setShowMoreStrategiesGate(false);
+    setStrategySelectionCompleted(false);
     setStepResults({
       websiteAnalysis: {
         businessType: 'Child Wellness & Parenting',
@@ -792,7 +804,7 @@ ${post.content}
     }
   };
 
-  const progressPercent = ((currentStep + 1) / 5) * 100;
+  const progressPercent = ((currentStep + 1) / 6) * 100;
 
   // Content Strategy Helper Functions
   const getStrategyDisplayText = (type, value) => {
@@ -1768,11 +1780,11 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                     <Button 
                       type="primary" 
                       size="large"
-                      onClick={discoverTrends}
+                      onClick={() => setCurrentStep(2)}
                       style={{ backgroundColor: stepResults.websiteAnalysis.brandColors.primary, borderColor: stepResults.websiteAnalysis.brandColors.primary }}
                       icon={<SearchOutlined />}
                     >
-                      Discover Trends
+                      Choose Strategy
                     </Button>
                   </div>
                 )}
@@ -1782,17 +1794,218 @@ app.post('/api/autoblog-webhook', async (req, res) => {
         </div>
       )}
 
+      {/* NEW STEP 2: Customer Strategy Selection */}
       {currentStep >= 2 && (
         <div data-step="2">
           <Card style={{ marginBottom: '20px' }}>
             <Title level={3} style={{ textAlign: 'center', marginBottom: '20px' }}>
-              🎯 Building Strategy
+              🎯 Choose Your Target Strategy
             </Title>
             
-            {!strategyCompleted && currentStep === 2 ? (
+            {!strategySelectionCompleted && currentStep === 2 && (
               <div>
                 <Paragraph style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>
-                  Based on your {stepResults.websiteAnalysis.businessType ? stepResults.websiteAnalysis.businessType.toLowerCase() : 'business'} analysis, here are high-impact blog post ideas:
+                  Based on your website analysis, here are the top customer strategies. 
+                  Select the audience you want to target with your content.
+                </Paragraph>
+                
+                {(() => {
+                  const analysis = stepResults.websiteAnalysis;
+                  const scenarios = analysis.scenarios || [];
+                  
+                  if (scenarios.length === 0) {
+                    return (
+                      <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+                        <DatabaseOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
+                        <Title level={4} style={{ color: '#999' }}>No Customer Strategies Found</Title>
+                        <Text>Please re-run website analysis to generate customer strategies.</Text>
+                      </div>
+                    );
+                  }
+                  
+                  // Show first 2 strategies for free users, all for premium
+                  const displayScenarios = scenarios.slice(0, 2);
+                  
+                  return (
+                    <div>
+                      <Row gutter={[16, 16]}>
+                        {displayScenarios.map((scenario, index) => (
+                          <Col key={index} xs={24} md={12}>
+                            <Card
+                              hoverable
+                              style={{
+                                border: selectedCustomerStrategy?.index === index ? `2px solid ${analysis.brandColors.primary}` : '1px solid #f0f0f0',
+                                borderRadius: '12px',
+                                minHeight: '300px',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => {
+                                setSelectedCustomerStrategy({
+                                  ...scenario,
+                                  index: index
+                                });
+                              }}
+                            >
+                              <div style={{ marginBottom: '16px' }}>
+                                <Tag color={analysis.brandColors.primary} style={{ marginBottom: '8px' }}>
+                                  Strategy {index + 1}
+                                </Tag>
+                                {selectedCustomerStrategy?.index === index && (
+                                  <CheckOutlined style={{ 
+                                    float: 'right', 
+                                    color: analysis.brandColors.primary, 
+                                    fontSize: '16px' 
+                                  }} />
+                                )}
+                              </div>
+                              
+                              <Title level={4} style={{ 
+                                marginBottom: '12px', 
+                                color: analysis.brandColors.primary,
+                                fontSize: '16px'
+                              }}>
+                                👥 Target: {analysis.decisionMakers || 'Target Audience'}
+                              </Title>
+                              
+                              <div style={{ marginBottom: '12px' }}>
+                                <Text strong style={{ color: '#333', fontSize: '14px' }}>
+                                  🔍 Customer Problem:
+                                </Text>
+                                <br />
+                                <Text style={{ fontSize: '13px', lineHeight: '1.4' }}>
+                                  {scenario.customerProblem}
+                                </Text>
+                              </div>
+                              
+                              {scenario.customerLanguage && scenario.customerLanguage.length > 0 && (
+                                <div style={{ marginBottom: '12px' }}>
+                                  <Text strong style={{ color: '#333', fontSize: '14px' }}>
+                                    💬 How They Search:
+                                  </Text>
+                                  <div style={{ marginTop: '6px' }}>
+                                    {scenario.customerLanguage.slice(0, 2).map((term, termIndex) => (
+                                      <Tag 
+                                        key={termIndex} 
+                                        style={{ 
+                                          fontSize: '11px', 
+                                          borderRadius: '4px',
+                                          marginBottom: '4px'
+                                        }}
+                                        color="blue"
+                                      >
+                                        "{term}"
+                                      </Tag>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {scenario.conversionPath && (
+                                <div>
+                                  <Text strong style={{ color: '#333', fontSize: '14px' }}>
+                                    📈 Business Opportunity:
+                                  </Text>
+                                  <br />
+                                  <Text style={{ fontSize: '13px', lineHeight: '1.4', color: '#666' }}>
+                                    {scenario.conversionPath}
+                                  </Text>
+                                </div>
+                              )}
+                            </Card>
+                          </Col>
+                        ))}
+                      </Row>
+                      
+                      {/* See More Strategies Gate */}
+                      {scenarios.length > 2 && (
+                        <div style={{ 
+                          textAlign: 'center', 
+                          marginTop: '24px',
+                          padding: '20px',
+                          backgroundColor: '#f9f9f9',
+                          borderRadius: '8px',
+                          border: '2px dashed #d9d9d9'
+                        }}>
+                          <Text style={{ fontSize: '14px', color: '#666', marginBottom: '12px', display: 'block' }}>
+                            💡 Want to see {scenarios.length - 2} more targeted strategies?
+                          </Text>
+                          <Button
+                            type="primary"
+                            onClick={() => {
+                              if (demoMode) {
+                                message.info('Demo mode: Showing all strategies');
+                                // In demo mode, show all strategies
+                              } else {
+                                setShowMoreStrategiesGate(true);
+                              }
+                            }}
+                            style={{
+                              backgroundColor: analysis.brandColors.accent,
+                              borderColor: analysis.brandColors.accent
+                            }}
+                            icon={<LockOutlined />}
+                          >
+                            See More Strategies
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Continue Button */}
+                      {selectedCustomerStrategy && (
+                        <div style={{ textAlign: 'center', marginTop: '30px' }}>
+                          <Button
+                            type="primary"
+                            size="large"
+                            onClick={() => {
+                              setStrategySelectionCompleted(true);
+                              setCurrentStep(3);
+                              scrollToNextSection(3);
+                            }}
+                            style={{
+                              backgroundColor: analysis.brandColors.primary,
+                              borderColor: analysis.brandColors.primary
+                            }}
+                            icon={<BulbOutlined />}
+                          >
+                            Generate Content Ideas
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+            
+            {strategySelectionCompleted && (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <CheckOutlined style={{ fontSize: '48px', color: '#52c41a', marginBottom: '16px' }} />
+                <Title level={4} style={{ color: '#52c41a', marginBottom: '8px' }}>
+                  Strategy Selected!
+                </Title>
+                <Text style={{ fontSize: '14px', color: '#666' }}>
+                  Targeting: {selectedCustomerStrategy?.customerProblem || 'Selected customer strategy'}
+                </Text>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {currentStep >= 3 && (
+        <div data-step="3">
+          <Card style={{ marginBottom: '20px' }}>
+            <Title level={3} style={{ textAlign: 'center', marginBottom: '20px' }}>
+              📊 Content Strategy
+            </Title>
+            
+            {!strategyCompleted && currentStep === 3 ? (
+              <div>
+                <Paragraph style={{ textAlign: 'center', marginBottom: '30px', color: '#666' }}>
+                  {selectedCustomerStrategy ? 
+                    `Creating targeted blog post ideas for customers struggling with: "${selectedCustomerStrategy.customerProblem}"` :
+                    `Based on your ${stepResults.websiteAnalysis.businessType ? stepResults.websiteAnalysis.businessType.toLowerCase() : 'business'} analysis, here are high-impact blog post ideas:`
+                  }
                 </Paragraph>
                 
                 {/* Rich topic card skeleton loading */}
@@ -2341,8 +2554,8 @@ app.post('/api/autoblog-webhook', async (req, res) => {
 
       {/* Removed duplicate "💡 Generating Ideas" section - content is now in "📊 Content Strategy" */}
 
-      {currentStep === 4 && (
-        <div data-step="4">
+      {currentStep === 5 && (
+        <div data-step="5">
           <Card style={{ marginBottom: '20px' }}>
             <Title level={3} style={{ textAlign: 'center', marginBottom: '20px' }}>
               ✍️ Generating Your Blog Post
@@ -2394,7 +2607,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
         </div>
       )}
 
-      {(currentStep === 4 && !blogGenerating) && (
+      {(currentStep === 5 && !blogGenerating) && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
             <Title level={2} style={{ margin: 0, color: stepResults.websiteAnalysis.brandColors.primary }}>
@@ -2708,7 +2921,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
         </div>
       )}
 
-      {currentStep === 8 && (
+      {currentStep === 6 && (
         <div>
           <Title level={2} style={{ textAlign: 'center', marginBottom: '16px', color: stepResults.websiteAnalysis.brandColors.primary }}>
             Download Your Blog Post
@@ -2842,7 +3055,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               <Button onClick={resetDemo} icon={<ReloadOutlined />}>
                 Generate Another Post
               </Button>
-              <Button onClick={() => setCurrentStep(7)} icon={<EditOutlined />}>
+              <Button onClick={() => setCurrentStep(5)} icon={<EditOutlined />}>
                 Back to Edit Content
               </Button>
             </Space>
@@ -3186,13 +3399,119 @@ app.post('/api/autoblog-webhook', async (req, res) => {
               }}
               onClick={() => {
                 setShowExportWarning(false);
-                setCurrentStep(8);
+                setCurrentStep(6);
               }}
             >
               Continue to Export
             </Button>
           </Col>
         </Row>
+      </Modal>
+
+      {/* See More Strategies Gate Modal */}
+      <Modal
+        title="🎯 Unlock All Customer Strategies"
+        open={showMoreStrategiesGate}
+        onCancel={() => setShowMoreStrategiesGate(false)}
+        footer={null}
+        width={600}
+        centered
+      >
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ 
+            backgroundColor: '#fff7e6', 
+            padding: '20px', 
+            borderRadius: '12px', 
+            margin: '16px 0', 
+            border: '1px solid #ffd591' 
+          }}>
+            <Text strong style={{ color: '#fa8c16', fontSize: '16px' }}>
+              💡 Unlock {(stepResults.websiteAnalysis.scenarios?.length || 5) - 2} More Targeted Strategies
+            </Text>
+            <div style={{ marginTop: '12px', textAlign: 'left' }}>
+              <Text style={{ fontSize: '14px' }}>
+                Access all customer psychology insights and target multiple audience segments
+                with strategic content that converts.
+              </Text>
+            </div>
+          </div>
+          
+          <Title level={3} style={{ marginBottom: '8px' }}>
+            Strategic Customer Targeting
+          </Title>
+          <Paragraph>
+            Get access to all customer strategies, each with detailed psychology insights,
+            search behavior analysis, and conversion optimization.
+          </Paragraph>
+          
+          <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', margin: '16px 0', border: '1px solid #d6e7ff' }}>
+            <Text strong style={{ color: '#1890ff' }}>✨ With All Customer Strategies:</Text>
+            <ul style={{ textAlign: 'left', marginTop: '8px', marginBottom: '0' }}>
+              <li><strong>Multiple Target Audiences:</strong> Access all customer segments from your analysis</li>
+              <li><strong>Detailed Psychology Insights:</strong> Problems, search patterns, emotional triggers</li>
+              <li><strong>A/B Testing Opportunities:</strong> Compare different audience strategies</li>
+              <li><strong>Conversion Optimization:</strong> Strategic content aligned with business goals</li>
+              <li><strong>Competitive Advantage:</strong> Target untapped customer segments</li>
+            </ul>
+          </div>
+        </div>
+        
+        <Row gutter={16}>
+          <Col span={12}>
+            <Button 
+              type="primary" 
+              size="large" 
+              block
+              style={{ 
+                backgroundColor: '#52c41a',
+                borderColor: '#52c41a',
+                marginBottom: '12px'
+              }}
+              onClick={() => {
+                setShowMoreStrategiesGate(false);
+                message.success('All strategies unlocked! (Demo simulation)');
+                // In real implementation, this would trigger payment flow
+              }}
+            >
+              Start 7-Day Free Trial
+            </Button>
+            <Text style={{ fontSize: '12px', color: '#666', display: 'block', textAlign: 'center' }}>
+              Then $15/month • Cancel anytime
+            </Text>
+          </Col>
+          <Col span={12}>
+            <Button 
+              size="large" 
+              block
+              style={{ marginBottom: '12px' }}
+              onClick={() => {
+                setShowMoreStrategiesGate(false);
+                message.success('All strategies unlocked! (Demo simulation)');
+                // In real implementation, this would trigger payment flow
+              }}
+            >
+              Subscribe Now - $15/month
+            </Button>
+            <Text style={{ fontSize: '12px', color: '#666', display: 'block', textAlign: 'center' }}>
+              Full access immediately
+            </Text>
+          </Col>
+        </Row>
+        
+        {demoMode && (
+          <div style={{ textAlign: 'center', marginTop: '16px' }}>
+            <Button 
+              type="text" 
+              onClick={() => {
+                setShowMoreStrategiesGate(false);
+                message.info('Demo mode: All strategies unlocked');
+              }}
+              style={{ color: '#ff4500', fontWeight: 'bold' }}
+            >
+              🔧 Demo Mode - Skip Payment
+            </Button>
+          </div>
+        )}
       </Modal>
 
       {/* Content Strategy Customization Gate Modal */}
