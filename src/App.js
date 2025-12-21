@@ -1515,6 +1515,61 @@ ${post.content}
               </Text>
             </div>
           </Col>
+
+          <Col xs={24} md={12}>
+            <div style={{ 
+              padding: '16px', 
+              backgroundColor: analysis.brandColors.secondary + '20', 
+              borderRadius: '8px',
+              border: `1px solid ${analysis.brandColors.secondary}40`,
+              height: '100%'
+            }}>
+              <Text strong style={{ color: analysis.brandColors.primary, fontSize: '16px', marginBottom: '12px', display: 'block' }}>
+                Brand Colors
+              </Text>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: analysis.brandColors.primary,
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    flexShrink: 0
+                  }} />
+                  <Text style={{ fontSize: '13px', color: '#666' }}>
+                    <Text strong>Primary:</Text> {analysis.brandColors.primary}
+                  </Text>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: analysis.brandColors.secondary,
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    flexShrink: 0
+                  }} />
+                  <Text style={{ fontSize: '13px', color: '#666' }}>
+                    <Text strong>Secondary:</Text> {analysis.brandColors.secondary}
+                  </Text>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '20px',
+                    height: '20px',
+                    backgroundColor: analysis.brandColors.accent,
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    flexShrink: 0
+                  }} />
+                  <Text style={{ fontSize: '13px', color: '#666' }}>
+                    <Text strong>Accent:</Text> {analysis.brandColors.accent}
+                  </Text>
+                </div>
+              </div>
+            </div>
+          </Col>
         </Row>
 
         {/* Business Strategy - Only show if AI generated these fields */}
