@@ -1438,33 +1438,7 @@ ${post.content}
           </div>
         )}
 
-        {/* Web Search Research Insights */}
-        {webSearchInsights.researchQuality === 'enhanced' && (
-          <div style={{
-            padding: '16px',
-            backgroundColor: '#f6ffed',
-            border: '1px solid #b7eb8f',
-            borderRadius: '8px',
-            marginBottom: '20px'
-          }}>
-            <Text strong style={{ color: '#389e0d', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-              🔍 Enhanced Analysis with Web Research
-            </Text>
-            <div style={{ fontSize: '13px', color: '#666' }}>
-              {webSearchInsights.brandResearch && (
-                <div style={{ marginBottom: '4px' }}>
-                  ✓ {webSearchInsights.brandResearch}
-                </div>
-              )}
-              {webSearchInsights.keywordResearch && (
-                <div style={{ marginBottom: '4px' }}>
-                  ✓ {webSearchInsights.keywordResearch}
-                </div>
-              )}
-              <div>✓ Competitive intelligence and customer insights integrated</div>
-            </div>
-          </div>
-        )}
+        {/* Web Search Research Insights section removed */}
 
         {webSearchInsights.researchQuality === 'basic' && (
           <div style={{
