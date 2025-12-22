@@ -38,6 +38,7 @@ const App = () => {
     template: 'problem-solution', // 'how-to', 'problem-solution', 'listicle', 'case-study', 'comprehensive'
     length: 'standard' // 'quick', 'standard', 'deep'
   });
+  const [customFeedback, setCustomFeedback] = useState('');
   const [showStrategyGate, setShowStrategyGate] = useState(false);
   const [showExportWarning, setShowExportWarning] = useState(false);
   
@@ -941,9 +942,58 @@ ${post.content}
       ...prev,
       [type]: value
     }));
+  };
 
-    message.info('Regenerating content with new strategy...');
-    // TODO: Trigger content regeneration with new strategy
+  const regenerateWithFeedback = async () => {
+    if (postState === 'exported') {
+      message.warning('This post has been exported and is locked. Generate a new post to make changes.');
+      return;
+    }
+
+    if (!demoMode && !userAccount) {
+      setShowStrategyGate(true);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setBlogGenerating(true);
+      
+      const selectedTopicData = stepResults.trendingTopics?.find(t => t.id === selectedTopic);
+      if (!selectedTopicData) {
+        message.error('No topic selected for regeneration');
+        return;
+      }
+
+      // Combine custom feedback with strategy changes
+      const additionalInstructions = customFeedback ? 
+        `User feedback: ${customFeedback}\n\nContent Strategy: Goal: ${contentStrategy.goal}, Voice: ${contentStrategy.voice}, Template: ${contentStrategy.template}, Length: ${contentStrategy.length}` :
+        `Content Strategy: Goal: ${contentStrategy.goal}, Voice: ${contentStrategy.voice}, Template: ${contentStrategy.template}, Length: ${contentStrategy.length}`;
+
+      const response = await autoBlogAPI.generateContent(
+        selectedTopicData,
+        stepResults.websiteAnalysis,
+        additionalInstructions
+      );
+
+      if (response.success) {
+        setGeneratedContent(response.blogPost.content);
+        setStepResults(prev => ({
+          ...prev,
+          generatedBlogPost: response.blogPost,
+          finalContent: response.blogPost.content
+        }));
+        message.success('Blog post regenerated successfully!');
+      } else {
+        throw new Error(response.message || 'Failed to regenerate content');
+      }
+    } catch (error) {
+      console.error('Regeneration error:', error);
+      message.error(`Failed to regenerate content: ${error.message}`);
+    } finally {
+      setIsLoading(false);
+      setBlogGenerating(false);
+    }
   };
 
   const canEditPost = () => {
@@ -2688,7 +2738,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                         marginBottom: '12px'
                                       }}
                                     >
-                                      Generate Post
+                                      Get One Free Post
                                     </Button>
                                     
                                     <Button
@@ -2704,182 +2754,110 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                                       Edit Strategy
                                     </Button>
                                     
-                                    {/* Expandable Strategy Section */}
-                                    <Collapse 
-                                      ghost
-                                      style={{ 
-                                        backgroundColor: 'transparent',
-                                        border: 'none'
-                                      }}
-                                    >
-                                      <Collapse.Panel 
-                                        header={
-                                          <Text style={{ 
-                                            color: analysis.brandColors.accent, 
-                                            fontWeight: 500,
-                                            fontSize: '14px'
-                                          }}>
-                                            📊 Explain the Strategy
+                                    {/* Horizontal Divider */}
+                                    <Divider style={{ margin: '20px 0 16px 0' }} />
+                                    
+                                    {/* Blog Post Blueprint */}
+                                    <div style={{ 
+                                      padding: '16px',
+                                      backgroundColor: analysis.brandColors.secondary + '20',
+                                      borderRadius: '8px',
+                                      border: `1px solid ${analysis.brandColors.secondary}60`
+                                    }}>
+                                      <div style={{ marginBottom: '12px', textAlign: 'center' }}>
+                                        <Text strong style={{ 
+                                          color: analysis.brandColors.primary, 
+                                          fontSize: '16px',
+                                          display: 'block',
+                                          marginBottom: '4px'
+                                        }}>
+                                          📋 What You'll Get
+                                        </Text>
+                                        <Text style={{ fontSize: '12px', color: '#666' }}>
+                                          Your blog post will include all these strategic elements
+                                        </Text>
+                                      </div>
+
+                                      {/* Content Framework */}
+                                      <div style={{ marginBottom: '12px' }}>
+                                        <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                                          📝 Content Structure
+                                        </Text>
+                                        <Text style={{ fontSize: '12px', color: '#666' }}>
+                                          {contentStrategy.template === 'problem-solution' ? 'Problem identification → Solution framework → Implementation guidance' : 
+                                           contentStrategy.template === 'how-to' ? 'Step-by-step guide with actionable instructions' :
+                                           contentStrategy.template === 'listicle' ? 'Organized list format with detailed explanations' :
+                                           contentStrategy.template === 'case-study' ? 'Real-world example with analysis and takeaways' :
+                                           'Comprehensive deep-dive with multiple perspectives'}
+                                        </Text>
+                                      </div>
+
+                                      {/* Target Keywords */}
+                                      {topic.scenario && topic.scenario.seoKeywords && topic.scenario.seoKeywords.length > 0 && (
+                                        <div style={{ marginBottom: '12px' }}>
+                                          <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                                            🔑 SEO Keywords Integrated
                                           </Text>
-                                        }
-                                        key="strategy"
-                                        style={{ 
-                                          backgroundColor: analysis.brandColors.accent + '05',
-                                          borderRadius: '6px',
-                                          border: `1px solid ${analysis.brandColors.accent}20`
-                                        }}
-                                      >
-                                        {/* Strategy Content */}
-                                        {topic.webSearchLoading ? (
-                                          <div style={{ padding: '16px 0' }}>
-                                            <div style={{ 
-                                              textAlign: 'center', 
-                                              padding: '20px',
-                                              color: '#666'
-                                            }}>
-                                              <div style={{ 
-                                                fontSize: '24px', 
-                                                marginBottom: '8px',
-                                                animation: 'pulse 1.5s ease-in-out infinite'
-                                              }}>
-                                                🔍
-                                              </div>
-                                              <Text style={{ fontSize: '14px', color: '#1890ff', fontWeight: 500 }}>
-                                                Enhancing with Web Search Data
+                                          <Space wrap size="small">
+                                            {topic.scenario.seoKeywords.slice(0, 3).map((keyword, keywordIndex) => (
+                                              <Tag 
+                                                key={keywordIndex}
+                                                color={analysis.brandColors.primary}
+                                                style={{ fontSize: '11px', borderRadius: '4px' }}
+                                              >
+                                                {keyword}
+                                              </Tag>
+                                            ))}
+                                            {topic.scenario.seoKeywords.length > 3 && (
+                                              <Text style={{ fontSize: '11px', color: '#999' }}>
+                                                +{topic.scenario.seoKeywords.length - 3} more
                                               </Text>
-                                              <br />
-                                              <Text style={{ fontSize: '12px', color: '#999' }}>
-                                                Analyzing search volumes, competition & customer insights...
-                                              </Text>
-                                            </div>
-                                          </div>
-                                        ) : topic.scenario ? (
-                                          <div style={{ padding: '16px 0' }}>
-                                            
-                                            {/* Target Persona */}
-                                            <div style={{ marginBottom: '16px' }}>
-                                              <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                👥 Target Persona
-                                              </Text>
-                                              <Text style={{ fontSize: '13px' }}>
-                                                <strong>Decision Makers:</strong> {analysis.decisionMakers || analysis.targetAudience || 'Not specified'}
-                                                {analysis.endUsers && analysis.endUsers !== (analysis.decisionMakers || analysis.targetAudience) && (
-                                                  <>
-                                                    <br />
-                                                    <strong>End Users:</strong> {analysis.endUsers}
-                                                  </>
-                                                )}
-                                              </Text>
-                                            </div>
-
-                                            {/* Customer Problem */}
-                                            <div style={{ marginBottom: '16px' }}>
-                                              <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                🔍 Customer Problem
-                                              </Text>
-                                              <Text style={{ fontSize: '13px' }}>
-                                                {topic.scenario.customerProblem}
-                                              </Text>
-                                            </div>
-
-                                            {/* How They Search */}
-                                            {topic.scenario.customerLanguage && topic.scenario.customerLanguage.length > 0 && (
-                                              <div style={{ marginBottom: '16px' }}>
-                                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                  💬 How They Search
-                                                </Text>
-                                                <Space wrap>
-                                                  {topic.scenario.customerLanguage.map((term, termIndex) => (
-                                                    <Tag 
-                                                      key={termIndex}
-                                                      color={analysis.brandColors.accent}
-                                                      style={{ fontSize: '12px', borderRadius: '4px' }}
-                                                    >
-                                                      "{term}"
-                                                    </Tag>
-                                                  ))}
-                                                </Space>
-                                              </div>
                                             )}
+                                          </Space>
+                                        </div>
+                                      )}
 
-                                            {/* SEO Keywords */}
-                                            {topic.scenario.seoKeywords && topic.scenario.seoKeywords.length > 0 && (
-                                              <div style={{ marginBottom: '16px' }}>
-                                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                  🔑 SEO Keywords
-                                                </Text>
-                                                <Space wrap>
-                                                  {topic.scenario.seoKeywords.map((keyword, keywordIndex) => (
-                                                    <Tag 
-                                                      key={keywordIndex}
-                                                      color={analysis.brandColors.primary}
-                                                      style={{ fontSize: '12px', borderRadius: '4px' }}
-                                                    >
-                                                      {keyword}
-                                                    </Tag>
-                                                  ))}
-                                                </Space>
-                                              </div>
-                                            )}
+                                      {/* Competitive Positioning */}
+                                      <div style={{ marginBottom: '12px' }}>
+                                        <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                                          🎯 Competitive Edge
+                                        </Text>
+                                        <Text style={{ fontSize: '12px', color: '#666' }}>
+                                          {selectedCustomerStrategy === 'acquisition' ? 'Positions you as the preferred choice for new customers seeking solutions' :
+                                           selectedCustomerStrategy === 'retention' ? 'Builds deeper relationships with existing customers' :
+                                           'Establishes thought leadership with unique insights and fresh perspectives'}
+                                        </Text>
+                                      </div>
 
-                                            {/* Strategic Timing */}
-                                            {analysis.searchBehavior && (
-                                              <div style={{ marginBottom: '16px' }}>
-                                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                  🎯 Strategic Timing
-                                                </Text>
-                                                <Text style={{ fontSize: '13px' }}>
-                                                  {analysis.searchBehavior}
-                                                </Text>
-                                              </div>
-                                            )}
+                                      {/* Strategic CTAs */}
+                                      <div style={{ marginBottom: '12px' }}>
+                                        <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                                          🚀 Conversion Elements
+                                        </Text>
+                                        <Text style={{ fontSize: '12px', color: '#666' }}>
+                                          {analysis.websiteGoals 
+                                            ? `Strategic CTAs driving toward: ${analysis.websiteGoals.toLowerCase()}`
+                                            : `CTAs aligned with your primary business objectives and customer journey`
+                                          }
+                                        </Text>
+                                      </div>
 
-                                            {/* Business Alignment */}
-                                            {topic.scenario.conversionPath && (
-                                              <div style={{ marginBottom: '16px' }}>
-                                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                  💼 Business Alignment
-                                                </Text>
-                                                <Text style={{ fontSize: '13px' }}>
-                                                  {topic.scenario.conversionPath}
-                                                </Text>
-                                              </div>
-                                            )}
-
-                                            {/* Strategic CTAs */}
-                                            <div style={{ marginBottom: '16px' }}>
-                                              <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                🚀 Strategic CTAs
-                                              </Text>
-                                              <Text style={{ fontSize: '13px' }}>
-                                                {analysis.websiteGoals 
-                                                  ? `Include CTAs driving toward: ${analysis.websiteGoals.toLowerCase()}`
-                                                  : `Include CTAs that guide readers toward your primary conversion goals`
-                                                }
-                                              </Text>
-                                            </div>
-
-                                            {/* Conversion Path */}
-                                            {analysis.blogStrategy && (
-                                              <div>
-                                                <Text strong style={{ color: analysis.brandColors.primary, fontSize: '14px', display: 'block', marginBottom: '6px' }}>
-                                                  📈 Conversion Path
-                                                </Text>
-                                                <Text style={{ fontSize: '13px' }}>
-                                                  {analysis.blogStrategy}
-                                                </Text>
-                                              </div>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <div style={{ padding: '16px 0', textAlign: 'center' }}>
-                                            <Text style={{ color: '#999', fontSize: '13px' }}>
-                                              No strategy data available - AI analysis needed
-                                            </Text>
-                                          </div>
-                                        )}
-                                      </Collapse.Panel>
-                                    </Collapse>
+                                      {/* Content Quality */}
+                                      <div style={{ marginBottom: '0' }}>
+                                        <Text strong style={{ color: analysis.brandColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                                          ✨ Content Quality
+                                        </Text>
+                                        <Text style={{ fontSize: '12px', color: '#666' }}>
+                                          {contentStrategy.length === 'deep' ? '1500+ words of comprehensive, in-depth analysis' :
+                                           contentStrategy.length === 'standard' ? '1000-1500 words with balanced depth and readability' :
+                                           '800-1000 words focused on quick, actionable insights'} • 
+                                          {contentStrategy.voice === 'expert' ? ' Expert authority tone' :
+                                           contentStrategy.voice === 'friendly' ? ' Approachable, conversational tone' :
+                                           contentStrategy.voice === 'insider' ? ' Industry insider perspective' :
+                                           ' Engaging storytelling approach'}
+                                        </Text>
+                                      </div>
+                                    </div>
                                   </div>
                                 </>
                               )}
@@ -3127,7 +3105,7 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                       fontSize: '16px',
                       color: previewMode ? '#666' : stepResults.websiteAnalysis.brandColors.primary 
                     }}>
-                      🎯 Content Strategy
+                      📋 Blog Post Guidelines
                     </Text>
                     {demoMode && (
                       <div style={{ 
@@ -3255,6 +3233,39 @@ app.post('/api/autoblog-webhook', async (req, res) => {
                           </Select>
                         </Col>
                       </Row>
+                      
+                      {/* Custom Feedback Section */}
+                      <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #e8e8e8' }}>
+                        <Text strong style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+                          Additional Instructions
+                        </Text>
+                        <TextArea
+                          value={customFeedback}
+                          onChange={(e) => setCustomFeedback(e.target.value)}
+                          placeholder="Provide specific feedback to improve the blog post (e.g., 'Add more statistics', 'Make it more conversational', 'Include specific examples about X')..."
+                          rows={4}
+                          style={{ marginBottom: '16px' }}
+                          disabled={postState === 'exported'}
+                        />
+                        
+                        {/* Regenerate Button */}
+                        <div style={{ textAlign: 'center' }}>
+                          <Button
+                            type="primary"
+                            size="large"
+                            loading={isLoading || blogGenerating}
+                            onClick={regenerateWithFeedback}
+                            disabled={postState === 'exported'}
+                            style={{
+                              backgroundColor: stepResults.websiteAnalysis.brandColors.primary,
+                              borderColor: stepResults.websiteAnalysis.brandColors.primary,
+                              minWidth: '150px'
+                            }}
+                          >
+                            {isLoading || blogGenerating ? 'Regenerating...' : 'Regenerate'}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3307,32 +3318,24 @@ app.post('/api/autoblog-webhook', async (req, res) => {
             )}
             
             <div style={{ textAlign: 'center', marginTop: '20px' }}>
-              <Space>
-                <Button onClick={resetDemo} icon={<ReloadOutlined />}>
-                  Start Over
-                </Button>
-                <Button onClick={() => editStepResults(1)} icon={<SettingOutlined />}>
-                  Edit Website Analysis
-                </Button>
-                <Button 
-                  type="primary" 
-                  size="large" 
-                  onClick={() => {
-                    if (postState === 'exported') {
-                      message.warning('This post has already been exported and is locked.');
-                      return;
-                    }
-                    setShowExportWarning(true);
-                  }}
-                  disabled={postState === 'exported'}
-                  style={{ 
-                    backgroundColor: stepResults.websiteAnalysis.brandColors.primary, 
-                    borderColor: stepResults.websiteAnalysis.brandColors.primary 
-                  }}
-                >
-                  {postState === 'exported' ? 'Post Exported & Locked' : 'Download Your Content'}
-                </Button>
-              </Space>
+              <Button 
+                type="primary" 
+                size="large" 
+                onClick={() => {
+                  if (postState === 'exported') {
+                    message.warning('This post has already been exported and is locked.');
+                    return;
+                  }
+                  setShowExportWarning(true);
+                }}
+                disabled={postState === 'exported'}
+                style={{ 
+                  backgroundColor: stepResults.websiteAnalysis.brandColors.primary, 
+                  borderColor: stepResults.websiteAnalysis.brandColors.primary 
+                }}
+              >
+                {postState === 'exported' ? 'Post Exported & Locked' : 'Download Your Content'}
+              </Button>
             </div>
           </Card>
         </div>
