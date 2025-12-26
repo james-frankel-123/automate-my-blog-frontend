@@ -2,7 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet';
 
 const SEOHead = ({ 
-  title = "AutoBlog - AI-Powered Blog Content Generation",
+  title = "Automate My Blog - AI-Powered Blog Content Generation",
   description = "Generate high-quality blog content tailored to your audience with AI. Analyze trending topics and create engaging posts in minutes.",
   keywords = "AI blog generation, automated content creation, blog writing AI, content marketing, SEO content, trending topics",
   canonicalUrl,
@@ -11,7 +11,7 @@ const SEOHead = ({
   structuredData,
   noindex = false
 }) => {
-  const fullTitle = title.includes('AutoBlog') ? title : `${title} | AutoBlog`;
+  const fullTitle = title.includes('Automate My Blog') ? title : `${title} | Automate My Blog`;
   const siteUrl = "https://automatemyblog.com";
   const fullCanonicalUrl = canonicalUrl ? `${siteUrl}${canonicalUrl}` : siteUrl;
   const fullOgImage = ogImage.startsWith('http') ? ogImage : `${siteUrl}${ogImage}`;
@@ -36,7 +36,7 @@ const SEOHead = ({
       <meta property="og:image:alt" content={title} />
       <meta property="og:url" content={fullCanonicalUrl} />
       <meta property="og:type" content={ogType} />
-      <meta property="og:site_name" content="AutoBlog" />
+      <meta property="og:site_name" content="Automate My Blog" />
       
       {/* Twitter Card Tags */}
       <meta name="twitter:card" content="summary_large_image" />
@@ -46,7 +46,7 @@ const SEOHead = ({
       <meta name="twitter:image:alt" content={title} />
       
       {/* Additional SEO Tags */}
-      <meta name="author" content="AutoBlog" />
+      <meta name="author" content="Automate My Blog" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <meta httpEquiv="Content-Language" content="en-US" />
       

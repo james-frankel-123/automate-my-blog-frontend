@@ -1,15 +1,17 @@
-// AutoBlog API Service
+// Automate My Blog API Service
 class AutoBlogAPI {
   constructor() {
-    // Use environment variable for backend URL
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    // Use environment variable for backend URL and ensure no trailing slash
+    this.baseURL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
   }
 
   /**
    * Make HTTP request to backend API
    */
   async makeRequest(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
+    // Normalize URL construction to prevent double slashes
+    const normalizedEndpoint = endpoint.replace(/^\/+/, '');
+    const url = `${this.baseURL}/${normalizedEndpoint}`;
     
     const defaultOptions = {
       headers: {

@@ -1,0 +1,434 @@
+/**
+ * Workflow Utility Functions
+ * Pure functions extracted from App.js with no side effects
+ */
+
+/**
+ * Strategy Display Text Utilities
+ * Convert strategy codes to human-readable text
+ */
+export const strategyUtils = {
+  /**
+   * Get human-readable text for strategy values
+   * EXTRACTED FROM: App.js getStrategyDisplayText() function
+   */
+  getDisplayText(type, value) {
+    const displayTexts = {
+      goal: {
+        awareness: 'Brand Awareness',
+        consideration: 'Lead Generation',
+        conversion: 'Sales Conversion',
+        retention: 'Customer Retention'
+      },
+      voice: {
+        expert: 'Expert Authority',
+        friendly: 'Friendly Guide',
+        insider: 'Industry Insider',
+        storyteller: 'Storyteller'
+      },
+      template: {
+        'how-to': 'Step-by-Step Guide',
+        'problem-solution': 'Problem & Solution',
+        'listicle': 'List Article',
+        'case-study': 'Case Study',
+        'comprehensive': 'Deep-Dive Guide'
+      },
+      length: {
+        quick: 'Quick Read (500 words)',
+        standard: 'Standard (1000 words)',
+        deep: 'Deep-Dive (2000+ words)'
+      }
+    };
+    
+    return displayTexts[type]?.[value] || value;
+  },
+
+  /**
+   * Get all strategy options for dropdowns
+   */
+  getAllOptions() {
+    return {
+      goal: [
+        { value: 'awareness', label: 'Brand Awareness' },
+        { value: 'consideration', label: 'Lead Generation' },
+        { value: 'conversion', label: 'Sales Conversion' },
+        { value: 'retention', label: 'Customer Retention' }
+      ],
+      voice: [
+        { value: 'expert', label: 'Expert Authority' },
+        { value: 'friendly', label: 'Friendly Guide' },
+        { value: 'insider', label: 'Industry Insider' },
+        { value: 'storyteller', label: 'Storyteller' }
+      ],
+      template: [
+        { value: 'how-to', label: 'Step-by-Step Guide' },
+        { value: 'problem-solution', label: 'Problem & Solution' },
+        { value: 'listicle', label: 'List Article' },
+        { value: 'case-study', label: 'Case Study' },
+        { value: 'comprehensive', label: 'Deep-Dive Guide' }
+      ],
+      length: [
+        { value: 'quick', label: 'Quick Read (500 words)' },
+        { value: 'standard', label: 'Standard (1000 words)' },
+        { value: 'deep', label: 'Deep-Dive (2000+ words)' }
+      ]
+    };
+  }
+};
+
+/**
+ * Post Metadata Utilities
+ * Functions for creating and managing post data
+ */
+export const postUtils = {
+  /**
+   * Create complete post object for export
+   * EXTRACTED FROM: App.js getCurrentPost() function
+   */
+  createPostObject(selectedTopic, generatedContent, stepResults, websiteUrl) {
+    if (!selectedTopic) {
+      return null; // No valid post data available
+    }
+    
+    const selectedTopicData = stepResults.trendingTopics?.find(t => t.id === selectedTopic);
+    
+    if (!selectedTopicData) {
+      return null;
+    }
+    
+    return {
+      title: selectedTopicData.title,
+      slug: selectedTopicData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').substring(0, 50),
+      subheader: selectedTopicData.subheader,
+      excerpt: selectedTopicData.subheader,
+      content: generatedContent,
+      tags: ['AI Generated', 'AutoBlog', selectedTopicData.category],
+      category: selectedTopicData.category,
+      wordCount: Math.round(generatedContent.length / 5),
+      readingTime: Math.ceil(generatedContent.length / 1000),
+      author: 'AutoBlog AI',
+      businessName: stepResults.websiteAnalysis.businessName,
+      brandColors: stepResults.websiteAnalysis.brandColors,
+      brandVoice: stepResults.websiteAnalysis.brandVoice,
+      website: websiteUrl || 'Unknown'
+    };
+  },
+
+  /**
+   * Calculate content statistics
+   */
+  getContentStats(content) {
+    if (!content) return { wordCount: 0, readingTime: 0 };
+    
+    return {
+      wordCount: Math.round(content.length / 5),
+      readingTime: Math.ceil(content.length / 1000),
+      characterCount: content.length,
+      paragraphCount: content.split('\n\n').length
+    };
+  },
+
+  /**
+   * Generate SEO-friendly slug from title
+   */
+  generateSlug(title, maxLength = 50) {
+    return title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .substring(0, maxLength);
+  }
+};
+
+/**
+ * File Download Utilities  
+ * Functions for creating and downloading files
+ */
+export const fileUtils = {
+  /**
+   * Generic file download function
+   * EXTRACTED FROM: App.js downloadFile() calls
+   */
+  downloadFile(content, filename, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  },
+
+  /**
+   * Create markdown content for export
+   * EXTRACTED FROM: App.js exportAsMarkdown() function
+   */
+  createMarkdownContent(post) {
+    return `# ${post.title}
+
+${post.subheader}
+
+${post.content}
+
+---
+*Generated by AutoBlog - AI-Powered Content Creation*
+
+**Tags**: ${post.tags.join(', ')}
+**Category**: ${post.category}
+**Reading Time**: ${post.readingTime} minutes
+**Word Count**: ${post.wordCount} words
+**Source Website**: ${post.website}
+`;
+  },
+
+  /**
+   * Create HTML content for export
+   * EXTRACTED FROM: App.js exportAsHTML() function
+   */
+  createHTMLContent(post) {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${post.title}</title>
+  <meta name="description" content="${post.excerpt}">
+  <meta name="keywords" content="${post.tags.join(', ')}">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .header { text-align: center; margin-bottom: 40px; }
+    .subheader { font-size: 1.2em; color: ${post.brandColors.primary}; margin-bottom: 30px; }
+    .content { margin-bottom: 40px; }
+    .footer { border-top: 1px solid #eee; padding-top: 20px; font-size: 0.9em; color: #666; }
+    .tags { margin-top: 10px; }
+    .tag { background: ${post.brandColors.secondary}; color: ${post.brandColors.primary}; padding: 4px 8px; border-radius: 4px; margin-right: 8px; font-size: 0.8em; }
+    h1 { color: ${post.brandColors.primary}; }
+    h2 { color: ${post.brandColors.primary}; margin-top: 30px; }
+    h3 { color: ${post.brandColors.accent || post.brandColors.primary}; }
+  </style>
+</head>
+<body>
+  <article>
+    <header class="header">
+      <h1>${post.title}</h1>
+      <p class="subheader">${post.subheader}</p>
+    </header>
+    
+    <div class="content">
+      ${post.content.replace(/\n/g, '<br>\n')}
+    </div>
+    
+    <footer class="footer">
+      <p><em>Generated by AutoBlog - AI-Powered Content Creation</em></p>
+      <p><strong>Source Website:</strong> ${post.website}</p>
+      <p><strong>Reading Time:</strong> ${post.readingTime} minutes | <strong>Word Count:</strong> ${post.wordCount} words</p>
+      <div class="tags">
+        ${post.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+      </div>
+    </footer>
+  </article>
+</body>
+</html>`;
+  },
+
+  /**
+   * Create JSON content for export
+   * EXTRACTED FROM: App.js exportAsJSON() function
+   */
+  createJSONContent(post) {
+    const jsonData = {
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content,
+      subheader: post.subheader,
+      tags: post.tags,
+      category: post.category,
+      wordCount: post.wordCount,
+      readingTime: post.readingTime,
+      author: post.author,
+      publishedDate: new Date().toISOString(),
+      brandColors: post.brandColors,
+      brandVoice: post.brandVoice,
+      businessName: post.businessName,
+      sourceWebsite: post.website,
+      generatedBy: 'AutoBlog AI Platform',
+      version: '1.0'
+    };
+
+    return JSON.stringify(jsonData, null, 2);
+  }
+};
+
+/**
+ * URL Validation Utilities
+ * Functions for validating and formatting URLs
+ */
+export const urlUtils = {
+  /**
+   * Validate website URL format
+   * EXTRACTED FROM: App.js analyzeWebsite() function validation logic
+   */
+  validateWebsiteUrl(url) {
+    if (!url || !url.trim()) {
+      return {
+        isValid: false,
+        error: 'Please enter a website URL'
+      };
+    }
+    
+    const normalizedUrl = url.trim().toLowerCase();
+    
+    // More flexible URL pattern that handles various cases
+    const urlPattern = /^(https?:\/\/)?([a-z0-9\-]+\.)*[a-z0-9\-]+\.[a-z]{2,}(\/.*)?$/i;
+    const hasValidDomain = /[a-z0-9\-]+\.[a-z]{2,}/i.test(normalizedUrl);
+    
+    if (!urlPattern.test(normalizedUrl) || !hasValidDomain) {
+      return {
+        isValid: false,
+        error: 'Please enter a valid website URL (e.g., example.com)'
+      };
+    }
+    
+    // Format URL with protocol
+    let formattedUrl = url.trim();
+    if (!formattedUrl.startsWith('http://') && !formattedUrl.startsWith('https://')) {
+      formattedUrl = 'https://' + formattedUrl;
+    }
+    
+    return {
+      isValid: true,
+      normalizedUrl,
+      formattedUrl,
+      domain: normalizedUrl.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0]
+    };
+  },
+
+  /**
+   * Extract business name from URL
+   */
+  extractBusinessName(url) {
+    try {
+      const domain = url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('.')[0];
+      return domain.charAt(0).toUpperCase() + domain.slice(1);
+    } catch {
+      return 'Your Business';
+    }
+  }
+};
+
+/**
+ * Progress Calculation Utilities
+ * Functions for calculating workflow progress
+ */
+export const progressUtils = {
+  /**
+   * Calculate workflow progress percentage
+   * EXTRACTED FROM: App.js progress calculation logic
+   */
+  calculateProgress(currentStep, totalSteps = 6) {
+    const stepProgress = {
+      0: 0,   // Website URL input
+      1: 16,  // Website analysis
+      2: 32,  // Customer strategy
+      3: 48,  // Topic generation
+      4: 64,  // Content generation
+      5: 80,  // Content editing
+      6: 100  // Export complete
+    };
+    
+    return stepProgress[currentStep] || 0;
+  },
+
+  /**
+   * Get step status for UI display
+   */
+  getStepStatus(stepIndex, currentStep) {
+    if (stepIndex < currentStep) return 'finish';
+    if (stepIndex === currentStep) return 'process';
+    return 'wait';
+  },
+
+  /**
+   * Check if step requires authentication
+   */
+  requiresAuth(stepIndex, steps) {
+    return steps[stepIndex]?.requiresLogin || false;
+  }
+};
+
+/**
+ * Content Processing Utilities
+ * Functions for processing and formatting content
+ */
+export const contentUtils = {
+  /**
+   * Extract title from generated content
+   */
+  extractTitle(content) {
+    if (!content) return 'Untitled Post';
+    
+    const lines = content.split('\n');
+    const titleLine = lines.find(line => line.startsWith('# '));
+    return titleLine ? titleLine.substring(2).trim() : 'Generated Blog Post';
+  },
+
+  /**
+   * Extract excerpt from content
+   */
+  extractExcerpt(content, maxLength = 160) {
+    if (!content) return '';
+    
+    // Find first paragraph that's not a title
+    const lines = content.split('\n').filter(line => line.trim());
+    const firstParagraph = lines.find(line => 
+      !line.startsWith('#') && 
+      !line.startsWith('*') && 
+      line.length > 50
+    );
+    
+    if (!firstParagraph) return '';
+    
+    return firstParagraph.length <= maxLength 
+      ? firstParagraph 
+      : firstParagraph.substring(0, maxLength - 3) + '...';
+  },
+
+  /**
+   * Format content for preview display
+   */
+  formatForPreview(content) {
+    if (!content) return '';
+    
+    return content
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/^/, '<p>')
+      .replace(/$/, '</p>');
+  }
+};
+
+/**
+ * Combined export object
+ */
+export default {
+  strategyUtils,
+  postUtils,
+  fileUtils,
+  urlUtils,
+  progressUtils,
+  contentUtils
+};
