@@ -17,6 +17,11 @@ const ProfileSettings = () => {
     organizationName: user?.organizationName || '',
   });
 
+  // Organization management logic
+  const hasOrganization = user?.organizationId;
+  const isOrganizationOwner = user?.organizationRole === 'owner';
+  const canEditOrganization = !hasOrganization || isOrganizationOwner;
+
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
     newPassword: '',
@@ -101,12 +106,35 @@ const ProfileSettings = () => {
           </Col>
           <Col xs={24} sm={12}>
             <Text strong>Organization Name</Text>
-            <Input
-              value={profileData.organizationName}
-              onChange={(e) => setProfileData({ ...profileData, organizationName: e.target.value })}
-              placeholder="Enter organization name"
-              style={{ marginTop: '8px' }}
-            />
+            {canEditOrganization ? (
+              <Input
+                value={profileData.organizationName}
+                onChange={(e) => setProfileData({ ...profileData, organizationName: e.target.value })}
+                placeholder={hasOrganization ? "Update organization name" : "Enter organization name to create"}
+                style={{ marginTop: '8px' }}
+              />
+            ) : (
+              <Input
+                value={profileData.organizationName}
+                disabled
+                style={{ marginTop: '8px' }}
+                suffix={
+                  <Text style={{ fontSize: '12px', color: '#666' }}>
+                    {user?.organizationRole ? `(${user.organizationRole})` : ''}
+                  </Text>
+                }
+              />
+            )}
+            {!canEditOrganization && (
+              <Text style={{ fontSize: '12px', color: '#666', display: 'block', marginTop: '4px' }}>
+                Only organization owners can modify the organization name. Contact your admin to make changes.
+              </Text>
+            )}
+            {!hasOrganization && (
+              <Text style={{ fontSize: '12px', color: '#52c41a', display: 'block', marginTop: '4px' }}>
+                Enter an organization name to create a new organization (you'll become the owner).
+              </Text>
+            )}
           </Col>
         </Row>
 
@@ -190,7 +218,7 @@ const ProfileSettings = () => {
       <Card>
         <Title level={4}>📊 Account Information</Title>
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={6}>
             <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
               <Statistic
                 title="Account Type"
@@ -199,7 +227,7 @@ const ProfileSettings = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={6}>
             <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f6ffed' }}>
               <Statistic
                 title="Member Since"
@@ -208,7 +236,7 @@ const ProfileSettings = () => {
               />
             </Card>
           </Col>
-          <Col xs={24} sm={8}>
+          <Col xs={24} sm={6}>
             <Card size="small" style={{ textAlign: 'center', backgroundColor: '#fff7e6' }}>
               <Statistic
                 title="Last Login"
@@ -217,7 +245,38 @@ const ProfileSettings = () => {
               />
             </Card>
           </Col>
+          <Col xs={24} sm={6}>
+            <Card size="small" style={{ 
+              textAlign: 'center', 
+              backgroundColor: hasOrganization ? '#f6ffed' : '#fff1f0',
+              border: hasOrganization ? '1px solid #b7eb8f' : '1px solid #ffccc7'
+            }}>
+              <Statistic
+                title="Organization Status"
+                value={hasOrganization ? user.organizationRole?.toUpperCase() || 'MEMBER' : 'NO ORG'}
+                valueStyle={{ 
+                  color: hasOrganization ? '#52c41a' : '#ff4d4f', 
+                  fontSize: '14px' 
+                }}
+              />
+              {hasOrganization && (
+                <Text style={{ fontSize: '11px', color: '#666' }}>
+                  in {user.organizationName}
+                </Text>
+              )}
+            </Card>
+          </Col>
         </Row>
+
+        {!hasOrganization && (
+          <Alert
+            message="No Organization Membership"
+            description="You are not currently part of any organization. Create one in the profile section above or wait for an admin to invite you."
+            type="info"
+            style={{ marginTop: '16px' }}
+            showIcon
+          />
+        )}
       </Card>
     </div>
   );
