@@ -120,7 +120,7 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
   const adminMenuItems = [];
   
   // Admin Users tab - for organization admins and super admins
-  if (hasPermission('manage_team') || hasPermission('manage_users')) {
+  if (isSuperAdmin || hasPermission('manage_team') || hasPermission('manage_users')) {
     adminMenuItems.push({
       key: 'admin-users',
       icon: <TeamOutlined style={{ color: 'red' }} />,
@@ -128,24 +128,20 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
     });
   }
   
-  // Platform-wide admin tabs - super admin only
-  if (isSuperAdmin && hasPermission('view_platform_analytics')) {
+  // Platform-wide admin tabs - super admin gets all tabs regardless of specific permissions
+  if (isSuperAdmin) {
     adminMenuItems.push({
       key: 'admin-analytics',
       icon: <LineChartOutlined style={{ color: 'red' }} />,
       label: 'Admin Analytics',
     });
-  }
-  
-  if (isSuperAdmin && hasPermission('manage_users')) {
+    
     adminMenuItems.push({
       key: 'admin-content',
       icon: <SafetyOutlined style={{ color: 'red' }} />,
       label: 'Admin Content',
     });
-  }
-  
-  if (isSuperAdmin && hasPermission('manage_system_settings')) {
+    
     adminMenuItems.push({
       key: 'admin-system',
       icon: <DatabaseOutlined style={{ color: 'red' }} />,
