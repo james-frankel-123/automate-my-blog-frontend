@@ -822,6 +822,31 @@ class AutoBlogAPI {
   }
 
   /**
+   * Billing and Credits Management
+   */
+  async getUserCredits() {
+    try {
+      const response = await this.makeRequest('/api/v1/user/credits', {
+        method: 'GET',
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to get user credits: ${error.message}`);
+    }
+  }
+
+  async applyPendingRewards() {
+    try {
+      const response = await this.makeRequest('/api/v1/user/apply-rewards', {
+        method: 'POST',
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to apply rewards: ${error.message}`);
+    }
+  }
+
+  /**
    * Subscription Management
    */
   async getUsageHistory(limit = 30) {

@@ -1135,16 +1135,33 @@ const SubscriptionSettings = () => {
   const { user } = useAuth();
   const [usageHistory, setUsageHistory] = useState([]);
   const [requestingPlan, setRequestingPlan] = useState(false);
+  const [userCredits, setUserCredits] = useState(null);
+  const [loadingCredits, setLoadingCredits] = useState(true);
   
-  // Calculate usage statistics from real user data
-  const usageLimit = user?.usageLimit || 1;
-  const currentUsage = user?.currentUsage || 0;
+  // Calculate usage statistics from billing service (includes referral rewards)
+  const usageLimit = userCredits?.totalCredits || 1; // Default to 1 free post if billing service not available
+  const currentUsage = userCredits?.usedCredits || user?.currentUsage || 0;
   const remainingPosts = Math.max(0, usageLimit - currentUsage);
-  const billingStatus = user?.billingStatus || 'Pay-as-you-go';
+  const billingStatus = userCredits?.basePlan === 'free' ? 'Free Plan' : (user?.billingStatus || 'Pay-as-you-go');
+  const bonusCredits = userCredits?.bonusCredits || 0;
 
   useEffect(() => {
     loadUsageHistory();
+    loadUserCredits();
   }, []);
+
+  const loadUserCredits = async () => {
+    try {
+      setLoadingCredits(true);
+      const credits = await autoBlogAPI.getUserCredits();
+      setUserCredits(credits);
+    } catch (error) {
+      console.error('Failed to load user credits:', error);
+      // Fall back to user data from auth context
+    } finally {
+      setLoadingCredits(false);
+    }
+  };
 
   const loadUsageHistory = async () => {
     try {
@@ -1216,7 +1233,12 @@ const SubscriptionSettings = () => {
         </Row>
         
         <Paragraph style={{ color: '#666', marginBottom: '16px' }}>
-          You're currently on the {billingStatus} plan. You have {usageLimit} posts in your plan.
+          You're currently on the {billingStatus} plan. You have {usageLimit} posts available.
+          {bonusCredits > 0 && (
+            <span style={{ color: '#52c41a' }}>
+              <br />🎉 Including {bonusCredits} bonus post{bonusCredits > 1 ? 's' : ''} from referral rewards!
+            </span>
+          )}
           <br />
           <Text style={{ color: '#52c41a', fontWeight: 500 }}>
             💡 Earn more free posts by referring friends! Check the Referrals tab.
@@ -1247,22 +1269,23 @@ const SubscriptionSettings = () => {
           <Col xs={24} sm={6}>
             <Card size="small" style={{ textAlign: 'center' }}>
               <Statistic
-                title="Total Plan Limit"
-                value={usageLimit}
+                title="Base Plan Posts"
+                value={userCredits?.baseCredits || 1}
                 valueStyle={{ color: '#722ed1', fontSize: '24px' }}
               />
-              <Text style={{ color: '#722ed1', fontSize: '10px' }}>✓ From database</Text>
+              <Text style={{ color: '#722ed1', fontSize: '10px' }}>✓ Free plan</Text>
             </Card>
           </Col>
           <Col xs={24} sm={6}>
-            <Card size="small" style={{ textAlign: 'center' }}>
+            <Card size="small" style={{ textAlign: 'center', border: bonusCredits > 0 ? '2px solid #52c41a' : '1px solid #d9d9d9' }}>
               <Statistic
-                title="Usage Value"
-                value={currentUsage * 15}
-                prefix="$"
-                valueStyle={{ color: '#f5222d', fontSize: '20px' }}
+                title="Bonus Posts"
+                value={bonusCredits}
+                valueStyle={{ color: bonusCredits > 0 ? '#52c41a' : '#ccc', fontSize: '24px' }}
               />
-              <Text style={{ color: '#666', fontSize: '10px' }}>Estimated worth</Text>
+              <Text style={{ color: bonusCredits > 0 ? '#52c41a' : '#ccc', fontSize: '10px' }}>
+                {bonusCredits > 0 ? '🎉 From referrals!' : 'Refer friends!'}
+              </Text>
             </Card>
           </Col>
         </Row>
