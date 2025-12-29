@@ -16,7 +16,6 @@ import {
   DatabaseOutlined,
   UserSwitchOutlined,
   CloseOutlined,
-  ContactsOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import NewPostTab from './NewPostTab';
@@ -131,10 +130,12 @@ const DashboardLayout = ({ user: propUser, loginContext, workflowContent, showDa
   }
   
   // Platform-wide admin tabs - super admin gets all tabs regardless of specific permissions
+  console.log('🔍 Super Admin Check:', { isSuperAdmin, user, userRole: user?.role });
   if (isSuperAdmin) {
+    console.log('✅ Adding Website Leads tab for super admin');
     adminMenuItems.push({
       key: 'admin-leads',
-      icon: <ContactsOutlined style={{ color: 'red' }} />,
+      icon: <UserOutlined style={{ color: 'red' }} />,
       label: 'Website Leads',
     });
     
