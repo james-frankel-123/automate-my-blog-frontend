@@ -38,6 +38,17 @@ export const AuthProvider = ({ children }) => {
       const token = localStorage.getItem('accessToken');
       if (token) {
         const response = await autoBlogAPI.me();
+        
+        // Debug logging to verify user data from API
+        console.log('🔍 AuthContext received user data from /me:', {
+          userId: response.user?.id,
+          email: response.user?.email,
+          role: response.user?.role,
+          permissions: response.user?.permissions,
+          hierarchyLevel: response.user?.hierarchyLevel,
+          fullUserObject: response.user
+        });
+        
         setUser(response.user);
         // Handle new database structure with organization data
         if (response.user.organizationId) {
