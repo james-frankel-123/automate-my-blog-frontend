@@ -15,6 +15,7 @@ const ProfileSettings = () => {
     lastName: user?.lastName || '',
     email: user?.email || '',
     organizationName: user?.organizationName || '',
+    organizationWebsite: user?.organizationWebsite || '',
   });
 
   // Organization management logic
@@ -134,6 +135,40 @@ const ProfileSettings = () => {
               <Text style={{ fontSize: '12px', color: '#52c41a', display: 'block', marginTop: '4px' }}>
                 Enter an organization name to create a new organization (you'll become the owner).
               </Text>
+            )}
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]} style={{ marginTop: '16px' }}>
+          <Col xs={24}>
+            <Text strong>Organization Website</Text>
+            {canEditOrganization ? (
+              <Input
+                value={profileData.organizationWebsite}
+                onChange={(e) => setProfileData({ ...profileData, organizationWebsite: e.target.value })}
+                placeholder={hasOrganization ? "Update organization website" : "Organization website (optional)"}
+                style={{ marginTop: '8px' }}
+                prefix={<span style={{ color: '#666' }}>🌐</span>}
+              />
+            ) : (
+              <Input
+                value={profileData.organizationWebsite}
+                disabled
+                style={{ marginTop: '8px' }}
+                prefix={<span style={{ color: '#666' }}>🌐</span>}
+              />
+            )}
+            {profileData.organizationWebsite && (
+              <div style={{ marginTop: '4px' }}>
+                <a 
+                  href={profileData.organizationWebsite.startsWith('http') ? profileData.organizationWebsite : `https://${profileData.organizationWebsite}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '12px', color: '#1677ff' }}
+                >
+                  Visit Website →
+                </a>
+              </div>
             )}
           </Col>
         </Row>
