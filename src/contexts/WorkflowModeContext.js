@@ -10,7 +10,7 @@ const WorkflowModeContext = createContext();
 
 // Workflow step configuration
 const WORKFLOW_STEPS = [
-  { key: 'company', tab: 'settings', title: 'Company Setup' },
+  { key: 'home', tab: 'dashboard', title: 'Create New Post' },
   { key: 'audience', tab: 'audience-segments', title: 'Audience Selection' },
   { key: 'content', tab: 'posts', title: 'Content Creation' },
   { key: 'analytics', tab: 'analytics', title: 'Performance Tracking' }
@@ -118,6 +118,39 @@ export const WorkflowModeProvider = ({ children }) => {
     enterWorkflowMode(stepIndex, workflowData);
   }, [enterWorkflowMode, workflowData]);
   
+  // Auto-scroll functionality with actual DOM scrolling
+  const autoScrollToTab = useCallback((tabKey, options = {}) => {
+    const {
+      smooth = true,
+      duration = 800,
+      offset = -80
+    } = options;
+    
+    // Navigate to the tab first
+    setActiveTab(tabKey);
+    
+    // Find the tab content element to scroll to
+    setTimeout(() => {
+      const tabElement = document.querySelector(`[data-tab="${tabKey}"]`) || 
+                        document.querySelector(`[data-testid="${tabKey}-tab"]`) ||
+                        document.querySelector('.ant-tabs-tabpane-active');
+      
+      if (tabElement) {
+        const elementTop = tabElement.getBoundingClientRect().top + window.pageYOffset;
+        const scrollToPosition = elementTop + offset;
+        
+        if (smooth) {
+          window.scrollTo({
+            top: scrollToPosition,
+            behavior: 'smooth'
+          });
+        } else {
+          window.scrollTo(0, scrollToPosition);
+        }
+      }
+    }, 100); // Small delay to allow tab change to render
+  }, []);
+  
   // Navigation functions
   const navigateToNextStep = useCallback(() => {
     if (!isWorkflowMode) return;
@@ -126,11 +159,18 @@ export const WorkflowModeProvider = ({ children }) => {
     if (nextStepIndex < WORKFLOW_STEPS.length) {
       setCurrentWorkflowStep(nextStepIndex);
       const nextStep = WORKFLOW_STEPS[nextStepIndex];
-      setActiveTab(nextStep.tab);
+      
+      // Auto-scroll to the next tab with smooth animation
+      autoScrollToTab(nextStep.tab, {
+        smooth: true,
+        duration: 800,
+        offset: -100 // Account for progressive headers
+      });
+      
       return nextStep;
     }
     return null;
-  }, [isWorkflowMode, currentWorkflowStep]);
+  }, [isWorkflowMode, currentWorkflowStep, autoScrollToTab]);
   
   const navigateToPreviousStep = useCallback(() => {
     if (!isWorkflowMode) return;
@@ -139,11 +179,18 @@ export const WorkflowModeProvider = ({ children }) => {
     if (prevStepIndex >= 0) {
       setCurrentWorkflowStep(prevStepIndex);
       const prevStep = WORKFLOW_STEPS[prevStepIndex];
-      setActiveTab(prevStep.tab);
+      
+      // Auto-scroll to the previous tab with smooth animation
+      autoScrollToTab(prevStep.tab, {
+        smooth: true,
+        duration: 800,
+        offset: -100 // Account for progressive headers
+      });
+      
       return prevStep;
     }
     return null;
-  }, [isWorkflowMode, currentWorkflowStep]);
+  }, [isWorkflowMode, currentWorkflowStep, autoScrollToTab]);
   
   const navigateToTab = useCallback((tabKey, options = {}) => {
     setActiveTab(tabKey);
@@ -153,22 +200,6 @@ export const WorkflowModeProvider = ({ children }) => {
       setMode('focus');
     }
   }, [mode]);
-  
-  // Auto-scroll functionality (to be implemented with refs)
-  const autoScrollToTab = useCallback((tabKey, options = {}) => {
-    const {
-      smooth = true,
-      duration = 800,
-      offset = -80
-    } = options;
-    
-    // This will be implemented with actual scroll logic
-    // For now, just navigate to the tab
-    navigateToTab(tabKey, { preserveWorkflowMode: true });
-    
-    // TODO: Implement actual smooth scroll to tab element
-    console.log(`Auto-scroll to tab: ${tabKey}`, { smooth, duration, offset });
-  }, [navigateToTab]);
   
   // Workflow completion
   const completeWorkflow = useCallback(() => {

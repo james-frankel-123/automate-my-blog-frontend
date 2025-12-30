@@ -63,7 +63,7 @@ const dummyDiscoveries = [
 ];
 
 const DashboardTab = () => {
-  const { user } = useAuth();
+  const { user, clearLoginContext } = useAuth();
   const tabMode = useTabMode('dashboard');
   const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
   const [discoveries, setDiscoveries] = useState(dummyDiscoveries.slice(0, 2)); // Show top 2 on dashboard
@@ -91,9 +91,11 @@ const DashboardTab = () => {
   };
 
   const handleCreateNewPost = () => {
-    // This starts the guided workflow from Dashboard → Audience → Posts
+    // Start workflow mode in the current dashboard
+    // This starts the Home → Audience → Posts → Analytics flow
     tabMode.enterWorkflowMode();
-    message.success('Starting guided creation workflow');
+    
+    message.success('Starting guided content creation workflow');
   };
 
   const handleGenerateContent = (discovery) => {

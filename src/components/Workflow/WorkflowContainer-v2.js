@@ -2,7 +2,10 @@ import React, { useEffect, useCallback, useMemo } from 'react';
 import { Steps, message, Typography, Button, Space } from 'antd';
 import { LoginOutlined, UserAddOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { useWorkflowState } from '../../hooks/useWorkflowState-v2';
+import ProgressiveHeaders from './ProgressiveHeaders';
+import ModeToggle from './ModeToggle';
 import { analysisAPI, topicAPI, contentAPI, workflowConfig } from '../../services/workflowAPI';
 import { ExportService } from '../../services/exportService';
 import workflowUtils from '../../utils/workflowUtils';
@@ -28,6 +31,7 @@ const WorkflowContainerV2 = ({ embedded = false }) => {
   // =============================================================================
   
   const { user, loginContext, clearLoginContext, setNavContext } = useAuth();
+  const workflowMode = useWorkflowMode();
   const [isMobile, setIsMobile] = React.useState(window.innerWidth < 768);
 
   // Handle window resize for responsive behavior
@@ -40,6 +44,31 @@ const WorkflowContainerV2 = ({ embedded = false }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
   const workflowState = useWorkflowState(); // All 28 state variables + helpers
+
+  // Sync workflow progress with workflow mode context
+  useEffect(() => {
+    // Only sync if we have meaningful progress (step > 0) and data to preserve
+    if (workflowState.currentStep > 0 && workflowState.websiteUrl) {
+      const stepData = {
+        websiteUrl: workflowState.websiteUrl,
+        analysis: workflowState.analysisResults,
+        strategy: workflowState.selectedStrategy,
+        topics: workflowState.topics,
+        content: workflowState.generatedContent,
+        currentStep: workflowState.currentStep,
+        timestamp: new Date().toISOString()
+      };
+
+      // Map workflow steps to progressive headers
+      const stepKey = ['website', 'analysis', 'strategy', 'content', 'export'][workflowState.currentStep - 1];
+      if (stepKey && workflowState.currentStep < 5) {
+        workflowMode.addProgressiveHeader(stepKey, stepData);
+      }
+    }
+  }, [workflowState.currentStep, workflowState.websiteUrl, workflowState.analysisResults, workflowMode]);
+
+  // Determine if we should show progressive features
+  const showProgressiveFeatures = workflowState.currentStep > 0 || workflowMode.progressiveHeaders.length > 0;
 
   // =============================================================================
   // BUSINESS LOGIC FUNCTIONS
@@ -61,6 +90,24 @@ const WorkflowContainerV2 = ({ embedded = false }) => {
     }
     return true;
   }, [user, embedded, workflowState]);
+
+  /**
+   * Enhanced navigation to dashboard
+   * Preserves workflow context when transitioning to dashboard mode
+   */
+  const navigateToDashboard = useCallback(() => {
+    // If we have workflow progress, preserve it in the new mode system
+    if (workflowState.currentStep > 0) {
+      // Enter workflow mode in the dashboard to maintain context
+      workflowMode.enterWorkflowMode(0, {
+        websiteUrl: workflowState.websiteUrl,
+        analysis: workflowState.analysisResults,
+        strategy: workflowState.selectedStrategy,
+        preservedFromWorkflow: true
+      });
+    }
+    setNavContext();
+  }, [workflowState, workflowMode, setNavContext]);
 
   /**
    * Website analysis orchestration
@@ -451,7 +498,7 @@ const WorkflowContainerV2 = ({ embedded = false }) => {
         <Space size="middle">
           <Button 
             type="default"
-            onClick={() => setNavContext()}
+            onClick={navigateToDashboard}
             style={{ color: '#6B8CAE' }}
           >
             View Dashboard
@@ -536,6 +583,30 @@ const WorkflowContainerV2 = ({ embedded = false }) => {
 
       {/* Marketing Header for logged-out users */}
       {renderMarketingHeader()}
+
+      {/* Progressive Headers - Only show after first step completion */}
+      {showProgressiveFeatures && workflowMode.progressiveHeaders.length > 0 && (
+        <ProgressiveHeaders 
+          headers={workflowMode.progressiveHeaders}
+          onEdit={workflowMode.editProgressiveHeader}
+          embedded={embedded}
+        />
+      )}
+
+      {/* Mode Toggle - Only show for logged-in users after first step */}
+      {showProgressiveFeatures && user && (
+        <ModeToggle
+          mode={workflowMode.mode}
+          tabKey="workflow"
+          workflowStep={null}
+          showModeToggle={true}
+          showWorkflowNavigation={false}
+          canEnterWorkflow={true}
+          onEnterWorkflowMode={() => workflowMode.enterWorkflowMode(workflowState.currentStep)}
+          onExitToFocusMode={workflowMode.exitWorkflowMode}
+          style={{ marginBottom: '20px' }}
+        />
+      )}
 
       {/* Progress Steps */}
       <div style={{ marginBottom: '40px' }}>

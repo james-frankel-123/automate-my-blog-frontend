@@ -99,7 +99,7 @@ const DashboardLayout = ({
     {
       key: 'dashboard',
       icon: <DashboardOutlined />,
-      label: 'Dashboard',
+      label: 'Home',
     },
     {
       key: 'audience-segments',
