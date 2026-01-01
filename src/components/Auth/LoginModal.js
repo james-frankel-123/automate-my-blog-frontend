@@ -3,7 +3,7 @@ import { Form, Input, Button, Alert, Space } from 'antd';
 import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 
-const LoginModal = ({ onClose, context = null }) => {
+const LoginModal = ({ onClose, context = null, onSuccess = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -15,6 +15,11 @@ const LoginModal = ({ onClose, context = null }) => {
     try {
       await login(values.email, values.password, context);
       onClose();
+      
+      // Call success callback after successful login
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       setError(error.message || 'Login failed. Please try again.');
     } finally {

@@ -151,13 +151,7 @@ export const WorkflowModeProvider = ({ children }) => {
           secondary: '#F4E5D3',
           accent: '#8FBC8F'
         }
-      },
-      webSearchInsights: {
-        brandResearch: null,
-        keywordResearch: null,
-        researchQuality: 'basic' // 'basic', 'enhanced', 'premium'
-      },
-      analysisCompleted: false
+      }
     },
     audience: {
       customerStrategy: null,
@@ -243,31 +237,6 @@ export const WorkflowModeProvider = ({ children }) => {
     }));
   }, []);
   
-  // Update web search insights
-  const updateWebSearchInsights = useCallback((insightsData) => {
-    setStepResults(prev => ({
-      ...prev,
-      home: {
-        ...prev.home,
-        webSearchInsights: {
-          ...prev.home.webSearchInsights,
-          ...insightsData
-        }
-      }
-    }));
-  }, []);
-  
-  // Update analysis completion status
-  const updateAnalysisCompleted = useCallback((completed) => {
-    setStepResults(prev => ({
-      ...prev,
-      home: {
-        ...prev.home,
-        analysisCompleted: completed
-      }
-    }));
-  }, []);
-  
   // Update trending topics
   const updateTrendingTopics = useCallback((topics) => {
     setStepResults(prev => ({
@@ -289,30 +258,6 @@ export const WorkflowModeProvider = ({ children }) => {
       }
     }));
   }, []);
-
-  // =============================================================================
-  // AUTHENTICATION GATES & PERMISSION CHECKS
-  // =============================================================================
-  
-  // Authentication gate helper (preserved from WorkflowContainer-v2.js)
-  const requireAuth = useCallback((action = '', context = 'gate') => {
-    if (!user) {
-      console.log(`🚫 Auth required for action: ${action}`);
-      setAuthContext(context);
-      setShowAuthModal(true);
-      return false;
-    }
-    return true;
-  }, [user]);
-  
-  // Permission checker helper
-  const hasPermission = useCallback((permission) => {
-    return user?.permissions?.includes(permission) || false;
-  }, [user]);
-  
-  // Role-based checks (preserved from AuthContext pattern)
-  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
-  const isSuperAdmin = user && user.role === 'super_admin';
 
   // =============================================================================
   // WORKFLOW STATE PERSISTENCE (for seamless authentication transitions)
@@ -537,13 +482,7 @@ export const WorkflowModeProvider = ({ children }) => {
           blogStrategy: '',
           scenarios: [],
           brandColors: { primary: '#6B8CAE', secondary: '#F4E5D3', accent: '#8FBC8F' }
-        },
-        webSearchInsights: {
-          brandResearch: null,
-          keywordResearch: null,
-          researchQuality: 'basic'
-        },
-        analysisCompleted: false
+        }
       },
       audience: { customerStrategy: null, targetSegments: [] },
       content: { trendingTopics: [], selectedContent: null, finalContent: '' },
@@ -663,32 +602,28 @@ export const WorkflowModeProvider = ({ children }) => {
   const autoScrollToTab = useCallback((tabKey, options = {}) => {
     const {
       smooth = true,
-      offset = -100,
-      preserveWorkflowMode = false
+      offset = -100
     } = options;
     
-    // Don't change active tab if we're preserving workflow mode
-    if (!preserveWorkflowMode) {
-      setActiveTab(tabKey);
-    }
-    
-    // Map tab keys to section IDs used in DashboardLayout
-    const sectionIdMap = {
-      'dashboard': 'home',
-      'audience-segments': 'audience-segments',
-      'posts': 'posts',
-      'newpost': 'newpost'
-    };
+    // Navigate to the tab first
+    setActiveTab(tabKey);
     
     // Find the section element to scroll to
-    const sectionId = sectionIdMap[tabKey] || tabKey;
-    const sectionElement = document.getElementById(sectionId);
+    const sectionElement = document.getElementById(`section-${tabKey}`);
     
     if (sectionElement) {
-      sectionElement.scrollIntoView({
-        behavior: smooth ? 'smooth' : 'auto',
-        block: 'start'
-      });
+      // Calculate scroll position with offset for progressive headers
+      const elementTop = sectionElement.getBoundingClientRect().top + window.pageYOffset;
+      const scrollToPosition = Math.max(0, elementTop + offset);
+      
+      if (smooth) {
+        window.scrollTo({
+          top: scrollToPosition,
+          behavior: 'smooth'
+        });
+      } else {
+        window.scrollTo(0, scrollToPosition);
+      }
     }
   }, []);
   
@@ -701,10 +636,11 @@ export const WorkflowModeProvider = ({ children }) => {
       setCurrentWorkflowStep(nextStepIndex);
       const nextStep = WORKFLOW_STEPS[nextStepIndex];
       
-      // Auto-scroll to the next tab while preserving workflow mode
+      // Auto-scroll to the next tab with smooth animation
       autoScrollToTab(nextStep.tab, {
         smooth: true,
-        preserveWorkflowMode: true // Keep workflow mode active
+        duration: 800,
+        offset: -100 // Account for progressive headers
       });
       
       return nextStep;
@@ -720,10 +656,11 @@ export const WorkflowModeProvider = ({ children }) => {
       setCurrentWorkflowStep(prevStepIndex);
       const prevStep = WORKFLOW_STEPS[prevStepIndex];
       
-      // Auto-scroll to the previous tab while preserving workflow mode
+      // Auto-scroll to the previous tab with smooth animation
       autoScrollToTab(prevStep.tab, {
         smooth: true,
-        preserveWorkflowMode: true // Keep workflow mode active
+        duration: 800,
+        offset: -100 // Account for progressive headers
       });
       
       return prevStep;
@@ -734,11 +671,8 @@ export const WorkflowModeProvider = ({ children }) => {
   const navigateToTab = useCallback((tabKey, options = {}) => {
     setActiveTab(tabKey);
     
-    // If navigating directly to a tab, switch to focus mode unless explicitly preserving workflow
-    if (!options.preserveWorkflowMode && mode === 'workflow') {
-      // Don't exit workflow mode unless explicitly requested
-      console.log('🔒 Preserving workflow mode during navigation to:', tabKey);
-    } else if (!options.preserveWorkflowMode && mode !== 'workflow') {
+    // If navigating directly to a tab, switch to focus mode unless explicitly in workflow
+    if (!options.preserveWorkflowMode && mode !== 'workflow') {
       setMode('focus');
     }
   }, [mode]);
@@ -829,14 +763,6 @@ export const WorkflowModeProvider = ({ children }) => {
     // =============================================================================
     user,
     isAuthenticated,
-    
-    // =============================================================================
-    // AUTHENTICATION GATES & PERMISSIONS
-    // =============================================================================
-    requireAuth,
-    hasPermission,
-    isAdmin,
-    isSuperAdmin,
     
     // =============================================================================
     // WORKFLOW PROGRESSION
@@ -968,8 +894,6 @@ export const WorkflowModeProvider = ({ children }) => {
     // =============================================================================
     advanceStep,
     updateWebsiteAnalysis,
-    updateWebSearchInsights,
-    updateAnalysisCompleted,
     updateTrendingTopics,
     updateCustomerStrategy,
     

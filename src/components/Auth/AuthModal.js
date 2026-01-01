@@ -6,19 +6,19 @@ import RegisterModal from './RegisterModal';
 
 const { Title, Text } = Typography;
 
-const AuthModal = ({ open, onClose, defaultTab = 'login', context = null }) => {
+const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSuccess = null }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
 
   const items = [
     {
       key: 'login',
       label: 'Sign In',
-      children: <LoginModal onClose={onClose} context={context} />,
+      children: <LoginModal onClose={onClose} context={context} onSuccess={onSuccess} />,
     },
     {
       key: 'register',
       label: 'Create Account',
-      children: <RegisterModal onClose={onClose} onSwitchToLogin={() => setActiveTab('login')} context={context} />,
+      children: <RegisterModal onClose={onClose} onSwitchToLogin={() => setActiveTab('login')} context={context} onSuccess={onSuccess} />,
     },
   ];
 

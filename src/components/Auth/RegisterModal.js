@@ -3,7 +3,7 @@ import { Form, Input, Button, Alert, Space } from 'antd';
 import { UserOutlined, LockOutlined, MailOutlined, BankOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 
-const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
+const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -75,6 +75,11 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null }) => {
       }
       
       setSuccess(true);
+      
+      // Call success callback after successful registration
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       setError(error.message || 'Registration failed. Please try again.');
     } finally {

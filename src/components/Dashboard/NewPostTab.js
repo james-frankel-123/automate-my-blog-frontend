@@ -1,6 +1,14 @@
-import React from 'react';
-import { Typography } from 'antd';
+import React, { useState } from 'react';
+import { Typography, Divider, Space, Button, Card, message } from 'antd';
+import { ExperimentOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import WorkflowContainerV2 from '../Workflow/WorkflowContainer-v2';
+import { useAuth } from '../../contexts/AuthContext';
+
+// Import standalone step components for validation
+import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
+import AudienceSelectionStepStandalone from '../Workflow/steps/AudienceSelectionStepStandalone';
+import TopicSelectionStepStandalone from '../Workflow/steps/TopicSelectionStepStandalone';
+import ContentGenerationStepStandalone from '../Workflow/steps/ContentGenerationStepStandalone';
 
 const { Title, Text } = Typography;
 

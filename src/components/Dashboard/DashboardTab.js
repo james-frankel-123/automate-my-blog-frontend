@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Button, Space, Switch, Alert, List, Tag, Timeline, Typography, Divider, message } from 'antd';
+import { Card, Row, Col, Statistic, Button, Space, Switch, Alert, List, Tag, Timeline, Typography, Divider, Input, message } from 'antd';
 import {
   FileTextOutlined,
   FolderOutlined,
@@ -19,7 +19,9 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
+import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import ModeToggle from '../Workflow/ModeToggle';
+import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 import { format } from 'date-fns';
 
 const { Title, Text, Paragraph } = Typography;
@@ -63,11 +65,26 @@ const dummyDiscoveries = [
 ];
 
 const DashboardTab = () => {
-  const { user, clearLoginContext } = useAuth();
+  const { user } = useAuth();
   const tabMode = useTabMode('dashboard');
+  const { 
+    websiteUrl, 
+    setWebsiteUrl, 
+    isLoading, 
+    setIsLoading,
+    currentStep,
+    stepResults,
+    updateWebsiteAnalysis,
+    updateWebSearchInsights,
+    updateAnalysisCompleted,
+    requireAuth 
+  } = useWorkflowMode();
   const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
   const [discoveries, setDiscoveries] = useState(dummyDiscoveries.slice(0, 2)); // Show top 2 on dashboard
   const [loading, setLoading] = useState(false);
+  
+  // Keep only UI-specific local state
+  const [scanningMessage, setScanningMessage] = useState('');
 
   // Check user access for discovery features
   const isPaidUser = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
@@ -91,11 +108,9 @@ const DashboardTab = () => {
   };
 
   const handleCreateNewPost = () => {
-    // Start workflow mode in the current dashboard
-    // This starts the Home → Audience → Posts → Analytics flow
+    // This starts the guided workflow from Dashboard → Audience → Posts
     tabMode.enterWorkflowMode();
-    
-    message.success('Starting guided content creation workflow');
+    message.success('Starting guided creation workflow');
   };
 
   const handleGenerateContent = (discovery) => {
@@ -107,6 +122,42 @@ const DashboardTab = () => {
     message.success(`Content generation started for: ${discovery.title}`);
   };
 
+  // Handle analysis completion from standalone component
+  const handleAnalysisComplete = (data) => {
+    console.log('Analysis completed:', data);
+    
+    // Update unified workflow state only (no local state)
+    updateWebsiteAnalysis(data.analysis);
+    updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
+    updateAnalysisCompleted(true);
+  };
+  
+  // Handle continue to next step - scroll to audience section in workflow mode
+  const handleContinueToAudience = () => {
+    // First, advance to the audience step in the workflow
+    const stepData = {
+      websiteAnalysis: stepResults.home.websiteAnalysis,
+      webSearchInsights: stepResults.home.webSearchInsights,
+      analysisCompleted: true,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Use the workflow mode context to advance to the next step
+    tabMode.continueToNextStep(stepData);
+    
+    // Then scroll to audience section  
+    setTimeout(() => {
+      const audienceSection = document.getElementById('audience-segments');
+      if (audienceSection) {
+        audienceSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+        console.log('🚀 Advanced to audience selection step and scrolled to section');
+      }
+    }, 100); // Small delay to ensure workflow state updates first
+  };
+
   // Prepare step data for workflow mode
   const prepareStepData = () => ({
     selectedAction: 'create-post',
@@ -115,27 +166,110 @@ const DashboardTab = () => {
 
   return (
     <div>
-      {/* Mode Toggle */}
-      <ModeToggle
-        mode={tabMode.mode}
-        tabKey="dashboard"
-        workflowStep={tabMode.workflowStep}
-        showModeToggle={tabMode.showModeToggle}
-        showWorkflowNavigation={tabMode.showWorkflowNavigation}
-        showNextButton={tabMode.showNextButton}
-        showPreviousButton={tabMode.showPreviousButton}
-        nextButtonText={tabMode.nextButtonText}
-        previousButtonText={tabMode.previousButtonText}
-        canEnterWorkflow={tabMode.canEnterWorkflow}
-        onEnterWorkflowMode={tabMode.enterWorkflowMode}
-        onExitToFocusMode={tabMode.exitToFocusMode}
-        onContinueToNextStep={tabMode.continueToNextStep}
-        onGoToPreviousStep={tabMode.goToPreviousStep}
-        onSaveStepData={tabMode.saveStepData}
-        stepData={prepareStepData()}
-      />
+      {/* Mode Toggle - Only show for authenticated users */}
+      {user && (
+        <ModeToggle
+          mode={tabMode.mode}
+          tabKey="dashboard"
+          workflowStep={tabMode.workflowStep}
+          showModeToggle={tabMode.showModeToggle}
+          showWorkflowNavigation={tabMode.showWorkflowNavigation}
+          showNextButton={tabMode.showNextButton}
+          showPreviousButton={tabMode.showPreviousButton}
+          nextButtonText={tabMode.nextButtonText}
+          previousButtonText={tabMode.previousButtonText}
+          canEnterWorkflow={tabMode.canEnterWorkflow}
+          onEnterWorkflowMode={tabMode.enterWorkflowMode}
+          onExitToFocusMode={tabMode.exitToFocusMode}
+          onContinueToNextStep={tabMode.continueToNextStep}
+          onGoToPreviousStep={tabMode.goToPreviousStep}
+          onSaveStepData={tabMode.saveStepData}
+          stepData={prepareStepData()}
+        />
+      )}
       
       <div style={{ padding: '24px' }}>
+        {/* WORKFLOW MODE: Guided Website Analysis Step */}
+        {tabMode.mode === 'workflow' && (
+          <>
+            {/* Workflow Step Header */}
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col span={24}>
+                <Card style={{ background: 'linear-gradient(135deg, #52c41a 0%, #389e0d 100%)', border: 'none' }}>
+                  <div style={{ color: 'white', textAlign: 'center' }}>
+                    <Title level={2} style={{ color: 'white', marginBottom: '8px' }}>
+                      🚀 Let's Create Your Perfect Blog Post
+                    </Title>
+                    <Paragraph style={{ color: 'rgba(255,255,255,0.9)', fontSize: '16px', marginBottom: '20px' }}>
+                      We'll analyze your website and create targeted content that speaks to your audience.
+                      This guided workflow will take you step-by-step to create high-converting blog content.
+                    </Paragraph>
+                  </div>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Website Analysis - Use standalone component for full New Post experience */}
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col span={24}>
+                <WebsiteAnalysisStepStandalone
+                  // Core state (from unified context)
+                  websiteUrl={websiteUrl}
+                  setWebsiteUrl={setWebsiteUrl}
+                  analysisResults={stepResults.home.websiteAnalysis}
+                  setAnalysisResults={(data) => updateWebsiteAnalysis(data)}
+                  webSearchInsights={stepResults.home.webSearchInsights}
+                  setWebSearchInsights={(data) => updateWebSearchInsights(data)}
+                  
+                  // Loading states
+                  isLoading={isLoading}
+                  setIsLoading={setIsLoading}
+                  scanningMessage={scanningMessage}
+                  setScanningMessage={setScanningMessage}
+                  analysisCompleted={stepResults.home.analysisCompleted}
+                  setAnalysisCompleted={(completed) => updateAnalysisCompleted(completed)}
+                  
+                  // User context
+                  user={user}
+                  requireAuth={requireAuth}
+                  
+                  // Event handlers
+                  onAnalysisComplete={handleAnalysisComplete}
+                  
+                  // Configuration
+                  embedded={true}
+                  showTitle={false}
+                  autoAnalyze={false}
+                />
+                
+                {/* Continue Button - Show after analysis completes */}
+                {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (
+                  <Card style={{ marginTop: '16px' }}>
+                    <div style={{ textAlign: 'center', padding: '16px' }}>
+                      <Button 
+                        type="primary" 
+                        size="large"
+                        onClick={handleContinueToAudience}
+                        style={{ minWidth: '200px' }}
+                      >
+                        Continue to Audience Selection
+                      </Button>
+                      <div style={{ marginTop: '8px' }}>
+                        <Text type="secondary">
+                          Next: Choose your target customer strategy
+                        </Text>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </Col>
+            </Row>
+          </>
+        )}
+
+        {/* FOCUS MODE: Full Dashboard Features (Premium) */}
+        {tabMode.mode === 'focus' && (
+          <>
       {/* Welcome Header */}
       <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col span={24}>
@@ -204,6 +338,43 @@ const DashboardTab = () => {
           </Card>
         </Col>
       </Row>
+
+      {/* Website Analysis Results - Show in Focus Mode when completed */}
+      {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (
+        <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+          <Col span={24}>
+            <WebsiteAnalysisStepStandalone
+              // Core state (from unified context)
+              websiteUrl={websiteUrl}
+              setWebsiteUrl={setWebsiteUrl}
+              analysisResults={stepResults.home.websiteAnalysis}
+              setAnalysisResults={(data) => updateWebsiteAnalysis(data)}
+              webSearchInsights={stepResults.home.webSearchInsights}
+              setWebSearchInsights={(data) => updateWebSearchInsights(data)}
+              
+              // Loading states
+              isLoading={false} // Not loading in focus mode display
+              setIsLoading={setIsLoading}
+              scanningMessage=""
+              setScanningMessage={setScanningMessage}
+              analysisCompleted={stepResults.home.analysisCompleted}
+              setAnalysisCompleted={(completed) => updateAnalysisCompleted(completed)}
+              
+              // User context
+              user={user}
+              requireAuth={requireAuth}
+              
+              // Configuration for focus mode display
+              embedded={true}
+              showTitle={false}
+              autoAnalyze={false}
+              
+              // Event handlers
+              onAnalysisComplete={handleAnalysisComplete}
+            />
+          </Col>
+        </Row>
+      )}
 
       <Row gutter={[16, 16]}>
         {/* Content Discovery Section */}
@@ -303,12 +474,26 @@ const DashboardTab = () => {
             <Space wrap>
               <Button 
                 type="primary" 
-                icon={<PlusOutlined />} 
+                icon={stepResults.home.analysisCompleted ? <PlayCircleOutlined /> : <PlusOutlined />}
                 size="large"
                 onClick={handleCreateNewPost}
               >
-                Create New Post
+                {stepResults.home.analysisCompleted ? 'Continue Workflow' : 'Create New Post'}
               </Button>
+              {stepResults.home.analysisCompleted && (
+                <Button 
+                  icon={<EditOutlined />} 
+                  size="large"
+                  onClick={() => {
+                    // Reset analysis to restart workflow
+                    updateAnalysisCompleted(false);
+                    tabMode.enterWorkflowMode();
+                    message.info('Edit your website analysis');
+                  }}
+                >
+                  Edit Analysis
+                </Button>
+              )}
               <Button icon={<UserOutlined />} size="large">
                 New Audience Segment
               </Button>
@@ -357,6 +542,8 @@ const DashboardTab = () => {
           </Card>
         </Col>
       </Row>
+          </>
+        )}
       </div>
     </div>
   );
