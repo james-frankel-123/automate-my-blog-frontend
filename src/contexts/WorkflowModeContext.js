@@ -24,7 +24,7 @@ export const WorkflowModeProvider = ({ children }) => {
   // AUTHENTICATION INTEGRATION
   // =============================================================================
   
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
   
   // Track previous authentication state for logout detection
   const prevAuthStateRef = useRef(null);
@@ -922,14 +922,15 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Auto-restore workflow state AFTER authentication completes (RACE CONDITION FIX)
   useEffect(() => {
-    // Only attempt restoration when we have definitive auth state (not during loading)
-    if (user === undefined) {
-      console.log('⏳ WorkflowModeContext: User auth still loading, waiting...');
+    // Wait for authentication to complete before attempting restoration
+    if (authLoading) {
+      console.log('⏳ WorkflowModeContext: Authentication still loading, waiting...');
       return;
     }
     
-    console.log('🚀 WorkflowModeContext: Auth state loaded, checking for saved state...');
+    console.log('🚀 WorkflowModeContext: Auth loading complete, checking for saved state...');
     console.log('🔍 Auth state:', {
+      authLoading,
       hasUser: !!user,
       userId: user?.id || 'None',
       isAuthenticated,
@@ -972,13 +973,15 @@ export const WorkflowModeProvider = ({ children }) => {
     } catch (error) {
       console.error('❌ Failed to check for saved workflow state after auth loading:', error);
     }
-  }, [user, isAuthenticated, restoreWorkflowState]); // Wait for auth completion
+  }, [authLoading, user, isAuthenticated, restoreWorkflowState]); // Wait for auth completion
   
   // Fallback restore mechanism - Retry restoration after a delay if race condition still occurs
   useEffect(() => {
     let timeoutId;
     
-    // Only set up fallback if we have saved state but current analysis is empty
+    // Only set up fallback when auth is loaded and we have saved state but current analysis is empty
+    if (authLoading) return; // Don't run fallback during auth loading
+    
     const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
                                 stepResults.home.websiteAnalysis?.targetAudience &&
                                 stepResults.home.websiteAnalysis?.contentFocus;
@@ -1018,7 +1021,7 @@ export const WorkflowModeProvider = ({ children }) => {
         clearTimeout(timeoutId);
       }
     };
-  }, [user, isAuthenticated, stepResults.home.websiteAnalysis?.businessName, restoreWorkflowState]);
+  }, [authLoading, user, isAuthenticated, stepResults.home.websiteAnalysis?.businessName, restoreWorkflowState]);
   
   // SECURITY: Clear user data when user logs out (FIXED - track previous auth state)
   useEffect(() => {
