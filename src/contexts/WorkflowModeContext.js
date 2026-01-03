@@ -465,7 +465,8 @@ export const WorkflowModeProvider = ({ children }) => {
           savedUserIdType: typeof workflowStateSnapshot.userId,
           currentUserIdType: typeof user?.id
         });
-        clearSavedWorkflowState();
+        localStorage.removeItem('automate-my-blog-workflow-state');
+        console.log('🗑️ Saved workflow state cleared');
         return false;
       }
       
@@ -580,10 +581,10 @@ export const WorkflowModeProvider = ({ children }) => {
       
     } catch (error) {
       console.error('Failed to restore workflow state:', error);
-      clearSavedWorkflowState();
+      localStorage.removeItem('automate-my-blog-workflow-state');
       return false;
     }
-  }, []);
+  }, [user, isAuthenticated]);
   
   // Clear saved workflow state
   const clearSavedWorkflowState = useCallback(() => {
