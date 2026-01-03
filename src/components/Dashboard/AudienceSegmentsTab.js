@@ -6,6 +6,7 @@ import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
+import autoBlogAPI from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -95,18 +96,106 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   // UI helpers from workflow components
   const responsive = ComponentHelpers.getResponsiveStyles();
   const defaultColors = ComponentHelpers.getDefaultColors();
+  
+  // Load cached analysis when component mounts (for logged in users)
+  useEffect(() => {
+    const loadCachedAnalysis = async () => {
+      if (user && tabMode.mode !== 'workflow' && !forceWorkflowMode) {
+        try {
+          console.log('🔄 Loading cached analysis for user:', user.id);
+          const response = await autoBlogAPI.getRecentAnalysis();
+          
+          if (response.success && response.analysis && response.analysis.scenarios) {
+            console.log('✅ Found cached analysis with scenarios:', response.analysis.scenarios.length);
+            
+            // Transform cached scenarios to component format
+            const cachedStrategies = response.analysis.scenarios.map((scenario, index) => ({
+              id: `cached-scenario-${index}`,
+              targetSegment: scenario.targetSegment || {
+                demographics: scenario.customerProblem || 'Target audience',
+                psychographics: 'Customer seeking solutions',
+                searchBehavior: 'Active research behavior'
+              },
+              customerProblem: scenario.customerProblem || 'Customer problem',
+              customerLanguage: scenario.customerLanguage || scenario.seoKeywords || [],
+              conversionPath: scenario.conversionPath || 'Content leads to conversions',
+              businessValue: scenario.businessValue || {
+                searchVolume: 'Unknown',
+                conversionPotential: 'Medium',
+                priority: index + 1,
+                competition: 'Medium'
+              },
+              contentIdeas: scenario.contentIdeas || [],
+              seoKeywords: scenario.seoKeywords || []
+            }));
+            
+            // Sort by business value priority
+            cachedStrategies.sort((a, b) => (a.businessValue.priority || 999) - (b.businessValue.priority || 999));
+            
+            setStrategies(cachedStrategies);
+            message.success(`Loaded ${cachedStrategies.length} cached audience strategies from your previous analysis`);
+          } else {
+            console.log('📝 No cached analysis found, using default strategies');
+          }
+        } catch (error) {
+          console.error('Failed to load cached analysis:', error);
+          // Silently fail - user will see default strategies
+        }
+      }
+    };
+    
+    loadCachedAnalysis();
+  }, [user, tabMode.mode, forceWorkflowMode]);
 
-  // Generate dynamic audience strategies based on website analysis when entering workflow mode
+  // Load audience strategies based on OpenAI analysis when entering workflow mode
   useEffect(() => {
     if ((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) {
       const analysis = stepResults.home.websiteAnalysis;
       
-      // Generate strategies based on website analysis
-      const generateDynamicStrategies = () => {
-        setGeneratingStrategies(true);
+      console.log('🎯 Loading audience strategies from analysis:', analysis);
+      console.log('Available scenarios:', analysis.scenarios?.length || 0);
+      
+      setGeneratingStrategies(true);
+      
+      // PRIMARY: Use OpenAI-generated scenarios if available
+      if (analysis.scenarios && analysis.scenarios.length > 0) {
+        console.log('✅ Using OpenAI-generated audience scenarios');
         
-        // Create strategies based on business analysis
-        const dynamicStrategies = [
+        // Transform OpenAI scenarios to component format
+        const openAIStrategies = analysis.scenarios.map((scenario, index) => ({
+          id: `openai-scenario-${index}`,
+          targetSegment: scenario.targetSegment || {
+            demographics: scenario.customerProblem || 'Target audience',
+            psychographics: 'Customer seeking solutions',
+            searchBehavior: 'Active research behavior'
+          },
+          customerProblem: scenario.customerProblem || 'Customer problem',
+          customerLanguage: scenario.customerLanguage || scenario.seoKeywords || [],
+          conversionPath: scenario.conversionPath || 'Content leads to conversions',
+          businessValue: scenario.businessValue || {
+            searchVolume: 'Unknown',
+            conversionPotential: 'Medium',
+            priority: index + 1,
+            competition: 'Medium'
+          },
+          contentIdeas: scenario.contentIdeas || [],
+          seoKeywords: scenario.seoKeywords || []
+        }));
+        
+        // Sort by business value priority
+        openAIStrategies.sort((a, b) => (a.businessValue.priority || 999) - (b.businessValue.priority || 999));
+        
+        setTimeout(() => {
+          setStrategies(openAIStrategies);
+          setGeneratingStrategies(false);
+          message.success(`Loaded ${openAIStrategies.length} AI-generated audience strategies with real business intelligence`);
+        }, 800); // Shorter delay since we're not generating
+        
+      } else {
+        console.log('⚠️ No OpenAI scenarios found, falling back to template generation');
+        
+        // FALLBACK: Generate template strategies only if no OpenAI scenarios
+        const fallbackStrategies = [
           {
             id: 'primary-target',
             targetSegment: {
@@ -125,7 +214,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             ],
             conversionPath: `Educational ${analysis.contentFocus || 'industry-focused'} content leading to consultation and service inquiries`,
             businessValue: {
-              searchVolume: '15K+ monthly searches',
+              searchVolume: '15K+ monthly searches (estimated)',
               conversionPotential: 'High',
               priority: 1,
               competition: 'Medium'
@@ -147,7 +236,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             ],
             conversionPath: 'Comparison guides and educational resources leading to consultation bookings',
             businessValue: {
-              searchVolume: '8K+ monthly searches',
+              searchVolume: '8K+ monthly searches (estimated)',
               conversionPotential: 'Medium',
               priority: 2,
               competition: 'Low'
@@ -155,41 +244,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           }
         ];
 
-        // Add third strategy if we have enough analysis data
-        if (analysis.contentFocus && analysis.contentFocus.includes(',')) {
-          const focusAreas = analysis.contentFocus.split(',');
-          dynamicStrategies.push({
-            id: 'niche-segment',
-            targetSegment: {
-              demographics: `Specialists focused on ${focusAreas[1]?.trim() || 'specialized solutions'}`,
-              psychographics: 'Expert-level audience seeking advanced insights and specialized knowledge',
-              searchBehavior: 'Search for specific, advanced topics and in-depth analysis'
-            },
-            customerProblem: `Advanced challenges in ${focusAreas[1]?.trim() || 'their specialized field'}`,
-            customerLanguage: [
-              `advanced ${focusAreas[1]?.trim()?.toLowerCase() || 'techniques'}`,
-              `${analysis.businessType?.toLowerCase() || 'expert'} insights`,
-              'specialized knowledge',
-              'industry best practices'
-            ],
-            conversionPath: 'Advanced content and case studies leading to premium consultation services',
-            businessValue: {
-              searchVolume: '3K+ monthly searches',
-              conversionPotential: 'High',
-              priority: 3,
-              competition: 'Low'
-            }
-          });
-        }
-
         setTimeout(() => {
-          setStrategies(dynamicStrategies);
+          setStrategies(fallbackStrategies);
           setGeneratingStrategies(false);
-          message.success(`Generated ${dynamicStrategies.length} audience strategies based on your website analysis`);
-        }, 1500); // Simulate generation time
-      };
-
-      generateDynamicStrategies();
+          message.info(`Generated ${fallbackStrategies.length} template strategies (OpenAI scenarios not available)`);
+        }, 1200);
+      }
     }
   }, [tabMode.mode, stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis]);
 

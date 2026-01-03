@@ -23,6 +23,7 @@ import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { format } from 'date-fns';
+import autoBlogAPI from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -79,7 +80,8 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     updateAnalysisCompleted,
     requireAuth,
     addStickyWorkflowStep,
-    updateStickyWorkflowStep 
+    updateStickyWorkflowStep,
+    saveWorkflowState
   } = useWorkflowMode();
   const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
   const [discoveries, setDiscoveries] = useState(dummyDiscoveries.slice(0, 2)); // Show top 2 on dashboard
@@ -87,6 +89,67 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   
   // Keep only UI-specific local state
   const [scanningMessage, setScanningMessage] = useState('');
+
+  // Load cached analysis for logged-in users
+  useEffect(() => {
+    const loadCachedAnalysis = async () => {
+      // Check if we need to load analysis data
+      const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
+                                  stepResults.home.websiteAnalysis?.targetAudience &&
+                                  stepResults.home.websiteAnalysis?.contentFocus;
+      
+      console.log('🔍 Analysis state check:', {
+        user: !!user,
+        forceWorkflowMode,
+        tabMode: tabMode.mode,
+        analysisCompleted: stepResults.home.analysisCompleted,
+        hasValidData: hasValidAnalysisData,
+        businessName: stepResults.home.websiteAnalysis?.businessName || 'None'
+      });
+      
+      // Load for authenticated users who don't have complete analysis data
+      if (user && !forceWorkflowMode && tabMode.mode === 'focus' && !hasValidAnalysisData) {
+        try {
+          console.log('🔍 Loading cached analysis for dashboard...');
+          const response = await autoBlogAPI.getRecentAnalysis();
+          
+          if (response.success && response.analysis) {
+            console.log('📊 Found cached analysis:', response.analysis.businessName || 'Unknown business');
+            
+            // Update the unified workflow state with cached data
+            updateWebsiteAnalysis(response.analysis);
+            updateAnalysisCompleted(true);
+            setWebsiteUrl(response.analysis.websiteUrl || '');
+            
+            // Update sticky workflow step
+            updateStickyWorkflowStep('websiteAnalysis', {
+              websiteUrl: response.analysis.websiteUrl || '',
+              businessName: response.analysis.businessName || '',
+              businessType: response.analysis.businessType || '',
+              ...response.analysis
+            });
+            
+            console.log('✅ Cached analysis loaded successfully');
+          } else {
+            console.log('ℹ️ No cached analysis found in database');
+          }
+        } catch (error) {
+          console.error('❌ Failed to load cached analysis:', error.message);
+          // Don't show error to user - this is just a nice-to-have feature
+        }
+      } else if (hasValidAnalysisData) {
+        console.log('✅ Analysis data already present, skipping database load');
+      } else {
+        console.log('ℹ️ Skipping cached analysis load:', {
+          reason: !user ? 'Not authenticated' : 
+                  forceWorkflowMode ? 'In forced workflow mode' :
+                  tabMode.mode !== 'focus' ? 'Not in focus mode' : 'Other'
+        });
+      }
+    };
+
+    loadCachedAnalysis();
+  }, [user, tabMode.mode, forceWorkflowMode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
 
   // Check user access for discovery features
   const isPaidUser = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
@@ -144,6 +207,12 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       businessType: data.analysis?.businessType || data.analysis?.industry || '',
       ...data.analysis
     });
+    
+    // Auto-save workflow state to localStorage to preserve data across page refreshes
+    setTimeout(() => {
+      const saved = saveWorkflowState();
+      console.log('💾 Auto-saved workflow state after analysis completion:', saved);
+    }, 100); // Small delay to ensure all state updates are applied
   };
   
   // Handle continue to next step - scroll to audience section in workflow mode

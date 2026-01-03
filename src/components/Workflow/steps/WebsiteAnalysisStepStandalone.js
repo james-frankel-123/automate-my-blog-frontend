@@ -13,6 +13,7 @@ import {
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { analysisAPI } from '../../../services/workflowAPI';
 import workflowUtils from '../../../utils/workflowUtils';
+import autoBlogAPI from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -92,13 +93,54 @@ const WebsiteAnalysisStepStandalone = ({
     }
   }, [autoAnalyze, websiteUrl, analysisCompleted, loading]);
   
+  // Load cached analysis for logged-in users when component mounts
+  useEffect(() => {
+    const loadCachedAnalysis = async () => {
+      if (user && !analysisCompleted && !websiteUrl && !loading) {
+        try {
+          console.log('🔄 Loading cached analysis for user:', user.id);
+          const response = await autoBlogAPI.getRecentAnalysis();
+          
+          if (response.success && response.analysis) {
+            const cachedAnalysis = response.analysis;
+            console.log('✅ Found cached analysis for website:', cachedAnalysis.websiteUrl);
+            
+            // Load cached data into component state
+            setWebsiteUrl && setWebsiteUrl(cachedAnalysis.websiteUrl);
+            setAnalysisResults && setAnalysisResults(cachedAnalysis.businessAnalysis);
+            setAnalysisCompleted && setAnalysisCompleted(true);
+            
+            // Update sticky header with cached business information
+            updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
+              websiteUrl: cachedAnalysis.websiteUrl,
+              businessName: cachedAnalysis.businessAnalysis?.businessName || cachedAnalysis.businessType || '',
+              businessType: cachedAnalysis.businessType || '',
+              ...cachedAnalysis.businessAnalysis
+            });
+            
+            message.info(`Loaded cached analysis for ${cachedAnalysis.websiteUrl}`);
+          } else {
+            console.log('📝 No cached analysis found');
+          }
+        } catch (error) {
+          console.error('Failed to load cached analysis:', error);
+          // Silently fail - user can perform new analysis
+        }
+      }
+    };
+    
+    loadCachedAnalysis();
+  }, [user, analysisCompleted, websiteUrl, loading]);
+  
   // Extract domain for display
   const domain = websiteUrl ? 
     websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : 
     '';
   
   // Determine if input should be disabled
-  const shouldDisableInput = !!(userOrganizationWebsite && !urlOverrideMode);
+  // Only admin and super_admin users can edit website URLs
+  const isAdminUser = user?.role === 'admin' || user?.role === 'super_admin';
+  const shouldDisableInput = !!(userOrganizationWebsite && !urlOverrideMode && !isAdminUser);
   
   // =============================================================================
   // EVENT HANDLERS
@@ -281,20 +323,27 @@ const WebsiteAnalysisStepStandalone = ({
         </Space.Compact>
       </Form>
       
-      {/* Override option for organization users */}
+      {/* Override option for admin users */}
       {userOrganizationWebsite && !urlOverrideMode && (
         <div style={{ textAlign: 'center', marginTop: '16px' }}>
           <Text style={{ color: '#666', fontSize: responsive.fontSize.small }}>
             Using organization website: <Text strong>{userOrganizationWebsite}</Text>
           </Text>
-          <Button 
-            type="link" 
-            size="small"
-            onClick={handleOverrideUrl}
-            style={{ marginLeft: '8px' }}
-          >
-            Use different URL
-          </Button>
+          {isAdminUser && (
+            <Button 
+              type="link" 
+              size="small"
+              onClick={handleOverrideUrl}
+              style={{ marginLeft: '8px' }}
+            >
+              Use different URL
+            </Button>
+          )}
+          {!isAdminUser && (
+            <Text style={{ color: '#999', fontSize: responsive.fontSize.small, marginLeft: '8px' }}>
+              (Contact admin to change website URL)
+            </Text>
+          )}
         </div>
       )}
     </div>

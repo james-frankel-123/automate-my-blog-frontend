@@ -448,6 +448,26 @@ export const WorkflowModeProvider = ({ children }) => {
       // Restore step data
       if (workflowStateSnapshot.stepResults) {
         setStepResults(workflowStateSnapshot.stepResults);
+        
+        // Validate that analysis data is complete if marked as completed
+        const restoredAnalysis = workflowStateSnapshot.stepResults.home?.websiteAnalysis;
+        const hasCompleteAnalysisData = restoredAnalysis?.businessName && 
+                                       restoredAnalysis?.targetAudience && 
+                                       restoredAnalysis?.contentFocus;
+        
+        console.log('📊 Restored analysis data validation:', {
+          hasAnalysisData: !!restoredAnalysis,
+          businessName: restoredAnalysis?.businessName || 'Missing',
+          targetAudience: restoredAnalysis?.targetAudience || 'Missing',
+          contentFocus: restoredAnalysis?.contentFocus || 'Missing',
+          isComplete: hasCompleteAnalysisData
+        });
+        
+        // If analysis is marked complete but data is incomplete, reset completion flag
+        if (workflowStateSnapshot.analysisCompleted && !hasCompleteAnalysisData) {
+          console.log('⚠️ Analysis marked complete but data incomplete, resetting completion flag');
+          setAnalysisCompleted(false);
+        }
       }
       if (workflowStateSnapshot.progressiveHeaders) {
         setProgressiveHeaders(workflowStateSnapshot.progressiveHeaders);
@@ -458,8 +478,8 @@ export const WorkflowModeProvider = ({ children }) => {
       if (workflowStateSnapshot.selectedTopic) setSelectedTopic(workflowStateSnapshot.selectedTopic);
       if (workflowStateSnapshot.generatedContent) setGeneratedContent(workflowStateSnapshot.generatedContent);
       
-      // Restore completion status
-      if (typeof workflowStateSnapshot.analysisCompleted === 'boolean') {
+      // Restore completion status (only if not already handled above)
+      if (typeof workflowStateSnapshot.analysisCompleted === 'boolean' && !workflowStateSnapshot.stepResults) {
         setAnalysisCompleted(workflowStateSnapshot.analysisCompleted);
       }
       if (typeof workflowStateSnapshot.strategyCompleted === 'boolean') {

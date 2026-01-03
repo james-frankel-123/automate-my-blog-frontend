@@ -822,6 +822,20 @@ class AutoBlogAPI {
   }
 
   /**
+   * Get user's most recent website analysis
+   */
+  async getRecentAnalysis() {
+    try {
+      const response = await this.makeRequest('/api/v1/user/recent-analysis', {
+        method: 'GET',
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get recent analysis: ${error.message}`);
+    }
+  }
+
+  /**
    * Billing and Credits Management
    */
   async getUserCredits() {

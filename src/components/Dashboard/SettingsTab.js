@@ -22,7 +22,8 @@ const ProfileSettings = () => {
   // Organization management logic
   const hasOrganization = user?.organizationId;
   const isOrganizationOwner = user?.organizationRole === 'owner';
-  const canEditOrganization = !hasOrganization || isOrganizationOwner;
+  const isAdminUser = user?.role === 'admin' || user?.role === 'super_admin';
+  const canEditOrganization = !hasOrganization || isOrganizationOwner || isAdminUser;
 
   const [passwordData, setPasswordData] = useState({
     oldPassword: '',
