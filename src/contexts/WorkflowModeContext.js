@@ -917,9 +917,21 @@ export const WorkflowModeProvider = ({ children }) => {
     return stickyWorkflowSteps.find(step => step.type === stepType);
   }, [stickyWorkflowSteps]);
   
-  // Auto-restore workflow state on mount (after all functions are defined)
+  // Auto-restore workflow state AFTER authentication completes (RACE CONDITION FIX)
   useEffect(() => {
-    console.log('🚀 WorkflowModeContext: Component mounted, checking for saved state...');
+    // Only attempt restoration when we have definitive auth state (not during loading)
+    if (user === undefined) {
+      console.log('⏳ WorkflowModeContext: User auth still loading, waiting...');
+      return;
+    }
+    
+    console.log('🚀 WorkflowModeContext: Auth state loaded, checking for saved state...');
+    console.log('🔍 Auth state:', {
+      hasUser: !!user,
+      userId: user?.id || 'None',
+      isAuthenticated,
+      userEmail: user?.email || 'None'
+    });
     
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
@@ -937,14 +949,15 @@ export const WorkflowModeProvider = ({ children }) => {
           savedAt: savedAt.toISOString(),
           ageHours: ageHours.toFixed(2),
           isValid: ageHours <= 24,
-          userId: workflowStateSnapshot.userId,
+          savedUserId: workflowStateSnapshot.userId,
+          currentUserId: user?.id || 'None',
           hasStepResults: !!workflowStateSnapshot.stepResults,
           analysisCompleted: workflowStateSnapshot.analysisCompleted,
           businessName: workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName || 'None'
         });
         
         if (ageHours <= 24) {
-          console.log('🔄 Auto-restoring workflow state on mount...');
+          console.log('🔄 Auto-restoring workflow state after auth completion...');
           const restored = restoreWorkflowState();
           console.log('📊 Auto-restore result:', restored);
         } else {
@@ -954,9 +967,55 @@ export const WorkflowModeProvider = ({ children }) => {
         console.log('📝 No saved state found in localStorage');
       }
     } catch (error) {
-      console.error('❌ Failed to check for saved workflow state on mount:', error);
+      console.error('❌ Failed to check for saved workflow state after auth loading:', error);
     }
-  }, [restoreWorkflowState]);
+  }, [user, isAuthenticated, restoreWorkflowState]); // Wait for auth completion
+  
+  // Fallback restore mechanism - Retry restoration after a delay if race condition still occurs
+  useEffect(() => {
+    let timeoutId;
+    
+    // Only set up fallback if we have saved state but current analysis is empty
+    const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
+                                stepResults.home.websiteAnalysis?.targetAudience &&
+                                stepResults.home.websiteAnalysis?.contentFocus;
+    
+    if (user && isAuthenticated && !hasValidAnalysisData) {
+      const savedState = localStorage.getItem('automate-my-blog-workflow-state');
+      
+      if (savedState) {
+        try {
+          const workflowStateSnapshot = JSON.parse(savedState);
+          const savedUserId = workflowStateSnapshot.userId;
+          const savedBusinessName = workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName;
+          
+          // If localStorage has valid data for current user but state is empty, retry restore
+          if (savedUserId === user.id && savedBusinessName && !hasValidAnalysisData) {
+            console.log('🔄 Setting up fallback restore mechanism...');
+            console.log('📊 Fallback conditions met:', {
+              userMatches: savedUserId === user.id,
+              hasSavedBusinessName: !!savedBusinessName,
+              currentAnalysisEmpty: !hasValidAnalysisData
+            });
+            
+            timeoutId = setTimeout(() => {
+              console.log('⚡ Executing fallback restoration attempt...');
+              const restored = restoreWorkflowState();
+              console.log('📊 Fallback restore result:', restored);
+            }, 500); // Small delay to allow auth context to fully settle
+          }
+        } catch (error) {
+          console.error('❌ Fallback restore setup failed:', error);
+        }
+      }
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [user, isAuthenticated, stepResults.home.websiteAnalysis?.businessName, restoreWorkflowState]);
   
   // SECURITY: Clear user data when user logs out
   useEffect(() => {
