@@ -10,75 +10,6 @@ import autoBlogAPI from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
-// Enhanced audience segments with business intelligence data
-const enhancedAudienceStrategies = [
-  {
-    id: 'working-parents',
-    targetSegment: {
-      demographics: 'Career-focused parents aged 25-40 seeking work-life balance solutions',
-      psychographics: 'Time-constrained professionals who value efficiency and work-life integration over traditional career advancement',
-      searchBehavior: 'Search during early morning or evening hours for productivity and family management solutions'
-    },
-    customerProblem: 'Struggling to balance demanding careers with family responsibilities while maintaining personal well-being',
-    customerLanguage: [
-      'work life balance tips',
-      'productivity for working parents',
-      'time management with kids',
-      'flexible work arrangements'
-    ],
-    conversionPath: 'Educational content about productivity tools leading to consultation for workplace flexibility solutions',
-    businessValue: {
-      searchVolume: '12K monthly searches',
-      conversionPotential: 'High',
-      priority: 1,
-      competition: 'Medium'
-    }
-  },
-  {
-    id: 'remote-professionals',
-    targetSegment: {
-      demographics: 'Distributed team members aged 28-45 optimizing home productivity and career growth',
-      psychographics: 'Self-motivated individuals who value autonomy and seek tools for professional development and collaboration',
-      searchBehavior: 'Active researchers who consume content during work breaks and seek actionable advice'
-    },
-    customerProblem: 'Managing productivity, professional growth, and team collaboration while working from distributed locations',
-    customerLanguage: [
-      'remote work productivity tools',
-      'virtual team collaboration',
-      'home office setup',
-      'remote career advancement'
-    ],
-    conversionPath: 'How-to guides and tool reviews leading to software recommendations and consultation services',
-    businessValue: {
-      searchVolume: '18K monthly searches',
-      conversionPotential: 'High',
-      priority: 2,
-      competition: 'High'
-    }
-  },
-  {
-    id: 'startup-founders',
-    targetSegment: {
-      demographics: 'Early-stage entrepreneurs aged 25-35 building their first company with limited resources',
-      psychographics: 'Risk-tolerant visionaries focused on rapid growth who value practical, actionable business advice',
-      searchBehavior: 'Consume content intensively during problem-solving moments, often late evening research sessions'
-    },
-    customerProblem: 'Navigating the complexities of building a business while managing limited resources and uncertainty',
-    customerLanguage: [
-      'startup funding strategies',
-      'team building for startups',
-      'product market fit validation',
-      'lean startup methodology'
-    ],
-    conversionPath: 'Strategic business content leading to consulting services for growth and operational optimization',
-    businessValue: {
-      searchVolume: '8.5K monthly searches',
-      conversionPotential: 'Medium',
-      priority: 3,
-      competition: 'Low'
-    }
-  }
-];
 
 const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode }) => {
   const { user } = useAuth();
@@ -90,7 +21,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     addStickyWorkflowStep 
   } = useWorkflowMode();
   const [selectedStrategy, setSelectedStrategy] = useState(null);
-  const [strategies, setStrategies] = useState(enhancedAudienceStrategies);
+  const [strategies, setStrategies] = useState([]);
   const [generatingStrategies, setGeneratingStrategies] = useState(false);
   
   // UI helpers from workflow components
@@ -135,7 +66,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             setStrategies(cachedStrategies);
             message.success(`Loaded ${cachedStrategies.length} cached audience strategies from your previous analysis`);
           } else {
-            console.log('📝 No cached analysis found, using default strategies');
+            console.log('📝 No cached analysis found, keeping strategies empty');
           }
         } catch (error) {
           console.error('Failed to load cached analysis:', error);
