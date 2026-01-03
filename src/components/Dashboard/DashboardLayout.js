@@ -209,21 +209,19 @@ const DashboardLayout = ({
       };
     };
 
+    // Store cleanup function in a ref-like object
+    let observerCleanup = null;
+
     // Set up observer with a delay to ensure DOM is ready
     const timeoutId = setTimeout(() => {
-      const cleanup = setupObserver();
-      
-      // Store cleanup function for useEffect cleanup
-      if (cleanup) {
-        timeoutId.cleanup = cleanup;
-      }
+      observerCleanup = setupObserver();
     }, 100);
 
     // Cleanup function for useEffect
     return () => {
       clearTimeout(timeoutId);
-      if (timeoutId.cleanup) {
-        timeoutId.cleanup();
+      if (observerCleanup) {
+        observerCleanup();
       }
     };
   }, [activeTab, user, onActiveTabChange, projectMode, showDashboardLocal]); // Added dependencies that affect section visibility
