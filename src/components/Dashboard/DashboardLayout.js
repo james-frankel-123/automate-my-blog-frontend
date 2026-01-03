@@ -22,6 +22,7 @@ import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
 import ProgressiveHeaders from '../Workflow/ProgressiveHeaders';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
+import ProgressiveStickyHeader from './ProgressiveStickyHeader';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
 import AdminUsersTab from './AdminUsersTab';
@@ -41,7 +42,7 @@ const DashboardLayout = ({
   onActiveTabChange,
   // Progressive headers props
   completedWorkflowSteps = [],
-  stepResults = {},
+  stepResults: propStepResults = {},
   onEditWorkflowStep,
   // Force workflow mode for logged-out users
   forceWorkflowMode = false
@@ -66,7 +67,14 @@ const DashboardLayout = ({
   const user = propUser || contextUser;
   
   // Get modal state from WorkflowModeContext
-  const { showAuthModal, setShowAuthModal, authContext, setAuthContext } = useWorkflowMode();
+  const { 
+    showAuthModal, 
+    setShowAuthModal, 
+    authContext, 
+    setAuthContext,
+    stickyWorkflowSteps,
+    stepResults 
+  } = useWorkflowMode();
   
   // Step management for logged-out users
   const [currentStep, setCurrentStep] = useState(0);
@@ -350,8 +358,8 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Audience Section - Unlocked after step 1 - Hide for new registrations in project mode */}
-        {((!user && visibleSections.includes('audience-segments')) || (user && !projectMode)) && (
+        {/* Audience Section - Unlocked after step 1 */}
+        {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
           <section id="audience-segments" style={{ 
             minHeight: '100vh', 
             background: '#fff',
@@ -367,8 +375,8 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Posts Section - Unlocked after step 2 - Hide for new registrations in project mode */}
-        {((!user && visibleSections.includes('posts')) || (user && !projectMode)) && (
+        {/* Posts Section - Unlocked after step 2 */}
+        {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience.customerStrategy))) && (
           <section id="posts" style={{ 
             minHeight: '100vh', 
             background: '#fff',
@@ -432,6 +440,16 @@ const DashboardLayout = ({
           }}
         />
       ) : null}
+      
+      {/* Progressive Sticky Header - Shows for all users in workflow mode */}
+      {((!user && forceWorkflowMode) || (user && projectMode)) && (
+        <ProgressiveStickyHeader 
+          completedSteps={stickyWorkflowSteps}
+          style={{
+            top: ((!user && forceWorkflowMode) || (user && isNewRegistration && projectMode)) ? '80px' : '140px'
+          }}
+        />
+      )}
       
       {/* Workflow Header for Logged-In Users in Project Mode (but not new registrations) */}
       {user && projectMode && !isNewRegistration && (
@@ -700,7 +718,7 @@ const DashboardLayout = ({
       {user && completedWorkflowSteps.length > 0 && (
         <ProgressiveHeaders 
           completedWorkflowSteps={completedWorkflowSteps}
-          stepResults={stepResults}
+          stepResults={propStepResults}
           onEditStep={onEditWorkflowStep}
         />
       )}
@@ -710,7 +728,11 @@ const DashboardLayout = ({
           padding: isMobile ? '16px 16px 80px 16px' : '24px',
           background: '#f5f5f5',
           overflow: 'auto',
-          paddingTop: (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? '100px' : completedWorkflowSteps.length > 0 ? '8px' : '24px' // Extra padding for progress header
+          paddingTop: (() => {
+            const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : completedWorkflowSteps.length > 0 ? 8 : 24;
+            const stickyHeaderHeight = stickyWorkflowSteps.length * 40; // Each sticky step is ~40px
+            return `${baseHeaderHeight + stickyHeaderHeight}px`;
+          })() // Extra padding for progress header + sticky steps
         }}>
           <div style={{
             background: activeTab === 'settings' || activeTab.startsWith('admin-') ? '#fff' : 'transparent',

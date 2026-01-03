@@ -92,7 +92,8 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
     setBlogGenerating,
     requireAuth,
     requireSignUp,
-    stepResults
+    stepResults,
+    addStickyWorkflowStep
   } = useWorkflowMode();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -239,6 +240,15 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
     
     setSelectedTopic(topic);
     setGeneratingContent(true);
+    
+    // Add to progressive sticky header
+    addStickyWorkflowStep('topicSelection', {
+      title: topic.title,
+      topicName: topic.title,
+      description: topic.description,
+      category: topic.category,
+      timestamp: new Date().toISOString()
+    });
     
     try {
       const result = await contentAPI.generateContent(

@@ -39,6 +39,9 @@ export const WorkflowModeProvider = ({ children }) => {
   // Progressive headers data
   const [progressiveHeaders, setProgressiveHeaders] = useState([]);
   
+  // Progressive sticky header for workflow steps
+  const [stickyWorkflowSteps, setStickyWorkflowSteps] = useState([]);
+  
   // Core workflow progression (mapped from useWorkflowState-v2.js)
   const [currentStep, setCurrentStep] = useState(0); // 0-6 workflow steps
   const [websiteUrl, setWebsiteUrl] = useState(''); // User's website URL
@@ -797,6 +800,40 @@ export const WorkflowModeProvider = ({ children }) => {
     return currentStep && currentStep.tab === tabKey;
   }, [isWorkflowMode, currentWorkflowStep]);
   
+  // =============================================================================
+  // PROGRESSIVE STICKY HEADER MANAGEMENT
+  // =============================================================================
+  
+  // Add a completed step to the sticky header
+  const addStickyWorkflowStep = useCallback((stepType, data) => {
+    setStickyWorkflowSteps(prev => {
+      // Remove existing step of same type and add new one
+      const filtered = prev.filter(step => step.type !== stepType);
+      return [...filtered, { type: stepType, data, timestamp: Date.now() }];
+    });
+  }, []);
+  
+  // Update existing sticky step data
+  const updateStickyWorkflowStep = useCallback((stepType, data) => {
+    setStickyWorkflowSteps(prev => 
+      prev.map(step => 
+        step.type === stepType 
+          ? { ...step, data: { ...step.data, ...data }, timestamp: Date.now() }
+          : step
+      )
+    );
+  }, []);
+  
+  // Clear all sticky workflow steps (on reset/start over)
+  const clearStickyWorkflowSteps = useCallback(() => {
+    setStickyWorkflowSteps([]);
+  }, []);
+  
+  // Get step data by type
+  const getStickyWorkflowStep = useCallback((stepType) => {
+    return stickyWorkflowSteps.find(step => step.type === stepType);
+  }, [stickyWorkflowSteps]);
+  
   // Auto-restore workflow state on mount (after all functions are defined)
   useEffect(() => {
     try {
@@ -958,6 +995,14 @@ export const WorkflowModeProvider = ({ children }) => {
     addProgressiveHeader,
     removeProgressiveHeader,
     editProgressiveHeader,
+    
+    // Progressive sticky header for workflow steps
+    stickyWorkflowSteps,
+    setStickyWorkflowSteps,
+    addStickyWorkflowStep,
+    updateStickyWorkflowStep,
+    clearStickyWorkflowSteps,
+    getStickyWorkflowStep,
     
     // =============================================================================
     // NAVIGATION FUNCTIONS

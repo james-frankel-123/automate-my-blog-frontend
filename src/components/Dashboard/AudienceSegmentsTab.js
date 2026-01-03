@@ -85,7 +85,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const { 
     setSelectedCustomerStrategy,
     updateCustomerStrategy,
-    stepResults 
+    stepResults,
+    addStickyWorkflowStep 
   } = useWorkflowMode();
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [strategies, setStrategies] = useState(enhancedAudienceStrategies);
@@ -201,10 +202,19 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     
     setSelectedStrategy(enhancedStrategy);
     
-    if (tabMode.mode === 'workflow') {
+    if (tabMode.mode === 'workflow' || forceWorkflowMode) {
       // Update unified workflow state
       setSelectedCustomerStrategy(enhancedStrategy);
       updateCustomerStrategy(enhancedStrategy);
+      
+      // Add to progressive sticky header
+      addStickyWorkflowStep('audienceSelection', {
+        audienceName: strategy.targetSegment?.demographics?.split(' ').slice(0, 4).join(' ') + '...' || 'Selected Audience',
+        targetSegment: strategy.targetSegment,
+        customerProblem: strategy.customerProblem,
+        businessValue: strategy.businessValue,
+        timestamp: new Date().toISOString()
+      });
       
       message.success(`Selected audience strategy: ${strategy.targetSegment.demographics.split(' ')[0]}...`);
     }

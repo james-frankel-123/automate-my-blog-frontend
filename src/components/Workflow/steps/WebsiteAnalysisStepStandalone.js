@@ -45,6 +45,8 @@ const WebsiteAnalysisStepStandalone = ({
   // Event handlers
   onAnalysisComplete,
   onStartOver,
+  addStickyWorkflowStep,
+  updateStickyWorkflowStep,
   
   // Configuration
   embedded = false,
@@ -125,6 +127,14 @@ const WebsiteAnalysisStepStandalone = ({
       
       updateLoading(true);
 
+      // Add to progressive sticky header immediately when analysis starts
+      addStickyWorkflowStep && addStickyWorkflowStep('websiteAnalysis', {
+        websiteUrl: validation.formattedUrl,
+        businessName: '', // Will be updated after analysis completes
+        businessType: '',
+        timestamp: new Date().toISOString()
+      });
+
       // Phase-by-phase progress messages
       const progressMessages = [
         'Analyzing website content...',
@@ -151,6 +161,14 @@ const WebsiteAnalysisStepStandalone = ({
         setWebsiteUrl && setWebsiteUrl(validation.formattedUrl);
         
         message.success('Website analysis completed successfully!');
+        
+        // Update sticky header with business name after analysis completes
+        updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
+          websiteUrl: validation.formattedUrl,
+          businessName: result.analysis?.businessName || result.analysis?.companyName || '',
+          businessType: result.analysis?.businessType || result.analysis?.industry || '',
+          ...result.analysis
+        });
         
         // Notify parent component
         onAnalysisComplete && onAnalysisComplete({

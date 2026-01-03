@@ -77,7 +77,9 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     updateWebsiteAnalysis,
     updateWebSearchInsights,
     updateAnalysisCompleted,
-    requireAuth 
+    requireAuth,
+    addStickyWorkflowStep,
+    updateStickyWorkflowStep 
   } = useWorkflowMode();
   const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
   const [discoveries, setDiscoveries] = useState(dummyDiscoveries.slice(0, 2)); // Show top 2 on dashboard
@@ -134,32 +136,31 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     updateWebsiteAnalysis(data.analysis);
     updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
     updateAnalysisCompleted(true);
+    
+    // Update progressive sticky header with analysis results
+    updateStickyWorkflowStep('websiteAnalysis', {
+      websiteUrl: websiteUrl,
+      businessName: data.analysis?.businessName || data.analysis?.companyName || '',
+      businessType: data.analysis?.businessType || data.analysis?.industry || '',
+      ...data.analysis
+    });
   };
   
   // Handle continue to next step - scroll to audience section in workflow mode
   const handleContinueToAudience = () => {
-    // First, advance to the audience step in the workflow
-    const stepData = {
-      websiteAnalysis: stepResults.home.websiteAnalysis,
-      webSearchInsights: stepResults.home.webSearchInsights,
-      analysisCompleted: true,
-      timestamp: new Date().toISOString()
-    };
+    console.log('🚀 Continue to Audience clicked');
     
-    // Use the workflow mode context to advance to the next step
-    tabMode.continueToNextStep(stepData);
-    
-    // Then scroll to audience section  
-    setTimeout(() => {
-      const audienceSection = document.getElementById('audience-segments');
-      if (audienceSection) {
-        audienceSection.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start' 
-        });
-        console.log('🚀 Advanced to audience selection step and scrolled to section');
-      }
-    }, 100); // Small delay to ensure workflow state updates first
+    // Scroll to audience section immediately
+    const audienceSection = document.getElementById('audience-segments');
+    if (audienceSection) {
+      audienceSection.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start' 
+      });
+      console.log('✅ Scrolled to audience section');
+    } else {
+      console.error('❌ Could not find audience-segments section');
+    }
   };
 
   // Prepare step data for workflow mode
@@ -226,6 +227,8 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                   
                   // Event handlers
                   onAnalysisComplete={handleAnalysisComplete}
+                  addStickyWorkflowStep={addStickyWorkflowStep}
+                  updateStickyWorkflowStep={updateStickyWorkflowStep}
                   
                   // Configuration
                   embedded={true}
