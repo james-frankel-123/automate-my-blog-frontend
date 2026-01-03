@@ -446,8 +446,8 @@ const DashboardLayout = ({
               localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
             }
             
-            // Clear "just saved" state after 5 seconds
-            setTimeout(() => setProjectJustSaved(false), 5000);
+            // Clear "just saved" state after 10 seconds
+            setTimeout(() => setProjectJustSaved(false), 10000);
             
             message.success('Project saved! Dashboard is now available via sidebar.');
           }}

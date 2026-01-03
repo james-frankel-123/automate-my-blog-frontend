@@ -47,6 +47,11 @@ const UnifiedWorkflowHeader = ({
         setTimeout(() => {
           console.log('🎨 Starting gradient sweep animation');
           setShowGradientSweep(true);
+          
+          // End gradient sweep after animation completes (1.5s)
+          setTimeout(() => {
+            setShowGradientSweep(false);
+          }, 1500);
         }, 1000);
       }
       setTextKey(prev => prev + 1);
@@ -200,8 +205,8 @@ const UnifiedWorkflowHeader = ({
           <Title level={2} style={{
             color: showGradientSweep ? 'transparent' : '#1890ff',
             marginBottom: '8px',
-            background: showGradientSweep ? 'linear-gradient(90deg, transparent, black, transparent)' : 'none',
-            backgroundSize: showGradientSweep ? '200% 100%' : 'auto',
+            background: showGradientSweep ? 'linear-gradient(90deg, transparent, black)' : 'none',
+            backgroundSize: showGradientSweep ? '100% 100%' : 'auto',
             backgroundClip: showGradientSweep ? 'text' : 'border-box',
             WebkitBackgroundClip: showGradientSweep ? 'text' : 'border-box',
             animation: showGradientSweep ? 'gradientSweep 1.5s ease-in-out' : 'none'
@@ -374,10 +379,10 @@ const UnifiedWorkflowHeader = ({
 
         @keyframes gradientSweep {
           0% {
-            background-position: -200% 0;
+            background-position: -100% 0;
           }
           100% {
-            background-position: 200% 0;
+            background-position: 0% 0;
           }
         }
 
