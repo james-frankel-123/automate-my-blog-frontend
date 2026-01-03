@@ -341,6 +341,28 @@ export const WorkflowModeProvider = ({ children }) => {
       mode,
       currentStep
     });
+    console.log('💾 Auth context during save:', {
+      userId: user?.id,
+      userEmail: user?.email,
+      isAuthenticated,
+      userIdType: typeof user?.id
+    });
+    
+    // Validate that we have meaningful data to save
+    const hasValidAnalysisData = stepResults?.home?.websiteAnalysis?.businessName && 
+                                 stepResults?.home?.websiteAnalysis?.targetAudience &&
+                                 stepResults?.home?.websiteAnalysis?.contentFocus;
+    
+    // Only save if we have valid analysis data when analysis is marked complete
+    if (analysisCompleted && !hasValidAnalysisData) {
+      console.log('⚠️ Analysis marked complete but data incomplete, skipping save');
+      console.log('🔍 Analysis data check:', {
+        businessName: stepResults?.home?.websiteAnalysis?.businessName || 'Missing',
+        targetAudience: stepResults?.home?.websiteAnalysis?.targetAudience || 'Missing',
+        contentFocus: stepResults?.home?.websiteAnalysis?.contentFocus || 'Missing'
+      });
+      return false;
+    }
     
     try {
       const workflowStateSnapshot = {
@@ -432,6 +454,14 @@ export const WorkflowModeProvider = ({ children }) => {
       // AUTH SECURITY CHECK: Prevent data leakage across user sessions
       if (workflowStateSnapshot.userId && workflowStateSnapshot.userId !== user?.id) {
         console.log('🚨 Auth validation failed: Saved state belongs to different user, clearing');
+        console.log('🔍 Auth mismatch details:', {
+          savedUserId: workflowStateSnapshot.userId,
+          currentUserId: user?.id,
+          currentUser: user?.email,
+          isUserAuthenticated: !!user,
+          savedUserIdType: typeof workflowStateSnapshot.userId,
+          currentUserIdType: typeof user?.id
+        });
         clearSavedWorkflowState();
         return false;
       }

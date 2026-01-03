@@ -158,6 +158,42 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     loadCachedAnalysis();
   }, [user, tabMode.mode, forceWorkflowMode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
 
+  // Auto-save workflow state when analysis completes (proper state-based timing)
+  useEffect(() => {
+    const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
+                                stepResults.home.websiteAnalysis?.targetAudience &&
+                                stepResults.home.websiteAnalysis?.contentFocus;
+    
+    // Only auto-save if analysis is completed AND we have valid data AND user is logged in
+    if (stepResults.home.analysisCompleted && hasValidAnalysisData && user) {
+      console.log('💾 Auto-saving workflow state due to analysis completion...');
+      console.log('💾 Analysis data present:', {
+        businessName: stepResults.home.websiteAnalysis.businessName,
+        targetAudience: stepResults.home.websiteAnalysis.targetAudience,
+        contentFocus: stepResults.home.websiteAnalysis.contentFocus,
+        analysisCompleted: stepResults.home.analysisCompleted
+      });
+      
+      // Save with a small delay to ensure all React updates are complete
+      setTimeout(() => {
+        const saved = saveWorkflowState();
+        console.log('💾 Auto-save result after analysis completion:', saved);
+        
+        // Verify what was actually saved
+        const verification = localStorage.getItem('automate-my-blog-workflow-state');
+        if (verification) {
+          const parsedVerification = JSON.parse(verification);
+          console.log('🔍 Verification - what was actually saved:', {
+            analysisCompleted: parsedVerification.analysisCompleted,
+            businessName: parsedVerification.stepResults?.home?.websiteAnalysis?.businessName,
+            hasStepResults: !!parsedVerification.stepResults,
+            savedAt: parsedVerification.savedAt
+          });
+        }
+      }, 200); // Slightly longer delay for state propagation
+    }
+  }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, user, saveWorkflowState]);
+
   // Check user access for discovery features
   const isPaidUser = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
   const hasRemainingPosts = user?.remainingPosts > 0;
@@ -222,25 +258,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       ...data.analysis
     });
     
-    // Auto-save workflow state to localStorage to preserve data across page refreshes
-    console.log('💾 Triggering auto-save in 100ms...');
-    setTimeout(() => {
-      console.log('💾 Executing auto-save now...');
-      const saved = saveWorkflowState();
-      console.log('💾 Auto-save result after analysis completion:', saved);
-      
-      // Verify what was actually saved
-      const verification = localStorage.getItem('automate-my-blog-workflow-state');
-      if (verification) {
-        const parsedVerification = JSON.parse(verification);
-        console.log('🔍 Verification - what was actually saved:', {
-          analysisCompleted: parsedVerification.analysisCompleted,
-          businessName: parsedVerification.stepResults?.home?.websiteAnalysis?.businessName,
-          hasStepResults: !!parsedVerification.stepResults,
-          savedAt: parsedVerification.savedAt
-        });
-      }
-    }, 100); // Small delay to ensure all state updates are applied
+    // Note: Auto-save is now handled by useEffect below to ensure proper state propagation
   };
   
   // Handle continue to next step - scroll to audience section in workflow mode
