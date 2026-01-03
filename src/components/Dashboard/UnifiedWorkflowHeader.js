@@ -30,7 +30,6 @@ const UnifiedWorkflowHeader = ({
 }) => {
   const [textKey, setTextKey] = useState(0);
   const [previousUser, setPreviousUser] = useState(user);
-  const [showWelcomeTransition, setShowWelcomeTransition] = useState(false);
   const [showGradientSweep, setShowGradientSweep] = useState(false);
 
   // Trigger text transition animation when auth state changes
@@ -38,10 +37,8 @@ const UnifiedWorkflowHeader = ({
     if (previousUser !== user) {
       console.log('🎨 UnifiedWorkflowHeader: User state changed', { previousUser: previousUser?.email, currentUser: user?.email });
       if (!previousUser && user) {
-        // User just logged in - show welcome transition and trigger gradient sweep
-        console.log('🎨 Triggering welcome transition and gradient sweep');
-        setShowWelcomeTransition(true);
-        setTimeout(() => setShowWelcomeTransition(false), 2000);
+        // User just logged in - trigger gradient sweep
+        console.log('🎨 Triggering gradient sweep');
         
         // Trigger gradient sweep 1 second after user state changes
         setTimeout(() => {
@@ -311,31 +308,6 @@ const UnifiedWorkflowHeader = ({
           </div>
         )}
 
-        {/* Welcome transition overlay for login */}
-        {showWelcomeTransition && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              background: 'rgba(255,255,255,0.95)',
-              padding: '20px 40px',
-              borderRadius: '12px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-              animation: 'welcomePulse 2s ease-out',
-              zIndex: 10,
-              textAlign: 'center'
-            }}
-          >
-            <div style={{ color: '#52c41a', fontSize: '18px', fontWeight: 600 }}>
-              Welcome back! 🎉
-            </div>
-            <div style={{ color: '#666', fontSize: '14px', marginTop: '4px' }}>
-              Your project progress has been preserved
-            </div>
-          </div>
-        )}
       </div>
 
       {/* CSS animations for smooth transitions */}
@@ -362,20 +334,6 @@ const UnifiedWorkflowHeader = ({
           }
         }
 
-        @keyframes welcomePulse {
-          0% {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(0.8);
-          }
-          50% {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1.05);
-          }
-          100% {
-            opacity: 0;
-            transform: translate(-50%, -50%) scale(1);
-          }
-        }
 
         @keyframes gradientSweep {
           0% {
