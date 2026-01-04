@@ -224,7 +224,7 @@ const DashboardLayout = ({
         observerCleanup();
       }
     };
-  }, [activeTab, user, onActiveTabChange, projectMode, showDashboardLocal]); // Added dependencies that affect section visibility
+  }, [user, onActiveTabChange, projectMode, showDashboardLocal]); // Note: activeTab excluded to prevent feedback loop (observer sets activeTab → useEffect restarts → observer resets)
   
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
