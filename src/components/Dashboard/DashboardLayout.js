@@ -159,38 +159,47 @@ const DashboardLayout = ({
         threshold: [0.1, 0.3, 0.5, 0.7] // Multiple thresholds for better detection
       };
 
+      // Track visibility of all sections to get complete picture
+      const sectionVisibility = new Map();
+
       const observer = new IntersectionObserver((entries) => {
-        // Enhanced debugging: log all intersection entries
-        console.log('🔍 All intersection entries:', entries.map(entry => ({
+        // Update visibility map for sections that changed
+        entries.forEach((entry) => {
+          sectionVisibility.set(entry.target.id, entry.intersectionRatio);
+        });
+
+        // Enhanced debugging: show what changed and current state
+        console.log('🔍 Intersection changes:', entries.map(entry => ({
           id: entry.target.id,
           ratio: entry.intersectionRatio.toFixed(3),
-          isIntersecting: entry.isIntersecting,
-          boundingRect: {
-            top: Math.round(entry.boundingClientRect.top),
-            height: Math.round(entry.boundingClientRect.height)
-          }
+          isIntersecting: entry.isIntersecting
         })));
+        
+        console.log('📊 All section visibility:', Array.from(sectionVisibility.entries()).map(([id, ratio]) => 
+          `${id}: ${ratio.toFixed(3)}`
+        ).join(', '));
 
-        // Find the section with the highest intersection ratio
+        // Find section with highest visibility from complete picture
         let mostVisible = null;
         let highestRatio = 0;
 
-        entries.forEach((entry) => {
-          if (entry.intersectionRatio > highestRatio) {
-            highestRatio = entry.intersectionRatio;
-            mostVisible = entry.target;
+        sectionVisibility.forEach((ratio, sectionId) => {
+          if (ratio > highestRatio) {
+            highestRatio = ratio;
+            mostVisible = sectionId;
           }
         });
 
-        // Update activeTab if we found a visible section
-        if (mostVisible && highestRatio > 0.1) { // Lower threshold for better responsiveness
-          const sectionInfo = existingSections.find(s => s.id === mostVisible.id);
+        // Update activeTab only if we have a significantly visible section
+        if (mostVisible && highestRatio > 0.3) { // Higher threshold to reduce sensitivity
+          const sectionInfo = existingSections.find(s => s.id === mostVisible);
           if (sectionInfo) {
-            console.log('📍 Scroll detected - highlighting menu item:', {
+            console.log('📍 Menu update:', {
               section: sectionInfo.tabKey,
               visibilityRatio: highestRatio.toFixed(3),
-              currentElement: mostVisible.id,
-              allRatios: entries.map(e => `${e.target.id}: ${e.intersectionRatio.toFixed(3)}`).join(', ')
+              allVisibility: Array.from(sectionVisibility.entries()).map(([id, ratio]) => 
+                `${id}: ${ratio.toFixed(3)}`
+              ).join(', ')
             });
             setActiveTab(sectionInfo.tabKey);
             if (onActiveTabChange) {
