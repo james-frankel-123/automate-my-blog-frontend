@@ -155,11 +155,22 @@ const DashboardLayout = ({
 
       const observerOptions = {
         root: null, // Use viewport as root
-        rootMargin: '-10% 0px -10% 0px', // Trigger when section is 10% into viewport (more sensitive)
+        rootMargin: '0px', // Temporarily removed to debug ratio calculation issues
         threshold: [0.1, 0.3, 0.5, 0.7] // Multiple thresholds for better detection
       };
 
       const observer = new IntersectionObserver((entries) => {
+        // Enhanced debugging: log all intersection entries
+        console.log('🔍 All intersection entries:', entries.map(entry => ({
+          id: entry.target.id,
+          ratio: entry.intersectionRatio.toFixed(3),
+          isIntersecting: entry.isIntersecting,
+          boundingRect: {
+            top: Math.round(entry.boundingClientRect.top),
+            height: Math.round(entry.boundingClientRect.height)
+          }
+        })));
+
         // Find the section with the highest intersection ratio
         let mostVisible = null;
         let highestRatio = 0;
@@ -177,8 +188,9 @@ const DashboardLayout = ({
           if (sectionInfo) {
             console.log('📍 Scroll detected - highlighting menu item:', {
               section: sectionInfo.tabKey,
-              visibilityRatio: highestRatio.toFixed(2),
-              currentElement: mostVisible.id
+              visibilityRatio: highestRatio.toFixed(3),
+              currentElement: mostVisible.id,
+              allRatios: entries.map(e => `${e.target.id}: ${e.intersectionRatio.toFixed(3)}`).join(', ')
             });
             setActiveTab(sectionInfo.tabKey);
             if (onActiveTabChange) {
