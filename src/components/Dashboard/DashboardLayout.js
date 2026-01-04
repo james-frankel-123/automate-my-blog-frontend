@@ -174,11 +174,11 @@ const DashboardLayout = ({
         // Update activeTab if we found a visible section
         if (mostVisible && highestRatio > 0.1) { // Lower threshold for better responsiveness
           const sectionInfo = existingSections.find(s => s.id === mostVisible.id);
-          if (sectionInfo && sectionInfo.tabKey !== activeTab) {
+          if (sectionInfo) {
             console.log('📍 Scroll detected - highlighting menu item:', {
               section: sectionInfo.tabKey,
               visibilityRatio: highestRatio.toFixed(2),
-              previousTab: activeTab
+              currentElement: mostVisible.id
             });
             setActiveTab(sectionInfo.tabKey);
             if (onActiveTabChange) {
