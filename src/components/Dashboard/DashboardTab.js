@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Statistic, Button, Space, Switch, Alert, List, Tag, Timeline, Typography, Divider, Input, message } from 'antd';
+import { Card, Row, Col, Button, Space, Typography, message } from 'antd';
 import {
-  FileTextOutlined,
-  FolderOutlined,
-  EyeOutlined,
-  TrophyOutlined,
   PlusOutlined,
-  SearchOutlined,
-  RobotOutlined,
-  PlayCircleOutlined,
-  PauseCircleOutlined,
-  SettingOutlined,
-  RiseOutlined,
-  UserOutlined,
-  GlobalOutlined,
-  ClockCircleOutlined,
   EditOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
@@ -27,43 +14,6 @@ import autoBlogAPI from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
-// DUMMY DATA - Discovery automation settings (integrated from DiscoveryTab)
-const dummyAutomationSettings = {
-  enabled: true,
-  frequency: 'weekly',
-  focusAreas: ['keywords', 'customer-segments', 'industry-news'],
-  lastRun: '2024-01-10T14:30:00Z',
-  nextRun: '2024-01-17T14:30:00Z',
-  successfulRuns: 12,
-  failedRuns: 1,
-  isDummy: true
-};
-
-// DUMMY DATA - Recent discovery results (integrated from DiscoveryTab)
-const dummyDiscoveries = [
-  {
-    id: 'dummy_discovery_1',
-    type: 'keyword',
-    title: 'AI productivity tools',
-    description: 'Trending keyword with 40% search volume increase over last 30 days',
-    impact: 'High potential for traffic growth',
-    date: '2024-01-10T00:00:00Z',
-    confidence: 85,
-    actionTaken: false,
-    isDummy: true
-  },
-  {
-    id: 'dummy_discovery_2',
-    type: 'customer-segment',
-    title: 'Remote team managers',
-    description: 'New customer segment identified through social media analysis',
-    impact: 'Untapped audience with high conversion potential',
-    date: '2024-01-09T00:00:00Z',
-    confidence: 92,
-    actionTaken: true,
-    isDummy: true
-  }
-];
 
 const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false }) => {
   const { user } = useAuth();
@@ -81,19 +31,18 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     requireAuth,
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
-    saveWorkflowState
+    saveWorkflowState,
+    // Session management
+    sessionId,
+    initializeSession,
+    loadUserAudiences
   } = useWorkflowMode();
-  const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
-  const [discoveries, setDiscoveries] = useState(dummyDiscoveries.slice(0, 2)); // Show top 2 on dashboard
-  const [loading, setLoading] = useState(false);
   
   // Keep only UI-specific local state
   const [scanningMessage, setScanningMessage] = useState('');
 
   // Load cached analysis for logged-in users
   useEffect(() => {
-    console.log('🚀 DashboardTab: Analysis loading useEffect triggered');
-    console.log('📊 Current stepResults.home:', stepResults.home);
     
     const loadCachedAnalysis = async () => {
       // Check if we need to load analysis data
@@ -101,27 +50,14 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                                   stepResults.home.websiteAnalysis?.targetAudience &&
                                   stepResults.home.websiteAnalysis?.contentFocus;
       
-      console.log('🔍 Analysis state check:', {
-        user: !!user,
-        userId: user?.id,
-        forceWorkflowMode,
-        tabMode: tabMode.mode,
-        analysisCompleted: stepResults.home.analysisCompleted,
-        hasValidData: hasValidAnalysisData,
-        businessName: stepResults.home.websiteAnalysis?.businessName || 'None',
-        targetAudience: stepResults.home.websiteAnalysis?.targetAudience || 'None',
-        contentFocus: stepResults.home.websiteAnalysis?.contentFocus || 'None',
-        fullWebsiteAnalysis: stepResults.home.websiteAnalysis
-      });
+      // Analysis state check
       
       // Load for authenticated users who don't have complete analysis data
       if (user && !forceWorkflowMode && tabMode.mode === 'focus' && !hasValidAnalysisData) {
         try {
-          console.log('🔍 Loading cached analysis for dashboard...');
           const response = await autoBlogAPI.getRecentAnalysis();
           
           if (response.success && response.analysis) {
-            console.log('📊 Found cached analysis:', response.analysis.businessName || 'Unknown business');
             
             // Update the unified workflow state with cached data
             updateWebsiteAnalysis(response.analysis);
@@ -136,27 +72,38 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
               ...response.analysis
             });
             
-            console.log('✅ Cached analysis loaded successfully');
           } else {
-            console.log('ℹ️ No cached analysis found in database');
           }
         } catch (error) {
-          console.error('❌ Failed to load cached analysis:', error.message);
+          console.error('Failed to load cached analysis:', error.message);
           // Don't show error to user - this is just a nice-to-have feature
         }
       } else if (hasValidAnalysisData) {
-        console.log('✅ Analysis data already present, skipping database load');
+        // Analysis data already present, skipping database load
       } else {
-        console.log('ℹ️ Skipping cached analysis load:', {
-          reason: !user ? 'Not authenticated' : 
-                  forceWorkflowMode ? 'In forced workflow mode' :
-                  tabMode.mode !== 'focus' ? 'Not in focus mode' : 'Other'
-        });
+        // Skipping cached analysis load
       }
     };
 
     loadCachedAnalysis();
   }, [user, tabMode.mode, forceWorkflowMode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
+
+  // Initialize session for anonymous users
+  useEffect(() => {
+    const handleSessionInitialization = async () => {
+      // Only initialize session for anonymous users if session doesn't exist
+      if (!user && !sessionId && tabMode.mode === 'focus') {
+        console.log('🆔 DashboardTab: Initializing session for anonymous user');
+        try {
+          await initializeSession();
+        } catch (error) {
+          console.error('Failed to initialize session in DashboardTab:', error);
+        }
+      }
+    };
+
+    handleSessionInitialization();
+  }, [user, sessionId, tabMode.mode, initializeSession]);
 
   // Auto-save workflow state when analysis completes (proper state-based timing)
   useEffect(() => {
@@ -164,72 +111,26 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                                 stepResults.home.websiteAnalysis?.targetAudience &&
                                 stepResults.home.websiteAnalysis?.contentFocus;
     
-    // Enhanced debugging - always log conditions being checked
-    console.log('🔍 Auto-save conditions check:', {
-      analysisCompleted: stepResults.home.analysisCompleted,
-      hasValidAnalysisData,
-      hasUser: !!user,
-      userId: user?.id || 'None',
-      businessName: stepResults.home.websiteAnalysis?.businessName || 'Missing',
-      targetAudience: stepResults.home.websiteAnalysis?.targetAudience || 'Missing',
-      contentFocus: stepResults.home.websiteAnalysis?.contentFocus || 'Missing',
-      allConditionsMet: stepResults.home.analysisCompleted && hasValidAnalysisData && user
-    });
+    // Auto-save conditions check
     
     // Only auto-save if analysis is completed AND we have valid data AND user is logged in
     if (stepResults.home.analysisCompleted && hasValidAnalysisData && user) {
-      console.log('💾 Auto-saving workflow state due to analysis completion...');
-      console.log('💾 Analysis data present:', {
-        businessName: stepResults.home.websiteAnalysis.businessName,
-        targetAudience: stepResults.home.websiteAnalysis.targetAudience,
-        contentFocus: stepResults.home.websiteAnalysis.contentFocus,
-        analysisCompleted: stepResults.home.analysisCompleted
-      });
-      
       // Save with a small delay to ensure all React updates are complete
       setTimeout(() => {
         const saved = saveWorkflowState();
-        console.log('💾 Auto-save result after analysis completion:', saved);
         
         // Verify what was actually saved
         const verification = localStorage.getItem('automate-my-blog-workflow-state');
         if (verification) {
           const parsedVerification = JSON.parse(verification);
-          console.log('🔍 Verification - what was actually saved:', {
-            analysisCompleted: parsedVerification.analysisCompleted,
-            businessName: parsedVerification.stepResults?.home?.websiteAnalysis?.businessName,
-            hasStepResults: !!parsedVerification.stepResults,
-            savedAt: parsedVerification.savedAt
-          });
+          // Verification successful
         } else {
-          console.error('❌ No data found in localStorage after attempted save!');
+          console.error('No data found in localStorage after attempted save!');
         }
       }, 200); // Slightly longer delay for state propagation
-    } else {
-      console.log('⏸️ Auto-save skipped - conditions not met');
     }
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, user, saveWorkflowState]);
 
-  // Check user access for discovery features
-  const isPaidUser = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
-  const hasRemainingPosts = user?.remainingPosts > 0;
-  const canUseDiscovery = !user ? true : isPaidUser ? true : hasRemainingPosts;
-
-  const getDiscoveryIcon = (type) => {
-    switch (type) {
-      case 'keyword': return <RiseOutlined style={{ color: '#1890ff' }} />;
-      case 'customer-segment': return <UserOutlined style={{ color: '#52c41a' }} />;
-      case 'industry-news': return <GlobalOutlined style={{ color: '#fa8c16' }} />;
-      case 'competitor': return <SearchOutlined style={{ color: '#722ed1' }} />;
-      default: return <RobotOutlined style={{ color: '#666' }} />;
-    }
-  };
-
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 80) return 'green';
-    if (confidence >= 60) return 'orange';
-    return 'red';
-  };
 
   const handleCreateNewPost = () => {
     // This starts the guided project from Dashboard → Audience → Posts
@@ -241,49 +142,13 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     message.success('Starting guided creation project');
   };
 
-  const handleGenerateContent = (discovery) => {
-    if (!canUseDiscovery) {
-      message.warning('Please upgrade your plan to generate content from discoveries');
-      return;
-    }
-    
-    message.success(`Content generation started for: ${discovery.title}`);
-  };
 
   // Handle analysis completion from standalone component
   const handleAnalysisComplete = (data) => {
-    console.log('🎉 Analysis completed in DashboardTab:', {
-      hasData: !!data,
-      hasAnalysis: !!data?.analysis,
-      businessName: data?.analysis?.businessName,
-      targetAudience: data?.analysis?.targetAudience,
-      contentFocus: data?.analysis?.contentFocus,
-      fullData: data
-    });
-    
     // Update unified workflow state only (no local state)
-    console.log('📊 Updating workflow state with analysis data...');
-    console.log('📊 Analysis data being passed to updateWebsiteAnalysis:', {
-      businessName: data?.analysis?.businessName,
-      targetAudience: data?.analysis?.targetAudience,
-      contentFocus: data?.analysis?.contentFocus,
-      hasAllRequiredFields: !!(data?.analysis?.businessName && data?.analysis?.targetAudience && data?.analysis?.contentFocus)
-    });
-    
     updateWebsiteAnalysis(data.analysis);
     updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
     updateAnalysisCompleted(true);
-    console.log('✅ Workflow state updated');
-    
-    // Log current state after updates to see if they took effect
-    setTimeout(() => {
-      console.log('🔍 Post-update state check:', {
-        analysisCompleted: stepResults.home.analysisCompleted,
-        businessName: stepResults.home.websiteAnalysis?.businessName,
-        targetAudience: stepResults.home.websiteAnalysis?.targetAudience,
-        contentFocus: stepResults.home.websiteAnalysis?.contentFocus
-      });
-    }, 50);
     
     // Update progressive sticky header with analysis results
     updateStickyWorkflowStep('websiteAnalysis', {
@@ -298,7 +163,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   
   // Handle continue to next step - scroll to audience section in workflow mode
   const handleContinueToAudience = () => {
-    console.log('🚀 Continue to Audience clicked');
     
     // Scroll to audience section immediately
     const audienceSection = document.getElementById('audience-segments');
@@ -307,9 +171,8 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
         behavior: 'smooth', 
         block: 'start' 
       });
-      console.log('✅ Scrolled to audience section');
     } else {
-      console.error('❌ Could not find audience-segments section');
+      console.error('Could not find audience-segments section');
     }
   };
 
@@ -425,103 +288,10 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
             >
 
 
-      <Row gutter={[16, 16]}>
-        {/* Content Discovery Section */}
-        <Col xs={24} lg={12}>
-          <Card
-            title={
-              <Space>
-                <SearchOutlined style={{ color: '#1890ff' }} />
-                Content Discovery
-              </Space>
-            }
-            extra={
-              <Button 
-                type="link" 
-                size="small"
-                onClick={() => message.info('Configure automation in Settings → Content Discovery')}
-              >
-                Settings
-              </Button>
-            }
-            style={{ height: '400px' }}
-          >
-            {!canUseDiscovery && !user && (
-              <Alert
-                message="Demo Mode"
-                description="Create an account to use automated discovery features."
-                type="info"
-                showIcon
-                style={{ marginBottom: '16px' }}
-              />
-            )}
-
-            <div style={{ marginBottom: '16px' }}>
-              <Text strong>Discovery Status: </Text>
-              <Tag color={automationSettings.enabled && canUseDiscovery ? 'green' : 'default'}>
-                {automationSettings.enabled && canUseDiscovery ? 'Active' : 'Paused'}
-              </Tag>
-            </div>
-
-            <Divider style={{ margin: '12px 0' }} />
-
-            {discoveries.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <SearchOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
-                <Text type="secondary">No recent discoveries</Text>
-              </div>
-            ) : (
-              <List
-                dataSource={discoveries}
-                renderItem={(discovery) => (
-                  <List.Item
-                    key={discovery.id}
-                    style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: '12px', marginBottom: '12px' }}
-                  >
-                    <List.Item.Meta
-                      avatar={getDiscoveryIcon(discovery.type)}
-                      title={
-                        <Space>
-                          <span style={{ fontSize: '14px', fontWeight: 500 }}>{discovery.title}</span>
-                          <Tag size="small" color={getConfidenceColor(discovery.confidence)}>
-                            {discovery.confidence}%
-                          </Tag>
-                        </Space>
-                      }
-                      description={
-                        <div>
-                          <Text style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>
-                            {discovery.description}
-                          </Text>
-                          <Text strong style={{ fontSize: '12px', color: '#1890ff' }}>
-                            {discovery.impact}
-                          </Text>
-                        </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-            )}
-
-            <Button
-              type="primary"
-              icon={<PlayCircleOutlined />}
-              onClick={() => message.info('Run discovery from Settings → Content Discovery')}
-              disabled={!canUseDiscovery}
-              block
-              style={{ marginTop: '12px' }}
-            >
-              Configure Discovery
-            </Button>
-          </Card>
-        </Col>
-
-      </Row>
             </div>
             
             {/* CSS animations for dashboard features */}
-            <style jsx>{`
+            <style jsx="true">{`
               @keyframes fadeInUp {
                 from {
                   opacity: 0;

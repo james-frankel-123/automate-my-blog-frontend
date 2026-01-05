@@ -1,8 +1,41 @@
+// Module-level cache for request deduplication (shared across all instances)
+const activeRequests = new Map();
+
 // Automate My Blog API Service
 class AutoBlogAPI {
   constructor() {
     // Use environment variable for backend URL and ensure no trailing slash
     this.baseURL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
+  }
+
+  /**
+   * Get current user ID from stored auth token
+   * Returns null if no user is logged in
+   */
+  getCurrentUserId() {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return null;
+    
+    try {
+      // JWT tokens have user info in the payload (second part)
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.userId || payload.id || payload.sub || null;
+    } catch (error) {
+      console.warn('Failed to extract user ID from token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear cached analysis data (call when user performs new website analysis)
+   */
+  clearCachedAnalysis(userId = null) {
+    const targetUserId = userId || this.getCurrentUserId();
+    if (!targetUserId) return;
+    
+    const cacheKey = `recentAnalysis_${targetUserId}`;
+    sessionStorage.removeItem(cacheKey);
+    console.log(`🧹 Cleared cached analysis for user: ${targetUserId}`);
   }
 
   /**
@@ -24,6 +57,12 @@ class AutoBlogAPI {
     const token = localStorage.getItem('accessToken');
     if (token) {
       defaultOptions.headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔍 makeRequest: Added Authorization header', { 
+        endpoint: normalizedEndpoint,
+        tokenStart: token.substring(0, 20) + '...'
+      });
+    } else {
+      console.log('🔍 makeRequest: No token found', { endpoint: normalizedEndpoint });
     }
 
     // Add timeout with fallback for older browsers (60s for DALL-E generation)
@@ -822,16 +861,111 @@ class AutoBlogAPI {
   }
 
   /**
-   * Get user's most recent website analysis
+   * Get user's most recent website analysis with smart caching
+   * Only applies to logged-in users to prevent redundant API calls
    */
   async getRecentAnalysis() {
-    try {
-      const response = await this.makeRequest('/api/v1/user/recent-analysis', {
-        method: 'GET',
+    const callId = `api-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    const startTime = Date.now();
+    const userId = this.getCurrentUserId();
+    
+    // Only log cache misses for debugging
+    if (!userId) {
+      console.log(`🚀 [${callId}] API: getRecentAnalysis (no caching - anonymous user)`);
+    }
+    
+    // Only apply caching for logged-in users
+    if (userId) {
+      const cacheKey = `recentAnalysis_${userId}`;
+      const requestKey = `getRecentAnalysis_${userId}`;
+      
+      // Check if request already in progress
+      if (activeRequests.has(requestKey)) {
+        // Request deduplication in progress - no logging needed
+        return activeRequests.get(requestKey);
+      }
+      
+      // Check sessionStorage cache
+      try {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const cachedData = JSON.parse(cached);
+          // Return cached result silently
+          return cachedData.response;
+        }
+      } catch (error) {
+        console.warn(`⚠️ [${callId}] Failed to read cache, proceeding with API call:`, error);
+      }
+    }
+    
+    // Create the API request
+    const makeAPIRequest = async () => {
+      try {
+        let response;
+        let statusCode = 'unknown';
+        
+        try {
+          response = await this.makeRequest('/api/v1/user/recent-analysis', {
+            method: 'GET',
+          });
+          statusCode = response.statusCode || 'unknown';
+        } catch (error) {
+          // Handle 404 as normal response (user has no cached analysis)
+          if (error.message.includes('404') || error.message.includes('HTTP 404')) {
+            response = {
+              success: false,
+              analysis: null,
+              message: 'No cached analysis found'
+            };
+            statusCode = '404';
+          } else {
+            // Re-throw other errors
+            throw error;
+          }
+        }
+        
+        // Cache responses for logged-in users (including 404s as they indicate "no cached analysis")
+        if (userId) {
+          try {
+            const cacheKey = `recentAnalysis_${userId}`;
+            const cacheData = {
+              response,
+              timestamp: Date.now()
+            };
+            sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
+          } catch (error) {
+            console.warn('Failed to cache analysis response:', error);
+          }
+        }
+        
+        return response;
+      } catch (error) {
+        // Only log unexpected errors (not 404s which are normal)
+        if (!error.message.includes('404')) {
+          console.error('Recent analysis API error:', error.message);
+        }
+        
+        throw new Error(`Failed to get recent analysis: ${error.message}`);
+      }
+    };
+    
+    // For logged-in users, deduplicate concurrent requests
+    if (userId) {
+      const requestKey = `getRecentAnalysis_${userId}`;
+      const requestPromise = makeAPIRequest();
+      
+      // Track the request to prevent duplicates
+      activeRequests.set(requestKey, requestPromise);
+      
+      // Clean up tracking when request completes (success or failure)
+      requestPromise.finally(() => {
+        activeRequests.delete(requestKey);
       });
-      return response;
-    } catch (error) {
-      throw new Error(`Failed to get recent analysis: ${error.message}`);
+      
+      return requestPromise;
+    } else {
+      // For anonymous users, make direct API call without caching
+      return makeAPIRequest();
     }
   }
 
@@ -1003,6 +1137,329 @@ class AutoBlogAPI {
       return response.data;
     } catch (error) {
       throw new Error(`Failed to update lead status: ${error.message}`);
+    }
+  }
+
+  /**
+   * =========================================================================
+   * AUDIENCE PERSISTENCE API METHODS
+   * =========================================================================
+   */
+
+  /**
+   * Get or create session ID for anonymous users
+   */
+  getOrCreateSessionId() {
+    let sessionId = sessionStorage.getItem('audience_session_id');
+    if (!sessionId) {
+      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      sessionStorage.setItem('audience_session_id', sessionId);
+      console.log('🆔 Created new audience session:', sessionId);
+    }
+    return sessionId;
+  }
+
+  /**
+   * Create audience strategy (authenticated or anonymous)
+   */
+  async createAudience(audienceData) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = { 'Content-Type': 'application/json' };
+      
+      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
+      headers['x-session-id'] = sessionId;
+
+      const response = await this.makeRequest('/api/v1/audiences', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          ...audienceData,
+          session_id: sessionId
+        }),
+      });
+      
+      console.log('✅ Audience created:', response.audience?.id);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to create audience: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user's audiences (authenticated or anonymous)
+   */
+  async getUserAudiences(options = {}) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = {};
+      
+      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
+      headers['x-session-id'] = sessionId;
+      
+      // Debug: Log what headers we're sending
+      console.log('🔍 getUserAudiences headers debug:', {
+        hasToken: !!localStorage.getItem('accessToken'),
+        headers: headers,
+        sessionId: sessionId
+      });
+
+      const params = new URLSearchParams();
+      if (options.organization_intelligence_id) {
+        params.append('organization_intelligence_id', options.organization_intelligence_id);
+      }
+      if (options.project_id) {
+        params.append('project_id', options.project_id);
+      }
+      if (options.limit) {
+        params.append('limit', options.limit);
+      }
+      if (options.offset) {
+        params.append('offset', options.offset);
+      }
+
+      const queryString = params.toString();
+      const url = `/api/v1/audiences${queryString ? '?' + queryString : ''}`;
+
+      const response = await this.makeRequest(url, { headers });
+      console.log('📋 Loaded audiences:', response.audiences?.length || 0);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get audiences: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get specific audience with topics and keywords
+   */
+  async getAudience(audienceId) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = {};
+      
+      // Add session ID for anonymous users
+      if (!localStorage.getItem('accessToken')) {
+        headers['X-Session-ID'] = sessionId;
+      }
+
+      const response = await this.makeRequest(`/api/v1/audiences/${audienceId}`, { headers });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get audience: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update audience strategy
+   */
+  async updateAudience(audienceId, updates) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = { 'Content-Type': 'application/json' };
+      
+      // Add session ID for anonymous users
+      if (!localStorage.getItem('accessToken')) {
+        headers['X-Session-ID'] = sessionId;
+      }
+
+      const response = await this.makeRequest(`/api/v1/audiences/${audienceId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updates),
+      });
+      
+      console.log('✅ Audience updated:', audienceId);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to update audience: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete audience strategy
+   */
+  async deleteAudience(audienceId) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = {};
+      
+      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
+      headers['x-session-id'] = sessionId;
+
+      const response = await this.makeRequest(`/api/v1/audiences/${audienceId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      
+      console.log('🗑️ Audience deleted:', audienceId);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to delete audience: ${error.message}`);
+    }
+  }
+
+  /**
+   * =========================================================================
+   * KEYWORD MANAGEMENT API METHODS
+   * =========================================================================
+   */
+
+  /**
+   * Add keywords to audience
+   */
+  async createAudienceKeywords(audienceId, keywords) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = { 'Content-Type': 'application/json' };
+      
+      // ALWAYS send session ID as fallback (in case Authorization header gets stripped)
+      headers['x-session-id'] = sessionId;
+
+      const response = await this.makeRequest('/api/v1/keywords', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          audience_id: audienceId,
+          keywords: keywords
+        }),
+      });
+      
+      console.log('🏷️ Keywords created for audience:', audienceId, keywords.length);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to create keywords: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get keywords for audience
+   */
+  async getAudienceKeywords(audienceId) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = {};
+      
+      // Add session ID for anonymous users
+      if (!localStorage.getItem('accessToken')) {
+        headers['X-Session-ID'] = sessionId;
+      }
+
+      const response = await this.makeRequest(`/api/v1/keywords?audience_id=${audienceId}`, {
+        headers,
+      });
+      
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get keywords: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update keyword
+   */
+  async updateKeyword(keywordId, updates) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = { 'Content-Type': 'application/json' };
+      
+      // Add session ID for anonymous users
+      if (!localStorage.getItem('accessToken')) {
+        headers['X-Session-ID'] = sessionId;
+      }
+
+      const response = await this.makeRequest(`/api/v1/keywords/${keywordId}`, {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(updates),
+      });
+      
+      console.log('🏷️ Keyword updated:', keywordId);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to update keyword: ${error.message}`);
+    }
+  }
+
+  /**
+   * Delete keyword
+   */
+  async deleteKeyword(keywordId) {
+    try {
+      const sessionId = this.getOrCreateSessionId();
+      const headers = {};
+      
+      // Add session ID for anonymous users
+      if (!localStorage.getItem('accessToken')) {
+        headers['X-Session-ID'] = sessionId;
+      }
+
+      const response = await this.makeRequest(`/api/v1/keywords/${keywordId}`, {
+        method: 'DELETE',
+        headers,
+      });
+      
+      console.log('🗑️ Keyword deleted:', keywordId);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to delete keyword: ${error.message}`);
+    }
+  }
+
+  /**
+   * =========================================================================
+   * SESSION MANAGEMENT API METHODS  
+   * =========================================================================
+   */
+
+  /**
+   * Create anonymous session
+   */
+  async createAnonymousSession() {
+    try {
+      const response = await this.makeRequest('/api/v1/session/create', {
+        method: 'POST',
+      });
+      
+      // Store session ID locally
+      if (response.session_id) {
+        sessionStorage.setItem('audience_session_id', response.session_id);
+        console.log('🆔 Anonymous session created:', response.session_id);
+      }
+      
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to create session: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get session data with audiences, topics, and keywords
+   */
+  async getSessionData(sessionId = null) {
+    try {
+      const targetSessionId = sessionId || this.getOrCreateSessionId();
+      
+      const response = await this.makeRequest(`/api/v1/session/${targetSessionId}`);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get session data: ${error.message}`);
+    }
+  }
+
+  /**
+   * Transfer session data to user account upon registration/login
+   */
+  async adoptSession(sessionId) {
+    try {
+      const response = await this.makeRequest('/api/v1/users/adopt-session', {
+        method: 'POST',
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      
+      console.log('🔄 Session adopted:', response.transferred);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to adopt session: ${error.message}`);
     }
   }
 

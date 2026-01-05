@@ -96,23 +96,14 @@ const DashboardLayout = ({
       const hasSeenBefore = savedState === 'true';
       setHasSeenSaveProject(hasSeenBefore);
       
-      console.log('🔄 DashboardLayout: User flow detection', {
-        userEmail: user.email,
-        isNewRegistration,
-        hasSeenBefore,
-        forceWorkflowMode
-      });
-      
       if (isNewRegistration && !hasSeenBefore) {
         // New user just completed registration - keep in workflow mode
-        console.log('🆕 New registration detected - entering project mode (sidebar hidden until Save Project)');
         setProjectMode(true);
         setShowSaveProjectButton(true);
         // Don't show sidebar until "Save Project" is clicked
         setShowDashboardLocal(false);
       } else {
         // Returning user logging in - go directly to focus mode
-        console.log('🔄 Returning user detected - entering focus mode');
         setProjectMode(false);
         setShowDashboardLocal(true); // Show sidebar immediately for returning users
       }
@@ -141,15 +132,8 @@ const DashboardLayout = ({
         return !!element;
       });
 
-      console.log('🔍 Intersection Observer setup:', {
-        totalSections: allSections.length,
-        existingSections: existingSections.map(s => s.id),
-        missingSection: allSections.filter(s => !existingSections.find(e => e.id === s.id)).map(s => s.id)
-      });
-
       // Don't set up observer if no sections exist
       if (existingSections.length === 0) {
-        console.log('⚠️ No sections found for intersection observer');
         return null;
       }
 
@@ -169,15 +153,6 @@ const DashboardLayout = ({
         });
 
         // Enhanced debugging: show what changed and current state
-        console.log('🔍 Intersection changes:', entries.map(entry => ({
-          id: entry.target.id,
-          ratio: entry.intersectionRatio.toFixed(3),
-          isIntersecting: entry.isIntersecting
-        })));
-        
-        console.log('📊 All section visibility:', Array.from(sectionVisibility.entries()).map(([id, ratio]) => 
-          `${id}: ${ratio.toFixed(3)}`
-        ).join(', '));
 
         // Find section with highest visibility from complete picture
         let mostVisible = null;
@@ -194,13 +169,6 @@ const DashboardLayout = ({
         if (mostVisible && highestRatio > 0.3) { // Higher threshold to reduce sensitivity
           const sectionInfo = existingSections.find(s => s.id === mostVisible);
           if (sectionInfo) {
-            console.log('📍 Menu update:', {
-              section: sectionInfo.tabKey,
-              visibilityRatio: highestRatio.toFixed(3),
-              allVisibility: Array.from(sectionVisibility.entries()).map(([id, ratio]) => 
-                `${id}: ${ratio.toFixed(3)}`
-              ).join(', ')
-            });
             setActiveTab(sectionInfo.tabKey);
             if (onActiveTabChange) {
               onActiveTabChange(sectionInfo.tabKey);
@@ -216,13 +184,11 @@ const DashboardLayout = ({
         if (element) {
           observer.observe(element);
           elementsToObserve.push(element);
-          console.log('👀 Observing section:', id);
         }
       });
 
       // Return cleanup function
       return () => {
-        console.log('🧹 Cleaning up intersection observer');
         elementsToObserve.forEach((element) => {
           observer.unobserve(element);
         });
@@ -388,9 +354,7 @@ const DashboardLayout = ({
   }
   
   // Platform-wide admin tabs - super admin gets all tabs regardless of specific permissions
-  console.log('🔍 Super Admin Check:', { isSuperAdmin, user, userRole: user?.role });
   if (isSuperAdmin) {
-    console.log('✅ Adding Website Leads tab for super admin');
     adminMenuItems.push({
       key: 'admin-leads',
       icon: <UserOutlined style={{ color: 'red' }} />,
@@ -565,7 +529,6 @@ const DashboardLayout = ({
             setProjectMode(false); // Exit project mode when saving
             
             // Clear registration flag since user has now saved their project
-            console.log('💾 Save Project clicked in header - clearing registration flag and switching to focus mode');
             clearNewRegistration();
             
             // Save to localStorage so user never sees this button again
@@ -643,7 +606,6 @@ const DashboardLayout = ({
                       setProjectMode(false); // Exit project mode when saving
                       
                       // Clear registration flag since user has now saved their project
-                      console.log('💾 Save Project clicked - clearing registration flag and switching to focus mode');
                       clearNewRegistration();
                       
                       // Save to localStorage so user never sees this button again

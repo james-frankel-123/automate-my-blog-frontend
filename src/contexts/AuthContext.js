@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import autoBlogAPI from '../services/api';
 import { getStoredInviteCode, getStoredReferralCode, clearStoredReferralInfo } from '../utils/referralUtils';
 
+// Module-level cache for deduplicating auth requests
+const activeAuthRequests = new Map();
+
 const AuthContext = createContext();
 
 export const useAuth = () => {
@@ -37,18 +40,65 @@ export const AuthProvider = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      if (token) {
-        const response = await autoBlogAPI.me();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      // Smart API deduplication - check for in-flight request
+      const requestKey = 'auth_check';
+      if (activeAuthRequests.has(requestKey)) {
+        const response = await activeAuthRequests.get(requestKey);
+        setUser(response.user);
+        if (response.user?.organizationId) {
+          setCurrentOrganization({
+            id: response.user.organizationId,
+            name: response.user.organizationName,
+            role: response.user.organizationRole
+          });
+        }
+        setLoading(false);
+        return;
+      }
+
+      // Check session cache (5 minute TTL for security)
+      const cacheKey = 'auth_user_cache';
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const { data, timestamp } = JSON.parse(cached);
+          const fiveMinutesAgo = Date.now() - (5 * 60 * 1000);
+          
+          if (timestamp > fiveMinutesAgo) {
+            setUser(data.user);
+            if (data.user?.organizationId) {
+              setCurrentOrganization({
+                id: data.user.organizationId,
+                name: data.user.organizationName,
+                role: data.user.organizationRole
+              });
+            }
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          // Invalid cache, continue with API call
+          sessionStorage.removeItem(cacheKey);
+        }
+      }
+
+      // Make API request with deduplication
+      const apiPromise = autoBlogAPI.me();
+      activeAuthRequests.set(requestKey, apiPromise);
+
+      try {
+        const response = await apiPromise;
         
-        // Debug logging to verify user data from API
-        console.log('🔍 AuthContext received user data from /me:', {
-          userId: response.user?.id,
-          email: response.user?.email,
-          role: response.user?.role,
-          permissions: response.user?.permissions,
-          hierarchyLevel: response.user?.hierarchyLevel,
-          fullUserObject: response.user
-        });
+        // Cache the response
+        sessionStorage.setItem(cacheKey, JSON.stringify({
+          data: response,
+          timestamp: Date.now()
+        }));
         
         setUser(response.user);
         // Handle new database structure with organization data
@@ -59,10 +109,13 @@ export const AuthProvider = ({ children }) => {
             role: response.user.organizationRole
           });
         }
+      } finally {
+        activeAuthRequests.delete(requestKey);
       }
     } catch (error) {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      sessionStorage.removeItem('auth_user_cache');
     } finally {
       setLoading(false);
     }
@@ -85,7 +138,6 @@ export const AuthProvider = ({ children }) => {
     // Store login context for routing decisions
     setLoginContext(context);
     setIsNewRegistration(false); // Mark as login, not registration
-    console.log('🔐 AuthContext: Login completed, setting isNewRegistration = false', { userEmail: response.user.email });
     
     return { ...response, context };
   };
@@ -102,28 +154,15 @@ export const AuthProvider = ({ children }) => {
       }
       setLoginContext(context);
       setIsNewRegistration(true); // Mark as new registration
-      console.log('🔥 AuthContext: Registration completed, setting isNewRegistration = true', { userEmail: response.user.email });
       
       // Process referral/invite after successful registration
       const inviteCode = getStoredInviteCode();
       const referralCode = getStoredReferralCode();
       const codeToProcess = inviteCode || referralCode;
       
-      console.log('🔄 Registration complete, checking for referral processing:', {
-        userId: response.user.id,
-        userEmail: response.user.email,
-        inviteCode,
-        referralCode,
-        codeToProcess,
-        sessionStorageInvite: sessionStorage.getItem('inviteCode'),
-        sessionStorageReferral: sessionStorage.getItem('referralCode')
-      });
-      
       if (codeToProcess) {
         try {
-          console.log('🎯 Processing referral signup for code:', codeToProcess, 'type:', inviteCode ? 'invite' : 'referral');
           const referralResult = await autoBlogAPI.processReferralSignup(response.user.id, codeToProcess);
-          console.log('Referral processing result:', referralResult);
           
           // Clear stored codes after successful processing
           clearStoredReferralInfo();
@@ -241,7 +280,6 @@ export const AuthProvider = ({ children }) => {
         }
       } else if (response.originalAdmin) {
         // Fallback: restore from API response
-        console.log('Restoring admin session from API response');
         
         // Clear current token and get fresh session for original admin
         localStorage.removeItem('accessToken');
@@ -282,10 +320,7 @@ export const AuthProvider = ({ children }) => {
     setNavContext,
     // Registration tracking
     isNewRegistration,
-    clearNewRegistration: () => {
-      console.log('🧹 AuthContext: Clearing isNewRegistration flag');
-      setIsNewRegistration(false);
-    },
+    clearNewRegistration: () => setIsNewRegistration(false),
     // Impersonation functionality
     isImpersonating: !!impersonationData,
     impersonationData,

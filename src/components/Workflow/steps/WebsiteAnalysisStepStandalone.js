@@ -98,12 +98,10 @@ const WebsiteAnalysisStepStandalone = ({
     const loadCachedAnalysis = async () => {
       if (user && !analysisCompleted && !websiteUrl && !loading) {
         try {
-          console.log('🔄 Loading cached analysis for user:', user.id);
           const response = await autoBlogAPI.getRecentAnalysis();
           
           if (response.success && response.analysis) {
             const cachedAnalysis = response.analysis;
-            console.log('✅ Found cached analysis for website:', cachedAnalysis.websiteUrl);
             
             // Load cached data into component state
             setWebsiteUrl && setWebsiteUrl(cachedAnalysis.websiteUrl);
@@ -119,12 +117,10 @@ const WebsiteAnalysisStepStandalone = ({
             });
             
             message.info(`Loaded cached analysis for ${cachedAnalysis.websiteUrl}`);
-          } else {
-            console.log('📝 No cached analysis found');
           }
         } catch (error) {
-          console.error('Failed to load cached analysis:', error);
           // Silently fail - user can perform new analysis
+          console.error('Failed to load cached analysis:', error);
         }
       }
     };

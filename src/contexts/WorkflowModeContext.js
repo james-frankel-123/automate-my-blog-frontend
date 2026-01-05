@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import autoBlogAPI from '../services/api';
 
 /**
  * Workflow Mode Context
@@ -125,6 +126,16 @@ export const WorkflowModeProvider = ({ children }) => {
     window.location.search.includes('demo=true') ||
     localStorage.getItem('automyblog_demo_mode') === 'true'
   );
+  
+  // =============================================================================
+  // SESSION & PERSISTENCE STATE
+  // =============================================================================
+  
+  // Session management for audience persistence
+  const [sessionId, setSessionId] = useState(null);
+  const [audiences, setAudiences] = useState([]);
+  const [loadingAudiences, setLoadingAudiences] = useState(false);
+  const [sessionDataLoaded, setSessionDataLoaded] = useState(false);
   
   // =============================================================================
   // UNIFIED DATA STORE WITH NORMALIZED NAMING
@@ -297,13 +308,93 @@ export const WorkflowModeProvider = ({ children }) => {
   }, []);
 
   // =============================================================================
+  // SESSION MANAGEMENT HELPERS (For Audience Persistence)
+  // =============================================================================
+  
+  // Initialize or get session ID for anonymous users
+  const initializeSession = useCallback(async () => {
+    try {
+      const currentSessionId = autoBlogAPI.getOrCreateSessionId();
+      setSessionId(currentSessionId);
+      console.log('🆔 Session initialized:', currentSessionId);
+      return currentSessionId;
+    } catch (error) {
+      console.error('Failed to initialize session:', error);
+      return null;
+    }
+  }, []);
+
+  // Load user's audience strategies (authenticated or anonymous)
+  const loadUserAudiences = useCallback(async () => {
+    if (loadingAudiences) return;
+    
+    setLoadingAudiences(true);
+    try {
+      const response = await autoBlogAPI.getUserAudiences({ limit: 20 });
+      if (response.success && response.audiences) {
+        setAudiences(response.audiences);
+        console.log('✅ Loaded audiences:', response.audiences.length);
+      }
+    } catch (error) {
+      console.error('Failed to load audiences:', error);
+    } finally {
+      setLoadingAudiences(false);
+    }
+  }, [loadingAudiences]);
+
+  // Save audience strategy
+  const saveAudience = useCallback(async (audienceData) => {
+    try {
+      const response = await autoBlogAPI.createAudience(audienceData);
+      if (response.success) {
+        // Add to local audiences list
+        setAudiences(prev => [response.audience, ...prev]);
+        console.log('✅ Audience saved:', response.audience.id);
+        return response.audience;
+      }
+    } catch (error) {
+      console.error('Failed to save audience:', error);
+      throw error;
+    }
+  }, []);
+
+  // Adopt anonymous session when user logs in/registers
+  const adoptAnonymousSession = useCallback(async (targetSessionId = null) => {
+    const adoptSessionId = targetSessionId || sessionId;
+    if (!adoptSessionId || !user) return;
+
+    try {
+      const response = await autoBlogAPI.adoptSession(adoptSessionId);
+      if (response.success) {
+        console.log('🔄 Session adoption API call successful:', response.transferred);
+        
+        // VERIFY adoption worked by loading user data first
+        await loadUserAudiences();
+        
+        // Only clear session ID if we successfully have data in our context
+        if (audiences.length > 0) {
+          console.log('✅ Session data verified, clearing session ID');
+          sessionStorage.removeItem('audience_session_id');
+          setSessionId(null);
+        } else {
+          console.warn('⚠️ Session adopted but no audiences found, keeping session ID for retry');
+          // Keep session ID for potential retry - don't clear it yet
+        }
+        
+        return response.transferred;
+      }
+    } catch (error) {
+      console.error('Failed to adopt session:', error);
+    }
+  }, [sessionId, user, loadUserAudiences, audiences]);
+
+  // =============================================================================
   // AUTHENTICATION GATES & PERMISSION CHECKS
   // =============================================================================
   
   // Authentication gate helper (preserved from WorkflowContainer-v2.js)
   const requireAuth = useCallback((action = '', context = 'gate') => {
     if (!user) {
-      console.log(`🚫 Auth required for action: ${action}`);
       setAuthContext(context);
       setShowAuthModal(true);
       return false;
@@ -314,7 +405,6 @@ export const WorkflowModeProvider = ({ children }) => {
   // Sign-up focused gate helper - defaults to register tab for conversion
   const requireSignUp = useCallback((action = '', context = 'Create your account') => {
     if (!user) {
-      console.log(`🎯 Sign-up required for action: ${action}`);
       setAuthContext('register');  // Always set to register for sign-up flow
       setShowAuthModal(true);
       return false;
@@ -337,19 +427,6 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Save current workflow state to localStorage (auth-aware)
   const saveWorkflowState = useCallback(() => {
-    console.log('💾 saveWorkflowState() called');
-    console.log('💾 Current state being saved:', {
-      analysisCompleted,
-      businessName: stepResults?.home?.websiteAnalysis?.businessName || 'None',
-      mode,
-      currentStep
-    });
-    console.log('💾 Auth context during save:', {
-      userId: user?.id,
-      userEmail: user?.email,
-      isAuthenticated,
-      userIdType: typeof user?.id
-    });
     
     // Validate that we have meaningful data to save
     const hasValidAnalysisData = stepResults?.home?.websiteAnalysis?.businessName && 
@@ -358,12 +435,6 @@ export const WorkflowModeProvider = ({ children }) => {
     
     // Only save if we have valid analysis data when analysis is marked complete
     if (analysisCompleted && !hasValidAnalysisData) {
-      console.log('⚠️ Analysis marked complete but data incomplete, skipping save');
-      console.log('🔍 Analysis data check:', {
-        businessName: stepResults?.home?.websiteAnalysis?.businessName || 'Missing',
-        targetAudience: stepResults?.home?.websiteAnalysis?.targetAudience || 'Missing',
-        contentFocus: stepResults?.home?.websiteAnalysis?.contentFocus || 'Missing'
-      });
       return false;
     }
     
@@ -411,14 +482,6 @@ export const WorkflowModeProvider = ({ children }) => {
       };
       
       localStorage.setItem('automate-my-blog-workflow-state', JSON.stringify(workflowStateSnapshot));
-      console.log('💾 Workflow state saved to localStorage:', {
-        analysisCompleted: workflowStateSnapshot.analysisCompleted,
-        businessName: workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName || 'None',
-        hasStepResults: !!workflowStateSnapshot.stepResults,
-        mode: workflowStateSnapshot.mode,
-        savedAt: workflowStateSnapshot.savedAt,
-        fullSnapshot: workflowStateSnapshot
-      });
       
       return true;
     } catch (error) {
@@ -434,45 +497,23 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Restore workflow state from localStorage (auth-aware)
   const restoreWorkflowState = useCallback(() => {
-    console.log('🔄 restoreWorkflowState() called');
     
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
       if (!savedState) {
-        console.log('🔍 No saved workflow state found');
         return false;
       }
       
       const workflowStateSnapshot = JSON.parse(savedState);
-      console.log('🔄 Restoring workflow state from localStorage:', {
-        hasStepResults: !!workflowStateSnapshot.stepResults,
-        analysisCompleted: workflowStateSnapshot.analysisCompleted,
-        mode: workflowStateSnapshot.mode,
-        userId: workflowStateSnapshot.userId,
-        isAuthenticated: workflowStateSnapshot.isAuthenticated,
-        businessName: workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName || 'None',
-        fullSnapshot: workflowStateSnapshot
-      });
       
       // AUTH SECURITY CHECK: Prevent data leakage across user sessions
       if (workflowStateSnapshot.userId && workflowStateSnapshot.userId !== user?.id) {
-        console.log('🚨 Auth validation failed: Saved state belongs to different user, clearing');
-        console.log('🔍 Auth mismatch details:', {
-          savedUserId: workflowStateSnapshot.userId,
-          currentUserId: user?.id,
-          currentUser: user?.email,
-          isUserAuthenticated: !!user,
-          savedUserIdType: typeof workflowStateSnapshot.userId,
-          currentUserIdType: typeof user?.id
-        });
         localStorage.removeItem('automate-my-blog-workflow-state');
-        console.log('🗑️ Saved workflow state cleared');
         return false;
       }
       
       // If saved state was authenticated but current user is not, only restore public data
       if (workflowStateSnapshot.isAuthenticated && !isAuthenticated) {
-        console.log('⚠️  Auth state mismatch: Restoring public data only');
         // Restore only non-sensitive workflow state
         if (workflowStateSnapshot.mode) setMode(workflowStateSnapshot.mode);
         if (typeof workflowStateSnapshot.currentWorkflowStep === 'number') {
@@ -487,7 +528,6 @@ export const WorkflowModeProvider = ({ children }) => {
       const ageHours = (new Date() - savedAt) / (1000 * 60 * 60);
       
       if (ageHours > 24) {
-        console.log('⏰ Saved workflow state is too old (>24h), discarding');
         clearSavedWorkflowState();
         return false;
       }
@@ -514,17 +554,10 @@ export const WorkflowModeProvider = ({ children }) => {
                                        restoredAnalysis?.targetAudience && 
                                        restoredAnalysis?.contentFocus;
         
-        console.log('📊 Restored analysis data validation:', {
-          hasAnalysisData: !!restoredAnalysis,
-          businessName: restoredAnalysis?.businessName || 'Missing',
-          targetAudience: restoredAnalysis?.targetAudience || 'Missing',
-          contentFocus: restoredAnalysis?.contentFocus || 'Missing',
-          isComplete: hasCompleteAnalysisData
-        });
+        // Analysis data validation check
         
         // If analysis is marked complete but data is incomplete, reset completion flag
         if (workflowStateSnapshot.analysisCompleted && !hasCompleteAnalysisData) {
-          console.log('⚠️ Analysis marked complete but data incomplete, resetting completion flag');
           setAnalysisCompleted(false);
         }
       }
@@ -568,15 +601,7 @@ export const WorkflowModeProvider = ({ children }) => {
         setExpandedSteps(workflowStateSnapshot.expandedSteps);
       }
       
-      console.log('✅ Workflow state successfully restored');
-      console.log('📊 Final restored state:', {
-        mode,
-        analysisCompleted,
-        businessName: stepResults?.home?.websiteAnalysis?.businessName || 'None',
-        hasAnalysisData: !!(stepResults?.home?.websiteAnalysis?.businessName && 
-                          stepResults?.home?.websiteAnalysis?.targetAudience && 
-                          stepResults?.home?.websiteAnalysis?.contentFocus)
-      });
+      // Workflow state successfully restored
       return true;
       
     } catch (error) {
@@ -590,7 +615,6 @@ export const WorkflowModeProvider = ({ children }) => {
   const clearSavedWorkflowState = useCallback(() => {
     try {
       localStorage.removeItem('automate-my-blog-workflow-state');
-      console.log('🗑️ Saved workflow state cleared');
       return true;
     } catch (error) {
       console.error('Failed to clear saved workflow state:', error);
@@ -600,7 +624,6 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Clear user-specific workflow data on logout (SECURITY)
   const clearUserSpecificData = useCallback(() => {
-    console.log('🧹 Clearing user-specific workflow data for logout');
     
     // Reset user-specific workflow state but preserve public UI state
     setWebsiteUrl('');
@@ -837,7 +860,6 @@ export const WorkflowModeProvider = ({ children }) => {
     // If navigating directly to a tab, switch to focus mode unless explicitly preserving workflow
     if (!options.preserveWorkflowMode && mode === 'workflow') {
       // Don't exit workflow mode unless explicitly requested
-      console.log('🔒 Preserving workflow mode during navigation to:', tabKey);
     } else if (!options.preserveWorkflowMode && mode !== 'workflow') {
       setMode('focus');
     }
@@ -925,51 +947,28 @@ export const WorkflowModeProvider = ({ children }) => {
   useEffect(() => {
     // Wait for authentication to complete before attempting restoration
     if (authLoading) {
-      console.log('⏳ WorkflowModeContext: Authentication still loading, waiting...');
       return;
     }
     
-    console.log('🚀 WorkflowModeContext: Auth loading complete, checking for saved state...');
-    console.log('🔍 Auth state:', {
-      authLoading,
-      hasUser: !!user,
-      userId: user?.id || 'None',
-      isAuthenticated,
-      userEmail: user?.email || 'None'
-    });
+    // Auth loading complete, checking for saved state
     
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
-      console.log('📱 localStorage check:', {
-        hasSavedState: !!savedState,
-        savedStateLength: savedState?.length || 0
-      });
       
       if (savedState) {
         const workflowStateSnapshot = JSON.parse(savedState);
         const savedAt = new Date(workflowStateSnapshot.savedAt);
         const ageHours = (new Date() - savedAt) / (1000 * 60 * 60);
         
-        console.log('📊 Saved state analysis:', {
-          savedAt: savedAt.toISOString(),
-          ageHours: ageHours.toFixed(2),
-          isValid: ageHours <= 24,
-          savedUserId: workflowStateSnapshot.userId,
-          currentUserId: user?.id || 'None',
-          hasStepResults: !!workflowStateSnapshot.stepResults,
-          analysisCompleted: workflowStateSnapshot.analysisCompleted,
-          businessName: workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName || 'None'
-        });
+        // Validating saved state
         
         if (ageHours <= 24) {
-          console.log('🔄 Auto-restoring workflow state after auth completion...');
           const restored = restoreWorkflowState();
-          console.log('📊 Auto-restore result:', restored);
         } else {
-          console.log('⏰ Saved state too old, skipping restoration');
+          // Saved state too old, skipping restoration
         }
       } else {
-        console.log('📝 No saved state found in localStorage');
+        // No saved state found in localStorage
       }
     } catch (error) {
       console.error('❌ Failed to check for saved workflow state after auth loading:', error);
@@ -998,17 +997,8 @@ export const WorkflowModeProvider = ({ children }) => {
           
           // If localStorage has valid data for current user but state is empty, retry restore
           if (savedUserId === user.id && savedBusinessName && !hasValidAnalysisData) {
-            console.log('🔄 Setting up fallback restore mechanism...');
-            console.log('📊 Fallback conditions met:', {
-              userMatches: savedUserId === user.id,
-              hasSavedBusinessName: !!savedBusinessName,
-              currentAnalysisEmpty: !hasValidAnalysisData
-            });
-            
             timeoutId = setTimeout(() => {
-              console.log('⚡ Executing fallback restoration attempt...');
               const restored = restoreWorkflowState();
-              console.log('📊 Fallback restore result:', restored);
             }, 500); // Small delay to allow auth context to fully settle
           }
         } catch (error) {
@@ -1033,27 +1023,45 @@ export const WorkflowModeProvider = ({ children }) => {
     // Only clear data on actual logout (was authenticated, now not)
     if (prevAuthState && prevAuthState.user && prevAuthState.isAuthenticated && 
         (!user || !isAuthenticated)) {
-      console.log('🔒 Actual user logout detected, clearing user-specific workflow data');
-      console.log('🔍 Logout transition:', {
-        previousUser: prevAuthState.user?.email || 'Unknown',
-        previousAuth: prevAuthState.isAuthenticated,
-        currentUser: user?.email || 'None',
-        currentAuth: isAuthenticated
-      });
       clearUserSpecificData();
-    } else if (prevAuthState) {
-      console.log('🔍 Auth state change (not logout):', {
-        previousUser: prevAuthState.user?.email || (prevAuthState.user === null ? 'null' : 'undefined'),
-        previousAuth: prevAuthState.isAuthenticated,
-        currentUser: user?.email || (user === null ? 'null' : 'undefined'),
-        currentAuth: isAuthenticated,
-        isRealLogout: false
-      });
     }
     
     // Store current state for next render
     prevAuthStateRef.current = currentAuthState;
   }, [user, isAuthenticated, clearUserSpecificData]);
+
+  // SESSION MANAGEMENT: Initialize session and handle authentication changes
+  useEffect(() => {
+    const handleAuthenticationChange = async () => {
+      if (authLoading) return; // Wait for auth to complete
+      
+      if (user && isAuthenticated) {
+        // User is authenticated - try to adopt any anonymous session
+        if (sessionId && !sessionDataLoaded) {
+          console.log('🔄 User authenticated, attempting to adopt session:', sessionId);
+          try {
+            await adoptAnonymousSession();
+            setSessionDataLoaded(true);
+          } catch (error) {
+            console.error('Failed to adopt session:', error);
+          }
+        }
+        
+        // Load user's audiences
+        await loadUserAudiences();
+        
+      } else {
+        // User is not authenticated - initialize anonymous session
+        if (!sessionId) {
+          console.log('👤 Anonymous user, initializing session');
+          await initializeSession();
+        }
+        setSessionDataLoaded(false);
+      }
+    };
+    
+    handleAuthenticationChange();
+  }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded]); // FIXED: Removed function dependencies
   
   // Context value with all unified state
   const contextValue = {
@@ -1230,6 +1238,18 @@ export const WorkflowModeProvider = ({ children }) => {
     clearSavedWorkflowState,
     clearUserSpecificData,
     hasSavedWorkflowState,
+    
+    // =============================================================================
+    // SESSION MANAGEMENT
+    // =============================================================================
+    sessionId,
+    audiences,
+    loadingAudiences,
+    sessionDataLoaded,
+    initializeSession,
+    loadUserAudiences,
+    saveAudience,
+    adoptAnonymousSession,
     
     // =============================================================================
     // STEP INFORMATION

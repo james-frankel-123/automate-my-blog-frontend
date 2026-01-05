@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message } from 'antd';
+import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Alert } from 'antd';
 import { 
   PlusOutlined, 
   CalendarOutlined, 
@@ -13,7 +13,13 @@ import {
   DatabaseOutlined,
   CheckOutlined,
   ReloadOutlined,
-  LockOutlined
+  LockOutlined,
+  SearchOutlined,
+  RobotOutlined,
+  PlayCircleOutlined,
+  RiseOutlined,
+  UserOutlined,
+  GlobalOutlined
 } from '@ant-design/icons';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -70,6 +76,44 @@ const dummyPosts = [
   }
 ];
 
+// DUMMY DATA - Discovery automation settings (moved from DashboardTab)
+const dummyAutomationSettings = {
+  enabled: true,
+  frequency: 'weekly',
+  focusAreas: ['keywords', 'customer-segments', 'industry-news'],
+  lastRun: '2024-01-10T14:30:00Z',
+  nextRun: '2024-01-17T14:30:00Z',
+  successfulRuns: 12,
+  failedRuns: 1,
+  isDummy: true
+};
+
+// DUMMY DATA - Recent discovery results (moved from DashboardTab)
+const dummyDiscoveries = [
+  {
+    id: 'dummy_discovery_1',
+    type: 'keyword',
+    title: 'AI productivity tools',
+    description: 'Trending keyword with 40% search volume increase over last 30 days',
+    impact: 'High potential for traffic growth',
+    date: '2024-01-10T00:00:00Z',
+    confidence: 85,
+    actionTaken: false,
+    isDummy: true
+  },
+  {
+    id: 'dummy_discovery_2',
+    type: 'customer-segment',
+    title: 'Remote team managers',
+    description: 'New customer segment identified through social media analysis',
+    impact: 'Untapped audience with high conversion potential',
+    date: '2024-01-09T00:00:00Z',
+    confidence: 92,
+    actionTaken: true,
+    isDummy: true
+  }
+];
+
 const localizer = dateFnsLocalizer({
   format,
   parse,
@@ -119,12 +163,21 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
   const [currentDraft, setCurrentDraft] = useState(null);
   const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
+  // Content Discovery state (moved from DashboardTab)
+  const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
+  const [discoveries, setDiscoveries] = useState(dummyDiscoveries.slice(0, 2)); // Show top 2
+  
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
   const defaultColors = ComponentHelpers.getDefaultColors();
 
   // Check if user can schedule (Creator, Professional, Enterprise)
   const canSchedule = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
+  
+  // Check user access for discovery features (moved from DashboardTab)
+  const isPaidUser = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
+  const hasRemainingPosts = user?.remainingPosts > 0;
+  const canUseDiscovery = !user ? true : isPaidUser ? true : hasRemainingPosts;
 
   useEffect(() => {
     loadPosts();
@@ -166,6 +219,32 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
       return `Published on ${format(new Date(post.publishedDate), 'MMM dd, yyyy')}`;
     }
     return post.status.charAt(0).toUpperCase() + post.status.slice(1);
+  };
+
+  // Content Discovery helper functions (moved from DashboardTab)
+  const getDiscoveryIcon = (type) => {
+    switch (type) {
+      case 'keyword': return <RiseOutlined style={{ color: '#1890ff' }} />;
+      case 'customer-segment': return <UserOutlined style={{ color: '#52c41a' }} />;
+      case 'industry-news': return <GlobalOutlined style={{ color: '#fa8c16' }} />;
+      case 'competitor': return <SearchOutlined style={{ color: '#722ed1' }} />;
+      default: return <RobotOutlined style={{ color: '#666' }} />;
+    }
+  };
+
+  const getConfidenceColor = (confidence) => {
+    if (confidence >= 80) return 'green';
+    if (confidence >= 60) return 'orange';
+    return 'red';
+  };
+
+  const handleGenerateContent = (discovery) => {
+    if (!canUseDiscovery) {
+      message.warning('Please upgrade your plan to generate content from discoveries');
+      return;
+    }
+    
+    message.success(`Content generation started for: ${discovery.title}`);
   };
 
   const handleSchedulePost = (post) => {
@@ -387,12 +466,8 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
 
   // Initialize topics if arriving from audience workflow
   useEffect(() => {
-    console.log('PostsTab useEffect - tabMode:', tabMode.mode);
-    console.log('PostsTab useEffect - tabWorkflowData:', tabMode.tabWorkflowData);
-    console.log('PostsTab useEffect - availableTopics.length:', availableTopics.length);
     
     if ((tabMode.mode === 'workflow' || forceWorkflowMode) && !availableTopics.length && !generatingContent) {
-      console.log('PostsTab: Auto-generating topics...');
       // Add a small delay to ensure UI is ready
       setTimeout(() => {
         handleGenerateTopics();
@@ -419,13 +494,13 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
         key: 'edit',
         label: 'Edit',
         icon: <EditOutlined />,
-        onClick: () => console.log('Edit post:', post.id)
+        onClick: () => {} // Edit post functionality
       },
       {
         key: 'export',
         label: 'Export',
         icon: <ExportOutlined />,
-        onClick: () => console.log('Export post:', post.id)
+        onClick: () => {} // Export post functionality
       }
     ];
 
@@ -1880,6 +1955,98 @@ const PostsTab = ({ forceWorkflowMode = false }) => {
                 />
               </div>
             )}
+          </Card>
+        )}
+
+        {/* CONTENT DISCOVERY SECTION - Moved from Home Tab */}
+        {tabMode.mode === 'focus' && !forceWorkflowMode && (
+          <Card 
+            title={
+              <Space>
+                <SearchOutlined style={{ color: '#1890ff' }} />
+                Content Discovery
+              </Space>
+            }
+            extra={
+              <Button 
+                type="link" 
+                size="small"
+                onClick={() => message.info('Configure automation in Settings → Content Discovery')}
+              >
+                Settings
+              </Button>
+            }
+            style={{ marginTop: '24px' }}
+          >
+            {!canUseDiscovery && !user && (
+              <Alert
+                message="Demo Mode"
+                description="Create an account to use automated discovery features."
+                type="info"
+                showIcon
+                style={{ marginBottom: '16px' }}
+              />
+            )}
+
+            <div style={{ marginBottom: '16px' }}>
+              <Text strong>Discovery Status: </Text>
+              <Tag color={automationSettings.enabled && canUseDiscovery ? 'green' : 'default'}>
+                {automationSettings.enabled && canUseDiscovery ? 'Active' : 'Paused'}
+              </Tag>
+            </div>
+
+            <Divider style={{ margin: '12px 0' }} />
+
+            {discoveries.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <SearchOutlined style={{ fontSize: '48px', color: '#d9d9d9', marginBottom: '16px' }} />
+                <Text type="secondary">No recent discoveries</Text>
+              </div>
+            ) : (
+              <div>
+                {discoveries.map((discovery) => (
+                  <div
+                    key={discovery.id}
+                    style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: '12px', marginBottom: '12px' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'flex-start' }}>
+                      <div style={{ marginRight: '16px', marginTop: '4px' }}>
+                        {getDiscoveryIcon(discovery.type)}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Space>
+                            <span style={{ fontSize: '14px', fontWeight: 500 }}>{discovery.title}</span>
+                            <Tag size="small" color={getConfidenceColor(discovery.confidence)}>
+                              {discovery.confidence}%
+                            </Tag>
+                          </Space>
+                        </div>
+                        <div>
+                          <Text style={{ fontSize: '12px', color: '#666', display: 'block', marginBottom: '4px' }}>
+                            {discovery.description}
+                          </Text>
+                          <Text strong style={{ fontSize: '12px', color: '#1890ff' }}>
+                            {discovery.impact}
+                          </Text>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Button
+              type="primary"
+              icon={<PlayCircleOutlined />}
+              onClick={() => message.info('Run discovery from Settings → Content Discovery')}
+              disabled={!canUseDiscovery}
+              block
+              style={{ marginTop: '12px' }}
+            >
+              Configure Discovery
+            </Button>
           </Card>
         )}
       </div>

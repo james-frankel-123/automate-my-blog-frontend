@@ -35,14 +35,9 @@ const UnifiedWorkflowHeader = ({
   // Trigger text transition animation when auth state changes
   useEffect(() => {
     if (previousUser !== user) {
-      console.log('🎨 UnifiedWorkflowHeader: User state changed', { previousUser: previousUser?.email, currentUser: user?.email });
       if (!previousUser && user) {
         // User just logged in - trigger gradient sweep
-        console.log('🎨 Triggering gradient sweep');
-        
-        // Trigger gradient sweep 1 second after user state changes
         setTimeout(() => {
-          console.log('🎨 Starting gradient sweep animation');
           setShowGradientSweep(true);
           
           // End gradient sweep after animation completes (1.5s)
@@ -311,7 +306,7 @@ const UnifiedWorkflowHeader = ({
       </div>
 
       {/* CSS animations for smooth transitions */}
-      <style jsx>{`
+      <style jsx="true">{`
         @keyframes fadeInSlide {
           from {
             opacity: 0;

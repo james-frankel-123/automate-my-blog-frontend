@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, Space, Alert, Spin, List } from 'antd';
+import { Card, Typography, Space, Alert, Spin } from 'antd';
 import { BulbOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import autoBlogAPI from '../services/api';
 
@@ -101,11 +101,9 @@ const ChangesSummary = ({ previousContent, newContent, customFeedback }) => {
                 <Text strong style={{ fontSize: '14px', color: '#389e0d' }}>
                   Key Changes:
                 </Text>
-                <List
-                  size="small"
-                  dataSource={analysis.keyChanges}
-                  renderItem={(item, index) => (
-                    <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
+                <div>
+                  {analysis.keyChanges.map((item, index) => (
+                    <div key={index} style={{ padding: '8px 0' }}>
                       <div style={{ width: '100%' }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start' }}>
                           <BulbOutlined style={{ 
@@ -128,9 +126,9 @@ const ChangesSummary = ({ previousContent, newContent, customFeedback }) => {
                           </div>
                         </div>
                       </div>
-                    </List.Item>
-                  )}
-                />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
