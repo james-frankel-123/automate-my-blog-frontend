@@ -364,12 +364,26 @@ export const WorkflowModeProvider = ({ children }) => {
     if (!adoptSessionId || !user) return;
 
     try {
+      console.log('🔍 DEBUG: WorkflowModeContext starting adoption for sessionId:', adoptSessionId);
+      
       const response = await autoBlogAPI.adoptSession(adoptSessionId);
-      if (response.success) {
-        console.log('🔄 Session adoption API call successful:', response.transferred);
+      
+      console.log('🔍 DEBUG: WorkflowModeContext received adoption response:', response);
+      console.log('🔍 DEBUG: Response success:', response?.success);
+      console.log('🔍 DEBUG: Response adopted (new):', response?.adopted);
+      console.log('🔍 DEBUG: Response transferred (old):', response?.transferred);
+      console.log('🔍 DEBUG: Response data:', response?.data);
+      
+      if (response?.success) {
+        // Fix: backend returns 'adopted' not 'transferred'
+        const adoptedData = response?.adopted || response?.transferred;
+        console.log('🔄 Session adoption API call successful:', adoptedData);
         
         // VERIFY adoption worked by loading user data first
+        console.log('🔍 DEBUG: Loading user audiences to verify adoption...');
         await loadUserAudiences();
+        
+        console.log('🔍 DEBUG: Current audiences count after loadUserAudiences:', audiences.length);
         
         // Only clear session ID if we successfully have data in our context
         if (audiences.length > 0) {
@@ -378,13 +392,16 @@ export const WorkflowModeProvider = ({ children }) => {
           setSessionId(null);
         } else {
           console.warn('⚠️ Session adopted but no audiences found, keeping session ID for retry');
+          console.log('🔍 DEBUG: Adoption response had data:', response?.data?.audiences?.length || 0, 'audiences');
           // Keep session ID for potential retry - don't clear it yet
         }
         
-        return response.transferred;
+        return adoptedData;
+      } else {
+        console.error('🔍 DEBUG: Adoption response was not successful:', response);
       }
     } catch (error) {
-      console.error('Failed to adopt session:', error);
+      console.error('🔍 DEBUG: Failed to adopt session - error details:', error);
     }
   }, [sessionId, user, loadUserAudiences, audiences]);
 
