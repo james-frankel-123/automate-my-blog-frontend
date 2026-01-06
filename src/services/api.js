@@ -46,24 +46,27 @@ class AutoBlogAPI {
     const normalizedEndpoint = endpoint.replace(/^\/+/, '');
     const url = `${this.baseURL}/${normalizedEndpoint}`;
     
-    const defaultOptions = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    };
-
-    // Add auth token if available
+    // Add auth token FIRST, then merge with options.headers
     const token = localStorage.getItem('accessToken');
+    const authHeaders = {};
     if (token) {
-      defaultOptions.headers['Authorization'] = `Bearer ${token}`;
+      authHeaders['Authorization'] = `Bearer ${token}`;
       console.log('🔍 makeRequest: Added Authorization header', { 
         endpoint: normalizedEndpoint,
-        tokenStart: token.substring(0, 20) + '...'
+        tokenStart: token.substring(0, 20) + '...',
+        hasCustomHeaders: !!options.headers
       });
     } else {
       console.log('🔍 makeRequest: No token found', { endpoint: normalizedEndpoint });
     }
+    
+    const defaultOptions = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders,          // Add auth headers first
+        ...options.headers,      // Then merge custom headers (preserves Authorization)
+      },
+    };
 
     // Add timeout with fallback for older browsers (60s for DALL-E generation)
     const timeoutSignal = typeof AbortSignal.timeout === 'function' 
@@ -75,6 +78,13 @@ class AutoBlogAPI {
       ...options,
       ...(timeoutSignal && { signal: timeoutSignal }),
     };
+    
+    // Debug: Log final headers being sent
+    console.log('🔍 makeRequest final headers:', {
+      endpoint: normalizedEndpoint,
+      headers: requestOptions.headers,
+      hasAuth: !!requestOptions.headers?.Authorization
+    });
 
     try {
       const response = await fetch(url, requestOptions);
@@ -1207,17 +1217,15 @@ class AutoBlogAPI {
       const headers = {};
       const token = localStorage.getItem('accessToken');
       
-      // Only send session ID if NOT authenticated
-      if (!token) {
-        headers['x-session-id'] = sessionId;
-      }
+      // Always send session ID for debugging purposes (backend will prefer JWT)
+      headers['x-session-id'] = sessionId;
       
       // Debug: Log what headers we're sending
       console.log('🔍 getUserAudiences headers debug:', {
         hasToken: !!token,
         headers: headers,
-        sessionId: token ? 'not_sent' : sessionId,
-        authMode: token ? 'jwt_token' : 'session_id'
+        sessionId: sessionId,
+        authMode: token ? 'jwt_token_with_session_fallback' : 'session_id_only'
       });
 
       const params = new URLSearchParams();
