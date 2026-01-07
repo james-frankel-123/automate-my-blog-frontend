@@ -63,8 +63,8 @@ class AutoBlogAPI {
     const defaultOptions = {
       headers: {
         'Content-Type': 'application/json',
-        ...authHeaders,          // Add auth headers first
-        ...options.headers,      // Then merge custom headers (preserves Authorization)
+        ...options.headers,      // Add custom headers first
+        ...authHeaders,          // Then auth headers (Authorization takes priority)
       },
     };
 
