@@ -76,6 +76,10 @@ class AutoBlogAPI {
     const requestOptions = {
       ...defaultOptions,
       ...options,
+      headers: {
+        ...defaultOptions.headers,  // Start with default headers (including auth)
+        ...options.headers,         // Merge in custom headers (preserving auth)
+      },
       ...(timeoutSignal && { signal: timeoutSignal }),
     };
     
