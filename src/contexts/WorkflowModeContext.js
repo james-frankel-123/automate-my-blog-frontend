@@ -390,8 +390,13 @@ export const WorkflowModeProvider = ({ children }) => {
           const analysisResponse = await autoBlogAPI.adoptAnalysisSession(adoptSessionId);
           console.log('🔍 DEBUG: Analysis adoption response:', analysisResponse);
           
-          // Restore website analysis data to workflow context if adoption was successful
-          if (analysisResponse?.success && analysisResponse?.analysis) {
+          // Check if adoption returned meaningful data (not just empty object)
+          const hasAnalysisData = analysisResponse?.success && 
+            analysisResponse?.analysis && 
+            Object.keys(analysisResponse.analysis).length > 0 &&
+            (analysisResponse.analysis.businessType || analysisResponse.analysis.websiteUrl);
+          
+          if (hasAnalysisData) {
             console.log('🔄 Restoring website analysis from session adoption');
             updateWebsiteAnalysis(analysisResponse.analysis);
             updateAnalysisCompleted(true);
@@ -405,6 +410,31 @@ export const WorkflowModeProvider = ({ children }) => {
             });
             
             console.log('✅ Website analysis restored from session adoption');
+          } else {
+            console.log('🔍 No analysis data from session adoption, trying to load recent analysis...');
+            // Try to load recent analysis data if session adoption didn't return data
+            try {
+              const recentResponse = await autoBlogAPI.getRecentAnalysis();
+              if (recentResponse?.success && recentResponse?.analysis && 
+                  Object.keys(recentResponse.analysis).length > 0) {
+                console.log('🔄 Restoring website analysis from recent data');
+                updateWebsiteAnalysis(recentResponse.analysis);
+                updateAnalysisCompleted(true);
+                
+                updateStickyWorkflowStep('websiteAnalysis', {
+                  websiteUrl: recentResponse.analysis.websiteUrl || '',
+                  businessName: recentResponse.analysis.businessName || '',
+                  businessType: recentResponse.analysis.businessType || '',
+                  ...recentResponse.analysis
+                });
+                
+                console.log('✅ Website analysis restored from recent data');
+              } else {
+                console.log('🔍 No recent analysis data found');
+              }
+            } catch (recentError) {
+              console.error('⚠️ Failed to load recent analysis:', recentError.message);
+            }
           }
         } catch (analysisError) {
           console.error('⚠️ Website analysis adoption failed (non-critical):', analysisError.message);
@@ -866,6 +896,9 @@ export const WorkflowModeProvider = ({ children }) => {
     if (nextStepIndex < WORKFLOW_STEPS.length) {
       setCurrentWorkflowStep(nextStepIndex);
       const nextStep = WORKFLOW_STEPS[nextStepIndex];
+      
+      // Update active tab to ensure UI components know about the change
+      setActiveTab(nextStep.tab);
       
       // Auto-scroll to the next tab while preserving workflow mode
       autoScrollToTab(nextStep.tab, {

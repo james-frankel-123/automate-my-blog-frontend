@@ -75,6 +75,10 @@ const WebsiteAnalysisStepStandalone = ({
   const [localLoading, setLocalLoading] = useState(false);
   const [localScanningMessage, setLocalScanningMessage] = useState('');
   
+  // Inline editing state
+  const [editMode, setEditMode] = useState(false);
+  const [editableResults, setEditableResults] = useState(null);
+  
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
   const currentScanningMessage = scanningMessage !== undefined ? scanningMessage : localScanningMessage;
@@ -103,20 +107,28 @@ const WebsiteAnalysisStepStandalone = ({
           if (response.success && response.analysis) {
             const cachedAnalysis = response.analysis;
             
-            // Load cached data into component state
+            console.log('🔄 Loading cached analysis:', cachedAnalysis.websiteUrl);
+            
+            // Prevent flashing by loading all data simultaneously
+            const updates = {};
+            if (setWebsiteUrl) updates.websiteUrl = cachedAnalysis.websiteUrl;
+            if (setAnalysisResults) updates.analysisResults = cachedAnalysis;
+            if (setAnalysisCompleted) updates.analysisCompleted = true;
+            
+            // Apply all updates in a batch to prevent flashing
             setWebsiteUrl && setWebsiteUrl(cachedAnalysis.websiteUrl);
-            setAnalysisResults && setAnalysisResults(cachedAnalysis.businessAnalysis);
+            setAnalysisResults && setAnalysisResults(cachedAnalysis);
             setAnalysisCompleted && setAnalysisCompleted(true);
             
             // Update sticky header with cached business information
             updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
               websiteUrl: cachedAnalysis.websiteUrl,
-              businessName: cachedAnalysis.businessAnalysis?.businessName || cachedAnalysis.businessType || '',
+              businessName: cachedAnalysis.businessName || cachedAnalysis.name || '',
               businessType: cachedAnalysis.businessType || '',
-              ...cachedAnalysis.businessAnalysis
+              ...cachedAnalysis
             });
             
-            message.info(`Loaded cached analysis for ${cachedAnalysis.websiteUrl}`);
+            console.log('✅ Cached analysis loaded without flashing');
           }
         } catch (error) {
           // Silently fail - user can perform new analysis
@@ -134,9 +146,11 @@ const WebsiteAnalysisStepStandalone = ({
     '';
   
   // Determine if input should be disabled
-  // Only admin and super_admin users can edit website URLs
+  // Disable when: 1) Analysis exists and not in edit mode, OR 2) Org website exists and not admin
   const isAdminUser = user?.role === 'admin' || user?.role === 'super_admin';
-  const shouldDisableInput = !!(userOrganizationWebsite && !urlOverrideMode && !isAdminUser);
+  const hasOrgWebsiteRestriction = !!(userOrganizationWebsite && !urlOverrideMode && !isAdminUser);
+  const hasAnalysisRestriction = !!(analysisCompleted && analysisResults && !editMode);
+  const shouldDisableInput = hasOrgWebsiteRestriction || hasAnalysisRestriction;
   
   // =============================================================================
   // EVENT HANDLERS
@@ -192,6 +206,9 @@ const WebsiteAnalysisStepStandalone = ({
       const result = await analysisAPI.analyzeWebsite(validation.formattedUrl);
 
       if (result.success) {
+        // Clear any existing cached analysis to prevent flashing
+        autoBlogAPI.clearCachedAnalysis();
+        
         // Update state with analysis results
         setAnalysisResults && setAnalysisResults(result.analysis);
         setWebSearchInsights && setWebSearchInsights(result.webSearchInsights);
@@ -264,6 +281,143 @@ const WebsiteAnalysisStepStandalone = ({
     setWebsiteUrl && setWebsiteUrl('');
   };
   
+  /**
+   * Handle entering edit mode
+   */
+  const handleEditMode = () => {
+    if (!analysisResults) {
+      console.error('No analysisResults available for editing');
+      return;
+    }
+    
+    // Enhanced debug logging to understand data structure
+    console.log('🔍 FULL analysisResults structure:', JSON.stringify(analysisResults, null, 2));
+    console.log('🔍 Available keys:', Object.keys(analysisResults));
+    console.log('🔍 Sample values:', {
+      businessName: analysisResults.businessName,
+      companyName: analysisResults.companyName,
+      name: analysisResults.name,
+      organizationName: analysisResults.organizationName,
+      businessType: analysisResults.businessType,
+      industry: analysisResults.industry,
+      targetAudience: analysisResults.targetAudience,
+      decisionMakers: analysisResults.decisionMakers
+    });
+    
+    const editData = {
+      // Core business information - try multiple field names
+      businessName: analysisResults.businessName || analysisResults.companyName || analysisResults.name || analysisResults.organizationName || '',
+      businessType: analysisResults.businessType || analysisResults.industry || analysisResults.industryCategory || '',
+      targetAudience: analysisResults.targetAudience || analysisResults.decisionMakers || '',
+      brandVoice: analysisResults.brandVoice || '',
+      contentFocus: analysisResults.contentFocus || '',
+      description: analysisResults.description || '',
+      
+      // Extended business fields
+      businessModel: analysisResults.businessModel || '',
+      websiteGoals: analysisResults.websiteGoals || '',
+      blogStrategy: analysisResults.blogStrategy || '',
+      decisionMakers: analysisResults.decisionMakers || '',
+      endUsers: analysisResults.endUsers || '',
+      
+      // Array fields (convert to strings for editing)
+      keywords: Array.isArray(analysisResults.keywords) ? analysisResults.keywords.join(', ') : (analysisResults.keywords || ''),
+      customerProblems: Array.isArray(analysisResults.customerProblems) ? analysisResults.customerProblems.join(', ') : (analysisResults.customerProblems || ''),
+      customerLanguage: Array.isArray(analysisResults.customerLanguage) ? analysisResults.customerLanguage.join(', ') : (analysisResults.customerLanguage || ''),
+      contentIdeas: Array.isArray(analysisResults.contentIdeas) ? analysisResults.contentIdeas.join(', ') : (analysisResults.contentIdeas || ''),
+      
+      // Additional fields
+      searchBehavior: analysisResults.searchBehavior || '',
+      connectionMessage: analysisResults.connectionMessage || ''
+    };
+    
+    console.log('✅ Edit data being set:', JSON.stringify(editData, null, 2));
+    
+    setEditableResults(editData);
+    setEditMode(true);
+  };
+  
+  /**
+   * Handle saving edited values
+   */
+  const handleSaveEdit = async () => {
+    if (!editableResults) return;
+    
+    try {
+      // Show loading state
+      setIsLoading && setIsLoading(true);
+      
+      // Convert string array fields back to arrays
+      const processedResults = {
+        ...editableResults,
+        // Convert comma-separated strings back to arrays
+        keywords: editableResults.keywords ? 
+          editableResults.keywords.split(',').map(k => k.trim()).filter(k => k) : [],
+        customerProblems: editableResults.customerProblems ? 
+          editableResults.customerProblems.split(',').map(p => p.trim()).filter(p => p) : [],
+        customerLanguage: editableResults.customerLanguage ? 
+          editableResults.customerLanguage.split(',').map(l => l.trim()).filter(l => l) : [],
+        contentIdeas: editableResults.contentIdeas ? 
+          editableResults.contentIdeas.split(',').map(i => i.trim()).filter(i => i) : [],
+        // Include website URL if it was edited
+        websiteUrl: websiteUrl
+      };
+      
+      console.log('💾 Saving edited analysis data:', processedResults);
+      
+      // Call API to save changes
+      const response = await autoBlogAPI.updateAnalysis(processedResults);
+      
+      if (response.success) {
+        // Update analysis results with all edited values, preserving existing fields
+        const updatedResults = {
+          ...analysisResults,
+          ...processedResults
+        };
+        
+        // Update parent component state
+        setAnalysisResults && setAnalysisResults(updatedResults);
+        
+        // Update sticky header with new data
+        updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
+          websiteUrl: websiteUrl,
+          businessName: processedResults.businessName,
+          businessType: processedResults.businessType,
+          targetAudience: processedResults.targetAudience,
+          contentFocus: processedResults.contentFocus,
+          brandVoice: processedResults.brandVoice,
+          description: processedResults.description,
+          ...updatedResults
+        });
+        
+        // Exit edit mode
+        setEditMode(false);
+        setEditableResults(null);
+        
+        // Show success message
+        message.success('Website analysis updated and saved successfully!');
+        
+        console.log('✅ Analysis saved successfully');
+      } else {
+        throw new Error(response.error || 'Failed to save analysis');
+      }
+      
+    } catch (error) {
+      console.error('❌ Error saving analysis:', error);
+      message.error(`Failed to save changes: ${error.message}`);
+    } finally {
+      setIsLoading && setIsLoading(false);
+    }
+  };
+  
+  /**
+   * Handle canceling edit mode
+   */
+  const handleCancelEdit = () => {
+    setEditMode(false);
+    setEditableResults(null);
+  };
+  
   // =============================================================================
   // RENDER HELPERS
   // =============================================================================
@@ -296,7 +450,9 @@ const WebsiteAnalysisStepStandalone = ({
             style={{
               borderRadius: '8px 0 0 8px',
               borderRight: 'none',
-              fontSize: responsive.fontSize.text
+              fontSize: responsive.fontSize.text,
+              backgroundColor: hasAnalysisRestriction ? '#f5f5f5' : undefined,
+              color: hasAnalysisRestriction ? '#999' : undefined
             }}
             onPressEnter={handleWebsiteSubmit}
           />
@@ -393,31 +549,80 @@ const WebsiteAnalysisStepStandalone = ({
       >
         {/* Company Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <Title 
-              level={3} 
-              style={{ 
-                margin: 0, 
-                color: defaultColors.primary,
-                fontSize: responsive.fontSize.title,
-                fontWeight: 600,
-                marginBottom: '4px'
-              }}
-            >
-              {analysis.businessName || 'Business Profile'}
-            </Title>
-            <Text style={{ fontSize: responsive.fontSize.text, color: '#666' }}>
-              {domain} • {analysis.businessType}
-            </Text>
+          <div style={{ flex: 1, marginRight: '16px' }}>
+            {editMode ? (
+              <div>
+                <Input
+                  value={editableResults?.businessName || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, businessName: e.target.value })}
+                  placeholder="Business Name"
+                  style={{ 
+                    fontSize: responsive.fontSize.title,
+                    fontWeight: 600,
+                    marginBottom: '8px',
+                    border: 'none',
+                    boxShadow: 'none',
+                    padding: '0',
+                    background: 'transparent'
+                  }}
+                />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Text style={{ fontSize: responsive.fontSize.text, color: '#666' }}>
+                    {domain} •
+                  </Text>
+                  <Input
+                    value={editableResults?.businessType || ''}
+                    onChange={(e) => setEditableResults({ ...editableResults, businessType: e.target.value })}
+                    placeholder="Business Type"
+                    style={{ 
+                      fontSize: responsive.fontSize.text,
+                      color: '#666',
+                      border: 'none',
+                      boxShadow: 'none',
+                      padding: '0',
+                      background: 'transparent',
+                      width: '200px'
+                    }}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div>
+                <Title 
+                  level={3} 
+                  style={{ 
+                    margin: 0, 
+                    color: defaultColors.primary,
+                    fontSize: responsive.fontSize.title,
+                    fontWeight: 600,
+                    marginBottom: '4px'
+                  }}
+                >
+                  {analysis.businessName || 'Business Profile'}
+                </Title>
+                <Text style={{ fontSize: responsive.fontSize.text, color: '#666' }}>
+                  {domain} • {analysis.businessType}
+                </Text>
+              </div>
+            )}
           </div>
-          <Button 
-            icon={<SettingOutlined />} 
-            onClick={handleStartOver}
-            type="link"
-            style={{ color: defaultColors.primary }}
-          >
-            Edit
-          </Button>
+          {editMode && (
+            <Space>
+              <Button 
+                type="primary"
+                size="small"
+                onClick={handleSaveEdit}
+              >
+                Save
+              </Button>
+              <Button 
+                size="small"
+                onClick={handleCancelEdit}
+              >
+                Cancel
+              </Button>
+            </Space>
+          )}
         </div>
 
         {/* Web Search Research Quality Indicator */}
@@ -457,9 +662,19 @@ const WebsiteAnalysisStepStandalone = ({
               }}>
                 What They Do
               </Text>
-              <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                {analysis.description || `${analysis.businessName || 'This business'} operates in the ${analysis.businessType.toLowerCase()} space, focusing on ${analysis.contentFocus?.toLowerCase() || 'delivering specialized services'}.`}
-              </Text>
+              {editMode ? (
+                <Input.TextArea
+                  value={editableResults?.description || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, description: e.target.value })}
+                  rows={3}
+                  placeholder="Describe what the business does..."
+                  style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                />
+              ) : (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.description || `${analysis.businessName || 'This business'} operates in the ${analysis.businessType.toLowerCase()} space, focusing on ${analysis.contentFocus?.toLowerCase() || 'delivering specialized services'}.`}
+                </Text>
+              )}
             </div>
           </Col>
 
@@ -479,9 +694,18 @@ const WebsiteAnalysisStepStandalone = ({
               }}>
                 Target Audience
               </Text>
-              <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                {analysis.decisionMakers || analysis.targetAudience || 'General audience'}
-              </Text>
+              {editMode ? (
+                <Input
+                  value={editableResults?.targetAudience || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, targetAudience: e.target.value })}
+                  placeholder="Who is your target audience?"
+                  style={{ fontSize: responsive.fontSize.small }}
+                />
+              ) : (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.decisionMakers || analysis.targetAudience || 'General audience'}
+                </Text>
+              )}
             </div>
           </Col>
 
@@ -501,9 +725,18 @@ const WebsiteAnalysisStepStandalone = ({
               }}>
                 Brand Voice
               </Text>
-              <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                {analysis.brandVoice || 'Professional and engaging'}
-              </Text>
+              {editMode ? (
+                <Input
+                  value={editableResults?.brandVoice || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, brandVoice: e.target.value })}
+                  placeholder="What's your brand voice?"
+                  style={{ fontSize: responsive.fontSize.small }}
+                />
+              ) : (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.brandVoice || 'Professional and engaging'}
+                </Text>
+              )}
             </div>
           </Col>
 
@@ -523,18 +756,27 @@ const WebsiteAnalysisStepStandalone = ({
               }}>
                 Content Focus
               </Text>
-              <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                {analysis.contentFocus || `Educational content about ${analysis.businessType.toLowerCase()}`}
-              </Text>
+              {editMode ? (
+                <Input
+                  value={editableResults?.contentFocus || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, contentFocus: e.target.value })}
+                  placeholder="What type of content do you focus on?"
+                  style={{ fontSize: responsive.fontSize.small }}
+                />
+              ) : (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.contentFocus || `Educational content about ${analysis.businessType.toLowerCase()}`}
+                </Text>
+              )}
             </div>
           </Col>
 
         </Row>
 
-        {/* Business Strategy - Only show if AI generated these fields */}
-        {(analysis.businessModel || analysis.websiteGoals || analysis.blogStrategy) && (
+        {/* Business Strategy - Show if AI generated these fields OR in edit mode */}
+        {(analysis.businessModel || analysis.websiteGoals || analysis.blogStrategy || editMode) && (
           <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
-            {analysis.businessModel && (
+            {(analysis.businessModel || editMode) && (
               <Col xs={24} lg={8}>
                 <div style={{ 
                   padding: '16px', 
@@ -551,14 +793,24 @@ const WebsiteAnalysisStepStandalone = ({
                   }}>
                     Business Model
                   </Text>
-                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                    {analysis.businessModel}
-                  </Text>
+                  {editMode ? (
+                    <Input.TextArea
+                      value={editableResults?.businessModel || ''}
+                      onChange={(e) => setEditableResults({ ...editableResults, businessModel: e.target.value })}
+                      rows={3}
+                      placeholder="Describe the business model..."
+                      style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                    />
+                  ) : (
+                    <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                      {analysis.businessModel}
+                    </Text>
+                  )}
                 </div>
               </Col>
             )}
 
-            {analysis.websiteGoals && (
+            {(analysis.websiteGoals || editMode) && (
               <Col xs={24} lg={8}>
                 <div style={{ 
                   padding: '16px', 
@@ -575,14 +827,24 @@ const WebsiteAnalysisStepStandalone = ({
                   }}>
                     Website Goals
                   </Text>
-                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                    {analysis.websiteGoals}
-                  </Text>
+                  {editMode ? (
+                    <Input.TextArea
+                      value={editableResults?.websiteGoals || ''}
+                      onChange={(e) => setEditableResults({ ...editableResults, websiteGoals: e.target.value })}
+                      rows={3}
+                      placeholder="What are the website goals?"
+                      style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                    />
+                  ) : (
+                    <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                      {analysis.websiteGoals}
+                    </Text>
+                  )}
                 </div>
               </Col>
             )}
 
-            {analysis.blogStrategy && (
+            {(analysis.blogStrategy || editMode) && (
               <Col xs={24} lg={8}>
                 <div style={{ 
                   padding: '16px', 
@@ -599,17 +861,27 @@ const WebsiteAnalysisStepStandalone = ({
                   }}>
                     Blog Strategy
                   </Text>
-                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                    {analysis.blogStrategy}
-                  </Text>
+                  {editMode ? (
+                    <Input.TextArea
+                      value={editableResults?.blogStrategy || ''}
+                      onChange={(e) => setEditableResults({ ...editableResults, blogStrategy: e.target.value })}
+                      rows={3}
+                      placeholder="Describe the blog strategy..."
+                      style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                    />
+                  ) : (
+                    <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                      {analysis.blogStrategy}
+                    </Text>
+                  )}
                 </div>
               </Col>
             )}
           </Row>
         )}
 
-        {/* Keywords if available */}
-        {analysis.keywords && analysis.keywords.length > 0 && (
+        {/* Keywords if available or in edit mode */}
+        {((analysis.keywords && analysis.keywords.length > 0) || editMode) && (
           <div style={{ 
             marginTop: '20px',
             padding: '16px', 
@@ -624,21 +896,31 @@ const WebsiteAnalysisStepStandalone = ({
             }}>
               Key Topics & Keywords
             </Text>
-            <Space wrap>
-              {analysis.keywords.map((keyword, index) => (
-                <Tag 
-                  key={index} 
-                  color={defaultColors.primary}
-                  style={{ 
-                    borderRadius: '12px',
-                    fontSize: responsive.fontSize.small,
-                    padding: '4px 8px'
-                  }}
-                >
-                  {keyword}
-                </Tag>
-              ))}
-            </Space>
+            {editMode ? (
+              <Input.TextArea
+                value={editableResults?.keywords || ''}
+                onChange={(e) => setEditableResults({ ...editableResults, keywords: e.target.value })}
+                rows={2}
+                placeholder="Enter keywords separated by commas (e.g., topic 1, topic 2, topic 3)"
+                style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+              />
+            ) : (
+              <Space wrap>
+                {analysis.keywords.map((keyword, index) => (
+                  <Tag 
+                    key={index} 
+                    color={defaultColors.primary}
+                    style={{ 
+                      borderRadius: '12px',
+                      fontSize: responsive.fontSize.small,
+                      padding: '4px 8px'
+                    }}
+                  >
+                    {keyword}
+                  </Tag>
+                ))}
+              </Space>
+            )}
           </div>
         )}
         
@@ -653,14 +935,14 @@ const WebsiteAnalysisStepStandalone = ({
   return (
     <div className={className} style={{ width: '100%' }}>
       <Card style={{ ...cardStyle }}>
-        {!analysisCompleted ? (
-          <div>
-            {renderUrlInput()}
-            {loading && renderAnalysisLoading()}
-          </div>
-        ) : (
-          renderAnalysisResults()
-        )}
+        {/* Always show URL input - greyed out when analysis exists and not in edit mode */}
+        {renderUrlInput()}
+        
+        {/* Show loading state when analyzing */}
+        {loading && renderAnalysisLoading()}
+        
+        {/* Show analysis results when available AND not currently loading */}
+        {analysisCompleted && !loading && renderAnalysisResults()}
       </Card>
     </div>
   );

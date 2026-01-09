@@ -215,32 +215,6 @@ const UnifiedWorkflowHeader = ({
             {content.description}
           </Paragraph>
 
-          {/* Show workflow steps for logged-out users and new registrations */}
-          {(!user || isNewRegistration) && (
-            <div style={{ 
-              maxWidth: '800px', 
-              margin: '0 auto 24px auto',
-              padding: '0 20px' 
-            }}>
-              <Steps 
-                current={currentStep}
-                size="default"
-                items={workflowSteps.map((step, index) => {
-                  let status = 'wait';
-                  if (completedSteps.includes(index)) {
-                    status = 'finish';
-                  } else if (index === currentStep) {
-                    status = 'process';
-                  }
-                  return {
-                    ...step,
-                    status
-                  };
-                })}
-                style={{ width: '100%' }}
-              />
-            </div>
-          )}
         </div>
         
         {content.showButton && (

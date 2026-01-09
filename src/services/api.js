@@ -1761,6 +1761,43 @@ class AutoBlogAPI {
       throw new Error(`Failed to adopt website analysis session: ${error.message}`);
     }
   }
+
+  /**
+   * Get the most recent website analysis data for authenticated user
+   */
+  async getRecentAnalysis() {
+    try {
+      console.log('🔍 Getting recent website analysis data...');
+      
+      const response = await this.makeRequest('/api/v1/analysis/recent');
+      
+      console.log('✅ Recent analysis retrieved:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to get recent analysis:', error);
+      throw new Error(`Failed to get recent analysis: ${error.message}`);
+    }
+  }
+
+  /**
+   * Update existing website analysis data for authenticated user
+   */
+  async updateAnalysis(analysisData) {
+    try {
+      console.log('💾 Updating website analysis data...', analysisData);
+      
+      const response = await this.makeRequest('/api/v1/analysis/update', {
+        method: 'PUT',
+        body: JSON.stringify(analysisData),
+      });
+      
+      console.log('✅ Analysis updated successfully:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to update analysis:', error);
+      throw new Error(`Failed to update analysis: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance

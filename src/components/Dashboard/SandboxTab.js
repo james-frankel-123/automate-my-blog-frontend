@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Empty, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Alert } from 'antd';
+import { Card, Button, Empty, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Alert, Table } from 'antd';
 import { 
   SearchOutlined,
   RobotOutlined,
@@ -7,77 +7,49 @@ import {
   RiseOutlined,
   UserOutlined,
   GlobalOutlined,
-  SettingOutlined
+  SettingOutlined,
+  CalendarOutlined,
+  UnorderedListOutlined
 } from '@ant-design/icons';
+import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const { Title, Text } = Typography;
 
-// DUMMY DATA - Content Discovery automation settings
-const dummyAutomationSettings = {
-  enabled: true,
-  frequency: 'weekly',
-  focusAreas: ['keywords', 'customer-segments', 'industry-news'],
-  lastRun: '2024-01-10T14:30:00Z',
-  nextRun: '2024-01-17T14:30:00Z',
-  successfulRuns: 12,
-  failedRuns: 1,
-  isDummy: true
-};
+// Calendar localizer setup
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek,
+  getDay,
+  locales: {
+    'en-US': enUS,
+  },
+});
 
-// DUMMY DATA - Recent discovery results
-const dummyDiscoveries = [
-  {
-    id: 'dummy_discovery_1',
-    type: 'keyword',
-    title: 'AI productivity tools',
-    description: 'Trending keyword with 40% search volume increase over last 30 days',
-    impact: 'High potential for traffic growth',
-    date: '2024-01-10T00:00:00Z',
-    confidence: 85,
-    actionTaken: false,
-    isDummy: true
-  },
-  {
-    id: 'dummy_discovery_2',
-    type: 'customer-segment',
-    title: 'Remote team managers',
-    description: 'New customer segment identified through social media analysis',
-    impact: 'Untapped audience with high conversion potential',
-    date: '2024-01-09T00:00:00Z',
-    confidence: 92,
-    actionTaken: true,
-    isDummy: true
-  },
-  {
-    id: 'dummy_discovery_3',
-    type: 'industry-news',
-    title: 'New AI regulations announced',
-    description: 'Government announces new AI compliance requirements affecting businesses',
-    impact: 'Content opportunity for compliance-focused content',
-    date: '2024-01-08T00:00:00Z',
-    confidence: 78,
-    actionTaken: false,
-    isDummy: true
-  },
-  {
-    id: 'dummy_discovery_4',
-    type: 'competitor',
-    title: 'Competitor launches new feature',
-    description: 'Major competitor released similar automation tools',
-    impact: 'Differentiation opportunity in marketing messaging',
-    date: '2024-01-07T00:00:00Z',
-    confidence: 88,
-    actionTaken: false,
-    isDummy: true
-  }
-];
+// Empty default states for automation settings
+const defaultAutomationSettings = {
+  enabled: false,
+  frequency: 'weekly',
+  focusAreas: [],
+  lastRun: null,
+  nextRun: null,
+  successfulRuns: 0,
+  failedRuns: 0
+};
 
 const SandboxTab = () => {
   const { user, isSuperAdmin } = useAuth();
-  const [automationSettings, setAutomationSettings] = useState(dummyAutomationSettings);
-  const [discoveries, setDiscoveries] = useState(dummyDiscoveries);
+  const [automationSettings, setAutomationSettings] = useState(defaultAutomationSettings);
+  const [discoveries, setDiscoveries] = useState([]);
   const [selectedDiscoveryType, setSelectedDiscoveryType] = useState('all');
+  
+  // Calendar state
+  const [calendarViewMode, setCalendarViewMode] = useState('list'); // 'list' or 'calendar'
+  const [calendarEvents, setCalendarEvents] = useState([]);
   
   // Check if user has access to sandbox features
   const hasAccess = isSuperAdmin;
@@ -226,7 +198,7 @@ const SandboxTab = () => {
               <div style={{ marginTop: '8px', fontSize: '12px' }}>
                 <div>Successful runs: {automationSettings.successfulRuns}</div>
                 <div>Failed runs: {automationSettings.failedRuns}</div>
-                <div>Next run: {new Date(automationSettings.nextRun).toLocaleDateString()}</div>
+                <div>Next run: {automationSettings.nextRun ? new Date(automationSettings.nextRun).toLocaleDateString() : 'Not scheduled'}</div>
               </div>
             </div>
           </Col>
@@ -355,6 +327,80 @@ const SandboxTab = () => {
             ))}
           </div>
         )}
+
+        {/* Calendar Scheduling (Moved from Posts Tab) */}
+        <Divider />
+        
+        <Card
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CalendarOutlined />
+              <span>Content Scheduling Calendar (Preview)</span>
+            </div>
+          }
+          extra={
+            <Switch
+              checkedChildren={<CalendarOutlined />}
+              unCheckedChildren={<UnorderedListOutlined />}
+              checked={calendarViewMode === 'calendar'}
+              onChange={(checked) => setCalendarViewMode(checked ? 'calendar' : 'list')}
+            />
+          }
+          style={{ marginBottom: '24px' }}
+        >
+          <Alert
+            message="Preview Feature"
+            description="This calendar view is for demonstration purposes. Full scheduling functionality requires additional development."
+            type="info"
+            showIcon
+            style={{ marginBottom: '16px' }}
+          />
+          
+          {calendarViewMode === 'list' ? (
+            <div>
+              <Text>Scheduled Posts List View</Text>
+              <div style={{ marginTop: '16px' }}>
+                {calendarEvents.length === 0 ? (
+                  <Empty 
+                    description="No scheduled posts"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                ) : (
+                  calendarEvents.map(event => (
+                    <div key={event.id} style={{ 
+                      padding: '8px', 
+                      border: '1px solid #d9d9d9', 
+                      borderRadius: '4px', 
+                      marginBottom: '8px' 
+                    }}>
+                      <Text strong>{event.title}</Text>
+                      <br />
+                      <Text type="secondary">
+                        Scheduled: {event.start.toLocaleString()}
+                      </Text>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ) : (
+            <div style={{ height: '400px' }}>
+              <Calendar
+                localizer={localizer}
+                events={calendarEvents}
+                startAccessor="start"
+                endAccessor="end"
+                onSelectEvent={(event) => {
+                  message.info(`Selected: ${event.title}`);
+                }}
+                views={['month', 'week', 'day']}
+                defaultView="month"
+                popup
+                style={{ height: '100%' }}
+              />
+            </div>
+          )}
+        </Card>
 
         {/* Future Features Preview */}
         <Divider />

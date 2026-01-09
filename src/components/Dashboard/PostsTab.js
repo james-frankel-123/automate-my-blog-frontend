@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message } from 'antd';
 import { 
   PlusOutlined, 
-  CalendarOutlined, 
-  UnorderedListOutlined, 
   ScheduleOutlined,
   EditOutlined,
   ExportOutlined,
@@ -15,18 +13,19 @@ import {
   LockOutlined,
   TeamOutlined
 } from '@ant-design/icons';
-import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { enUS } from 'date-fns/locale';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
+import { format } from 'date-fns';
 import { WorkflowGuidance } from '../Workflow/ModeToggle';
 import api from '../../services/api';
 import { topicAPI, contentAPI } from '../../services/workflowAPI';
 import SchedulingModal from '../Modals/SchedulingModal';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
+import TypographySettings from '../TypographySettings/TypographySettings';
+import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
+import ExportModal from '../ExportModal/ExportModal';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -83,16 +82,6 @@ const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
 
 // Content Discovery has been moved to SandboxTab for super-admin access
 
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales: {
-    'en-US': enUS,
-  },
-});
-
 const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('posts');
@@ -104,9 +93,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   } = useWorkflowMode();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
   const [showSchedulingModal, setShowSchedulingModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   
   // Workflow content generation state
   const [contentGenerated, setContentGenerated] = useState(false);
@@ -117,6 +106,15 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   // Content editing state
   const [editingContent, setEditingContent] = useState('');
   const [previewMode, setPreviewMode] = useState(true);
+  const [editorViewMode, setEditorViewMode] = useState('edit'); // 'edit', 'preview', 'split'
+  const [typography, setTypography] = useState({
+    preset: 'modern',
+    headingFont: 'Inter, sans-serif',
+    bodyFont: 'Inter, sans-serif',
+    fontSize: 16,
+    lineHeight: '1.6',
+    paragraphSpacing: 16
+  });
   const [contentStrategy, setContentStrategy] = useState({
     goal: 'awareness', // 'awareness', 'consideration', 'conversion', 'retention'
     voice: 'expert', // 'expert', 'friendly', 'insider', 'storyteller'
@@ -250,7 +248,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   };
 
   const handleScheduleSave = (scheduleData) => {
-    // DUMMY DATA - Save scheduling info to localStorage temporarily
+    // Save scheduling info to posts state
     const updatedPosts = posts.map(post => 
       post.id === selectedPost.id 
         ? { 
@@ -284,9 +282,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
         return requireSignUp('Generate AI content topics', 'Start creating content');
       }
 
+      // Debug the analysis data being passed
+      const analysisData = stepResults?.home?.websiteAnalysis || {};
+      const selectedStrategy = selectedCustomerStrategy || tabMode.tabWorkflowData?.selectedCustomerStrategy;
+      
+      console.log('🔍 Topic generation debug:', {
+        hasAnalysisData: !!analysisData,
+        analysisKeys: Object.keys(analysisData),
+        businessType: analysisData.businessType,
+        targetAudience: analysisData.targetAudience,
+        contentFocus: analysisData.contentFocus,
+        selectedStrategy: !!selectedStrategy,
+        stepResults: !!stepResults?.home
+      });
+
+      // Check if we have the minimum required data for topic generation
+      if (!analysisData.businessType && !analysisData.targetAudience) {
+        console.warn('⚠️ Missing website analysis data for topic generation');
+        message.warning('Website analysis data is required for topic generation. Please analyze your website first.');
+        setGeneratingContent(false);
+        return;
+      }
+
       const result = await topicAPI.generateTrendingTopics(
-        stepResults?.home?.websiteAnalysis || {},
-        tabMode.tabWorkflowData?.selectedCustomerStrategy,
+        analysisData,
+        selectedStrategy,
         stepResults?.home?.webSearchInsights || {}
       );
 
@@ -545,6 +565,26 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     }));
   };
 
+  // Typography handler
+  const handleTypographyChange = (newTypography) => {
+    setTypography(newTypography);
+  };
+
+  // Calculate word count
+  const getWordCount = (text) => {
+    if (!text || !text.trim()) return 0;
+    return text.trim().split(/\s+/).length;
+  };
+
+  // Format text insertion handler for toolbar
+  const handleTextInsert = (before, after = '', placeholder = 'text') => {
+    // For now, just append the formatting to the content
+    // In a full implementation, this would handle cursor position
+    const newText = before + placeholder + after;
+    const updatedContent = editingContent + '\n' + newText;
+    handleContentChange(updatedContent);
+  };
+
   const getStrategyDisplayText = (type, value) => {
     const displays = {
       goal: {
@@ -575,48 +615,44 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     return displays[type]?.[value] || value;
   };
 
-  // Export handler
-  const handleExport = () => {
-    if (!editingContent.trim()) {
-      message.error('No content to export');
-      return;
-    }
 
-    try {
-      // Create a blob with the content
-      const blob = new Blob([editingContent], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      
-      // Create download link
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${selectedTopic?.title || 'blog-post'}.md`;
-      document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-      
-      // Update post state
-      setPostState('exported');
-      message.success('Content exported successfully!');
-    } catch (error) {
-      console.error('Export error:', error);
-      message.error('Failed to export content');
-    }
-  };
+  // Load analysis data if missing for authenticated users
+  useEffect(() => {
+    const loadMissingAnalysisData = async () => {
+      if (user && (!stepResults?.home?.websiteAnalysis || 
+                   Object.keys(stepResults?.home?.websiteAnalysis || {}).length === 0)) {
+        try {
+          console.log('🔍 Loading recent analysis data for authenticated user...');
+          const response = await api.getRecentAnalysis();
+          if (response?.success && response?.analysis) {
+            console.log('✅ Loaded recent analysis data');
+            // This should trigger the workflow context to update
+            // The data will be available in stepResults on next render
+          }
+        } catch (error) {
+          console.log('🔍 No recent analysis data found:', error.message);
+        }
+      }
+    };
+    
+    loadMissingAnalysisData();
+  }, [user, stepResults?.home?.websiteAnalysis]);
 
   // Initialize topics if arriving from audience workflow
   useEffect(() => {
+    const analysisData = stepResults?.home?.websiteAnalysis || {};
+    const hasMinimumAnalysisData = analysisData.businessType || analysisData.targetAudience;
     
-    if ((tabMode.mode === 'workflow' || forceWorkflowMode) && !availableTopics.length && !generatingContent) {
+    if ((tabMode.mode === 'workflow' || forceWorkflowMode) && 
+        !availableTopics.length && 
+        !generatingContent &&
+        hasMinimumAnalysisData) {
       // Add a small delay to ensure UI is ready
       setTimeout(() => {
         handleGenerateTopics();
       }, 500);
     }
-  }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent]);
+  }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent, selectedCustomerStrategy, stepResults?.home?.websiteAnalysis]);
 
   // Edit post functionality - restore post to editor
   const handleEditPost = (post) => {
@@ -649,6 +685,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
 
       // Restore editor state
       setCurrentDraft({
+        id: post.id,
         title: post.title,
         content: post.content,
         topic: topicData
@@ -788,9 +825,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
       render: (title, record) => (
         <div>
           <div style={{ fontWeight: 500, marginBottom: '4px' }}>{title}</div>
-          {record.isDummy && (
-            <Tag size="small" color="blue">DUMMY DATA</Tag>
-          )}
         </div>
       )
     },
@@ -843,24 +877,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
     }
   ];
 
-  // Calendar events from scheduled posts
-  const calendarEvents = posts
-    .filter(post => post.status === 'scheduled' && post.scheduledDate)
-    .map(post => {
-      try {
-        return {
-          id: post.id,
-          title: post.title,
-          start: new Date(post.scheduledDate),
-          end: new Date(post.scheduledDate),
-          resource: post
-        };
-      } catch (error) {
-        console.warn('Invalid scheduledDate for calendar event:', post.scheduledDate);
-        return null;
-      }
-    })
-    .filter(event => event !== null);
 
   // Show simplified interface when no posts exist AND not in workflow mode
   if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
@@ -1258,20 +1274,36 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                       <span>Edit Your Content</span>
                       <Space>
                         <Button 
-                          type={previewMode ? "default" : "primary"}
+                          type={editorViewMode === 'edit' ? "primary" : "default"}
                           icon={<EditOutlined />}
-                          onClick={() => setPreviewMode(false)}
+                          onClick={() => {
+                            setEditorViewMode('edit');
+                            setPreviewMode(false);
+                          }}
                           size="small"
                         >
                           Edit
                         </Button>
                         <Button 
-                          type={previewMode ? "primary" : "default"}
+                          type={editorViewMode === 'preview' ? "primary" : "default"}
                           icon={<EyeOutlined />}
-                          onClick={() => setPreviewMode(true)}
+                          onClick={() => {
+                            setEditorViewMode('preview');
+                            setPreviewMode(true);
+                          }}
                           size="small"
                         >
                           Preview
+                        </Button>
+                        <Button 
+                          type={editorViewMode === 'split' ? "primary" : "default"}
+                          onClick={() => {
+                            setEditorViewMode('split');
+                            setPreviewMode(false);
+                          }}
+                          size="small"
+                        >
+                          Split
                         </Button>
                       </Space>
                     </div>
@@ -1409,8 +1441,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                     </div>
                   </div>
                   
-                  {previewMode ? (
-                    // Preview Mode
+                  {editorViewMode === 'preview' ? (
+                    // Preview Only Mode
                     <div style={{ 
                       border: '1px solid #f0f0f0',
                       borderRadius: '6px',
@@ -1418,25 +1450,120 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                       backgroundColor: '#fafafa',
                       minHeight: '400px'
                     }}>
-                      <div 
-                        style={{ 
-                          whiteSpace: 'pre-wrap',
-                          lineHeight: '1.6',
-                          fontSize: '14px'
-                        }}
-                      >
-                        {editingContent || 'No content generated yet.'}
+                      <MarkdownPreview 
+                        content={editingContent || 'No content generated yet.'} 
+                        typography={typography}
+                        style={{ minHeight: '360px' }}
+                      />
+                    </div>
+                  ) : editorViewMode === 'split' ? (
+                    // Split Pane Mode with Typography Settings
+                    <div>
+                      {/* Typography Settings Panel */}
+                      <div style={{ marginBottom: '16px' }}>
+                        <TypographySettings 
+                          typography={typography}
+                          onTypographyChange={handleTypographyChange}
+                        />
+                      </div>
+                      
+                      {/* Split Editor */}
+                      <div style={{ 
+                        display: 'flex', 
+                        gap: '16px', 
+                        minHeight: '500px',
+                        border: '1px solid #f0f0f0',
+                        borderRadius: '6px',
+                        overflow: 'hidden'
+                      }}>
+                      {/* Edit Pane */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <FormattingToolbar 
+                          onInsert={handleTextInsert}
+                          wordCount={getWordCount(editingContent)}
+                          showStats={false}
+                          style={{ 
+                            borderRadius: 0,
+                            borderBottom: '1px solid #e0e0e0',
+                            fontSize: '11px'
+                          }}
+                        />
+                        <TextArea
+                          value={editingContent}
+                          onChange={(e) => handleContentChange(e.target.value)}
+                          placeholder="Your generated content will appear here for editing..."
+                          bordered={false}
+                          style={{ 
+                            fontFamily: 'Consolas, Monaco, "Courier New", monospace', 
+                            fontSize: '13px', 
+                            lineHeight: '1.5',
+                            flex: 1,
+                            resize: 'none',
+                            minHeight: '430px'
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Divider */}
+                      <div style={{ 
+                        width: '1px', 
+                        backgroundColor: '#f0f0f0',
+                        cursor: 'col-resize'
+                      }} />
+                      
+                      {/* Preview Pane */}
+                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ 
+                          padding: '8px 12px', 
+                          backgroundColor: '#fafafa', 
+                          borderBottom: '1px solid #f0f0f0',
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: '#666'
+                        }}>
+                          Live Preview
+                        </div>
+                        <div style={{ 
+                          padding: '16px',
+                          backgroundColor: '#fafafa',
+                          flex: 1,
+                          overflow: 'auto'
+                        }}>
+                          <MarkdownPreview 
+                            content={editingContent}
+                            typography={typography}
+                            style={{ minHeight: '420px' }}
+                          />
+                        </div>
+                      </div>
                       </div>
                     </div>
                   ) : (
-                    // Edit Mode
-                    <TextArea
-                      value={editingContent}
-                      onChange={(e) => handleContentChange(e.target.value)}
-                      placeholder="Your generated content will appear here for editing..."
-                      rows={25}
-                      style={{ fontFamily: 'monospace', fontSize: '14px', lineHeight: '1.6' }}
-                    />
+                    // Edit Only Mode
+                    <div style={{ 
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '6px',
+                      overflow: 'hidden'
+                    }}>
+                      <FormattingToolbar 
+                        onInsert={handleTextInsert}
+                        wordCount={getWordCount(editingContent)}
+                        style={{ borderRadius: '6px 6px 0 0' }}
+                      />
+                      <TextArea
+                        value={editingContent}
+                        onChange={(e) => handleContentChange(e.target.value)}
+                        placeholder="Your generated content will appear here for editing..."
+                        rows={22}
+                        bordered={false}
+                        style={{ 
+                          fontFamily: 'Consolas, Monaco, "Courier New", monospace', 
+                          fontSize: '13px', 
+                          lineHeight: '1.5',
+                          borderRadius: '0 0 6px 6px'
+                        }}
+                      />
+                    </div>
                   )}
                   
                   {/* Action Buttons - Different for workflow vs focus mode */}
@@ -1453,24 +1580,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                           <Button 
                             type="primary"
                             icon={<ExportOutlined />}
-                            onClick={() => {
-                              // Create export content using current draft (same as handleExportPost)
-                              const content = `# ${selectedTopic?.title || 'Generated Blog Post'}\n\n${editingContent}`;
-                              const blob = new Blob([content], { type: 'text/markdown' });
-                              const url = URL.createObjectURL(blob);
-                              
-                              // Create download link
-                              const link = document.createElement('a');
-                              link.href = url;
-                              link.download = `${(selectedTopic?.title || 'blog-post').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                              URL.revokeObjectURL(url);
-                              
-                              setPostState('exported');
-                              message.success('Content exported successfully');
-                            }}
+                            onClick={() => setShowExportModal(true)}
                             disabled={!editingContent.trim() || postState === 'exported'}
                             style={{
                               backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
@@ -1515,16 +1625,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                           </Button>
                           <Button 
                             type="primary"
-                            icon={postState !== 'exported' ? <LockOutlined /> : undefined}
-                            onClick={handleExport}
-                            disabled={!editingContent.trim() || postState === 'exported'}
+                            icon={<ExportOutlined />}
+                            onClick={() => setShowExportModal(true)}
+                            disabled={!editingContent.trim()}
                             style={{
-                              backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
-                              borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                              backgroundColor: defaultColors.primary,
+                              borderColor: defaultColors.primary,
                               fontWeight: '500'
                             }}
                           >
-                            {postState === 'exported' ? 'Content Exported' : 'Download Your Content'}
+                            Export Content
                           </Button>
                         </Space>
                       </>
@@ -1790,9 +1900,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                         size="large"
                         onClick={handleGenerateTopics}
                         icon={<BulbOutlined />}
-                        disabled={!tabMode.tabWorkflowData?.selectedCustomerStrategy}
+                        disabled={!selectedCustomerStrategy}
                       >
-                        {!tabMode.tabWorkflowData?.selectedCustomerStrategy 
+                        {!selectedCustomerStrategy 
                           ? 'Select an audience first'
                           : user 
                             ? (user.postsRemaining > 0 ? 'Create blog post' : 'Purchase or subscribe')
@@ -2397,65 +2507,117 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
       {/* POSTS MANAGEMENT SECTION - Only visible in focus mode */}
       {tabMode.mode === 'focus' && !forceWorkflowMode && (
         <div style={{ padding: '24px' }}>
-          <Card 
-            title="Blog Posts" 
-            extra={
-              <Switch
-                checkedChildren={<CalendarOutlined />}
-                unCheckedChildren={<UnorderedListOutlined />}
-                checked={viewMode === 'calendar'}
-                onChange={(checked) => setViewMode(checked ? 'calendar' : 'list')}
-              />
-            }
-          >
-            {!canSchedule && (
-              <>
-                <div style={{
-                  background: '#f0f2ff',
-                  border: '1px solid #d6e3ff',
-                  borderRadius: '6px',
-                  padding: '12px 16px',
-                  marginBottom: '20px'
-                }}>
-                  <div style={{ fontWeight: 500, color: '#1d39c4', marginBottom: '4px' }}>
-                    Scheduling Available for Subscribers
-                  </div>
-                  <div style={{ fontSize: '14px', color: '#4f4f4f' }}>
-                    Upgrade to Creator, Professional, or Enterprise plan to schedule your blog posts.
-                  </div>
+          {/* Content Editing Interface - Show when editing an existing post */}
+          {currentDraft && contentGenerated ? (
+            <Card 
+              title={
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>Edit Your Content</span>
+                  <Space>
+                    <Button 
+                      type={previewMode ? "default" : "primary"}
+                      icon={<EditOutlined />}
+                      onClick={() => setPreviewMode(false)}
+                      size="small"
+                    >
+                      Edit
+                    </Button>
+                    <Button 
+                      type={previewMode ? "primary" : "default"}
+                      icon={<EyeOutlined />}
+                      onClick={() => setPreviewMode(true)}
+                      size="small"
+                    >
+                      Preview
+                    </Button>
+                  </Space>
                 </div>
-              </>
-            )}
-
-            {viewMode === 'list' ? (
-                <Table
-                  columns={columns}
-                  dataSource={posts}
-                  rowKey="id"
-                  loading={loading}
-                  pagination={{ pageSize: 10 }}
+              }
+              style={{ marginBottom: '24px' }}
+            >
+              {selectedTopic && (
+                <div style={{ 
+                  backgroundColor: '#f6ffed',
+                  border: '1px solid #b7eb8f',
+                  borderRadius: '6px',
+                  padding: '12px',
+                  marginBottom: '16px'
+                }}>
+                  <Text strong style={{ color: '#389e0d' }}>Selected Topic: </Text>
+                  <Text style={{ color: '#389e0d' }}>{selectedTopic.title}</Text>
+                </div>
+              )}
+              
+              {/* Content Editor */}
+              {previewMode ? (
+                <div 
+                  style={{ 
+                    minHeight: '400px',
+                    border: '1px solid #e8e8e8',
+                    borderRadius: '6px',
+                    padding: '20px',
+                    backgroundColor: '#fafafa'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: editingContent.replace(/\n/g, '<br>') }}
                 />
               ) : (
-                <div style={{ height: '500px' }}>
-                  <Calendar
-                    localizer={localizer}
-                    events={calendarEvents}
-                    startAccessor="start"
-                    endAccessor="end"
-                    onSelectEvent={(event) => {
-                      if (canSchedule) {
-                        handleSchedulePost(event.resource);
-                      }
-                    }}
-                    views={['month', 'week', 'day']}
-                    defaultView="month"
-                    popup
-                    style={{ height: '100%' }}
+                <TextArea
+                  value={editingContent}
+                  onChange={(e) => handleContentChange(e.target.value)}
+                  style={{ minHeight: '400px', fontSize: '14px' }}
+                  placeholder="Enter your blog content..."
+                />
+              )}
+              
+              {/* Content Actions */}
+              <div style={{ 
+                marginTop: '20px', 
+                display: 'flex', 
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <Space>
+                  <SaveStatusIndicator 
+                    isAutosaving={isAutosaving}
+                    lastSaved={lastSaved}
+                    autosaveError={autosaveError}
                   />
-                </div>
-              )
-            }
-          </Card>
+                  <Button 
+                    type="default"
+                    onClick={handleClosePost}
+                    style={{ marginRight: '8px' }}
+                  >
+                    Close Post
+                  </Button>
+                  <Button 
+                    type="primary"
+                    icon={postState !== 'exported' ? <LockOutlined /> : undefined}
+                    onClick={() => handleAutosave(true)}
+                    disabled={!editingContent.trim() || postState === 'exported'}
+                    style={{
+                      backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                      borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                      fontWeight: '500'
+                    }}
+                  >
+                    {postState === 'exported' ? 'Content Exported' : 'Save Changes'}
+                  </Button>
+                </Space>
+              </div>
+            </Card>
+          ) : (
+            /* Posts List View */
+            <Card title="Blog Posts">
+
+              <Table
+                columns={columns}
+                dataSource={posts}
+                rowKey="id"
+                loading={loading}
+                pagination={{ pageSize: 10 }}
+              />
+            </Card>
+          )}
         </div>
       )}
 
@@ -2467,6 +2629,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
           post={selectedPost}
           onClose={() => setShowSchedulingModal(false)}
           onSave={handleScheduleSave}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportModal
+          open={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          content={editingContent}
+          title={selectedTopic?.title || 'Blog Post'}
+          typography={typography}
         />
       )}
     </div>

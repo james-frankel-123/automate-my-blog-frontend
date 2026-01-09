@@ -85,18 +85,18 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             id: audience.id, // Use actual database ID
             databaseId: audience.id, // Store for updates
             targetSegment: audience.target_segment || {
-              demographics: 'Target audience',
-              psychographics: 'Customer seeking solutions',
-              searchBehavior: 'Active research behavior'
+              demographics: '',
+              psychographics: '',
+              searchBehavior: ''
             },
-            customerProblem: audience.customer_problem || 'Customer problem',
+            customerProblem: audience.customer_problem || '',
             customerLanguage: audience.customer_language || [],
-            conversionPath: audience.conversion_path || 'Content leads to conversions',
+            conversionPath: audience.conversion_path || '',
             businessValue: audience.business_value || {
-              searchVolume: 'Unknown',
-              conversionPotential: 'Medium',
+              searchVolume: '',
+              conversionPotential: '',
               priority: audience.priority || index + 1,
-              competition: 'Medium'
+              competition: ''
             },
             keywords: audience.keywords || [], // Keywords from database
             topics: audience.topics || [], // Topics from database
@@ -201,18 +201,18 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         const openAIStrategies = analysis.scenarios.map((scenario, index) => ({
           id: `openai-scenario-${index}`,
           targetSegment: scenario.targetSegment || {
-            demographics: scenario.customerProblem || 'Target audience',
-            psychographics: 'Customer seeking solutions',
-            searchBehavior: 'Active research behavior'
+            demographics: scenario.customerProblem || '',
+            psychographics: '',
+            searchBehavior: ''
           },
-          customerProblem: scenario.customerProblem || 'Customer problem',
+          customerProblem: scenario.customerProblem || '',
           customerLanguage: scenario.customerLanguage || scenario.seoKeywords || [],
-          conversionPath: scenario.conversionPath || 'Content leads to conversions',
+          conversionPath: scenario.conversionPath || '',
           businessValue: scenario.businessValue || {
-            searchVolume: 'Unknown',
-            conversionPotential: 'Medium',
+            searchVolume: '',
+            conversionPotential: '',
             priority: index + 1,
-            competition: 'Medium'
+            competition: ''
           },
           contentIdeas: scenario.contentIdeas || [],
           seoKeywords: scenario.seoKeywords || []
@@ -1069,6 +1069,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                             type="primary"
                             size="large"
                             onClick={() => {
+                              // Set the selected customer strategy in workflow context
+                              if (selectedStrategy) {
+                                setSelectedCustomerStrategy(selectedStrategy);
+                                console.log('🎯 Setting selected customer strategy for content generation:', selectedStrategy);
+                              }
+                              
                               if (onEnterProjectMode) {
                                 onEnterProjectMode();
                               } else {
@@ -1233,8 +1239,17 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   type="primary"
                   size="large"
                   onClick={() => {
+                    // Save the selected customer strategy to workflow context
+                    setSelectedCustomerStrategy(selectedStrategy);
+                    updateCustomerStrategy(selectedStrategy);
+                    
+                    // Update workflow data for content tab
+                    tabMode.continueToNextStep({
+                      selectedCustomerStrategy: selectedStrategy,
+                      selectedAudience: selectedStrategy.targetSegment?.demographics || 'Target Audience'
+                    });
+                    
                     message.success('Moving to content creation...');
-                    tabMode.continueToNextStep();
                   }}
                   style={{
                     backgroundColor: defaultColors.primary,

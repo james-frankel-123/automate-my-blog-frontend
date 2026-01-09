@@ -72,22 +72,22 @@ const WorkflowRenderer = () => {
               // Simulate website analysis (in real implementation, this would call the API)
               await new Promise(resolve => setTimeout(resolve, 2000));
               
-              // Update analysis results with sample data
-              const sampleAnalysis = {
-                businessName: 'Your Business',
-                businessType: 'Professional Services',
-                targetAudience: 'Business professionals',
-                contentFocus: 'Industry expertise and thought leadership',
-                brandVoice: 'Professional and informative',
-                description: 'A professional services business focused on delivering expert solutions',
+              // Update analysis results with empty state
+              const emptyAnalysis = {
+                businessName: '',
+                businessType: '',
+                targetAudience: '',
+                contentFocus: '',
+                brandVoice: '',
+                description: '',
                 brandColors: {
-                  primary: '#6B8CAE',
-                  secondary: '#F4E5D3',
-                  accent: '#8FBC8F'
+                  primary: '#1890ff',
+                  secondary: '#f0f0f0',
+                  accent: '#52c41a'
                 }
               };
               
-              workflowMode.updateWebsiteAnalysis(sampleAnalysis);
+              workflowMode.updateWebsiteAnalysis(emptyAnalysis);
               workflowMode.setAnalysisCompleted(true);
               workflowMode.setIsLoading(false);
               
