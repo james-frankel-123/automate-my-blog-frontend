@@ -1370,6 +1370,38 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                     </div>
                   )}
                   
+                  {/* Enhanced Generation Toggle - Standalone Panel */}
+                  {console.log('🔧 DEBUG: Rendering Enhanced Generation Toggle', { useEnhancedGeneration, selectedTopic: !!selectedTopic })}
+                  <div style={{ 
+                    marginBottom: '20px',
+                    padding: '16px',
+                    backgroundColor: '#f0f9ff',
+                    borderRadius: '8px',
+                    border: '1px solid #e0f2fe'
+                  }}>
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }}>
+                      <div>
+                        <Text strong style={{ fontSize: '14px', color: '#0369a1' }}>
+                          Enhanced AI Generation
+                        </Text>
+                        <div style={{ fontSize: '12px', color: '#0369a1', marginTop: '2px' }}>
+                          Comprehensive context, SEO optimization, strategic CTAs
+                        </div>
+                      </div>
+                      <Switch
+                        checked={useEnhancedGeneration}
+                        onChange={setUseEnhancedGeneration}
+                        checkedChildren="Enhanced"
+                        unCheckedChildren="Standard"
+                      />
+                    </div>
+                  </div>
 
                   {/* Content Strategy Panel */}
                   <div style={{ 
@@ -1485,39 +1517,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
                           </Col>
                         </Row>
                       )}
-                      
-                      {/* Enhanced Generation Toggle */}
-                      <div style={{ 
-                          marginTop: '16px', 
-                          padding: '12px',
-                          backgroundColor: '#f0f9ff',
-                          borderRadius: '6px',
-                          border: '1px solid #e0f2fe'
-                        }}>
-                          <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'space-between',
-                            flexWrap: 'wrap',
-                            gap: '8px'
-                          }}>
-                            <div>
-                              <Text strong style={{ fontSize: '14px', color: '#0369a1' }}>
-                                Enhanced AI Generation
-                              </Text>
-                              <div style={{ fontSize: '12px', color: '#0369a1', marginTop: '2px' }}>
-                                Comprehensive context, SEO optimization, strategic CTAs
-                              </div>
-                            </div>
-                            <Switch
-                              checked={useEnhancedGeneration}
-                              onChange={setUseEnhancedGeneration}
-                              checkedChildren="Enhanced"
-                              unCheckedChildren="Standard"
-                              disabled={previewMode}
-                            />
-                          </div>
-                        </div>
                     </div>
                   </div>
                   
