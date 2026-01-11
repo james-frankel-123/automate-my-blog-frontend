@@ -2309,6 +2309,11 @@ Please provide analysis in this JSON format:
         throw new Error('Content must be at least 200 characters long for meaningful analysis');
       }
 
+      // Use extended timeout for comprehensive analysis (3 minutes)
+      const extendedTimeoutSignal = typeof AbortSignal.timeout === 'function' 
+        ? AbortSignal.timeout(180000)  // 3 minutes for comprehensive analysis
+        : undefined;
+
       const response = await this.makeRequest('/api/v1/seo-analysis', {
         method: 'POST',
         body: JSON.stringify({
@@ -2321,6 +2326,7 @@ Please provide analysis in this JSON format:
           },
           postId
         }),
+        ...(extendedTimeoutSignal && { signal: extendedTimeoutSignal }),
       });
 
       console.log('✅ Comprehensive SEO analysis completed:', {
