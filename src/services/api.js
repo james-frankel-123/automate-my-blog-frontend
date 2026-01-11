@@ -94,14 +94,35 @@ class AutoBlogAPI {
       const response = await fetch(url, requestOptions);
       
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (jsonError) {
+          // If JSON parsing fails, try to get text content
+          try {
+            const textContent = await response.text();
+            errorMessage = textContent || errorMessage;
+          } catch (textError) {
+            // Use the original HTTP error message if both JSON and text fail
+            console.error('Failed to parse error response:', jsonError);
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       // Check if response is JSON
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        const jsonResponse = await response.json();
+        let jsonResponse;
+        try {
+          jsonResponse = await response.json();
+        } catch (jsonError) {
+          console.error('Failed to parse JSON response:', jsonError);
+          console.error('Response status:', response.status);
+          console.error('Response content-type:', contentType);
+          throw new Error('Invalid JSON response from server');
+        }
         
         // Add debugging for adoption endpoint specifically
         if (normalizedEndpoint.includes('adopt-session')) {
@@ -2305,10 +2326,13 @@ Please provide analysis in this JSON format:
       console.log('✅ Comprehensive SEO analysis completed:', {
         analysisId: response.analysisId,
         overallScore: response.analysis?.overallScore,
-        fromCache: response.fromCache
+        fromCache: false  // Always fresh analysis now
       });
 
-      return response;
+      return {
+        ...response,
+        fromCache: false  // Always fresh analysis now
+      };
     } catch (error) {
       console.error('❌ Comprehensive SEO analysis failed:', error);
       throw new Error(`Comprehensive SEO analysis failed: ${error.message}`);
