@@ -115,15 +115,27 @@ const ComprehensiveAnalysisTab = () => {
   };
 
   const forceReanalyze = async () => {
-    if (!currentOrganization?.websiteUrl) {
-      console.error('No website URL found for comprehensive analysis');
+    console.log('🔍 Debug currentOrganization:', currentOrganization);
+    console.log('🔍 Debug comprehensiveResults:', comprehensiveResults);
+    
+    // Try to get website URL from multiple sources
+    let websiteUrl = currentOrganization?.websiteUrl || 
+                     currentOrganization?.website_url ||
+                     comprehensiveResults?.organization?.websiteUrl ||
+                     comprehensiveResults?.organization?.website_url;
+    
+    if (!websiteUrl) {
+      console.error('No website URL found for comprehensive analysis. Available data:', {
+        currentOrganization,
+        comprehensiveResults: comprehensiveResults?.organization
+      });
       return;
     }
     
     setReanalyzing(true);
     try {
-      console.log('🔍 Triggering force re-analysis for:', currentOrganization.websiteUrl);
-      await autoBlogAPI.triggerComprehensiveAnalysis(currentOrganization.websiteUrl);
+      console.log('🔍 Triggering force re-analysis for:', websiteUrl);
+      await autoBlogAPI.triggerComprehensiveAnalysis(websiteUrl);
       
       // Wait a moment then reload data
       setTimeout(() => {
