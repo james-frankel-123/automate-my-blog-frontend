@@ -435,12 +435,14 @@ const DashboardLayout = ({
   ];
 
   const renderContent = () => {
+    console.log('🔍 DashboardLayout renderContent - activeTab:', activeTab);
     // Special tabs that don't use scrollable layout
     if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
         case 'comprehensive-analysis':
+          console.log('🎯 Rendering ComprehensiveAnalysisTab component');
           return <ComprehensiveAnalysisTab />;
         case 'admin-users':
           return <AdminUsersTab />;
