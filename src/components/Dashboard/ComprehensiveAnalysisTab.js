@@ -135,7 +135,16 @@ const ComprehensiveAnalysisTab = () => {
     setReanalyzing(true);
     try {
       console.log('🔍 Triggering force re-analysis for:', websiteUrl);
-      await autoBlogAPI.triggerComprehensiveAnalysis(websiteUrl);
+      const analysisResult = await autoBlogAPI.triggerComprehensiveAnalysis(websiteUrl);
+      console.log('📋 Analysis result details:', analysisResult);
+      
+      // Log specific analysis details if available
+      if (analysisResult.analysis) {
+        console.log('📊 Blog content found:', analysisResult.analysis.blogContentFound);
+        console.log('📄 Total posts discovered:', analysisResult.analysis.totalPostsDiscovered);
+        console.log('🎯 CTA strategy:', analysisResult.analysis.ctaStrategy);
+        console.log('🔗 Linking strategy:', analysisResult.analysis.linkingStrategy);
+      }
       
       // Wait a moment then reload data
       setTimeout(() => {
