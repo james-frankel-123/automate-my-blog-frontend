@@ -212,35 +212,113 @@ class AutoBlogAPI {
   }
 
   /**
-   * Generate enhanced content with comprehensive metadata and SEO analysis
-   * Returns structured response with content, SEO data, quality metrics, and suggestions
+   * Smart Enhanced Content Generation with Automatic Enhancement Detection
+   * Determines enhancement level based on available data and provides detailed feedback
    */
   async generateEnhancedContent(enhancedPayload) {
     try {
-      const response = await this.makeRequest('/api/generate-enhanced-content', {
+      // Smart enhancement detection
+      const enhancementStatus = this.determineEnhancementCapability(enhancedPayload);
+      
+      console.log('🎯 Enhancement Status:', enhancementStatus);
+
+      // Build smart payload based on available data
+      const smartPayload = {
+        topic: enhancedPayload.topic,
+        businessInfo: enhancedPayload.businessInfo,
+        additionalInstructions: enhancedPayload.additionalInstructions || '',
+        // Auto-enable enhanced generation if we have organization data
+        useEnhancedGeneration: enhancementStatus.canEnhance,
+        ...(enhancementStatus.organizationId && {
+          organizationId: enhancementStatus.organizationId,
+          targetSEOScore: enhancedPayload.targetSEOScore || 95,
+          includeVisuals: enhancementStatus.canGenerateVisuals,
+          iterativeOptimization: enhancedPayload.iterativeOptimization || false
+        })
+      };
+
+      const response = await this.makeRequest('/api/generate-content', {
         method: 'POST',
-        body: JSON.stringify(enhancedPayload),
+        body: JSON.stringify(smartPayload),
       });
 
-      // If backend returns enhanced structure, return it directly
-      if (response.blogPost && response.metadata) {
-        return {
-          blogPost: response.blogPost,
-          enhancedMetadata: response.metadata,
-          seoAnalysis: response.seoAnalysis,
-          contentQuality: response.contentQuality,
-          strategicElements: response.strategicElements,
-          improvementSuggestions: response.improvementSuggestions,
-          keywordOptimization: response.keywordOptimization
-        };
-      }
-
-      // Fallback to standard endpoint with client-side enhancement
-      return this.generateContentWithClientEnhancement(enhancedPayload);
+      // Return enhanced response with status feedback
+      return {
+        blogPost: response.blogPost,
+        enhancementStatus: enhancementStatus,
+        enhanced: response.enhanced || false,
+        qualityPrediction: response.qualityPrediction,
+        visualSuggestions: response.visualSuggestions || [],
+        optimization: response.optimization,
+        metadata: response.metadata || {},
+        generationTimeMs: response.generationTimeMs
+      };
     } catch (error) {
       console.log('Enhanced endpoint not available, falling back to client-side enhancement');
       return this.generateContentWithClientEnhancement(enhancedPayload);
     }
+  }
+
+  /**
+   * Determine enhancement capability based on available organization data
+   * Returns detailed status and feedback for UI display
+   */
+  determineEnhancementCapability(enhancedPayload) {
+    const organizationId = enhancedPayload.organizationId || 
+                          enhancedPayload.currentOrganization?.id ||
+                          enhancedPayload.comprehensiveContext?.organizationId;
+    
+    const hasWebsiteAnalysis = !!(enhancedPayload.comprehensiveContext?.websiteAnalysis ||
+                                enhancedPayload.websiteAnalysis);
+    
+    const hasManualInputs = !!(enhancedPayload.manualInputs && 
+                             Object.keys(enhancedPayload.manualInputs).length > 0);
+    
+    const canEnhance = !!(organizationId && (hasWebsiteAnalysis || hasManualInputs));
+    
+    // Determine specific capabilities
+    let status = 'basic';
+    let message = '';
+    let reasons = [];
+    let capabilities = [];
+    
+    if (!organizationId) {
+      status = 'basic';
+      message = 'Using basic generation - no organization data available';
+      reasons.push('No organization ID provided');
+    } else if (!hasWebsiteAnalysis && !hasManualInputs) {
+      status = 'limited';
+      message = 'Limited enhancement - organization found but no content analysis data';
+      reasons.push('No website analysis completed', 'No manual inputs provided');
+      capabilities.push('Basic SEO targeting', 'Standard content structure');
+    } else {
+      status = 'enhanced';
+      message = 'Full enhancement enabled - using organization data for 95+ SEO targeting';
+      
+      if (hasWebsiteAnalysis) {
+        capabilities.push('Website analysis integration', 'Brand voice matching', 'CTA optimization');
+      }
+      
+      if (hasManualInputs) {
+        capabilities.push('Manual input integration', 'Custom brand guidelines');
+      }
+      
+      capabilities.push('95+ SEO score targeting', 'Visual content suggestions', 'Enhanced prompts');
+    }
+    
+    return {
+      canEnhance,
+      organizationId,
+      status, // 'basic', 'limited', 'enhanced'
+      message,
+      reasons,
+      capabilities,
+      hasWebsiteAnalysis,
+      hasManualInputs,
+      canGenerateVisuals: canEnhance, // Visual generation available with enhanced mode
+      dataCompleteness: hasWebsiteAnalysis && hasManualInputs ? 'high' :
+                       hasWebsiteAnalysis || hasManualInputs ? 'medium' : 'low'
+    };
   }
 
   /**
