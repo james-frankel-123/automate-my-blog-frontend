@@ -16,6 +16,7 @@ import { Placeholder } from '@tiptap/extension-placeholder';
 import { colors, spacing, borderRadius, typography } from '../../DesignSystem/tokens';
 import InlineToolbar from '../InlineToolbar/InlineToolbar';
 import { KeyboardShortcuts } from '../extensions/KeyboardShortcuts';
+import { HighlightBox } from '../extensions/HighlightBox';
 import { markdownToHtml, htmlToMarkdown } from '../../../utils/markdownToHtml';
 
 /**
@@ -45,6 +46,7 @@ const RichTextEditor = ({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
+        blockquote: false,  // Disable default blockquote to allow custom HighlightBox extension
         bulletList: {
           keepMarks: true,
           keepAttributes: false,
@@ -81,6 +83,7 @@ const RichTextEditor = ({
         placeholder,
       }),
       KeyboardShortcuts,
+      HighlightBox,
     ],
     content: htmlContent,
     editable: editable,
@@ -350,6 +353,33 @@ const RichTextEditor = ({
         
         .rich-text-editor .selectedCell {
           background-color: ${colors.primary}20;
+        }
+
+        /* Highlight box responsive float layouts */
+        .rich-text-editor .highlight-float-left {
+          clear: both;
+        }
+
+        .rich-text-editor .highlight-float-right {
+          clear: both;
+        }
+
+        /* Clear floats after highlighted content */
+        .rich-text-editor .highlight-box::after {
+          content: "";
+          display: table;
+          clear: both;
+        }
+
+        /* Mobile: Stack all floats */
+        @media (max-width: 768px) {
+          .rich-text-editor .highlight-float-left,
+          .rich-text-editor .highlight-float-right {
+            width: 100% !important;
+            float: none !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+          }
         }
       `}</style>
     </div>

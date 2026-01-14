@@ -10,6 +10,11 @@ export function markdownToHtml(markdown) {
 
   let html = markdown;
 
+  // IMPORTANT: Preserve blockquote elements with data attributes (highlight boxes)
+  // These should pass through unchanged to maintain their styling
+  // Match: <blockquote ...data-attributes...>content</blockquote>
+  // Don't convert these to regular blockquotes
+
   // Convert headings
   html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
@@ -34,7 +39,7 @@ export function markdownToHtml(markdown) {
   html = paragraphs.map(p => {
     p = p.trim();
     // Don't wrap if already wrapped in block elements
-    if (p.match(/^<(h[1-6]|ul|ol|li|div)/)) {
+    if (p.match(/^<(h[1-6]|ul|ol|li|div|blockquote)/)) {
       return p;
     }
     // Handle multiple lines within a paragraph
@@ -57,6 +62,17 @@ export function htmlToMarkdown(html) {
   }
 
   let markdown = html;
+
+  // IMPORTANT: Preserve blockquote elements with data attributes (highlight boxes)
+  // These are NOT regular blockquotes, they're custom highlight boxes from TipTap
+  // We need to keep them as HTML with all data attributes intact
+  // Match pattern: <blockquote data-highlight-box ...>content</blockquote>
+  const highlightBoxes = [];
+  markdown = markdown.replace(/<blockquote([^>]*data-highlight[^>]*)>(.*?)<\/blockquote>/gs, (match) => {
+    const placeholder = `__HIGHLIGHT_BOX_${highlightBoxes.length}__`;
+    highlightBoxes.push(match);
+    return placeholder;
+  });
 
   // Convert headings
   markdown = markdown.replace(/<h1>(.*?)<\/h1>/g, '# $1\n\n');
@@ -94,5 +110,34 @@ export function htmlToMarkdown(html) {
   markdown = markdown.replace(/\n\s*\n\s*\n/g, '\n\n');
   markdown = markdown.trim();
 
+  // Restore preserved highlight boxes (replace placeholders with original HTML)
+  highlightBoxes.forEach((box, index) => {
+    markdown = markdown.replace(`__HIGHLIGHT_BOX_${index}__`, box);
+  });
+
   return markdown;
+}
+
+/**
+ * Test function to verify round-trip preservation of highlight boxes
+ * Call this during development to ensure data attributes are maintained
+ */
+export function testHighlightBoxRoundTrip() {
+  const original = '<blockquote data-highlight-box="" data-highlight-type="statistic" data-width="100%" data-font-size="xlarge" data-layout="block">Test content with <strong>formatting</strong></blockquote>';
+
+  console.log('Original HTML:', original);
+
+  const markdown = htmlToMarkdown(original);
+  console.log('Converted to Markdown:', markdown);
+
+  const backToHtml = markdownToHtml(markdown);
+  console.log('Back to HTML:', backToHtml);
+
+  const preserved = backToHtml.includes('data-highlight-type') &&
+                    backToHtml.includes('data-width') &&
+                    backToHtml.includes('data-font-size');
+
+  console.log('Data attributes preserved:', preserved ? '✓ YES' : '✗ NO');
+
+  return preserved;
 }
