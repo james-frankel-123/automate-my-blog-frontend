@@ -152,34 +152,52 @@ const VisualContentSuggestions = ({
               onClick={async () => {
                 if (!onGenerateVisual) return;
                 
+                const services = ['quickchart', 'stable_diffusion', 'dalle'];
+                const totalGenerations = validSuggestions.length * services.length;
+                
                 message.loading({ 
-                  content: `Generating all ${validSuggestions.length} visuals...`, 
+                  content: `Generating all ${totalGenerations} visuals (${validSuggestions.length} suggestions × ${services.length} services)...`, 
                   key: 'bulk-visual-gen', 
                   duration: 0 
                 });
                 
                 let successCount = 0;
+                let currentCount = 0;
+                
                 for (const suggestion of validSuggestions) {
-                  try {
-                    const result = await onGenerateVisual({
-                      ...suggestion,
-                      id: `${suggestion.id}-bulk`
-                    });
-                    if (result && result.imageUrl) {
-                      setGeneratedImages(prev => ({
-                        ...prev,
-                        [`${suggestion.id}-bulk`]: result.imageUrl
-                      }));
-                      successCount++;
+                  for (const service of services) {
+                    currentCount++;
+                    try {
+                      // Update progress message
+                      message.loading({ 
+                        content: `Generating ${currentCount}/${totalGenerations}: ${suggestion.title} with ${service}...`, 
+                        key: 'bulk-visual-gen', 
+                        duration: 0 
+                      });
+                      
+                      const result = await onGenerateVisual({
+                        ...suggestion,
+                        testService: service,
+                        id: `${suggestion.id}-${service}`
+                      });
+                      
+                      if (result && result.imageUrl) {
+                        setGeneratedImages(prev => ({
+                          ...prev,
+                          [`${suggestion.id}-${service}`]: result.imageUrl
+                        }));
+                        successCount++;
+                      }
+                    } catch (error) {
+                      console.error(`Bulk generation error for ${suggestion.title} with ${service}:`, error);
                     }
-                  } catch (error) {
-                    console.error('Bulk generation error:', error);
                   }
                 }
                 
                 message.success({
-                  content: `Generated ${successCount}/${validSuggestions.length} visuals successfully!`,
-                  key: 'bulk-visual-gen'
+                  content: `Generated ${successCount}/${totalGenerations} visuals successfully!`,
+                  key: 'bulk-visual-gen',
+                  duration: 8
                 });
               }}
               style={{
@@ -190,7 +208,7 @@ const VisualContentSuggestions = ({
                 padding: '0 32px'
               }}
             >
-              Generate All {validSuggestions.length} Visuals
+              Generate All 9 Visuals ({validSuggestions.length} × 3 services)
             </Button>
           </div>
         )}
@@ -275,31 +293,48 @@ const VisualContentSuggestions = ({
                       </Text>
                     </div>
                     
-                    {/* Show Generated Image */}
-                    {(generatedImages[suggestion.id] || generatedImages[`${suggestion.id}-bulk`]) && (
-                      <div style={{ marginTop: 12 }}>
-                        <Text strong style={{ fontSize: 12 }}>Generated Image:</Text>
-                        <div style={{ marginTop: 4 }}>
-                          <img 
-                            src={generatedImages[suggestion.id] || generatedImages[`${suggestion.id}-bulk`]} 
-                            alt={suggestion.title}
-                            style={{ 
-                              maxWidth: '200px', 
-                              maxHeight: '150px', 
-                              borderRadius: 4,
-                              border: '1px solid #d9d9d9'
-                            }}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'block';
-                            }}
-                          />
-                          <div style={{ display: 'none', padding: 8, background: '#fff2f0', borderRadius: 4, marginTop: 4 }}>
-                            <Text type="secondary" style={{ fontSize: 11 }}>Image failed to load</Text>
+                    {/* Show Generated Images */}
+                    {(() => {
+                      const services = ['quickchart', 'stable_diffusion', 'dalle'];
+                      const availableImages = services
+                        .map(service => ({
+                          service,
+                          url: generatedImages[`${suggestion.id}-${service}`] || generatedImages[suggestion.id] 
+                        }))
+                        .filter(img => img.url);
+                      
+                      if (availableImages.length === 0) return null;
+                      
+                      return (
+                        <div style={{ marginTop: 12 }}>
+                          <Text strong style={{ fontSize: 12 }}>Generated Images ({availableImages.length}):</Text>
+                          <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {availableImages.map(({ service, url }) => (
+                              <div key={service} style={{ textAlign: 'center' }}>
+                                <img 
+                                  src={url} 
+                                  alt={`${suggestion.title} - ${service}`}
+                                  style={{ 
+                                    width: '120px', 
+                                    height: '90px', 
+                                    objectFit: 'cover',
+                                    borderRadius: 4,
+                                    border: '1px solid #d9d9d9'
+                                  }}
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                  }}
+                                />
+                                <div style={{ fontSize: 10, marginTop: 2, color: '#666' }}>
+                                  {service === 'quickchart' ? 'QuickChart' : 
+                                   service === 'stable_diffusion' ? 'Replicate' : 'DALL-E'}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 }
               />
