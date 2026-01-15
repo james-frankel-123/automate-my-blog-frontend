@@ -115,14 +115,77 @@ const RichTextEditor = ({
 
           try {
             const nodeData = JSON.parse(highlightData);
-            const pos = view.posAtCoords({ left: event.clientX, top: event.clientY });
+            const dropPos = view.posAtCoords({ left: event.clientX, top: event.clientY });
 
-            if (pos) {
-              // Insert the highlight box at drop position
-              const node = view.state.schema.nodes.highlightBox.create(nodeData.attrs);
-              const transaction = view.state.tr.insert(pos.pos, node);
-              view.dispatch(transaction);
+            if (dropPos && nodeData.sourcePos !== null && nodeData.sourcePos !== undefined) {
+              const { state } = view;
+              const sourcePos = nodeData.sourcePos;
+              const targetPos = dropPos.pos;
 
+              // Get the original node from document
+              const sourceNode = state.doc.nodeAt(sourcePos);
+              if (!sourceNode) return false;
+
+              const nodeSize = sourceNode.nodeSize;
+
+              // Calculate horizontal position and determine layout
+              const editorElement = view.dom;
+              const editorRect = editorElement.getBoundingClientRect();
+              const editorWidth = editorRect.width;
+              const relativeX = event.clientX - editorRect.left;
+              const horizontalPercent = (relativeX / editorWidth) * 100;
+
+              // Determine layout based on horizontal position
+              let layout = nodeData.attrs.layout;
+              let width = nodeData.attrs.width;
+
+              // Only auto-adjust if dropping at edges (not when near current position)
+              const distanceFromSource = Math.abs(targetPos - sourcePos);
+              if (distanceFromSource > 50) {  // Only adjust if moving significantly
+                if (horizontalPercent < 33) {
+                  // Left third of editor → float-left
+                  layout = 'float-left';
+                  width = '50%';
+                } else if (horizontalPercent > 67) {
+                  // Right third of editor → float-right
+                  layout = 'float-right';
+                  width = '50%';
+                } else {
+                  // Center third → block (full width)
+                  layout = 'block';
+                  width = '100%';
+                }
+              }
+
+              // Update node attributes with new layout
+              const updatedAttrs = {
+                ...nodeData.attrs,
+                layout,
+                width,
+              };
+
+              // Use ProseMirror's mapping to handle atomic move
+              let tr = state.tr;
+
+              if (targetPos > sourcePos) {
+                // Dropping after source: delete first, then map target position
+                tr = tr.delete(sourcePos, sourcePos + nodeSize);
+                const mappedPos = tr.mapping.map(targetPos);
+
+                // Create new node with updated attributes
+                const newNode = state.schema.nodes.highlightBox.create(updatedAttrs);
+                tr = tr.insert(mappedPos, newNode);
+              } else {
+                // Dropping before source: insert first, then map source position
+                const newNode = state.schema.nodes.highlightBox.create(updatedAttrs);
+                tr = tr.insert(targetPos, newNode);
+
+                // Map the source position after insertion
+                const mappedSourcePos = tr.mapping.map(sourcePos);
+                tr = tr.delete(mappedSourcePos, mappedSourcePos + nodeSize);
+              }
+
+              view.dispatch(tr);
               return true; // Indicate we handled the drop
             }
           } catch (e) {
