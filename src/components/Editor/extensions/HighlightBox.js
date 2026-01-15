@@ -20,7 +20,7 @@ const fontSizes = {
 };
 
 // React component to render the highlight box
-const HighlightBoxComponent = ({ node, deleteNode }) => {
+const HighlightBoxComponent = ({ node, deleteNode, updateAttributes }) => {
   const {
     type,
     content,
@@ -34,6 +34,27 @@ const HighlightBoxComponent = ({ node, deleteNode }) => {
     iconName,
     align
   } = node.attrs;
+
+  // Handler to toggle float direction
+  const handleToggleFloat = () => {
+    if (layout === 'float-left') {
+      updateAttributes({ layout: 'float-right' });
+    } else if (layout === 'float-right') {
+      updateAttributes({ layout: 'float-left' });
+    } else {
+      // If block, default to float-right
+      updateAttributes({ layout: 'float-right', width: '50%' });
+    }
+  };
+
+  // Handler to toggle full width
+  const handleToggleWidth = () => {
+    if (width === '100%') {
+      updateAttributes({ width: '50%', layout: 'float-right' });
+    } else {
+      updateAttributes({ width: '100%', layout: 'block' });
+    }
+  };
 
   // Default styles for each type
   const defaultStyles = {
@@ -151,7 +172,74 @@ const HighlightBoxComponent = ({ node, deleteNode }) => {
         style={getLayoutStyles()}
         contentEditable={false}
         className={`highlight-box highlight-${layout}`}
+        data-drag-handle
       >
+        {/* Control Buttons Bar */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '-30px',
+            right: '0',
+            display: 'flex',
+            gap: '4px',
+            opacity: 0,
+            transition: 'opacity 0.2s',
+          }}
+          className="highlight-controls"
+        >
+          {/* Toggle Float Direction */}
+          {(layout === 'float-left' || layout === 'float-right') && (
+            <button
+              onClick={handleToggleFloat}
+              style={{
+                background: '#fff',
+                border: '1px solid #ddd',
+                borderRadius: '4px',
+                padding: '4px 8px',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+              title="Flip left/right"
+            >
+              {layout === 'float-left' ? '→' : '←'}
+            </button>
+          )}
+
+          {/* Toggle Width */}
+          <button
+            onClick={handleToggleWidth}
+            style={{
+              background: '#fff',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: '12px',
+            }}
+            title={width === '100%' ? 'Make 50% width' : 'Make full width'}
+          >
+            {width === '100%' ? '⇅' : '↔'}
+          </button>
+
+          {/* Delete Button */}
+          <button
+            onClick={deleteNode}
+            style={{
+              background: '#fff',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              padding: '4px 8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              color: '#ff4d4f',
+            }}
+            title="Remove highlight"
+          >
+            ×
+          </button>
+        </div>
+
+        {/* Existing highlight content */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
           {renderIcon()}
           <div style={{ flex: 1 }}>
@@ -177,24 +265,15 @@ const HighlightBoxComponent = ({ node, deleteNode }) => {
               />
             )}
           </div>
-          <button
-            onClick={deleteNode}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '18px',
-              color: '#999',
-              padding: '4px 8px',
-              lineHeight: 1,
-              flexShrink: 0,
-            }}
-            title="Remove highlight"
-          >
-            ×
-          </button>
         </div>
       </div>
+
+      {/* Add CSS for hover effect */}
+      <style jsx>{`
+        .highlight-box:hover .highlight-controls {
+          opacity: 1 !important;
+        }
+      `}</style>
     </NodeViewWrapper>
   );
 };
@@ -310,18 +389,42 @@ export const HighlightBox = Node.create({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(HighlightBoxComponent);
+    return ReactNodeViewRenderer(HighlightBoxComponent, {
+      draggable: true,
+    });
   },
 
   addCommands() {
     return {
       setHighlightBox:
         (attributes) =>
-        ({ commands }) => {
-          return commands.insertContent({
-            type: this.name,
-            attrs: attributes,
-          });
+        ({ commands, state }) => {
+          // Check if we're inside a text node
+          const $from = state.selection.$from;
+          const isInsideText = $from.parent.isTextblock && $from.parent.textContent.length > 0;
+
+          if (isInsideText) {
+            // Move to end of current paragraph/block
+            const endOfBlock = $from.end();
+
+            // Set cursor to end of block
+            commands.setTextSelection(endOfBlock);
+
+            // Insert a new line to push highlight to next line
+            commands.insertContentAt(endOfBlock, '<p></p>');
+
+            // Now insert the highlight box after the paragraph
+            return commands.insertContent({
+              type: this.name,
+              attrs: attributes,
+            });
+          } else {
+            // Already at block boundary, insert directly
+            return commands.insertContent({
+              type: this.name,
+              attrs: attributes,
+            });
+          }
         },
       removeHighlightBox:
         () =>

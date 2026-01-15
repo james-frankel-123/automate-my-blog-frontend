@@ -386,6 +386,23 @@ const RichTextEditor = ({
           clear: both;
         }
 
+        /* Ensure consistent list markers even during float reflow */
+        .rich-text-editor ul {
+          list-style-type: disc;
+        }
+
+        .rich-text-editor ul ul {
+          list-style-type: circle;
+        }
+
+        .rich-text-editor ul ul ul {
+          list-style-type: square;
+        }
+
+        .rich-text-editor ol {
+          list-style-type: decimal;
+        }
+
         .rich-text-editor pre {
           clear: both;
         }
@@ -401,6 +418,20 @@ const RichTextEditor = ({
         /* Ensure multiple highlight boxes stack vertically */
         .rich-text-editor .highlight-box {
           clear: both;
+          position: relative;
+        }
+
+        /* Drag handle styling for highlight boxes */
+        .rich-text-editor .highlight-box[data-drag-handle] {
+          cursor: grab;
+        }
+
+        .rich-text-editor .highlight-box[data-drag-handle]:active {
+          cursor: grabbing;
+        }
+
+        .rich-text-editor .highlight-box:hover {
+          box-shadow: 0 0 0 2px rgba(114, 46, 209, 0.2);
         }
 
         /* Mobile: Stack all floats */
