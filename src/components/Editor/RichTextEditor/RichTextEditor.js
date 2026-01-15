@@ -141,12 +141,13 @@ const RichTextEditor = ({
                 zone = 'right';
               }
 
-              // Update editor data attribute for CSS styling
-              // Set attribute on .ProseMirror element, not outer wrapper
-              const proseMirrorElement = view.dom.querySelector('.ProseMirror');
-              if (proseMirrorElement) {
-                proseMirrorElement.setAttribute('data-drag-zone', zone);
-              }
+              // Update editor data attribute for CSS styling using requestAnimationFrame
+              // This prevents conflicts with React's rendering cycle
+              requestAnimationFrame(() => {
+                if (view.dom && view.dom.setAttribute) {
+                  view.dom.setAttribute('data-drag-zone', zone);
+                }
+              });
             }
           } catch (e) {
             console.error('Error in dragover handler:', e);
@@ -163,11 +164,12 @@ const RichTextEditor = ({
               event.clientY < editorRect.top ||
               event.clientY > editorRect.bottom
             ) {
-              // Clear from .ProseMirror element
-              const proseMirrorElement = view.dom.querySelector('.ProseMirror');
-              if (proseMirrorElement) {
-                proseMirrorElement.removeAttribute('data-drag-zone');
-              }
+              // Clear from editor element using requestAnimationFrame
+              requestAnimationFrame(() => {
+                if (view.dom && view.dom.removeAttribute) {
+                  view.dom.removeAttribute('data-drag-zone');
+                }
+              });
             }
           } catch (e) {
             console.error('Error in dragleave handler:', e);
@@ -177,11 +179,12 @@ const RichTextEditor = ({
         drop: (view, event) => {
           // Clear zone indicator on drop
           try {
-            // Clear from .ProseMirror element
-            const proseMirrorElement = view.dom.querySelector('.ProseMirror');
-            if (proseMirrorElement) {
-              proseMirrorElement.removeAttribute('data-drag-zone');
-            }
+            // Clear from editor element using requestAnimationFrame
+            requestAnimationFrame(() => {
+              if (view.dom && view.dom.removeAttribute) {
+                view.dom.removeAttribute('data-drag-zone');
+              }
+            });
           } catch (e) {
             console.error('Error in drop handler:', e);
           }
@@ -632,12 +635,12 @@ const RichTextEditor = ({
         }
 
         /* Drag zone visual feedback */
-        .rich-text-editor .ProseMirror[data-drag-zone] {
+        .rich-text-editor[data-drag-zone] {
           position: relative;
         }
 
         /* Left zone indicator (0-33%) */
-        .rich-text-editor .ProseMirror[data-drag-zone="left"]::before {
+        .rich-text-editor[data-drag-zone="left"]::before {
           content: '';
           position: absolute;
           top: 0;
@@ -651,7 +654,7 @@ const RichTextEditor = ({
         }
 
         /* Center zone indicator (33-67%) */
-        .rich-text-editor .ProseMirror[data-drag-zone="center"]::before {
+        .rich-text-editor[data-drag-zone="center"]::before {
           content: '';
           position: absolute;
           top: 0;
@@ -666,7 +669,7 @@ const RichTextEditor = ({
         }
 
         /* Right zone indicator (67-100%) */
-        .rich-text-editor .ProseMirror[data-drag-zone="right"]::before {
+        .rich-text-editor[data-drag-zone="right"]::before {
           content: '';
           position: absolute;
           top: 0;
@@ -680,7 +683,7 @@ const RichTextEditor = ({
         }
 
         /* Add labels to zones for clarity */
-        .rich-text-editor .ProseMirror[data-drag-zone="left"]::after {
+        .rich-text-editor[data-drag-zone="left"]::after {
           content: 'Float Left (50%)';
           position: absolute;
           top: 10px;
@@ -695,7 +698,7 @@ const RichTextEditor = ({
           z-index: 2;
         }
 
-        .rich-text-editor .ProseMirror[data-drag-zone="center"]::after {
+        .rich-text-editor[data-drag-zone="center"]::after {
           content: 'Full Width (100%)';
           position: absolute;
           top: 10px;
@@ -711,7 +714,7 @@ const RichTextEditor = ({
           z-index: 2;
         }
 
-        .rich-text-editor .ProseMirror[data-drag-zone="right"]::after {
+        .rich-text-editor[data-drag-zone="right"]::after {
           content: 'Float Right (50%)';
           position: absolute;
           top: 10px;
