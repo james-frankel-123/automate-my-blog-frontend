@@ -37,6 +37,9 @@ const RichTextEditor = ({
   const [inlineToolbarVisible, setInlineToolbarVisible] = useState(false);
   const [inlineToolbarPosition, setInlineToolbarPosition] = useState({ top: 0, left: 0 });
 
+  // Track last emitted content to prevent loops
+  const lastEmittedContent = React.useRef(content || '');
+
   // Memoize markdown to HTML conversion to prevent infinite loops
   const htmlContent = useMemo(() => {
     if (!content) return '';
@@ -90,7 +93,10 @@ const RichTextEditor = ({
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       const markdown = htmlToMarkdown(html);
-      if (onChange) {
+
+      // Only call onChange if content actually changed
+      if (onChange && markdown !== lastEmittedContent.current) {
+        lastEmittedContent.current = markdown;
         onChange(markdown);
       }
     },
