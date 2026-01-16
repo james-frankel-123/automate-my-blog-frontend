@@ -765,7 +765,77 @@ const WebsiteAnalysisStepV2 = (props) => {
           
           {/* Business Overview Cards */}
           {stepResults.websiteAnalysis && renderBusinessOverview()}
-          
+
+          {/* CTA Display Section */}
+          {stepResults.websiteAnalysis && stepResults.ctas && stepResults.ctas.length > 0 && (
+            <Card
+              style={{
+                border: `2px solid ${defaultColors.accent}`,
+                borderRadius: '12px',
+                background: `linear-gradient(135deg, ${defaultColors.accent}10, #ffffff)`,
+                marginBottom: '30px'
+              }}
+            >
+              <div style={{
+                borderBottom: `2px solid ${defaultColors.accent}30`,
+                paddingBottom: '16px',
+                marginBottom: '16px'
+              }}>
+                <Title level={4} style={{
+                  margin: 0,
+                  color: defaultColors.accent,
+                  fontSize: responsive.fontSize.title
+                }}>
+                  🚀 Call-to-Actions Found
+                </Title>
+                <Text style={{ fontSize: responsive.fontSize.small, color: '#666' }}>
+                  {stepResults.ctaCount} conversion element{stepResults.ctaCount !== 1 ? 's' : ''} detected on your website
+                </Text>
+              </div>
+
+              <Row gutter={[16, 16]}>
+                {stepResults.ctas.map((cta, index) => (
+                  <Col xs={24} md={12} key={cta.id || index}>
+                    <div style={{
+                      padding: '12px',
+                      backgroundColor: '#fff',
+                      borderRadius: '8px',
+                      border: `1px solid ${defaultColors.accent}30`,
+                      height: '100%'
+                    }}>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Tag color={cta.type === 'contact_link' ? 'blue' : 'green'} style={{ marginBottom: '4px' }}>
+                          {cta.type.replace('_', ' ')}
+                        </Tag>
+                        <Tag color="default">{cta.placement}</Tag>
+                      </div>
+                      <Text strong style={{ fontSize: responsive.fontSize.text, display: 'block', marginBottom: '4px' }}>
+                        {cta.text}
+                      </Text>
+                      <Text style={{ fontSize: responsive.fontSize.small, color: '#666', wordBreak: 'break-all' }}>
+                        {cta.href}
+                      </Text>
+                    </div>
+                  </Col>
+                ))}
+              </Row>
+
+              {!stepResults.hasSufficientCTAs && (
+                <div style={{
+                  marginTop: '16px',
+                  padding: '12px',
+                  backgroundColor: '#fff7e6',
+                  borderRadius: '8px',
+                  border: '1px solid #ffd591'
+                }}>
+                  <Text style={{ fontSize: responsive.fontSize.small, color: '#d46b08' }}>
+                    💡 We recommend having at least 3 CTAs for optimal content generation. You can add more CTAs manually if needed.
+                  </Text>
+                </div>
+              )}
+            </Card>
+          )}
+
           {/* Action Buttons at Bottom */}
           {analysisCompleted && (
             <div style={{ 
