@@ -54,7 +54,7 @@ const AdminAnalyticsTab = () => {
           totalExports: postsResult.posts.reduce((sum, p) => sum + (p.exportCount || 0), 0),
           totalUsers: new Set(postsResult.posts.map(p => p.userId)).size,
           recentActivity: activityResult.activities.length,
-          
+
           // Mock data for features requiring new DB tables
           revenue: getMockRevenue(),
           performanceMetrics: getMockPerformance(),
@@ -71,6 +71,7 @@ const AdminAnalyticsTab = () => {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

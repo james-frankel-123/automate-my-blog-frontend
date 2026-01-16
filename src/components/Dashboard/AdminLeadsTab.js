@@ -1,19 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  Table, 
-  Statistic, 
-  Row, 
-  Col, 
-  Select, 
-  Input, 
-  Button, 
-  Tag, 
-  Modal, 
-  Descriptions, 
-  Timeline, 
+import {
+  Card,
+  Table,
+  Statistic,
+  Row,
+  Col,
+  Select,
+  Input,
+  Button,
+  Tag,
+  Modal,
+  Descriptions,
+  Timeline,
   Space,
-  DatePicker,
   Progress,
   Typography,
   message,
@@ -29,17 +28,15 @@ import {
   TrophyOutlined,
   UserOutlined,
   GlobalOutlined,
-  CalendarOutlined,
   LineChartOutlined,
   StarOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Search } = Input;
 const { Option } = Select;
-const { RangePicker } = DatePicker;
 
 const AdminLeadsTab = () => {
   const { isSuperAdmin } = useAuth();
@@ -77,6 +74,7 @@ const AdminLeadsTab = () => {
       loadLeads();
       loadAnalytics();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, pagination.current, pagination.pageSize, isSuperAdmin]);
 
   // Only render if user is super admin
