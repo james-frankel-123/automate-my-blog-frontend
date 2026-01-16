@@ -78,7 +78,11 @@ const WebsiteAnalysisStepStandalone = ({
   // Inline editing state
   const [editMode, setEditMode] = useState(false);
   const [editableResults, setEditableResults] = useState(null);
-  
+
+  // CTA state management
+  const [organizationCTAs, setOrganizationCTAs] = useState([]);
+  const [ctasLoading, setCtasLoading] = useState(false);
+
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
   const currentScanningMessage = scanningMessage !== undefined ? scanningMessage : localScanningMessage;
@@ -139,7 +143,32 @@ const WebsiteAnalysisStepStandalone = ({
     
     loadCachedAnalysis();
   }, [user, analysisCompleted, websiteUrl, loading]);
-  
+
+  // Fetch CTAs when organization ID is available in analysisResults
+  useEffect(() => {
+    const fetchCTAs = async () => {
+      const orgId = analysisResults?.organizationId;
+      if (!orgId) {
+        setOrganizationCTAs([]);
+        return;
+      }
+
+      setCtasLoading(true);
+      try {
+        const response = await autoBlogAPI.getOrganizationCTAs(orgId);
+        setOrganizationCTAs(response.ctas || []);
+        console.log(`✅ Fetched ${response.ctas?.length || 0} CTAs for analysis display`);
+      } catch (error) {
+        console.error('Failed to fetch CTAs for analysis display:', error);
+        setOrganizationCTAs([]);
+      } finally {
+        setCtasLoading(false);
+      }
+    };
+
+    fetchCTAs();
+  }, [analysisResults?.organizationId]);
+
   // Extract domain for display
   const domain = websiteUrl ? 
     websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : 
@@ -772,6 +801,67 @@ const WebsiteAnalysisStepStandalone = ({
           </Col>
 
         </Row>
+
+        {/* CTAs Section - Show if CTAs were found */}
+        {organizationCTAs.length > 0 && (
+          <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
+            <Col xs={24}>
+              <div style={{
+                padding: '16px',
+                backgroundColor: defaultColors.primary + '06',
+                borderRadius: '8px',
+                border: `1px solid ${defaultColors.primary}20`
+              }}>
+                <Text strong style={{
+                  color: defaultColors.primary,
+                  fontSize: responsive.fontSize.text,
+                  marginBottom: '12px',
+                  display: 'block'
+                }}>
+                  🚀 Calls-to-Action Found
+                </Text>
+                {ctasLoading ? (
+                  <Spin size="small" />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {organizationCTAs.slice(0, 5).map((cta, index) => (
+                      <div key={cta.id || index} style={{
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        borderRadius: '6px',
+                        border: `1px solid ${defaultColors.primary}10`,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }}>
+                        <div>
+                          <Text strong style={{ fontSize: responsive.fontSize.small }}>
+                            {cta.text}
+                          </Text>
+                          <Text style={{
+                            fontSize: responsive.fontSize.small,
+                            color: '#666',
+                            marginLeft: '8px'
+                          }}>
+                            ({cta.type})
+                          </Text>
+                        </div>
+                        <Tag color={cta.data_source === 'manual' ? 'blue' : 'green'} style={{ fontSize: '11px' }}>
+                          {cta.data_source === 'manual' ? 'Manual' : 'Scraped'}
+                        </Tag>
+                      </div>
+                    ))}
+                    {organizationCTAs.length > 5 && (
+                      <Text style={{ fontSize: responsive.fontSize.small, color: '#999', marginTop: '4px' }}>
+                        ...and {organizationCTAs.length - 5} more CTAs
+                      </Text>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Col>
+          </Row>
+        )}
 
         {/* Business Strategy - Show if AI generated these fields OR in edit mode */}
         {(analysis.businessModel || analysis.websiteGoals || analysis.blogStrategy || editMode) && (
