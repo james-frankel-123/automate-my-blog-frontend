@@ -26,6 +26,9 @@ export function markdownToHtml(markdown) {
   // Convert italic text
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
+  // Convert markdown images FIRST (before links) ![alt](url) to HTML img tags
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+
   // Convert markdown links [text](url) to HTML anchor tags
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
@@ -87,6 +90,11 @@ export function htmlToMarkdown(html) {
 
   // Convert italic
   markdown = markdown.replace(/<em>(.*?)<\/em>/g, '*$1*');
+
+  // Convert images FIRST (before anchor tags) <img src="url" alt="text" /> to markdown ![text](url)
+  markdown = markdown.replace(/<img[^>]*src="([^"]+)"[^>]*alt="([^"]*)"[^>]*\/?>/g, '![$2]($1)');
+  // Also handle images without alt attribute
+  markdown = markdown.replace(/<img[^>]*src="([^"]+)"[^>]*\/?>/g, '![]($1)');
 
   // Convert anchor tags <a href="url">text</a> to markdown links [text](url)
   markdown = markdown.replace(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g, '[$2]($1)');
