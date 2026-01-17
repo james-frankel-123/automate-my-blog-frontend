@@ -14,6 +14,7 @@ import {
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { contentAPI } from '../../../services/workflowAPI';
+import MarkdownPreview from '../../MarkdownPreview/MarkdownPreview';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -507,16 +508,20 @@ const ContentGenerationStepStandalone = ({
       {/* Content Display/Editor */}
       {preview ? (
         <Card>
-          <div 
-            style={{ 
-              whiteSpace: 'pre-wrap',
+          <MarkdownPreview
+            content={currentEditingContent}
+            typography={{
+              headingFont: 'Inter, sans-serif',
+              bodyFont: 'Inter, sans-serif',
+              fontSize: 16,
               lineHeight: '1.6',
-              fontSize: responsive.fontSize.text,
+              paragraphSpacing: 16
+            }}
+            style={{
+              minHeight: '400px',
               color: '#333'
             }}
-          >
-            {currentEditingContent}
-          </div>
+          />
         </Card>
       ) : (
         <TextArea
