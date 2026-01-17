@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message } from 'antd';
-import { 
-  GlobalOutlined, 
-  ScanOutlined, 
-  SearchOutlined, 
-  DatabaseOutlined, 
+import {
+  GlobalOutlined,
+  ScanOutlined,
+  SearchOutlined,
+  DatabaseOutlined,
   SettingOutlined,
   LoginOutlined,
   UserAddOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  LinkOutlined
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { analysisAPI } from '../../../services/workflowAPI';
@@ -835,29 +836,41 @@ const WebsiteAnalysisStepStandalone = ({
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {organizationCTAs.slice(0, 5).map((cta, index) => (
                       <div key={cta.id || index} style={{
-                        padding: '8px 12px',
+                        padding: '12px',
                         backgroundColor: 'white',
                         borderRadius: '6px',
-                        border: `1px solid ${defaultColors.primary}10`,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
+                        border: `1px solid ${defaultColors.primary}10`
                       }}>
-                        <div>
-                          <Text strong style={{ fontSize: responsive.fontSize.small }}>
-                            {cta.text}
-                          </Text>
-                          <Text style={{
-                            fontSize: responsive.fontSize.small,
-                            color: '#666',
-                            marginLeft: '8px'
-                          }}>
-                            ({cta.type})
-                          </Text>
+                        {/* Small type/placement tags at top */}
+                        <div style={{ marginBottom: '8px' }}>
+                          <Tag size="small" color="default" style={{ fontSize: '11px' }}>
+                            {cta.type.replace('_', ' ')}
+                          </Tag>
+                          <Tag size="small" color="default" style={{ fontSize: '11px' }}>
+                            {cta.placement}
+                          </Tag>
+                          <Tag color={cta.data_source === 'manual' ? 'blue' : 'green'} size="small" style={{ fontSize: '11px' }}>
+                            {cta.data_source === 'manual' ? 'Manual' : 'Scraped'}
+                          </Tag>
                         </div>
-                        <Tag color={cta.data_source === 'manual' ? 'blue' : 'green'} style={{ fontSize: '11px' }}>
-                          {cta.data_source === 'manual' ? 'Manual' : 'Scraped'}
-                        </Tag>
+
+                        {/* Prominent CTA text */}
+                        <Text strong style={{ fontSize: '16px', display: 'block', marginBottom: '6px' }}>
+                          {cta.text}
+                        </Text>
+
+                        {/* Link display with icon */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <LinkOutlined style={{ color: defaultColors.primary, fontSize: '12px' }} />
+                          <a
+                            href={cta.href.startsWith('http') ? cta.href : `https://${cta.href}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ fontSize: '14px', color: defaultColors.primary, wordBreak: 'break-all' }}
+                          >
+                            {cta.href.length > 50 ? cta.href.substring(0, 50) + '...' : cta.href}
+                          </a>
+                        </div>
                       </div>
                     ))}
                     {organizationCTAs.length > 5 && (
