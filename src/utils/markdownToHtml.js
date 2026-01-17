@@ -26,6 +26,9 @@ export function markdownToHtml(markdown) {
   // Convert italic text
   html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
+  // Convert markdown links [text](url) to HTML anchor tags
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+
   // Convert numbered lists
   html = html.replace(/^\d+\.\s+(.*$)/gm, '<li>$1</li>');
   html = html.replace(/(<li>.*<\/li>)/s, '<ol>$1</ol>');
@@ -84,6 +87,9 @@ export function htmlToMarkdown(html) {
 
   // Convert italic
   markdown = markdown.replace(/<em>(.*?)<\/em>/g, '*$1*');
+
+  // Convert anchor tags <a href="url">text</a> to markdown links [text](url)
+  markdown = markdown.replace(/<a[^>]*href="([^"]+)"[^>]*>([^<]+)<\/a>/g, '[$2]($1)');
 
   // Convert lists
   markdown = markdown.replace(/<ol>(.*?)<\/ol>/gs, (match, content) => {
