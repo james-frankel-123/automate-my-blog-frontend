@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message } from 'antd';
 import { 
   PlusOutlined, 
@@ -136,7 +136,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
   
   // Editor state for TipTap integration
   const [richTextEditor, setRichTextEditor] = useState(null);
-  
+
+  // Fullscreen editor state
+  const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
+
   // Autosave state
   const [isAutosaving, setIsAutosaving] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
@@ -236,6 +239,24 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
 
     fetchCTAs();
   }, [organizationId]);
+
+  // Fullscreen toggle handler
+  const handleToggleFullscreen = useCallback(() => {
+    setIsEditorFullscreen(prev => !prev);
+  }, []);
+
+  // Prevent body scroll when in fullscreen mode
+  useEffect(() => {
+    if (isEditorFullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isEditorFullscreen]);
 
   const loadPosts = async () => {
     setLoading(true);
@@ -2699,11 +2720,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
             </div>
             
             {/* ENHANCED MODERN EDITOR SECTION */}
-            <EditorLayout 
+            <EditorLayout
               mode={editorViewMode}
               onModeChange={setEditorViewMode}
+              isFullscreen={isEditorFullscreen}
+              onToggleFullscreen={handleToggleFullscreen}
               toolbarContent={
-                <EditorToolbar 
+                <EditorToolbar
                   editor={richTextEditor}
                   content={editingContent}
                   onInsert={handleTextInsert}
@@ -2918,6 +2941,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
               <EditorLayout
                 mode={previewMode ? 'preview' : 'edit'}
                 onModeChange={(mode) => setPreviewMode(mode === 'preview')}
+                isFullscreen={isEditorFullscreen}
+                onToggleFullscreen={handleToggleFullscreen}
                 minHeight="400px"
               >
                 {previewMode ? (

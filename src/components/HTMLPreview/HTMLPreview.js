@@ -229,6 +229,40 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
           border-top: 1px solid ${colors.border.base};
           margin: ${paragraphSpacing * 2}px 0;
         }
+
+        /* Tweet Card Styling */
+        div :global(.tweet-card) {
+          transition: box-shadow 0.2s ease;
+          cursor: default;
+        }
+
+        div :global(.tweet-card:hover) {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        div :global(.tweet-card) img {
+          display: inline-block;
+          object-fit: cover;
+        }
+
+        div :global(.tweet-card) a {
+          color: #1DA1F2;
+          text-decoration: none;
+          transition: opacity 0.2s ease;
+        }
+
+        div :global(.tweet-card) a:hover {
+          opacity: 0.8;
+        }
+
+        /* Tweet Fallback Styling */
+        div :global(.tweet-fallback) {
+          transition: background-color 0.2s ease;
+        }
+
+        div :global(.tweet-fallback:hover) {
+          background-color: #e8f5fd !important;
+        }
       `}</style>
     </div>
   );

@@ -12,16 +12,29 @@ const EditorLayout = ({
   sidebarContent = null,
   toolbarContent = null,
   className = '',
-  style = {}
+  style = {},
+  // Fullscreen props
+  isFullscreen = false,
+  onToggleFullscreen = null
 }) => {
   const layoutStyles = {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
     backgroundColor: colors.background.body,
-    borderRadius: borderRadius.md,
+    borderRadius: isFullscreen ? 0 : borderRadius.md,
     overflow: 'hidden',
-    boxShadow: shadows.base,
+    boxShadow: isFullscreen ? 'none' : shadows.base,
+    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+    ...(isFullscreen && {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 9999,
+      borderRadius: 0
+    }),
     ...style
   };
 
@@ -80,24 +93,78 @@ const EditorLayout = ({
       >
         🔀 Split View
       </Button>
+
+      {/* Fullscreen button */}
+      {onToggleFullscreen && (
+        <>
+          <div style={{
+            width: '1px',
+            height: '20px',
+            backgroundColor: colors.border.base,
+            margin: `0 ${spacing.xs}`
+          }} />
+          <Button
+            variant="ghost"
+            size="small"
+            onClick={onToggleFullscreen}
+            title={isFullscreen ? 'Exit fullscreen (ESC)' : 'Enter fullscreen'}
+          >
+            {isFullscreen ? '⤓' : '⤢'}
+          </Button>
+        </>
+      )}
     </div>
   );
+
+  // Keyboard shortcuts for fullscreen
+  React.useEffect(() => {
+    if (!onToggleFullscreen) return;
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        onToggleFullscreen();
+      }
+      if (e.key === 'F11') {
+        e.preventDefault();
+        onToggleFullscreen();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen, onToggleFullscreen]);
 
   return (
     <div style={layoutStyles} className={className}>
       {/* Toolbar */}
-      <div style={toolbarStyles}>
+      <div style={{ ...toolbarStyles, position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
-          <span style={{ 
-            fontSize: '16px', 
-            fontWeight: '600', 
-            color: colors.text.primary 
+          <span style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            color: colors.text.primary
           }}>
             Content Editor
           </span>
           {toolbarContent}
         </div>
         <ViewModeButtons />
+
+        {/* Fullscreen indicator */}
+        {isFullscreen && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            right: spacing.lg,
+            transform: 'translateY(-50%)',
+            fontSize: '12px',
+            color: colors.text.secondary,
+            opacity: 0.7,
+            pointerEvents: 'none'
+          }}>
+            Press ESC to exit fullscreen
+          </div>
+        )}
       </div>
 
       {/* Content Area */}
