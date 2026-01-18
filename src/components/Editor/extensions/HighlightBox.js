@@ -454,7 +454,14 @@ export const HighlightBox = Node.create({
       },
       content: {
         default: '',
-        parseHTML: (element) => element.getAttribute('data-content'),
+        parseHTML: (element) => {
+          // Try data-content attribute first (for backward compatibility)
+          const dataContent = element.getAttribute('data-content');
+          if (dataContent) return dataContent;
+
+          // Fall back to innerHTML (for GPT-4o generated boxes)
+          return element.innerHTML || '';
+        },
         renderHTML: (attributes) => ({
           'data-content': attributes.content,
         }),
