@@ -240,17 +240,28 @@ export const contentAPI = {
    */
   async generateContent(selectedTopic, analysisData, selectedStrategy = null, webSearchInsights = {}, enhancementOptions = {}) {
     try {
+      // Step 1: Search for tweets for the selected topic
+      console.log('🐦 Searching for tweets for selected topic...');
+      const tweetSearchResult = await autoBlogAPI.searchTweetsForTopic(
+        selectedTopic,
+        analysisData,
+        3  // maxTweets
+      );
+
+      const tweets = tweetSearchResult.tweets || [];
+      console.log(`✅ Found ${tweets.length} tweets for topic`);
+
       // Check if enhanced content generation is requested
       if (enhancementOptions.useEnhancedGeneration) {
         console.log('🚀 Using enhanced content generation with comprehensive context');
         console.log('🔍 Enhancement options:', enhancementOptions);
         console.log('🎯 Strategy provided:', !!selectedStrategy);
-        
+
         const enhancedResult = await enhancedContentAPI.generateEnhancedContent(
           selectedTopic,
           analysisData,
           selectedStrategy,
-          enhancementOptions
+          { ...enhancementOptions, tweets }  // Pass tweets to enhanced generation
         );
         
         if (enhancedResult.success) {
@@ -281,14 +292,15 @@ export const contentAPI = {
       }
 
       // Standard content generation (fallback or default)
-      const contextPrompt = selectedStrategy ? 
+      const contextPrompt = selectedStrategy ?
         `Focus on ${selectedStrategy.customerProblem}. Target customers who search for: ${selectedStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}` :
         `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
 
       const blogPost = await autoBlogAPI.generateContent(
-        selectedTopic, 
+        selectedTopic,
         analysisData,  // This maps to 'businessInfo' parameter in the API
-        contextPrompt
+        contextPrompt,
+        tweets  // Pass tweets to standard generation
       );
       
       if (blogPost && blogPost.content) {

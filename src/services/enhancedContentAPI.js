@@ -52,7 +52,9 @@ export class EnhancedContentAPI {
         targetSEOScore: enhancementOptions.targetSEOScore,
         includeVisuals: enhancementOptions.includeVisuals,
         // Pass website analysis for enhancement detection - try multiple possible sources
-        websiteAnalysis: analysisData || enhancementOptions.websiteAnalysis || enhancementOptions.comprehensiveContext?.websiteAnalysis
+        websiteAnalysis: analysisData || enhancementOptions.websiteAnalysis || enhancementOptions.comprehensiveContext?.websiteAnalysis,
+        // Pass tweets if provided
+        tweets: enhancementOptions.tweets
       };
 
       // Call enhanced generation endpoint with rich metadata

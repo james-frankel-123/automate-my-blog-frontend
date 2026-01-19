@@ -192,17 +192,60 @@ class AutoBlogAPI {
   }
 
   /**
-   * Generate blog post content
+   * Search for tweets related to a selected topic
    */
-  async generateContent(topic, businessInfo, additionalInstructions = '') {
+  async searchTweetsForTopic(topic, businessInfo, maxTweets = 3) {
     try {
-      const response = await this.makeRequest('/api/generate-content', {
+      console.log('🐦 [FRONTEND] Searching tweets for topic:', topic.title);
+
+      const response = await this.makeRequest('/api/tweets/search-for-topic', {
         method: 'POST',
         body: JSON.stringify({
           topic,
           businessInfo,
-          additionalInstructions,
+          maxTweets,
         }),
+      });
+
+      console.log(`✅ [FRONTEND] Found ${response.tweets?.length || 0} tweets for topic`);
+
+      return {
+        tweets: response.tweets || [],
+        searchTermsUsed: response.searchTermsUsed || [],
+        success: response.success || false
+      };
+    } catch (error) {
+      console.error('❌ [FRONTEND] Tweet search failed:', error.message);
+      // Return empty tweets on error - don't fail the entire flow
+      return {
+        tweets: [],
+        searchTermsUsed: [],
+        success: false,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Generate blog post content
+   */
+  async generateContent(topic, businessInfo, additionalInstructions = '', tweets = null) {
+    try {
+      const payload = {
+        topic,
+        businessInfo,
+        additionalInstructions,
+      };
+
+      // Include tweets if provided
+      if (tweets && tweets.length > 0) {
+        payload.tweets = tweets;
+        console.log(`🐦 [FRONTEND] Passing ${tweets.length} tweets to blog generation`);
+      }
+
+      const response = await this.makeRequest('/api/generate-content', {
+        method: 'POST',
+        body: JSON.stringify(payload),
       });
 
       return response.blogPost;
@@ -236,6 +279,12 @@ class AutoBlogAPI {
           iterativeOptimization: enhancedPayload.iterativeOptimization || false
         })
       };
+
+      // Include tweets if provided
+      if (enhancedPayload.tweets && enhancedPayload.tweets.length > 0) {
+        smartPayload.tweets = enhancedPayload.tweets;
+        console.log(`🐦 [FRONTEND] Passing ${enhancedPayload.tweets.length} tweets to enhanced blog generation`);
+      }
 
       const response = await this.makeRequest('/api/generate-content', {
         method: 'POST',
