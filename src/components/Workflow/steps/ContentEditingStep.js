@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Button, Typography, Row, Col, Input } from 'antd';
 import { EyeOutlined } from '@ant-design/icons';
+import HTMLPreview from '../../HTMLPreview/HTMLPreview';
 
 const { Title, Text, Paragraph, TextArea } = Input;
 
@@ -69,9 +70,14 @@ const ContentEditingStep = ({
                 <Title level={4} style={{ marginBottom: '16px' }}>
                   Preview
                 </Title>
-                <div style={{ whiteSpace: 'pre-wrap' }}>
-                  {generatedContent || 'No content generated yet...'}
-                </div>
+                <HTMLPreview
+                  content={generatedContent || 'No content generated yet...'}
+                  style={{
+                    minHeight: '300px',
+                    fontFamily: 'serif',
+                    lineHeight: '1.6'
+                  }}
+                />
               </div>
             ) : (
               <div>
