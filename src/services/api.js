@@ -227,6 +227,49 @@ class AutoBlogAPI {
   }
 
   /**
+   * Generate images for a saved blog post
+   * Called AFTER blog generation to avoid timeout issues
+   * @param {string} blogPostId - The saved blog post ID
+   * @param {string} content - Content with image placeholders
+   * @param {Object} topic - Blog topic information
+   * @param {string} organizationId - Organization ID
+   * @returns {Promise<Object>} Updated content with generated images
+   */
+  async generateImagesForBlog(blogPostId, content, topic, organizationId) {
+    try {
+      console.log(`🎨 [FRONTEND] Generating images for blog: ${blogPostId}`);
+
+      const response = await this.makeRequest('/api/images/generate-for-blog', {
+        method: 'POST',
+        body: JSON.stringify({
+          blogPostId,
+          content,
+          topic,
+          organizationId
+        }),
+      });
+
+      console.log(`✅ [FRONTEND] Image generation ${response.success ? 'completed' : 'failed'} for blog: ${blogPostId}`);
+
+      return {
+        success: response.success || false,
+        content: response.content || content, // Return original if failed
+        blogPostId: response.blogPostId,
+        error: response.error
+      };
+    } catch (error) {
+      console.error('❌ [FRONTEND] Image generation failed:', error.message);
+      // Return original content on error - don't fail the entire flow
+      return {
+        success: false,
+        content: content, // Return original content with placeholders
+        blogPostId,
+        error: error.message
+      };
+    }
+  }
+
+  /**
    * Generate blog post content
    */
   async generateContent(topic, businessInfo, additionalInstructions = '', tweets = null) {

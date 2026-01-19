@@ -64,11 +64,38 @@ export class EnhancedContentAPI {
         hasContent: !!(response.blogPost || response.content),
         hasSEOAnalysis: !!response.seoAnalysis,
         hasQualityMetrics: !!response.contentQuality,
-        hasImprovement: !!response.improvementSuggestions
+        hasImprovement: !!response.improvementSuggestions,
+        needsImageGeneration: !!response.imageGeneration?.needsImageGeneration
       });
 
+      // Step 2: Generate images if needed (after blog is saved)
+      let content = response.blogPost?.content || response.content || response.blogPost;
+
+      if (response.imageGeneration?.needsImageGeneration && response.imageGeneration.blogPostId) {
+        console.log('🎨 Triggering image generation for blog post...');
+
+        try {
+          const imageResult = await autoBlogAPI.generateImagesForBlog(
+            response.imageGeneration.blogPostId,
+            content,
+            response.imageGeneration.topic,
+            response.imageGeneration.organizationId
+          );
+
+          if (imageResult.success) {
+            console.log('✅ Images generated successfully, updating content');
+            content = imageResult.content; // Update with content containing actual images
+          } else {
+            console.warn('⚠️ Image generation failed, keeping placeholders:', imageResult.error);
+            // Continue with placeholder content
+          }
+        } catch (imageError) {
+          console.error('❌ Image generation error:', imageError.message);
+          // Continue with placeholder content
+        }
+      }
+
       if (response && (response.blogPost || response.content)) {
-        const content = response.blogPost?.content || response.content || response.blogPost;
         
         return {
           success: true,
