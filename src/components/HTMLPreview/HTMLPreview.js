@@ -158,7 +158,34 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
           margin: ${paragraphSpacing}px 0 ${paragraphSpacing * 0.5}px 0;
           line-height: ${typography.lineHeight.tight};
         }
-        
+
+        div h4 {
+          font-family: ${headingFont};
+          font-size: ${fontSize * 1.25}px;
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+          margin: ${paragraphSpacing * 0.875}px 0 ${paragraphSpacing * 0.375}px 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+
+        div h5 {
+          font-family: ${headingFont};
+          font-size: ${fontSize * 1.125}px;
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+          margin: ${paragraphSpacing * 0.75}px 0 ${paragraphSpacing * 0.25}px 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+
+        div h6 {
+          font-family: ${headingFont};
+          font-size: ${fontSize}px;
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.secondary};
+          margin: ${paragraphSpacing * 0.625}px 0 ${paragraphSpacing * 0.25}px 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+
         div p {
           margin: 0 0 ${paragraphSpacing}px 0;
           line-height: ${lineHeight};

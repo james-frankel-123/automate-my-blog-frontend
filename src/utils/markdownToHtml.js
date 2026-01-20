@@ -15,7 +15,10 @@ export function markdownToHtml(markdown) {
   // Match: <blockquote ...data-attributes...>content</blockquote>
   // Don't convert these to regular blockquotes
 
-  // Convert headings
+  // Convert headings (H1-H6) - order matters, longest patterns first
+  html = html.replace(/^###### (.*$)/gm, '<h6>$1</h6>');
+  html = html.replace(/^##### (.*$)/gm, '<h5>$1</h5>');
+  html = html.replace(/^#### (.*$)/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
@@ -44,7 +47,7 @@ export function markdownToHtml(markdown) {
   const paragraphs = html.split(/\n\s*\n/).filter(p => p.trim());
   html = paragraphs.map(p => {
     p = p.trim();
-    // Don't wrap if already wrapped in block elements
+    // Don't wrap if already wrapped in block elements (includes h1-h6)
     if (p.match(/^<(h[1-6]|ul|ol|li|div|blockquote)/)) {
       return p;
     }
@@ -80,10 +83,13 @@ export function htmlToMarkdown(html) {
     return placeholder;
   });
 
-  // Convert headings
+  // Convert headings (H1-H6)
   markdown = markdown.replace(/<h1>(.*?)<\/h1>/g, '# $1\n\n');
   markdown = markdown.replace(/<h2>(.*?)<\/h2>/g, '## $1\n\n');
   markdown = markdown.replace(/<h3>(.*?)<\/h3>/g, '### $1\n\n');
+  markdown = markdown.replace(/<h4>(.*?)<\/h4>/g, '#### $1\n\n');
+  markdown = markdown.replace(/<h5>(.*?)<\/h5>/g, '##### $1\n\n');
+  markdown = markdown.replace(/<h6>(.*?)<\/h6>/g, '###### $1\n\n');
 
   // Convert bold
   markdown = markdown.replace(/<strong>(.*?)<\/strong>/g, '**$1**');

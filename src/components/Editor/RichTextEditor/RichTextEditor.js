@@ -218,10 +218,10 @@ const applyTextFlowCSS = (layout, width, estimatedHeight, textFlowStyleRef) => {
 
   if (layout === 'float-left') {
     floatRule = 'float: left; margin-right: 16px; margin-left: 0;';
-    widthValue = width || '50%';
+    widthValue = width || '90%';
   } else if (layout === 'float-right') {
     floatRule = 'float: right; margin-left: 16px; margin-right: 0;';
-    widthValue = width || '50%';
+    widthValue = width || '90%';
   } else {
     floatRule = 'display: block;';
     widthValue = width || '100%';
@@ -463,22 +463,22 @@ const RichTextEditor = ({
                         if (horizontalPercent < 50) {
                           zone = 'left';
                           layout = 'float-left';
-                          width = '50%';
+                          width = '90%';
                         } else {
                           zone = 'right';
                           layout = 'float-right';
-                          width = '50%';
+                          width = '90%';
                         }
                       } else {
                         // Normal zone detection (existing logic)
                         if (horizontalPercent < 33) {
                           zone = 'left';
                           layout = 'float-left';
-                          width = '50%';
+                          width = '90%';
                         } else if (horizontalPercent > 67) {
                           zone = 'right';
                           layout = 'float-right';
-                          width = '50%';
+                          width = '90%';
                         }
                       }
 
@@ -855,9 +855,9 @@ const RichTextEditor = ({
             position: 'fixed',  // Fixed positioning since portal is outside editor
             top: `${dragPreview.top}px`,
             left: dragPreview.layout === 'float-left' ? `${dragPreview.left}px` :
-                  dragPreview.layout === 'float-right' ? `${dragPreview.left + (dragPreview.editorWidth * 0.5)}px` :
+                  dragPreview.layout === 'float-right' ? `${dragPreview.left + (dragPreview.editorWidth * 0.05)}px` :
                   `${dragPreview.left}px`,
-            width: dragPreview.width === '100%' ? `${dragPreview.editorWidth}px` : `${dragPreview.editorWidth * 0.5}px`,
+            width: dragPreview.width === '100%' ? `${dragPreview.editorWidth}px` : `${dragPreview.editorWidth * 0.9}px`,
             padding: '16px 20px',
             margin: '8px 0',
             borderRadius: '8px',
@@ -956,7 +956,31 @@ const RichTextEditor = ({
           margin: ${spacing.md} 0 ${spacing.sm} 0;
           line-height: ${typography.lineHeight.tight};
         }
-        
+
+        .rich-text-editor h4 {
+          font-size: ${typography.fontSize.md};
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+          margin: ${spacing.md} 0 ${spacing.sm} 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+
+        .rich-text-editor h5 {
+          font-size: ${typography.fontSize.base};
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.primary};
+          margin: ${spacing.sm} 0 ${spacing.xs} 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+
+        .rich-text-editor h6 {
+          font-size: ${typography.fontSize.sm};
+          font-weight: ${typography.fontWeight.semibold};
+          color: ${colors.text.secondary};
+          margin: ${spacing.sm} 0 ${spacing.xs} 0;
+          line-height: ${typography.lineHeight.tight};
+        }
+
         .rich-text-editor p {
           margin: 0 0 ${spacing.md} 0;
           line-height: ${typography.lineHeight.normal};

@@ -269,7 +269,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       case 'float-left':
         return {
           ...base,
-          width: width || '50%',
+          width: width || '90%',
           float: 'left',
           marginRight: '16px',
           marginLeft: 0,
@@ -277,7 +277,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       case 'float-right':
         return {
           ...base,
-          width: width || '50%',
+          width: width || '90%',
           float: 'right',
           marginLeft: '16px',
           marginRight: 0,
