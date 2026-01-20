@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Tag, Statistic, Space, message, Input, InputNumber, Carousel } from 'antd';
+import { Card, Button, Row, Col, Typography, Tag, Statistic, Space, message, Input, InputNumber, Carousel, Collapse } from 'antd';
 import { UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, EditOutlined, SaveOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -85,6 +85,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             id: audience.id, // Use actual database ID
             databaseId: audience.id, // Store for updates
             pitch: audience.pitch || '', // OpenAI-generated agency pitch
+            imageUrl: audience.image_url || null, // DALL-E generated image URL
             targetSegment: audience.target_segment || {
               demographics: '',
               psychographics: '',
@@ -202,6 +203,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         const openAIStrategies = analysis.scenarios.map((scenario, index) => ({
           id: `openai-scenario-${index}`,
           pitch: scenario.pitch || '', // OpenAI-generated agency pitch
+          imageUrl: scenario.imageUrl || null, // DALL-E generated image URL
           targetSegment: scenario.targetSegment || {
             demographics: scenario.customerProblem || '',
             psychographics: '',
@@ -233,6 +235,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               openAIStrategies.map(async (strategy) => {
                 const audienceData = {
                   pitch: strategy.pitch, // OpenAI-generated agency pitch
+                  image_url: strategy.imageUrl, // DALL-E generated image URL
                   target_segment: strategy.targetSegment,
                   customer_problem: strategy.customerProblem,
                   customer_language: strategy.customerLanguage,
@@ -340,6 +343,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               fallbackStrategies.map(async (strategy) => {
                 const audienceData = {
                   pitch: strategy.pitch || '', // OpenAI-generated agency pitch (empty for fallback)
+                  image_url: strategy.imageUrl || null, // DALL-E generated image URL (null for fallback)
                   target_segment: strategy.targetSegment,
                   customer_problem: strategy.customerProblem,
                   customer_language: strategy.customerLanguage,
@@ -594,6 +598,35 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         >
           {/* Card Header - Audience Name */}
           <div style={{ marginBottom: '16px' }}>
+
+            {/* Audience Image */}
+            {strategy.imageUrl && (
+              <div style={{
+                marginBottom: '12px',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: '#fafafa',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                height: '200px'
+              }}>
+                <img
+                  src={strategy.imageUrl}
+                  alt={strategy.targetSegment?.demographics || 'Audience'}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover'
+                  }}
+                  onError={(e) => {
+                    // Fallback if image fails to load
+                    e.target.style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
               <div style={{ flex: 1 }}>
                 <Tag color={defaultColors.primary} style={{ marginBottom: '8px' }}>
@@ -655,45 +688,55 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             </Title>
           </div>
 
-          {/* Why This Audience Section */}
+          {/* Why This Audience Section - Collapsible */}
           {strategy.pitch && (
             <div style={{ marginBottom: '16px' }}>
-              <Text strong style={{
-                color: '#333',
-                fontSize: '14px',
-                display: 'block',
-                marginBottom: '8px'
-              }}>
-                💡 Why This Audience
-              </Text>
-              <div style={{
-                padding: '12px',
-                backgroundColor: '#f0f5ff',
-                borderLeft: '3px solid #1890ff',
-                borderRadius: '4px'
-              }}>
-                {/* Parse and format step-by-step pitch */}
-                {strategy.pitch.split(/\n/).map((line, index) => {
-                  const stepMatch = line.match(/^(Step \d+:)\s*(.+)$/);
-                  if (stepMatch) {
-                    return (
-                      <div key={index} style={{ marginBottom: index < strategy.pitch.split(/\n/).length - 1 ? '8px' : '0' }}>
-                        <Text strong style={{ fontSize: '13px', color: '#1890ff' }}>
-                          {stepMatch[1]}
-                        </Text>
-                        <Text style={{ fontSize: '13px', color: '#262626', marginLeft: '6px' }}>
-                          {stepMatch[2]}
-                        </Text>
+              <Collapse
+                bordered={false}
+                style={{
+                  backgroundColor: '#f0f5ff',
+                  borderLeft: '3px solid #1890ff',
+                  borderRadius: '4px'
+                }}
+                items={[
+                  {
+                    key: '1',
+                    label: (
+                      <Text strong style={{
+                        color: '#333',
+                        fontSize: '14px'
+                      }}>
+                        💡 Why This Audience
+                      </Text>
+                    ),
+                    children: (
+                      <div style={{ padding: '0 12px 12px 12px' }}>
+                        {/* Parse and format step-by-step pitch */}
+                        {strategy.pitch.split(/\n/).map((line, index) => {
+                          const stepMatch = line.match(/^(Step \d+:)\s*(.+)$/);
+                          if (stepMatch) {
+                            return (
+                              <div key={index} style={{ marginBottom: index < strategy.pitch.split(/\n/).length - 1 ? '8px' : '0' }}>
+                                <Text strong style={{ fontSize: '13px', color: '#1890ff' }}>
+                                  {stepMatch[1]}
+                                </Text>
+                                <Text style={{ fontSize: '13px', color: '#262626', marginLeft: '6px' }}>
+                                  {stepMatch[2]}
+                                </Text>
+                              </div>
+                            );
+                          }
+                          return line ? (
+                            <Text key={index} style={{ fontSize: '13px', lineHeight: '1.5', color: '#262626', display: 'block' }}>
+                              {line}
+                            </Text>
+                          ) : null;
+                        })}
                       </div>
-                    );
+                    )
                   }
-                  return line ? (
-                    <Text key={index} style={{ fontSize: '13px', lineHeight: '1.5', color: '#262626', display: 'block' }}>
-                      {line}
-                    </Text>
-                  ) : null;
-                })}
-              </div>
+                ]}
+              />
             </div>
           )}
         </Card>

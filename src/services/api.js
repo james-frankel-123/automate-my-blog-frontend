@@ -147,10 +147,11 @@ class AutoBlogAPI {
 
   /**
    * Analyze website content and extract business information
-   * Now uses 3-step process to avoid timeouts:
+   * Now uses 4-step process to avoid timeouts:
    * 1. Basic analysis (scrape + web search)
    * 2. Generate audience scenarios
    * 3. Generate conversion funnel pitches
+   * 4. Generate DALL-E images for audiences
    */
   async analyzeWebsite(url) {
     try {
@@ -163,7 +164,7 @@ class AutoBlogAPI {
         headers['x-session-id'] = sessionId;
       }
 
-      console.log('Step 1/3: Analyzing website...');
+      console.log('Step 1/4: Analyzing website...');
 
       // Step 1: Basic website analysis (scrape + web search, NO scenarios)
       const analysisResponse = await this.makeRequest('/api/analyze-website', {
@@ -172,7 +173,7 @@ class AutoBlogAPI {
         body: JSON.stringify({ url }),
       });
 
-      console.log('Step 2/3: Generating audience scenarios...');
+      console.log('Step 2/4: Generating audience scenarios...');
 
       // Step 2: Generate audience scenarios (WITHOUT pitches)
       const audiencesResponse = await this.makeRequest('/api/generate-audiences', {
@@ -191,7 +192,7 @@ class AutoBlogAPI {
         }),
       });
 
-      console.log('Step 3/3: Generating conversion funnel pitches...');
+      console.log('Step 3/4: Generating conversion funnel pitches...');
 
       // Step 3: Generate pitches for scenarios
       const pitchesResponse = await this.makeRequest('/api/generate-pitches', {
@@ -206,7 +207,18 @@ class AutoBlogAPI {
         }),
       });
 
-      console.log('✅ All 3 steps completed successfully');
+      console.log('Step 4/4: Generating DALL-E images for audiences...');
+
+      // Step 4: Generate DALL-E images for each audience
+      const imagesResponse = await this.makeRequest('/api/generate-audience-images', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          scenarios: pitchesResponse.scenarios
+        }),
+      });
+
+      console.log('✅ All 4 steps completed successfully');
 
       // Determine research quality based on webSearchStatus
       const hasEnhancedResearch = analysisResponse.analysis.webSearchStatus?.enhancementComplete ||
@@ -220,7 +232,7 @@ class AutoBlogAPI {
         scrapedAt: analysisResponse.scrapedAt,
         analysis: {
           ...analysisResponse.analysis,
-          scenarios: pitchesResponse.scenarios  // Add scenarios with pitches to analysis
+          scenarios: imagesResponse.scenarios  // Add scenarios with pitches and images to analysis
         },
         metadata: analysisResponse.metadata,
         ctas: analysisResponse.ctas,
