@@ -592,68 +592,97 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           }}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
-          {/* Card Header */}
+          {/* Card Header - Audience Name */}
           <div style={{ marginBottom: '16px' }}>
-            <Tag color={defaultColors.primary} style={{ marginBottom: '8px' }}>
-              Strategy {index + 1}
-            </Tag>
-            {isSelected && (
-              <CheckOutlined style={{
-                float: 'right',
-                color: defaultColors.primary,
-                fontSize: '16px'
-              }} />
-            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+              <div style={{ flex: 1 }}>
+                <Tag color={defaultColors.primary} style={{ marginBottom: '8px' }}>
+                  Strategy {index + 1}
+                </Tag>
+                {strategy.businessValue?.priority === 1 && (
+                  <span style={{
+                    backgroundColor: '#ff4d4f',
+                    color: 'white',
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    marginLeft: '8px'
+                  }}>
+                    RECOMMENDED
+                  </span>
+                )}
+              </div>
+              {isSelected && (
+                <CheckOutlined style={{
+                  color: defaultColors.primary,
+                  fontSize: '16px'
+                }} />
+              )}
+            </div>
+
+            {/* Audience Name - Prominent */}
+            <Title level={3} style={{
+              margin: '8px 0 0 0',
+              color: '#262626',
+              fontSize: '18px',
+              fontWeight: 600,
+              lineHeight: 1.3
+            }}>
+              {strategy.targetSegment?.demographics || 'Target Audience'}
+            </Title>
           </div>
 
-          {/* Agency Pitch - Primary selling point */}
+          {/* Why This Audience Section */}
           {strategy.pitch && (
-            <div style={{
-              marginBottom: '16px',
-              padding: '12px',
-              backgroundColor: '#f0f5ff',
-              borderLeft: '3px solid #1890ff',
-              borderRadius: '4px'
-            }}>
-              <Text style={{
-                fontSize: '13px',
-                lineHeight: '1.5',
-                color: '#262626',
-                fontWeight: 500
+            <div style={{ marginBottom: '16px' }}>
+              <Text strong style={{
+                color: '#333',
+                fontSize: '14px',
+                display: 'block',
+                marginBottom: '8px'
               }}>
-                {strategy.pitch}
+                💡 Why This Audience
               </Text>
+              <div style={{
+                padding: '12px',
+                backgroundColor: '#f0f5ff',
+                borderLeft: '3px solid #1890ff',
+                borderRadius: '4px'
+              }}>
+                <Text style={{
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                  color: '#262626'
+                }}>
+                  {strategy.pitch}
+                </Text>
+              </div>
             </div>
           )}
 
-          {/* Target Segment Section */}
+          {/* Target Segment Details Section */}
           <div style={{ marginBottom: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <Title level={4} style={{ 
-                margin: 0, 
-                color: defaultColors.primary,
-                fontSize: responsive.fontSize.text
+            <Title level={4} style={{
+              margin: '0 0 8px 0',
+              color: defaultColors.primary,
+              fontSize: responsive.fontSize.text
+            }}>
+              👥 Segment Details
+            </Title>
+
+            {/* Psychographics */}
+            {strategy.targetSegment?.psychographics && (
+              <div style={{
+                fontSize: '12px',
+                color: '#888',
+                fontStyle: 'italic',
+                lineHeight: '1.3',
+                marginBottom: '8px'
               }}>
-                👥 Target Segment
-              </Title>
-              {strategy.businessValue?.priority === 1 && (
-                <span style={{
-                  backgroundColor: '#ff4d4f',
-                  color: 'white',
-                  padding: '2px 8px',
-                  borderRadius: '10px',
-                  fontSize: '11px',
-                  fontWeight: 600
-                }}>
-                  RECOMMENDED
-                </span>
-              )}
-            </div>
-            
-            {/* Demographics */}
-            <div style={{ fontSize: responsive.fontSize.small, color: '#666', marginBottom: '8px' }}>
-              {strategy.targetSegment?.demographics || 'Target Audience'}
-            </div>
+                {strategy.targetSegment.psychographics}
+              </div>
+            )}
             
             {/* Business Value Indicators */}
             {strategy.businessValue ? (
@@ -689,24 +718,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 )}
               </div>
             ) : (
-              <div style={{ 
-                fontSize: '11px', 
+              <div style={{
+                fontSize: '11px',
                 color: '#999',
                 marginBottom: '8px'
               }}>
                 📊 Business metrics unavailable
-              </div>
-            )}
-            
-            {/* Psychographics */}
-            {strategy.targetSegment?.psychographics && (
-              <div style={{ 
-                fontSize: '12px', 
-                color: '#888',
-                fontStyle: 'italic',
-                lineHeight: '1.3'
-              }}>
-                {strategy.targetSegment.psychographics}
               </div>
             )}
           </div>
