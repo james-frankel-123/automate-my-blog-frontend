@@ -147,25 +147,73 @@ class AutoBlogAPI {
 
   /**
    * Analyze website content and extract business information
+   * Now uses 3-step process to avoid timeouts:
+   * 1. Basic analysis (scrape + web search)
+   * 2. Generate audience scenarios
+   * 3. Generate conversion funnel pitches
    */
   async analyzeWebsite(url) {
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = { 'Content-Type': 'application/json' };
-      
+
       // Only send session ID if NOT authenticated (following audience pattern)
       const token = localStorage.getItem('accessToken');
       if (!token) {
         headers['x-session-id'] = sessionId;
       }
 
-      const response = await this.makeRequest('/api/analyze-website', {
+      console.log('Step 1/3: Analyzing website...');
+
+      // Step 1: Basic website analysis (scrape + web search, NO scenarios)
+      const analysisResponse = await this.makeRequest('/api/analyze-website', {
         method: 'POST',
         headers,
         body: JSON.stringify({ url }),
       });
 
-      return response;
+      console.log('Step 2/3: Generating audience scenarios...');
+
+      // Step 2: Generate audience scenarios (WITHOUT pitches)
+      const audiencesResponse = await this.makeRequest('/api/generate-audiences', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          analysisData: {
+            businessType: analysisResponse.businessType,
+            businessName: analysisResponse.businessName,
+            targetAudience: analysisResponse.decisionMakers || analysisResponse.endUsers,
+            businessModel: analysisResponse.businessModel,
+            contentFocus: analysisResponse.contentFocus
+          },
+          webSearchData: analysisResponse.webSearchData || '',
+          keywordData: analysisResponse.keywordData || ''
+        }),
+      });
+
+      console.log('Step 3/3: Generating conversion funnel pitches...');
+
+      // Step 3: Generate pitches for scenarios
+      const pitchesResponse = await this.makeRequest('/api/generate-pitches', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          scenarios: audiencesResponse.scenarios,
+          businessContext: {
+            businessType: analysisResponse.businessType,
+            businessName: analysisResponse.businessName
+          }
+        }),
+      });
+
+      console.log('✅ All 3 steps completed successfully');
+
+      // Combine results into final response
+      return {
+        ...analysisResponse,
+        scenarios: pitchesResponse.scenarios
+      };
+
     } catch (error) {
       throw new Error(`Failed to analyze website: ${error.message}`);
     }
