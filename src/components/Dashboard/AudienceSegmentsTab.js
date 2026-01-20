@@ -221,7 +221,14 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           contentIdeas: scenario.contentIdeas || [],
           seoKeywords: scenario.seoKeywords || []
         }));
-        
+
+        console.log('🎨 Transformed strategies with images:', openAIStrategies.map(s => ({
+          id: s.id,
+          demographics: s.targetSegment?.demographics,
+          hasImage: !!s.imageUrl,
+          imageUrl: s.imageUrl
+        })));
+
         // Sort by business value priority
         openAIStrategies.sort((a, b) => (a.businessValue.priority || 999) - (b.businessValue.priority || 999));
         
@@ -620,12 +627,17 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     objectFit: 'cover'
                   }}
                   onError={(e) => {
+                    console.error('Image failed to load:', strategy.imageUrl);
                     // Fallback if image fails to load
                     e.target.style.display = 'none';
+                  }}
+                  onLoad={() => {
+                    console.log('Image loaded successfully:', strategy.imageUrl);
                   }}
                 />
               </div>
             )}
+            {!strategy.imageUrl && console.log('No imageUrl for strategy:', strategy.id)}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
               <div style={{ flex: 1 }}>
@@ -706,7 +718,14 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                         color: '#333',
                         fontSize: '14px'
                       }}>
-                        💡 Why This Audience
+                        {(() => {
+                          // Extract revenue from Step 5 of pitch
+                          const step5Match = strategy.pitch.match(/Step 5:[^\$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
+                          if (step5Match) {
+                            return `💰 Projected value: $${step5Match[1]}-$${step5Match[2]}/month`;
+                          }
+                          return '💡 Why This Audience';
+                        })()}
                       </Text>
                     ),
                     children: (

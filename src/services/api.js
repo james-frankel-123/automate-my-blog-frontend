@@ -219,6 +219,12 @@ class AutoBlogAPI {
       });
 
       console.log('✅ All 4 steps completed successfully');
+      console.log('📊 Image generation response:', imagesResponse);
+      console.log('🖼️ Scenarios with images:', imagesResponse.scenarios?.map(s => ({
+        demographics: s.targetSegment?.demographics,
+        hasImage: !!s.imageUrl,
+        imageUrl: s.imageUrl
+      })));
 
       // Determine research quality based on webSearchStatus
       const hasEnhancedResearch = analysisResponse.analysis.webSearchStatus?.enhancementComplete ||
