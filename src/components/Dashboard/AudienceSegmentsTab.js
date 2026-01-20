@@ -588,7 +588,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             opacity: isOthersSelected ? 0.5 : 1,
             transition: 'all 0.3s ease',
             margin: '0 auto',
-            maxWidth: '350px'
+            maxWidth: '600px'
           }}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
@@ -825,20 +825,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                         </>
                       )}
                       
-                      <Carousel 
+                      <Carousel
                         ref={carouselRef}
-                        dots={strategies.length > 2}
-                        infinite={strategies.length > 2}
-                        slidesToShow={Math.min(strategies.length, 2)}
+                        dots={strategies.length > 1}
+                        infinite={strategies.length > 1}
+                        slidesToShow={1}
                         slidesToScroll={1}
-                        responsive={[
-                          {
-                            breakpoint: 768,
-                            settings: {
-                              slidesToShow: 1,
-                            }
-                          }
-                        ]}
                         style={{ padding: '0 20px' }}
                       >
                         {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
@@ -1014,20 +1006,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 </>
               )}
               
-              <Carousel 
+              <Carousel
                 ref={carouselRef}
-                dots={strategies.length > 2}
-                infinite={strategies.length > 2}
-                slidesToShow={Math.min(strategies.length, 2)}
+                dots={strategies.length > 1}
+                infinite={strategies.length > 1}
+                slidesToShow={1}
                 slidesToScroll={1}
-                responsive={[
-                  {
-                    breakpoint: 768,
-                    settings: {
-                      slidesToShow: 1,
-                    }
-                  }
-                ]}
                 style={{ padding: '0 20px' }}
               >
                 {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
