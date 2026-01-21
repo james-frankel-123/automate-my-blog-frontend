@@ -60,6 +60,13 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         return;
       }
 
+      // Skip if there's fresh analysis with scenarios - let main generator handle it
+      const hasFreshAnalysisWithScenarios = stepResults?.home?.websiteAnalysis?.scenarios?.length > 0;
+      if (hasFreshAnalysisWithScenarios) {
+        console.log('🚫 Skipping persistence load - fresh analysis with scenarios available');
+        return;
+      }
+
       console.log('🔍 AudienceSegmentsTab Persistence Loader Debug:', {
         user: !!user,
         tabMode: tabMode.mode,
@@ -139,7 +146,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     };
     
     loadPersistentAudiences();
-  }, [user, tabMode.mode]); // FIXED: Removed forceWorkflowMode to prevent re-runs during project mode transitions
+  }, [user, tabMode.mode]); // Checks stepResults in function body, doesn't need it as dependency
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
@@ -156,12 +163,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       analysisCompleted: stepResults.home.analysisCompleted
     });
     
-    // Check if there's fresh analysis with scenarios
-    const hasFreshAnalysis = stepResults.home.websiteAnalysis?.scenarios?.length > 0;
-
-    // Allow fresh analysis to override persisted strategies
-    if (!hasFreshAnalysis && (strategies.length > 0 || generatingStrategies)) {
-      console.log('🚫 Skipping main generator - strategies exist or generating, and no fresh analysis');
+    // Prevent duplicate strategy generation if strategies already exist or generating
+    if (strategies.length > 0 || generatingStrategies) {
+      console.log('🚫 Skipping main generator - strategies exist or generating');
       return;
     }
 
@@ -189,19 +193,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       // Check if strategies have been generated in this module instance
       const alreadyGeneratedInModule = generatedStrategiesCache.has(generationKey);
 
-      // If we have fresh analysis with scenarios, force reload even if cached
-      if (hasFreshAnalysis && (alreadyGenerated || alreadyGeneratedInModule)) {
-        console.log('🔄 Fresh analysis with scenarios detected - clearing cache and reloading');
-        sessionStorage.removeItem(sessionStorageKey);
-        generatedStrategiesCache.delete(generationKey);
-        if (strategies.length > 0) {
-          setStrategies([]);
-        }
-      } else if (alreadyGenerated || alreadyGeneratedInModule) {
-        console.log('🚫 Skipping - already generated and no fresh analysis');
+      if (alreadyGenerated || alreadyGeneratedInModule) {
         return;
       }
-      
+
       // Mark this analysis as being processed to prevent duplicate generation
       generatedStrategiesCache.add(generationKey);
       sessionStorage.setItem(sessionStorageKey, 'true');
