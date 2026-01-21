@@ -673,14 +673,15 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             {strategy.imageUrl && (
               <div style={{
                 marginBottom: '12px',
-                width: '100%',
+                width: '60%',
                 aspectRatio: '1 / 1',
                 backgroundColor: '#fafafa',
                 borderRadius: '8px',
                 overflow: 'hidden',
                 display: 'flex',
                 justifyContent: 'center',
-                alignItems: 'center'
+                alignItems: 'center',
+                margin: '0 auto 12px auto'
               }}>
                 <img
                   src={strategy.imageUrl}
