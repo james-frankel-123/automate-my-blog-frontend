@@ -54,18 +54,13 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   // Load persistent audience strategies when component mounts  
   useEffect(() => {
     const loadPersistentAudiences = async () => {
-      // Skip if strategies already loaded or currently generating
-      if (strategies.length > 0 || generatingStrategies) {
-        console.log('🚫 Skipping audience load - strategies exist or generating');
-        return;
-      }
-
-      // Skip if there's fresh analysis with scenarios - let main generator handle it
+      // PRIORITY 1: Check for fresh analysis FIRST - this should take precedence over everything
       const hasFreshAnalysisWithScenarios = stepResults?.home?.websiteAnalysis?.scenarios?.length > 0;
-      console.log('🔍 Persistence Loader - Fresh Analysis Check:', {
+      console.log('🔍 Persistence Loader - Fresh Analysis Check (PRIORITY):', {
         hasWebsiteAnalysis: !!stepResults?.home?.websiteAnalysis,
         scenariosCount: stepResults?.home?.websiteAnalysis?.scenarios?.length || 0,
         hasFreshAnalysis: hasFreshAnalysisWithScenarios,
+        currentStrategiesCount: strategies.length,
         willSkip: hasFreshAnalysisWithScenarios
       });
 
@@ -76,6 +71,26 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           console.log('🧹 Clearing old persisted strategies to make room for fresh analysis');
           setStrategies([]);
         }
+
+        // Clear both sessionStorage and module cache to allow main generator to process fresh analysis
+        const analysis = stepResults?.home?.websiteAnalysis;
+        if (analysis) {
+          const generationKey = `${analysis.businessName || 'unknown'}_${analysis.targetAudience || 'unknown'}_${analysis.contentFocus || 'unknown'}`;
+          const sessionStorageKey = `audienceStrategiesGenerated_${generationKey}`;
+          console.log('🧹 Clearing sessionStorage and module cache for fresh analysis:', {
+            sessionStorageKey,
+            generationKey
+          });
+          sessionStorage.removeItem(sessionStorageKey);
+          generatedStrategiesCache.delete(generationKey);
+        }
+
+        return;
+      }
+
+      // PRIORITY 2: Skip if strategies already loaded or currently generating
+      if (strategies.length > 0 || generatingStrategies) {
+        console.log('🚫 Skipping audience load - strategies exist or generating');
         return;
       }
 
