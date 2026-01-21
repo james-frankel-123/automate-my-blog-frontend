@@ -357,11 +357,6 @@ const DashboardLayout = ({
       icon: <FileTextOutlined />,
       label: 'Posts',
     },
-    {
-      key: 'comprehensive-analysis',
-      icon: <BarChartOutlined />,
-      label: 'Content Analysis',
-    },
   ];
 
   // Admin menu items - conditionally added based on permissions
@@ -406,6 +401,13 @@ const DashboardLayout = ({
       key: 'sandbox',
       icon: <EditOutlined style={{ color: '#722ed1' }} />,
       label: 'Sandbox',
+    });
+
+    // Content Analysis tab - super admin only
+    adminMenuItems.push({
+      key: 'comprehensive-analysis',
+      icon: <BarChartOutlined style={{ color: 'red' }} />,
+      label: 'Content Analysis',
     });
   }
 
