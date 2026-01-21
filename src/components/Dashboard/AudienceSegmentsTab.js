@@ -71,6 +71,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
       if (hasFreshAnalysisWithScenarios) {
         console.log('🚫 Skipping persistence load - fresh analysis with scenarios available');
+        // If we already loaded old strategies, clear them so main generator can run
+        if (strategies.length > 0) {
+          console.log('🧹 Clearing old persisted strategies to make room for fresh analysis');
+          setStrategies([]);
+        }
         return;
       }
 
@@ -153,7 +158,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     };
     
     loadPersistentAudiences();
-  }, [user, tabMode.mode]); // Checks stepResults in function body, doesn't need it as dependency
+  }, [user, tabMode.mode, stepResults.home.websiteAnalysis?.scenarios?.length]); // Re-check when scenarios are added
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
