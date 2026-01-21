@@ -62,6 +62,13 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
       // Skip if there's fresh analysis with scenarios - let main generator handle it
       const hasFreshAnalysisWithScenarios = stepResults?.home?.websiteAnalysis?.scenarios?.length > 0;
+      console.log('🔍 Persistence Loader - Fresh Analysis Check:', {
+        hasWebsiteAnalysis: !!stepResults?.home?.websiteAnalysis,
+        scenariosCount: stepResults?.home?.websiteAnalysis?.scenarios?.length || 0,
+        hasFreshAnalysis: hasFreshAnalysisWithScenarios,
+        willSkip: hasFreshAnalysisWithScenarios
+      });
+
       if (hasFreshAnalysisWithScenarios) {
         console.log('🚫 Skipping persistence load - fresh analysis with scenarios available');
         return;
@@ -156,13 +163,14 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       generatingStrategies,
       tabMode: tabMode.mode,
       forceWorkflowMode,
-      stepResults: stepResults.home.websiteAnalysis,
-      hasAnalysisData: stepResults.home.websiteAnalysis && 
-                      (stepResults.home.websiteAnalysis.targetAudience || 
+      hasWebsiteAnalysis: !!stepResults.home.websiteAnalysis,
+      scenariosCount: stepResults.home.websiteAnalysis?.scenarios?.length || 0,
+      hasAnalysisData: stepResults.home.websiteAnalysis &&
+                      (stepResults.home.websiteAnalysis.targetAudience ||
                        stepResults.home.websiteAnalysis.businessName !== 'None'),
       analysisCompleted: stepResults.home.analysisCompleted
     });
-    
+
     // Prevent duplicate strategy generation if strategies already exist or generating
     if (strategies.length > 0 || generatingStrategies) {
       console.log('🚫 Skipping main generator - strategies exist or generating');
