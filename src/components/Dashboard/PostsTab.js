@@ -92,7 +92,7 @@ const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
 
 // Content Discovery has been moved to SandboxTab for super-admin access
 
-const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
+const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('posts');
   const { 
@@ -585,8 +585,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
           
           // Update posts list
           setPosts(prevPosts => [saveResult.post, ...prevPosts]);
-          
+
           message.success('Blog content generated and saved!');
+
+          // Refresh quota counter after successful post creation
+          if (onQuotaUpdate) {
+            onQuotaUpdate();
+          }
         } else {
           // Fallback to old behavior if save fails
           setCurrentDraft({
@@ -675,8 +680,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode }) => {
           } else {
             // Add new post to the list
             setPosts(prevPosts => [result.post, ...prevPosts]);
+
+            // Refresh quota counter after creating a new post
+            if (onQuotaUpdate) {
+              onQuotaUpdate();
+            }
           }
-          
+
           // Update last saved content and timestamp
           setLastSavedContent(editingContent);
           setLastSaved(new Date());

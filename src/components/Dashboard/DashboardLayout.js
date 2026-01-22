@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, message, Typography } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, message, Typography, Badge, Spin } from 'antd';
+import api from '../../services/api';
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -92,7 +93,35 @@ const DashboardLayout = ({
   const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null); // null = loading, true/false = loaded
   const [projectJustSaved, setProjectJustSaved] = useState(false);
   const effectiveShowDashboard = (showDashboard || showDashboardLocal) && !(isNewRegistration && projectMode);
-  
+
+  // Quota tracking state
+  const [userCredits, setUserCredits] = useState(null);
+  const [loadingQuota, setLoadingQuota] = useState(false);
+  const remainingPosts = userCredits ? Math.max(0, userCredits.totalCredits - userCredits.usedCredits) : null;
+
+  // Fetch user quota
+  const refreshQuota = async () => {
+    if (!user) return;
+    try {
+      setLoadingQuota(true);
+      const credits = await api.getUserCredits();
+      setUserCredits(credits);
+    } catch (error) {
+      console.error('Failed to fetch quota:', error);
+    } finally {
+      setLoadingQuota(false);
+    }
+  };
+
+  // Load quota when user changes
+  useEffect(() => {
+    if (user) {
+      refreshQuota();
+    } else {
+      setUserCredits(null);
+    }
+  }, [user]);
+
   // Check if user has seen Save Project button before and handle login/registration
   useEffect(() => {
     if (user) {
@@ -547,11 +576,12 @@ const DashboardLayout = ({
             padding: '24px',
             marginBottom: '24px'
           }}>
-            <PostsTab 
+            <PostsTab
               forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
               currentStep={!user && forceWorkflowMode ? currentStep : undefined}
               onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
               onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+              onQuotaUpdate={refreshQuota}
             />
           </section>
         )}
@@ -810,8 +840,46 @@ const DashboardLayout = ({
               position: 'fixed',
               top: '29px',
               right: '29px',
-              zIndex: 999
+              zIndex: 999,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
             }}>
+              {/* Quota Counter - Show when NOT in project mode */}
+              {!projectMode && remainingPosts !== null && (
+                <div style={{
+                  background: 'white',
+                  padding: '8px 16px',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  border: '2px solid #1890ff'
+                }}>
+                  {loadingQuota ? (
+                    <Spin size="small" />
+                  ) : (
+                    <>
+                      <span style={{
+                        fontSize: '20px',
+                        fontWeight: 700,
+                        color: remainingPosts <= 2 ? '#ff4d4f' : '#1890ff'
+                      }}>
+                        {remainingPosts}
+                      </span>
+                      <span style={{
+                        fontSize: '12px',
+                        color: '#8c8c8c',
+                        fontWeight: 500
+                      }}>
+                        post{remainingPosts === 1 ? '' : 's'} left
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Create New Post Button - Show when NOT in project mode */}
               {!projectMode && (
                 <Button 
