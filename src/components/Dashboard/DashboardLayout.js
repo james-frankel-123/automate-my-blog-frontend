@@ -139,13 +139,8 @@ const DashboardLayout = ({
   // Track if payment redirect has been processed to prevent infinite loops
   const paymentProcessedRef = useRef(false);
 
-  // Handle Stripe payment redirect feedback (runs only once per page load)
+  // Handle Stripe payment redirect feedback
   useEffect(() => {
-    // Only process once per page load
-    if (paymentProcessedRef.current) {
-      return;
-    }
-
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get('payment');
 
@@ -153,14 +148,26 @@ const DashboardLayout = ({
       return; // No payment redirect, nothing to do
     }
 
+    // Only process once per page load
+    if (paymentProcessedRef.current) {
+      return;
+    }
+
     console.log('💳 Payment redirect detected:', {
       status: paymentStatus,
       hasUser: !!user,
+      loading: loading,
       hasAccessToken: !!localStorage.getItem('accessToken'),
       hasRefreshToken: !!localStorage.getItem('refreshToken')
     });
 
-    // Mark as processed immediately to prevent re-processing
+    // If auth is still loading, wait for it
+    if (loading) {
+      console.log('⏳ Auth still loading, waiting for user to be set...');
+      return; // Exit and wait for next render when user is loaded
+    }
+
+    // Mark as processed now that we're ready to process
     paymentProcessedRef.current = true;
 
     // Clean up URL immediately to prevent re-processing
@@ -169,6 +176,8 @@ const DashboardLayout = ({
     if (paymentStatus === 'success') {
       if (user) {
         message.success('Payment successful! Your credits are being added...');
+
+        console.log('🔄 Starting credit refresh sequence...');
 
         // Immediate refresh
         refreshQuota();
@@ -179,16 +188,23 @@ const DashboardLayout = ({
           refreshQuota();
         }, 2000);
 
-        // Final retry after 5 seconds to catch slow webhooks
+        // Retry after 5 seconds
         const retryTimeout2 = setTimeout(() => {
-          console.log('🔄 Final credit refresh (5s delay)...');
+          console.log('🔄 Retrying credit refresh (5s delay)...');
           refreshQuota();
         }, 5000);
+
+        // Final retry after 10 seconds for very slow webhooks
+        const retryTimeout3 = setTimeout(() => {
+          console.log('🔄 Final credit refresh (10s delay)...');
+          refreshQuota();
+        }, 10000);
 
         // Cleanup timeouts
         return () => {
           clearTimeout(retryTimeout1);
           clearTimeout(retryTimeout2);
+          clearTimeout(retryTimeout3);
         };
       } else {
         console.error('❌ Payment success but user is not logged in! Tokens:', {
@@ -200,7 +216,7 @@ const DashboardLayout = ({
     } else if (paymentStatus === 'cancelled') {
       message.info('Payment was cancelled. You can try again anytime.');
     }
-  }, [user, refreshQuota]); // Dependencies needed for the logic inside
+  }, [user, loading, refreshQuota]); // Re-run when user or loading changes
 
   // Check if user has seen Save Project button before and handle login/registration
   useEffect(() => {
