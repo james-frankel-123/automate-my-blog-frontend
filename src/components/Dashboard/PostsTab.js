@@ -92,7 +92,7 @@ const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
 
 // Content Discovery has been moved to SandboxTab for super-admin access
 
-const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate }) => {
+const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate, onOpenPricingModal }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('posts');
   const { 
@@ -1199,10 +1199,19 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           </div>
                         </div>
                       ) : (
-                        <Button 
-                          type="primary" 
+                        <Button
+                          type="primary"
                           size="large"
-                          onClick={handleGenerateTopics}
+                          onClick={() => {
+                            if (user && remainingPosts === 0) {
+                              // Open pricing modal to buy more posts
+                              if (onOpenPricingModal) {
+                                onOpenPricingModal();
+                              }
+                            } else {
+                              handleGenerateTopics();
+                            }
+                          }}
                           icon={<BulbOutlined />}
                           disabled={!tabMode.tabWorkflowData?.selectedCustomerStrategy}
                         >
@@ -2242,10 +2251,19 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         </div>
                       </div>
                     ) : (
-                      <Button 
-                        type="primary" 
+                      <Button
+                        type="primary"
                         size="large"
-                        onClick={handleGenerateTopics}
+                        onClick={() => {
+                          if (user && remainingPosts === 0) {
+                            // Open pricing modal to buy more posts
+                            if (onOpenPricingModal) {
+                              onOpenPricingModal();
+                            }
+                          } else {
+                            handleGenerateTopics();
+                          }
+                        }}
                         icon={<BulbOutlined />}
                         disabled={!selectedCustomerStrategy}
                       >
@@ -2391,8 +2409,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   size="large"
                                   onClick={() => {
                                     if (user && remainingPosts === 0) {
-                                      // Navigate to settings tab for subscriptions
-                                      window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'settings' }));
+                                      // Open pricing modal to buy more posts
+                                      if (onOpenPricingModal) {
+                                        onOpenPricingModal();
+                                      }
                                     } else {
                                       handleTopicSelection(topic.id);
                                     }

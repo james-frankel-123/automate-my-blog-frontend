@@ -596,6 +596,7 @@ const DashboardLayout = ({
               onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
               onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
               onQuotaUpdate={refreshQuota}
+              onOpenPricingModal={() => setShowPricingModal(true)}
             />
           </section>
         )}
