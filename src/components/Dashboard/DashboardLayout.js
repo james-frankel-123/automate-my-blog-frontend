@@ -35,6 +35,7 @@ import AdminContentTab from './AdminContentTab';
 import AdminSystemTab from './AdminSystemTab';
 import AdminLeadsTab from './AdminLeadsTab';
 import ComprehensiveAnalysisTab from './ComprehensiveAnalysisTab';
+import PricingModal from '../Modals/PricingModal';
 
 const { Header, Sider, Content } = Layout;
 
@@ -97,7 +98,12 @@ const DashboardLayout = ({
   // Quota tracking state
   const [userCredits, setUserCredits] = useState(null);
   const [loadingQuota, setLoadingQuota] = useState(false);
-  const remainingPosts = userCredits ? Math.max(0, userCredits.totalCredits - userCredits.usedCredits) : null;
+  const remainingPosts = userCredits
+    ? (userCredits.isUnlimited ? 'unlimited' : Math.max(0, userCredits.availableCredits))
+    : null;
+
+  // Pricing modal state
+  const [showPricingModal, setShowPricingModal] = useState(false);
 
   // Fetch user quota
   const refreshQuota = async () => {
@@ -105,9 +111,17 @@ const DashboardLayout = ({
     try {
       setLoadingQuota(true);
       const credits = await api.getUserCredits();
+      console.log('✅ Credits loaded:', credits);
       setUserCredits(credits);
     } catch (error) {
-      console.error('Failed to fetch quota:', error);
+      console.error('❌ Failed to fetch quota:', error);
+      // Set default credits on error so badge still shows
+      setUserCredits({
+        totalCredits: 0,
+        usedCredits: 0,
+        availableCredits: 0,
+        basePlan: 'Unknown'
+      });
     } finally {
       setLoadingQuota(false);
     }
@@ -845,9 +859,14 @@ const DashboardLayout = ({
               alignItems: 'center',
               gap: '12px'
             }}>
-              {/* Quota Counter - Show when NOT in project mode */}
-              {!projectMode && remainingPosts !== null && (
-                <div style={{
+              {/* Quota Counter - Always visible for logged-in users */}
+              <div
+                onClick={() => {
+                  if (remainingPosts === 0) {
+                    setShowPricingModal(true);
+                  }
+                }}
+                style={{
                   background: 'white',
                   padding: '8px 16px',
                   borderRadius: '8px',
@@ -855,29 +874,73 @@ const DashboardLayout = ({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  border: '2px solid #1890ff'
-                }}>
-                  {loadingQuota ? (
-                    <Spin size="small" />
-                  ) : (
-                    <>
-                      <span style={{
-                        fontSize: '20px',
-                        fontWeight: 700,
-                        color: remainingPosts <= 2 ? '#ff4d4f' : '#1890ff'
-                      }}>
-                        {remainingPosts}
-                      </span>
-                      <span style={{
-                        fontSize: '12px',
-                        color: '#8c8c8c',
-                        fontWeight: 500
-                      }}>
-                        post{remainingPosts === 1 ? '' : 's'} left
-                      </span>
-                    </>
-                  )}
-                </div>
+                  border: `2px solid ${remainingPosts === 0 ? '#ff4d4f' : remainingPosts === 'unlimited' ? '#52c41a' : '#1890ff'}`,
+                  cursor: remainingPosts === 0 ? 'pointer' : 'default',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (remainingPosts === 0) {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                {loadingQuota || remainingPosts === null ? (
+                  <Spin size="small" />
+                ) : remainingPosts === 'unlimited' ? (
+                  <>
+                    <span style={{
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      color: '#52c41a'
+                    }}>
+                      ∞
+                    </span>
+                    <span style={{
+                      fontSize: '12px',
+                      color: '#8c8c8c',
+                      fontWeight: 500
+                    }}>
+                      Unlimited posts
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{
+                      fontSize: '20px',
+                      fontWeight: 700,
+                      color: remainingPosts <= 2 ? '#ff4d4f' : '#1890ff'
+                    }}>
+                      {remainingPosts}
+                    </span>
+                    <span style={{
+                      fontSize: '12px',
+                      color: '#8c8c8c',
+                      fontWeight: 500
+                    }}>
+                      post{remainingPosts === 1 ? '' : 's'} left
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Upgrade Button - Show when credits are 0 */}
+              {remainingPosts === 0 && (
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={() => setShowPricingModal(true)}
+                  style={{
+                    backgroundColor: '#52c41a',
+                    borderColor: '#52c41a',
+                    fontWeight: 600,
+                    boxShadow: '0 4px 12px rgba(82, 196, 26, 0.3)'
+                  }}
+                >
+                  ⚡ Upgrade Now
+                </Button>
               )}
 
               {/* Create New Post Button - Show when NOT in project mode */}
@@ -1050,7 +1113,7 @@ const DashboardLayout = ({
       
       {/* Authentication Modal for Logged-Out Users */}
       {!user && (
-        <AuthModal 
+        <AuthModal
           open={showAuthModal}
           onClose={() => {
             setShowAuthModal(false);
@@ -1060,6 +1123,21 @@ const DashboardLayout = ({
           defaultTab={authContext === 'register' ? 'register' : 'login'}
         />
       )}
+
+      {/* Pricing Modal */}
+      <PricingModal
+        open={showPricingModal}
+        onClose={() => setShowPricingModal(false)}
+        user={user}
+        onCreateAccount={() => {
+          setShowPricingModal(false);
+          setShowAuthModal(true);
+          setAuthContext('register');
+        }}
+        onSelectPlan={(planId) => {
+          console.log('Plan selected:', planId);
+        }}
+      />
     </>
   );
 };

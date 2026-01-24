@@ -1,6 +1,7 @@
-import React from 'react';
-import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider } from 'antd';
-import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider, message } from 'antd';
+import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, LoadingOutlined } from '@ant-design/icons';
+import api from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -8,42 +9,56 @@ const { Title, Text, Paragraph } = Typography;
  * PricingModal component
  * Shows pricing plans with conditional UI based on user authentication status
  */
-const PricingModal = ({ 
-  open, 
-  onClose, 
-  user, 
+const PricingModal = ({
+  open,
+  onClose,
+  user,
   onCreateAccount,
   onSelectPlan
 }) => {
+  const [loading, setLoading] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState(null);
+
+  // Stripe Price ID mapping
+  const stripePriceMap = {
+    'single_post': 'price_1Sss0a6S2Lijk9r3LM6pJne5', // $15 one-time
+    'creator': 'price_1Sss3P6S2Lijk9r38JjgJN4u', // $19.99/month
+    'professional': 'price_1Sss4P6S2Lijk9r3MULOqp1B' // $49.99/month
+  };
+
   // Pricing plans data
   const plans = [
     {
       id: 'payasyougo',
-      name: 'Pay-as-you-go',
-      price: 'Free',
-      priceDetails: 'Then $15/post',
-      description: '1 free blog post, then pay per post',
+      stripeKey: 'single_post',
+      name: 'Single Post',
+      price: '$15',
+      priceDetails: 'one-time',
+      description: 'Purchase a single blog post',
       icon: <StarOutlined />,
       color: '#52c41a',
+      planType: 'one_time',
       features: [
-        '1 free high-quality blog post',
+        '1 high-quality blog post',
         'AI content generation with enhanced research',
-        '2 strategy options',
-        '2 topic ideas per post',
+        'SEO optimization',
+        'Multiple topic ideas',
         'Export to all platforms'
       ],
-      buttonText: user ? 'Current Plan' : 'Get Started Free',
+      buttonText: 'Buy Single Post',
       buttonType: 'default',
       popular: false
     },
     {
       id: 'creator',
+      stripeKey: 'creator',
       name: 'Creator',
       price: '$20',
       priceDetails: '/month',
       description: '4 blog posts per month',
       icon: <CheckOutlined />,
       color: '#1890ff',
+      planType: 'subscription',
       features: [
         '4 blog posts per month included',
         'AI content generation with enhanced research',
@@ -57,12 +72,14 @@ const PricingModal = ({
     },
     {
       id: 'professional',
+      stripeKey: 'professional',
       name: 'Professional',
       price: '$50',
       priceDetails: '/month',
       description: '8 blog posts + unlimited strategies',
       icon: <CrownOutlined />,
       color: '#722ed1',
+      planType: 'subscription',
       features: [
         '8 blog posts per month included',
         'AI content generation with enhanced research',
@@ -96,11 +113,49 @@ const PricingModal = ({
     }
   ];
 
-  const handlePlanSelection = (planId) => {
-    if (onSelectPlan) {
-      onSelectPlan(planId);
+  const handlePlanSelection = async (plan) => {
+    // Handle enterprise/custom plan
+    if (plan.id === 'enterprise') {
+      message.info('Please contact sales@automatemyblog.com for Enterprise pricing');
+      return;
     }
-    onClose();
+
+    // If user is not logged in, prompt to create account
+    if (!user) {
+      if (onCreateAccount) {
+        onCreateAccount();
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setSelectedPlanId(plan.id);
+
+      // Get Stripe Price ID
+      const priceId = stripePriceMap[plan.stripeKey];
+      if (!priceId) {
+        throw new Error('Invalid plan selected');
+      }
+
+      console.log(`Creating checkout session for ${plan.name}, priceId: ${priceId}, planType: ${plan.planType}`);
+
+      // Create checkout session
+      const response = await api.createCheckoutSession(priceId, plan.planType);
+
+      if (response.success && response.url) {
+        console.log('✅ Checkout session created, redirecting to:', response.url);
+        // Redirect to Stripe checkout
+        window.location.href = response.url;
+      } else {
+        throw new Error('Failed to create checkout session');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      message.error('Failed to start checkout. Please try again.');
+      setLoading(false);
+      setSelectedPlanId(null);
+    }
   };
 
   const handleCreateAccount = () => {
@@ -191,53 +246,25 @@ const PricingModal = ({
         </div>
 
         <div style={{ marginTop: 'auto' }}>
-          {user ? (
-            <Button
-              type={plan.buttonType}
-              size="large"
-              block
-              onClick={() => handlePlanSelection(plan.id)}
-              style={{
-                backgroundColor: plan.buttonType === 'primary' ? plan.color : undefined,
-                borderColor: plan.color,
-                height: '48px',
-                fontWeight: '500'
-              }}
-            >
-              {plan.buttonText}
-            </Button>
-          ) : plan.id === 'enterprise' ? (
-            <Button
-              type="primary"
-              size="large"
-              block
-              onClick={() => handlePlanSelection(plan.id)}
-              style={{
-                backgroundColor: plan.color,
-                borderColor: plan.color,
-                height: '48px',
-                fontWeight: '500'
-              }}
-            >
-              {plan.buttonText}
-            </Button>
-          ) : (
-            <Button
-              type="primary"
-              size="large"
-              block
-              onClick={handleCreateAccount}
-              icon={<UserAddOutlined />}
-              style={{
-                backgroundColor: '#1890ff',
-                borderColor: '#1890ff',
-                height: '48px',
-                fontWeight: '500'
-              }}
-            >
-              Create Account
-            </Button>
-          )}
+          <Button
+            type={plan.buttonType}
+            size="large"
+            block
+            onClick={() => handlePlanSelection(plan)}
+            loading={loading && selectedPlanId === plan.id}
+            disabled={loading && selectedPlanId !== plan.id}
+            icon={!user && plan.id !== 'enterprise' ? <UserAddOutlined /> : undefined}
+            style={{
+              backgroundColor: plan.buttonType === 'primary' ? plan.color : undefined,
+              borderColor: plan.color,
+              height: '48px',
+              fontWeight: '500'
+            }}
+          >
+            {loading && selectedPlanId === plan.id ? 'Loading...' : (
+              !user && plan.id !== 'enterprise' ? 'Create Account' : plan.buttonText
+            )}
+          </Button>
         </div>
       </Card>
     </Col>
