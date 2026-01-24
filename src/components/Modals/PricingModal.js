@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider, message } from 'antd';
-import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider, message, Alert } from 'antd';
+import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, LoadingOutlined, GiftOutlined, CopyOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
@@ -298,6 +298,42 @@ const PricingModal = ({
             }
           </Paragraph>
         </div>
+
+        {/* Referral Option - Get Free Posts */}
+        {user && (
+          <Alert
+            message={
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <GiftOutlined style={{ fontSize: '18px', color: '#52c41a' }} />
+                <strong>Free Option: Refer Friends!</strong>
+              </div>
+            }
+            description={
+              <div>
+                <p style={{ margin: '8px 0' }}>
+                  Get <strong>1 free blog post</strong> for every friend who signs up using your referral link.
+                  Your friend also gets 1 free post! It's a win-win.
+                </p>
+                <Button
+                  type="link"
+                  icon={<CopyOutlined />}
+                  onClick={() => {
+                    // Navigate to referrals tab
+                    onClose();
+                    // You may need to trigger navigation to Settings > Referrals tab
+                    message.info('Go to Settings > Referrals to get your referral link');
+                  }}
+                  style={{ padding: 0, height: 'auto' }}
+                >
+                  View My Referral Link
+                </Button>
+              </div>
+            }
+            type="success"
+            style={{ marginBottom: '32px' }}
+            showIcon
+          />
+        )}
 
         {/* Pricing Plans */}
         <Row gutter={[24, 24]}>

@@ -1174,11 +1174,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           icon={<BulbOutlined />}
                           disabled={!tabMode.tabWorkflowData?.selectedCustomerStrategy}
                         >
-                          {!tabMode.tabWorkflowData?.selectedCustomerStrategy 
+                          {!tabMode.tabWorkflowData?.selectedCustomerStrategy
                             ? 'Select an audience first'
-                            : user 
-                              ? (user.postsRemaining > 0 ? 'Create blog post' : 'Purchase or subscribe')
-                              : 'Get one free post'
+                            : user
+                              ? (user.postsRemaining > 0 ? 'Create blog post' : 'Buy more posts')
+                              : 'Register to claim free post'
                           }
                         </Button>
                       )}
@@ -2217,11 +2217,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         icon={<BulbOutlined />}
                         disabled={!selectedCustomerStrategy}
                       >
-                        {!selectedCustomerStrategy 
+                        {!selectedCustomerStrategy
                           ? 'Select an audience first'
-                          : user 
-                            ? (user.postsRemaining > 0 ? 'Create blog post' : 'Purchase or subscribe')
-                            : 'Get one free post'
+                          : user
+                            ? (user.postsRemaining > 0 ? 'Create blog post' : 'Buy more posts')
+                            : 'Register to claim free post'
                         }
                       </Button>
                     )}
@@ -2373,10 +2373,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     marginBottom: '12px'
                                   }}
                                 >
-                                  {isGenerating ? 'Generating Content...' : 
-                                   user ? 
-                                     (user.postsRemaining > 0 ? 'Create blog post' : 'Purchase or subscribe') :
-                                     'Get one free post'
+                                  {isGenerating ? 'Generating Content...' :
+                                   user ?
+                                     (user.postsRemaining > 0 ? 'Create blog post' : 'Buy more posts') :
+                                     'Register to claim free post'
                                   }
                                 </Button>
                                 

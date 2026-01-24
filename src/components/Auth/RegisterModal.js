@@ -28,17 +28,16 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
           if (stepResults?.websiteAnalysis) {
             const analysis = stepResults.websiteAnalysis;
             const detectedInfo = {
-              organizationName: analysis.businessName || analysis.companyName || '',
               websiteUrl: analysis.websiteUrl || analysis.url || '',
+              businessName: analysis.businessName || analysis.companyName || '',
               autoDetected: true
             };
-            
-            if (detectedInfo.organizationName || detectedInfo.websiteUrl) {
+
+            if (detectedInfo.websiteUrl) {
               setDetectedData(detectedInfo);
-              
+
               // Prepopulate form fields
               form.setFieldsValue({
-                organizationName: detectedInfo.organizationName,
                 websiteUrl: detectedInfo.websiteUrl
               });
             }
@@ -55,14 +54,14 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
   const onFinish = async (values) => {
     setLoading(true);
     setError('');
-    
+
     try {
       const result = await register({
         email: values.email,
         password: values.password,
         firstName: values.firstName,
         lastName: values.lastName,
-        organizationName: values.organizationName,
+        organizationName: values.firstName + "'s Blog", // Auto-generate from first name
         websiteUrl: values.websiteUrl,
       }, context);
       
@@ -161,8 +160,8 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
 
       {detectedData && (
         <Alert
-          message="Company Information Detected"
-          description={`We detected "${detectedData.organizationName}" from your website analysis. You can modify this information below.`}
+          message="Website Detected"
+          description={`We detected your website from the analysis. You can modify this information below.`}
           type="info"
           style={{ marginBottom: '20px' }}
           showIcon
@@ -214,25 +213,15 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
         </Form.Item>
 
         <Form.Item
-          name="organizationName"
-          rules={[{ required: true, message: 'Organization name required' }]}
-        >
-          <Input
-            prefix={<BankOutlined />}
-            placeholder="Organization name"
-            size="large"
-          />
-        </Form.Item>
-
-        <Form.Item
           name="websiteUrl"
           rules={[
+            { required: true, message: 'Please enter your website URL' },
             { type: 'url', message: 'Please enter a valid website URL' }
           ]}
         >
           <Input
             prefix={<LinkOutlined />}
-            placeholder="Website URL (optional)"
+            placeholder="Website URL"
             size="large"
           />
         </Form.Item>
