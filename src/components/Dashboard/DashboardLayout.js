@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout, Menu, Button, Avatar, Dropdown, message, Typography, Badge, Spin } from 'antd';
 import api from '../../services/api';
 import {
@@ -105,8 +105,8 @@ const DashboardLayout = ({
   // Pricing modal state
   const [showPricingModal, setShowPricingModal] = useState(false);
 
-  // Fetch user quota
-  const refreshQuota = async () => {
+  // Fetch user quota (memoized to prevent infinite loops)
+  const refreshQuota = useCallback(async () => {
     if (!user) return;
     try {
       setLoadingQuota(true);
@@ -125,7 +125,7 @@ const DashboardLayout = ({
     } finally {
       setLoadingQuota(false);
     }
-  };
+  }, [user]);
 
   // Load quota when user changes
   useEffect(() => {
@@ -136,19 +136,35 @@ const DashboardLayout = ({
     }
   }, [user]);
 
-  // Handle Stripe payment redirect feedback
+  // Track if payment redirect has been processed to prevent infinite loops
+  const paymentProcessedRef = useRef(false);
+
+  // Handle Stripe payment redirect feedback (runs only once per page load)
   useEffect(() => {
+    // Only process once per page load
+    if (paymentProcessedRef.current) {
+      return;
+    }
+
     const urlParams = new URLSearchParams(window.location.search);
     const paymentStatus = urlParams.get('payment');
 
-    if (paymentStatus) {
-      console.log('💳 Payment redirect detected:', {
-        status: paymentStatus,
-        hasUser: !!user,
-        hasAccessToken: !!localStorage.getItem('accessToken'),
-        hasRefreshToken: !!localStorage.getItem('refreshToken')
-      });
+    if (!paymentStatus) {
+      return; // No payment redirect, nothing to do
     }
+
+    console.log('💳 Payment redirect detected:', {
+      status: paymentStatus,
+      hasUser: !!user,
+      hasAccessToken: !!localStorage.getItem('accessToken'),
+      hasRefreshToken: !!localStorage.getItem('refreshToken')
+    });
+
+    // Mark as processed immediately to prevent re-processing
+    paymentProcessedRef.current = true;
+
+    // Clean up URL immediately to prevent re-processing
+    window.history.replaceState({}, '', window.location.pathname);
 
     if (paymentStatus === 'success') {
       if (user) {
@@ -181,14 +197,10 @@ const DashboardLayout = ({
         });
         message.warning('Payment successful, but you were logged out. Please log in to see your credits.');
       }
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
     } else if (paymentStatus === 'cancelled') {
       message.info('Payment was cancelled. You can try again anytime.');
-      // Clean up URL
-      window.history.replaceState({}, '', window.location.pathname);
     }
-  }, [user, refreshQuota]); // Run when user or refreshQuota changes
+  }, [user, refreshQuota]); // Dependencies needed for the logic inside
 
   // Check if user has seen Save Project button before and handle login/registration
   useEffect(() => {
