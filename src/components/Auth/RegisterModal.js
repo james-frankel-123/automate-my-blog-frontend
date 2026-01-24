@@ -19,33 +19,55 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
         // Check for workflow state data
         const workflowState = localStorage.getItem('automate-my-blog-workflow-state');
 
-        if (workflowState) {
-          const parsed = JSON.parse(workflowState);
+        console.log('🔍 RegisterModal: Checking localStorage for workflow state');
 
-          // Look for website analysis data in stepResults.home.websiteAnalysis
-          const analysis = parsed.stepResults?.home?.websiteAnalysis;
+        if (!workflowState) {
+          console.log('❌ No workflow state found in localStorage');
+          return;
+        }
 
-          if (analysis) {
-            const detectedInfo = {
-              websiteUrl: analysis.websiteUrl || analysis.url || '',
-              businessName: analysis.businessName || analysis.companyName || '',
-              autoDetected: true
-            };
+        const parsed = JSON.parse(workflowState);
+        console.log('📦 Workflow state found:', {
+          hasStepResults: !!parsed.stepResults,
+          hasHome: !!parsed.stepResults?.home,
+          hasWebsiteAnalysis: !!parsed.stepResults?.home?.websiteAnalysis,
+          stepResultsKeys: parsed.stepResults ? Object.keys(parsed.stepResults) : []
+        });
 
-            console.log('📝 Prepopulating registration with website:', detectedInfo.websiteUrl);
+        // Look for website analysis data in stepResults.home.websiteAnalysis
+        const analysis = parsed.stepResults?.home?.websiteAnalysis;
 
-            if (detectedInfo.websiteUrl) {
-              setDetectedData(detectedInfo);
+        if (analysis) {
+          console.log('📊 Website analysis found:', {
+            websiteUrl: analysis.websiteUrl,
+            url: analysis.url,
+            businessName: analysis.businessName,
+            companyName: analysis.companyName
+          });
 
-              // Prepopulate form fields
-              form.setFieldsValue({
-                websiteUrl: detectedInfo.websiteUrl
-              });
-            }
+          const detectedInfo = {
+            websiteUrl: analysis.websiteUrl || analysis.url || '',
+            businessName: analysis.businessName || analysis.companyName || '',
+            autoDetected: true
+          };
+
+          console.log('📝 Prepopulating registration with website:', detectedInfo.websiteUrl);
+
+          if (detectedInfo.websiteUrl) {
+            setDetectedData(detectedInfo);
+
+            // Prepopulate form fields
+            form.setFieldsValue({
+              websiteUrl: detectedInfo.websiteUrl
+            });
+          } else {
+            console.log('⚠️ Website URL is empty in analysis data');
           }
+        } else {
+          console.log('❌ No website analysis found in stepResults.home');
         }
       } catch (error) {
-        console.log('No workflow data to extract:', error.message);
+        console.error('❌ Error extracting workflow data:', error);
       }
     };
 

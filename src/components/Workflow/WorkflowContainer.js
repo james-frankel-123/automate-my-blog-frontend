@@ -314,6 +314,7 @@ const WorkflowContainer = ({ embedded = false }) => {
         setStepResults(prev => ({
           ...prev,
           websiteAnalysis: {
+            websiteUrl: websiteUrl, // CRITICAL: Store website URL for registration prepopulation
             businessType: response.analysis.businessType || 'Business',
             businessName: response.analysis.businessName || 'Your Business',
             targetAudience: response.analysis.decisionMakers || response.analysis.targetAudience || 'General Audience',
@@ -364,6 +365,7 @@ const WorkflowContainer = ({ embedded = false }) => {
       setStepResults(prev => ({
         ...prev,
         websiteAnalysis: {
+          websiteUrl: websiteUrl, // CRITICAL: Store website URL for registration prepopulation
           businessType: 'Business',
           businessName: businessName.charAt(0).toUpperCase() + businessName.slice(1),
           targetAudience: 'General Audience',

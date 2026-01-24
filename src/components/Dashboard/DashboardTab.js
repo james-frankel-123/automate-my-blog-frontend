@@ -173,7 +173,11 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   // Handle analysis completion from standalone component
   const handleAnalysisComplete = (data) => {
     // Update unified workflow state only (no local state)
-    updateWebsiteAnalysis(data.analysis);
+    // CRITICAL: Include websiteUrl in the analysis data for registration prepopulation
+    updateWebsiteAnalysis({
+      ...data.analysis,
+      websiteUrl: data.websiteUrl || websiteUrl
+    });
     updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
     updateAnalysisCompleted(true);
 
@@ -193,7 +197,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
     // Update progressive sticky header with analysis results
     updateStickyWorkflowStep('websiteAnalysis', {
-      websiteUrl: websiteUrl,
+      websiteUrl: data.websiteUrl || websiteUrl,
       businessName: data.analysis?.businessName || data.analysis?.companyName || '',
       businessType: data.analysis?.businessType || data.analysis?.industry || '',
       ...data.analysis
