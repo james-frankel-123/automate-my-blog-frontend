@@ -152,9 +152,28 @@ const DashboardLayout = ({
 
     if (paymentStatus === 'success') {
       if (user) {
-        message.success('Payment successful! Your credits have been added.');
-        // Refresh credits after successful payment
+        message.success('Payment successful! Your credits are being added...');
+
+        // Immediate refresh
         refreshQuota();
+
+        // Retry after 2 seconds in case webhook hasn't processed yet
+        const retryTimeout1 = setTimeout(() => {
+          console.log('🔄 Retrying credit refresh (2s delay)...');
+          refreshQuota();
+        }, 2000);
+
+        // Final retry after 5 seconds to catch slow webhooks
+        const retryTimeout2 = setTimeout(() => {
+          console.log('🔄 Final credit refresh (5s delay)...');
+          refreshQuota();
+        }, 5000);
+
+        // Cleanup timeouts
+        return () => {
+          clearTimeout(retryTimeout1);
+          clearTimeout(retryTimeout2);
+        };
       } else {
         console.error('❌ Payment success but user is not logged in! Tokens:', {
           accessToken: !!localStorage.getItem('accessToken'),
