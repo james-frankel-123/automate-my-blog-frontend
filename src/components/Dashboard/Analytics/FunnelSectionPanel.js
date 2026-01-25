@@ -58,22 +58,24 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData }) =>
         >
           <div style={{ padding: '16px 0' }}>
             {funnelSteps.map((step, index) => {
-              const isLowConversion = step.conversion_rate <= 50;
+              // Use 100% for first step (no previous step to convert from), otherwise use provided conversion_rate
+              const conversionRate = step.conversion_rate !== undefined ? step.conversion_rate : 100;
+              const isLowConversion = conversionRate <= 50;
               return (
                 <div key={index} style={{ marginBottom: 16 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                     <span style={{ fontWeight: 500 }}>{step.step}</span>
                     <span>
                       <strong>{step.count}</strong> users
-                      {index > 0 && (
+                      {index > 0 && step.conversion_rate !== undefined && (
                         <span style={{ marginLeft: 8, color: isLowConversion ? '#ff4d4f' : '#52c41a' }}>
-                          ({step.conversion_rate.toFixed(1)}% conversion)
+                          ({conversionRate.toFixed(1)}% conversion)
                         </span>
                       )}
                     </span>
                   </div>
                   <Progress
-                    percent={step.conversion_rate}
+                    percent={conversionRate}
                     strokeColor={isLowConversion ? '#ff4d4f' : '#52c41a'}
                     showInfo={false}
                     strokeWidth={20}
