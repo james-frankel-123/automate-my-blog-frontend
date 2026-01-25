@@ -107,7 +107,10 @@ const RevenueSectionPanel = ({ revenueData, loading }) => {
                       return value;
                     }
                   }}
-                  formatter={(value) => `$${value.toFixed(2)}`}
+                  formatter={(value) => {
+                    const numValue = typeof value === 'number' ? value : parseFloat(value) || 0;
+                    return `$${numValue.toFixed(2)}`;
+                  }}
                 />
                 <Legend />
                 <Line type="monotone" dataKey="total_revenue" stroke="#52c41a" strokeWidth={2} name="Total Revenue" />
