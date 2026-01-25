@@ -10,12 +10,15 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
   const [stageUsers, setStageUsers] = useState({});
   const [loadingStage, setLoadingStage] = useState({});
 
-  if (!funnelData) return null;
-
-  const { title, insights = [], atRiskCount, potentialChurnCost, priority } = funnelData;
-
   // Process funnel visualization data
   const funnelSteps = funnelVisualizationData?.steps || [];
+
+  // If no funnel steps and no insights, don't render anything
+  if (funnelSteps.length === 0 && !funnelData) {
+    return null;
+  }
+
+  const { title = "Sales Funnel & Retention", insights = [], atRiskCount, potentialChurnCost, priority } = funnelData || {};
 
   const handleStageExpand = async (step) => {
     const stageKey = step.step;
