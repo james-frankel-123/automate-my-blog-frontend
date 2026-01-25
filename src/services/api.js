@@ -3054,6 +3054,170 @@ Please provide analysis in this JSON format:
       throw error;
     }
   }
+
+  /**
+   * ======================================================================
+   * ANALYTICS API METHODS
+   * ======================================================================
+   */
+
+  /**
+   * Track a single event
+   */
+  async trackEvent(event) {
+    try {
+      const response = await this.makeRequest('/api/v1/analytics/track', {
+        method: 'POST',
+        body: JSON.stringify(event),
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to track event:', error);
+      // Don't throw - analytics failures shouldn't break the app
+      return null;
+    }
+  }
+
+  /**
+   * Track batch of events
+   */
+  async trackEventBatch(events) {
+    try {
+      const response = await this.makeRequest('/api/v1/analytics/track-batch', {
+        method: 'POST',
+        body: JSON.stringify({ events }),
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to track batch events:', error);
+      // Don't throw - analytics failures shouldn't break the app
+      return null;
+    }
+  }
+
+  /**
+   * Get funnel data (superadmin only)
+   */
+  async getFunnelData(startDate, endDate) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/analytics/funnel?startDate=${startDate}&endDate=${endDate}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get funnel data: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user journey (superadmin only)
+   */
+  async getUserJourney(userId, limit = 100) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/analytics/users/${userId}/journey?limit=${limit}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get user journey: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get cohort analysis (superadmin only)
+   */
+  async getCohortAnalysis(startDate, endDate, groupBy = 'week') {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/analytics/cohorts?startDate=${startDate}&endDate=${endDate}&groupBy=${groupBy}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get cohort analysis: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get session metrics (superadmin only)
+   */
+  async getSessionMetrics(startDate, endDate, userId = null) {
+    try {
+      const params = new URLSearchParams({ startDate, endDate });
+      if (userId) params.append('userId', userId);
+      const response = await this.makeRequest(
+        `/api/v1/analytics/sessions?${params.toString()}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get session metrics: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get platform metrics (superadmin only)
+   */
+  async getPlatformMetrics(period = '30d') {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/analytics/platform?period=${period}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get platform metrics: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get comprehensive analytics metrics (referrals, subscriptions, revenue breakdown)
+   */
+  async getComprehensiveMetrics(period = '30d') {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/analytics/comprehensive-metrics?period=${period}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get comprehensive metrics: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get active users for user journey analysis
+   */
+  async getActiveUsers() {
+    try {
+      const response = await this.makeRequest('/api/v1/analytics/active-users');
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get active users: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user opportunities for actionable insights
+   */
+  async getUserOpportunities() {
+    try {
+      const response = await this.makeRequest('/api/v1/analytics/user-opportunities');
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get user opportunities: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get analytics insights from LLM (superadmin only)
+   */
+  async getAnalyticsInsights(context = 'funnel', period = '30d') {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/analytics/insights?context=${context}&period=${period}`
+      );
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get analytics insights: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance
