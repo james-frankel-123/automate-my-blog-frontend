@@ -2114,14 +2114,26 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             <Card 
               title="Blog Posts"
             >
-              <Empty
-                description="No blog posts yet"
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-              >
-                <Button type="primary" icon={<PlusOutlined />}>
-                  Create Your First Post
-                </Button>
-              </Empty>
+              <EmptyState
+                title="No blog posts yet"
+                description="Get started by creating your first blog post. Our AI will help you generate content based on your website analysis and audience strategy."
+                action="Create Your First Post"
+                actionLabel="Create Your First Post"
+                onAction={() => {
+                  // Trigger content generation workflow
+                  if (onEnterProjectMode) {
+                    onEnterProjectMode();
+                  } else {
+                    // Fallback: scroll to content generation section
+                    const postsSection = document.getElementById('posts');
+                    if (postsSection) {
+                      postsSection.scrollIntoView({ behavior: 'smooth' });
+                    }
+                  }
+                }}
+                icon={<PlusOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />}
+                tips="Start by analyzing your website, then select an audience strategy, and finally generate your first post."
+              />
             </Card>
           )}
         </div>
