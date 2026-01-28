@@ -162,21 +162,21 @@ export const AuthProvider = ({ children }) => {
     
     // Track login completion
     try {
-      const { useAnalytics } = await import('./AnalyticsContext');
-      // Note: We can't use hooks here, so we'll track via API directly
-      autoBlogAPI.trackEvent({
-        eventType: 'login_completed',
-        eventData: { 
+      if (autoBlogAPI && typeof autoBlogAPI.trackEvent === 'function') {
+        autoBlogAPI.trackEvent({
+          eventType: 'login_completed',
+          eventData: { 
+            userId: response.user?.id,
+            email: response.user?.email,
+            context 
+          },
           userId: response.user?.id,
-          email: response.user?.email,
-          context 
-        },
-        userId: response.user?.id,
-        pageUrl: window.location.href
-      }).catch(err => console.error('Failed to track login:', err));
+          pageUrl: window.location.href
+        }).catch(err => console.error('Failed to track login:', err));
+      }
     } catch (error) {
       // Analytics failure shouldn't break login
-      console.error('Analytics import failed:', error);
+      console.error('Failed to track login:', error);
     }
     // Handle organization data from Phase 1A auth system
     if (response.user?.organization) {
@@ -249,17 +249,24 @@ export const AuthProvider = ({ children }) => {
       }).catch(err => console.error('Failed to track registration:', err));
       
       // Track signup completion analytics event
-      autoBlogAPI.trackEvent({
-        eventType: 'signup_completed',
-        eventData: {
-          userId: response.user.id,
-          email: response.user.email,
-          has_organization: !!(response.user?.organization || response.organization),
-          context
-        },
-        userId: response.user.id,
-        pageUrl: window.location.href
-      }).catch(err => console.error('Failed to track signup completion:', err));
+      try {
+        if (autoBlogAPI && typeof autoBlogAPI.trackEvent === 'function') {
+          autoBlogAPI.trackEvent({
+            eventType: 'signup_completed',
+            eventData: {
+              userId: response.user.id,
+              email: response.user.email,
+              has_organization: !!(response.user?.organization || response.organization),
+              context
+            },
+            userId: response.user.id,
+            pageUrl: window.location.href
+          }).catch(err => console.error('Failed to track signup completion:', err));
+        }
+      } catch (error) {
+        // Analytics failure shouldn't break registration
+        console.error('Failed to track signup completion:', error);
+      }
 
       // Trigger session adoption to transfer anonymous data to user account
       try {
