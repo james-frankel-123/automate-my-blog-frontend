@@ -4,9 +4,27 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'e2e/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.js'
+      - 'vercel.json'
+      - '.github/workflows/deploy.yml'
   pull_request:
     branches:
       - main
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'e2e/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'playwright.config.js'
+      - 'vercel.json'
+      - '.github/workflows/deploy.yml'
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
