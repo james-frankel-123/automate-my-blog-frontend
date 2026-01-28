@@ -1,0 +1,132 @@
+[
+  {
+    "name": "high-priority",
+    "color": "d73a4a",
+    "description": "Critical issues that need immediate attention"
+  },
+  {
+    "name": "medium-priority",
+    "color": "fbca04",
+    "description": "Important but not urgent"
+  },
+  {
+    "name": "low-priority",
+    "color": "0e8a16",
+    "description": "Nice to have, can be deferred"
+  },
+  {
+    "name": "bug",
+    "color": "d73a4a",
+    "description": "Something isn't working"
+  },
+  {
+    "name": "feature",
+    "color": "a2eeef",
+    "description": "New feature or request"
+  },
+  {
+    "name": "enhancement",
+    "color": "a2eeef",
+    "description": "New feature or enhancement"
+  },
+  {
+    "name": "ux",
+    "color": "c5def5",
+    "description": "User experience improvements"
+  },
+  {
+    "name": "frontend",
+    "color": "1d76db",
+    "description": "Frontend related work"
+  },
+  {
+    "name": "backend",
+    "color": "0e8a16",
+    "description": "Backend related work"
+  },
+  {
+    "name": "security",
+    "color": "b60205",
+    "description": "Security related issues"
+  },
+  {
+    "name": "performance",
+    "color": "fbca04",
+    "description": "Performance improvements"
+  },
+  {
+    "name": "accessibility",
+    "color": "1d76db",
+    "description": "Accessibility improvements (a11y)"
+  },
+  {
+    "name": "analytics",
+    "color": "c5def5",
+    "description": "Analytics and tracking related"
+  },
+  {
+    "name": "refactor",
+    "color": "e99695",
+    "description": "Code refactoring"
+  },
+  {
+    "name": "ci/cd",
+    "color": "0052cc",
+    "description": "CI/CD pipeline improvements"
+  },
+  {
+    "name": "automation",
+    "color": "0e8a16",
+    "description": "Automation improvements"
+  },
+  {
+    "name": "documentation",
+    "color": "d4c5f9",
+    "description": "Documentation improvements"
+  },
+  {
+    "name": "testing",
+    "color": "f9d0c4",
+    "description": "Testing related"
+  },
+  {
+    "name": "dependencies",
+    "color": "0366d6",
+    "description": "Dependency updates"
+  },
+  {
+    "name": "blocked",
+    "color": "d73a4a",
+    "description": "Blocked by another issue or dependency"
+  },
+  {
+    "name": "good first issue",
+    "color": "7057ff",
+    "description": "Good for newcomers"
+  },
+  {
+    "name": "help wanted",
+    "color": "008672",
+    "description": "Extra attention is needed"
+  },
+  {
+    "name": "wontfix",
+    "color": "ffffff",
+    "description": "This will not be worked on"
+  },
+  {
+    "name": "duplicate",
+    "color": "cccccc",
+    "description": "This issue or pull request already exists"
+  },
+  {
+    "name": "invalid",
+    "color": "e4e669",
+    "description": "This doesn't seem right"
+  },
+  {
+    "name": "question",
+    "color": "d876e3",
+    "description": "Further information is requested"
+  }
+]

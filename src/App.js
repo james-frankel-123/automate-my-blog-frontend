@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
+import { JobProvider } from './contexts/JobContext';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import SEOHead from './components/SEOHead';
 import { storeReferralInfo } from './utils/referralUtils';
@@ -59,13 +60,15 @@ const AppContent = () => {
   );
 };
 
-// Main App wrapper with AuthProvider, AnalyticsProvider, and WorkflowModeProvider
+// Main App wrapper with AuthProvider, AnalyticsProvider, WorkflowModeProvider, and JobProvider
 const App = () => {
   return (
     <AuthProvider>
       <AnalyticsProvider>
         <WorkflowModeProvider>
-          <AppContent />
+          <JobProvider>
+            <AppContent />
+          </JobProvider>
         </WorkflowModeProvider>
       </AnalyticsProvider>
     </AuthProvider>

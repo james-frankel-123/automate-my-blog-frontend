@@ -28,6 +28,7 @@ import ProgressiveHeaders from '../Workflow/ProgressiveHeaders';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
 import ProgressiveStickyHeader from './ProgressiveStickyHeader';
 import AuthModal from '../Auth/AuthModal';
+import { JobStatusBadge } from '../JobProgress';
 // ADMIN COMPONENTS - Super user only
 import AdminUsersTab from './AdminUsersTab';
 import AdminAnalyticsTab from './AdminAnalyticsTab';
@@ -819,6 +820,16 @@ const DashboardLayout = ({
               onClick={({ key }) => handleTabChange(key)}
               style={{ border: 'none', height: '100%' }}
             />
+          </div>
+          
+          {/* Job Status Badge */}
+          <div style={{
+            borderTop: '1px solid #f0f0f0',
+            padding: '12px 16px',
+            display: 'flex',
+            justifyContent: 'center'
+          }}>
+            <JobStatusBadge />
           </div>
           
           {/* User Profile Section at Bottom */}

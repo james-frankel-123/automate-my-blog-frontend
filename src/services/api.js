@@ -3350,6 +3350,60 @@ Please provide analysis in this JSON format:
       return { success: false, error: error.message };
     }
   }
+
+  /**
+   * Job Progress Tracking API Methods
+   * These methods work with backend job queue endpoints
+   */
+
+  /**
+   * Get job status by job ID
+   * @param {string} jobId - The job ID
+   * @returns {Promise<Object>} Job status object
+   */
+  async getJobStatus(jobId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/jobs/${jobId}/status`);
+      return response;
+    } catch (error) {
+      console.error(`Failed to get job status for ${jobId}:`, error);
+      throw new Error(`Failed to get job status: ${error.message}`);
+    }
+  }
+
+  /**
+   * Retry a failed job
+   * @param {string} jobId - The job ID to retry
+   * @returns {Promise<Object>} New job ID and status
+   */
+  async retryJob(jobId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/jobs/${jobId}/retry`, {
+        method: 'POST'
+      });
+      return response;
+    } catch (error) {
+      console.error(`Failed to retry job ${jobId}:`, error);
+      throw new Error(`Failed to retry job: ${error.message}`);
+    }
+  }
+
+  /**
+   * Cancel a running job
+   * @param {string} jobId - The job ID to cancel
+   * @returns {Promise<Object>} Cancellation status
+   */
+  async cancelJob(jobId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/jobs/${jobId}/cancel`, {
+        method: 'POST'
+      });
+      return response;
+    } catch (error) {
+      console.error(`Failed to cancel job ${jobId}:`, error);
+      throw new Error(`Failed to cancel job: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance
