@@ -8,6 +8,7 @@ import {
   GlobalOutlined
 } from '@ant-design/icons';
 import api from '../../services/api';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -28,6 +29,18 @@ const ExportModal = ({
   const [includeTitle, setIncludeTitle] = useState(true);
   const [includeFormatting, setIncludeFormatting] = useState(true);
   const [customFilename, setCustomFilename] = useState('');
+  const { trackEvent } = useAnalytics();
+
+  // Track when export modal is opened
+  React.useEffect(() => {
+    if (open) {
+      trackEvent('publish_clicked', { 
+        title,
+        contentLength: content.length,
+        wordCount: content.split(/\s+/).length
+      });
+    }
+  }, [open, trackEvent, title, content]);
 
   // Export format options
   const formatOptions = [
@@ -214,6 +227,16 @@ const ExportModal = ({
     try {
       const formattedContent = formatContent();
       const filename = generateFilename();
+      
+      // Track successful export
+      trackEvent('publish_success', {
+        format: exportFormat,
+        filename,
+        contentLength: formattedContent.length,
+        wordCount: formattedContent.split(/\s+/).length,
+        includeTitle,
+        includeFormatting
+      });
       
       const blob = new Blob([formattedContent], { 
         type: exportFormat === 'html' ? 'text/html' : 'text/plain' 
