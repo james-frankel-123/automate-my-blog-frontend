@@ -56,11 +56,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:auth": "playwright test e2e/auth.spec.js",
-    "test:e2e:workflow": "playwright test e2e/workflow.spec.js",
-    "test:e2e:dashboard": "playwright test e2e/dashboard.spec.js",
-    "test:e2e:content": "playwright test e2e/content-management.spec.js",
-    "test:e2e:full": "playwright test e2e/full-workflow.spec.js",
+    "test:e2e:record": "playwright test --grep \"walkthrough: auth\" --config=playwright.record.config.js --workers=1 && node scripts/copy-e2e-video.js",
     "test:e2e:report": "playwright show-report"
   },
   "eslintConfig": {

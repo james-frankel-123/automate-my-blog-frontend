@@ -7,14 +7,15 @@ const { defineConfig, devices } = require('@playwright/test');
  */
 module.exports = defineConfig({
   testDir: './e2e',
+  testMatch: 'e2e/e2e.spec.js',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Run tests in parallel - use 50% of CPU cores locally, 1 worker in CI */
-  workers: process.env.CI ? 1 : Math.max(1, Math.floor(require('os').cpus().length / 2)),
+  /* Run tests in parallel - 50% of CPU cores locally, 2 workers in CI for speed */
+  workers: process.env.CI ? 2 : Math.max(1, Math.floor(require('os').cpus().length / 2)),
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html'],

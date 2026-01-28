@@ -86,12 +86,8 @@ You must update E2E tests when you:
 
 #### How to Update E2E Tests
 
-1. **Identify affected test files**
-   - `e2e/auth.spec.js` - Authentication flows
-   - `e2e/workflow.spec.js` - Content generation workflow
-   - `e2e/dashboard.spec.js` - Dashboard navigation
-   - `e2e/content-management.spec.js` - Post CRUD operations
-   - `e2e/full-workflow.spec.js` - End-to-end scenarios
+1. **Identify affected tests**
+   - All e2e tests live in `e2e/e2e.spec.js` (auth, workflow, dashboard, content, full scenarios). Use `test.describe` / test names to find the relevant section.
 
 2. **Update selectors to match new UI**
    ```javascript
@@ -104,12 +100,7 @@ You must update E2E tests when you:
 
 3. **Test your changes locally**
    ```bash
-   # Run specific test suite
-   npm run test:e2e:auth
-   npm run test:e2e:workflow
-   npm run test:e2e:dashboard
-   
-   # Run all E2E tests
+   # Run all e2e tests
    npm run test:e2e
    ```
 

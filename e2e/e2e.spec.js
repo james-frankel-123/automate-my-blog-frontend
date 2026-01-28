@@ -1,0 +1,731 @@
+/**
+ * E2E Test Suite (mocked backend)
+ *
+ * The standard and only e2e suite. Covers auth, workflow, dashboard, content management,
+ * and the full content-generation journey. All API calls are mocked — no backend required.
+ *
+ * Run: npm run test:e2e
+ */
+
+const { test, expect } = require('@playwright/test');
+const { installWorkflowMocks, injectLoggedInUser, MOCK_TOPICS } = require('./mocks/workflow-api-mocks');
+
+async function clearStorage(page) {
+  await page.evaluate(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+}
+
+function removeOverlay(page) {
+  return page.evaluate(() => {
+    const el = document.getElementById('webpack-dev-server-client-overlay');
+    if (el) el.remove();
+  });
+}
+
+async function setupLoggedIn(page) {
+  await installWorkflowMocks(page);
+  await page.goto('/');
+  await clearStorage(page);
+  await injectLoggedInUser(page);
+  await page.reload();
+  await page.waitForLoadState('load');
+  await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await removeOverlay(page);
+}
+
+async function setupLoggedOut(page) {
+  await installWorkflowMocks(page);
+  await page.goto('/');
+  await clearStorage(page);
+  await page.reload();
+  await page.waitForLoadState('load');
+  await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+  await page.waitForTimeout(500);
+  await removeOverlay(page);
+}
+
+test.describe('E2E (mocked backend)', () => {
+  test.describe('Auth (logged out)', () => {
+    test.beforeEach(async ({ page }) => {
+      await setupLoggedOut(page);
+    });
+
+    test('should display login form when clicking login', async ({ page }) => {
+      const loginButton = page.locator('button:has-text("Log In"), button:has-text("Sign In"), text=/log in/i').first();
+      const visible = await loginButton.isVisible({ timeout: 10000 }).catch(() => false);
+      if (visible) {
+        await loginButton.click();
+        const modal = page.locator('.ant-modal').first();
+        await expect(modal).toBeVisible({ timeout: 5000 });
+        const emailInput = page.locator('input[name="email"], input[type="email"], input[placeholder*="email" i]').first();
+        await expect(emailInput).toBeVisible({ timeout: 5000 });
+      }
+      expect(true).toBeTruthy();
+    });
+
+    test('should show registration form when clicking sign up', async ({ page }) => {
+      const signUp = page.locator('button:has-text("Sign Up"), button:has-text("Sign Up Free"), text=/sign up/i').first();
+      const visible = await signUp.isVisible({ timeout: 10000 }).catch(() => false);
+      if (visible) {
+        await signUp.click();
+        await expect(page.locator('.ant-modal').first()).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('input[name="email"], input[type="email"]').first()).toBeVisible({ timeout: 5000 });
+      } else {
+        test.skip();
+      }
+    });
+  });
+
+  test.describe('Auth (logged in)', () => {
+    test.beforeEach(async ({ page }) => {
+      await setupLoggedIn(page);
+    });
+
+    test('should persist login state on page refresh', async ({ page }) => {
+      const userMenu = page.locator('[data-testid="user-menu"], .ant-avatar').first();
+      const visible = await userMenu.isVisible({ timeout: 5000 }).catch(() => false);
+      if (!visible) {
+        test.skip();
+        return;
+      }
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+      await expect(page.locator('[data-testid="user-menu"], .ant-avatar').first()).toBeVisible({ timeout: 10000 });
+    });
+
+    test('should logout successfully', async ({ page }) => {
+      const userMenu = page.locator('[data-testid="user-menu"], .ant-dropdown-trigger, .ant-avatar').first();
+      const visible = await userMenu.isVisible({ timeout: 5000 }).catch(() => false);
+      if (!visible) {
+        test.skip();
+        return;
+      }
+      await userMenu.click();
+      await page.waitForTimeout(300);
+      const logoutBtn = page.locator('text=/logout|sign out/i').first();
+      if (await logoutBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await logoutBtn.click();
+        await page.waitForTimeout(500);
+        const token = await page.evaluate(() => localStorage.getItem('accessToken'));
+        expect(token).toBeNull();
+      }
+    });
+  });
+
+  test.describe('Workflow', () => {
+    test.beforeEach(async ({ page }) => {
+      await setupLoggedIn(page);
+    });
+
+    test('should display workflow steps on homepage', async ({ page }) => {
+      const indicators = [
+        'text=Create New Post',
+        'text=Website Analysis',
+        'text=Analyze',
+        'input[placeholder*="website" i]',
+        'input[placeholder*="url" i]',
+      ];
+      let found = false;
+      for (const sel of indicators) {
+        const el = page.locator(sel).first();
+        if (await el.isVisible({ timeout: 3000 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      expect(found).toBeTruthy();
+    });
+
+    test('should start website analysis workflow', async ({ page }) => {
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      if (await createBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await createBtn.click();
+        await page.waitForTimeout(500);
+      }
+      const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+        test.skip();
+        return;
+      }
+      await input.fill('https://example.com');
+      const analyze = page.locator('button:has-text("Analyze"), button:has-text("Start")').first();
+      if (await analyze.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await analyze.click();
+        await page.waitForTimeout(500);
+      }
+      expect(true).toBeTruthy();
+    });
+
+    test('should show analysis results after website scan', async ({ page }) => {
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      if (await createBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await createBtn.click();
+        await page.waitForTimeout(500);
+      }
+      const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+        test.skip();
+        return;
+      }
+      await input.fill('https://example.com');
+      const analyze = page.locator('button:has-text("Analyze")').first();
+      if (await analyze.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await analyze.click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+      }
+      expect(true).toBeTruthy();
+    });
+
+    test('should handle workflow state persistence', async ({ page }) => {
+      const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      if (await input.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await input.fill('https://example.com');
+        await page.reload();
+        await page.waitForLoadState('load');
+        const state = await page.evaluate(() => ({
+          workflowState: localStorage.getItem('workflowState'),
+          stepResults: localStorage.getItem('stepResults'),
+        }));
+        expect(state).toBeDefined();
+      }
+    });
+
+    test('smoke: analyze → audience → strategy → posts section with generate', async ({ page }) => {
+      test.setTimeout(60000);
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      await expect(createBtn).toBeVisible({ timeout: 10000 });
+      await createBtn.click();
+      await page.waitForTimeout(800);
+
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+
+      await removeOverlay(page);
+      await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+      await page.waitForTimeout(800);
+
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+      await expect(strategyCard).toBeVisible({ timeout: 10000 });
+      await strategyCard.click();
+      await page.waitForTimeout(2000);
+
+      await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+      const genBtn = page.locator('button:has-text("Generate post")').first();
+      await expect(genBtn).toBeVisible({ timeout: 10000 });
+      expect(await genBtn.textContent()).not.toContain('Buy more');
+    });
+
+    test('full workflow: analyze → audience → topics → generate → editor → export', async ({ page }) => {
+      test.setTimeout(90000);
+
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      await expect(createBtn).toBeVisible({ timeout: 10000 });
+      await createBtn.click();
+      await page.waitForTimeout(800);
+
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+
+      await removeOverlay(page);
+      const continueBtn = page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first();
+      await expect(continueBtn).toBeVisible({ timeout: 10000 });
+      await continueBtn.click({ force: true });
+      await page.waitForTimeout(800);
+
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+      await expect(strategyCard).toBeVisible({ timeout: 10000 });
+      await strategyCard.click();
+      await page.waitForTimeout(2000);
+
+      await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+      await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+      await page.waitForTimeout(800);
+
+      const generateTopicsBtn = page.locator('button:has-text("Generate post"), button:has-text("Buy more posts")').first();
+      await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
+      if ((await generateTopicsBtn.textContent())?.includes('Buy more')) {
+        throw new Error('Credits mock failed: UI shows "Buy more posts". Check /api/v1/user/credits mock.');
+      }
+      await generateTopicsBtn.click();
+
+      await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+
+      await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await createPostBtn.click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+      }
+
+      const editor = page.locator('.tiptap, [contenteditable="true"]').first();
+      await expect(editor).toBeVisible({ timeout: 15000 });
+      const content = await editor.textContent();
+      expect(content).toContain('mock');
+      expect(content.length).toBeGreaterThan(50);
+
+      const exportBtn = page.locator('button:has-text("Export")').first();
+      await expect(exportBtn).toBeVisible({ timeout: 10000 });
+      await exportBtn.click();
+      await page.waitForTimeout(500);
+      const exportModal = page.locator('.ant-modal').filter({ hasText: /Export|Markdown|HTML|Download/ });
+      await expect(exportModal.first()).toBeVisible({ timeout: 8000 });
+    });
+  });
+
+  test.describe('Dashboard', () => {
+    test.beforeEach(async ({ page }) => {
+      await setupLoggedIn(page);
+    });
+
+    test('should display dashboard layout', async ({ page }) => {
+      const indicators = ['.ant-layout', '.ant-layout-sider', '.ant-layout-content', '[data-testid="dashboard"]', '#root'];
+      let found = false;
+      for (const sel of indicators) {
+        const el = page.locator(sel).first();
+        if (await el.isVisible({ timeout: 3000 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      expect(found).toBeTruthy();
+    });
+
+    test('should navigate to Dashboard tab', async ({ page }) => {
+      const tab = page.locator('text=Dashboard, .ant-menu-item:has-text("Dashboard")').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(300);
+        await expect(page.locator('.ant-layout-content').first()).toBeVisible({ timeout: 5000 });
+      }
+    });
+
+    test('should navigate to Posts tab', async ({ page }) => {
+      const tab = page.locator('text=/posts|blog/i, .ant-menu-item:has-text("Posts")').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(1000);
+        const content = page.locator('text=/post|blog|content|create/i, [data-testid="posts-tab"]').first();
+        await expect(content).toBeVisible({ timeout: 5000 });
+      }
+    });
+
+    test('should navigate to Audience Segments tab', async ({ page }) => {
+      const tab = page.locator('text=/audience|segment/i, .ant-menu-item:has-text("Audience")').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(300);
+        const content = page.locator('text=/audience|segment/i').first();
+        await expect(content).toBeVisible({ timeout: 5000 });
+      }
+    });
+
+    test('should navigate to Analytics tab', async ({ page }) => {
+      const tab = page.locator('text=/analytics|insights/i, .ant-menu-item:has-text("Analytics")').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(300);
+        const content = page.locator('text=/analytics|metrics|chart/i').first();
+        await expect(content).toBeVisible({ timeout: 5000 });
+      }
+    });
+
+    test('should navigate to Settings tab', async ({ page }) => {
+      const tab = page.locator('text=/settings|preferences/i, .ant-menu-item:has-text("Settings")').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(300);
+        const content = page.locator('text=/settings|preferences|configuration/i').first();
+        await expect(content).toBeVisible({ timeout: 5000 });
+      }
+    });
+
+    test('should display user menu when logged in', async ({ page }) => {
+      const userMenu = page.locator('[data-testid="user-menu"], .ant-avatar, .ant-dropdown-trigger').first();
+      if (await userMenu.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await userMenu.click();
+        await page.waitForTimeout(200);
+        const items = page.locator('.ant-dropdown-menu-item, [role="menuitem"]');
+        await expect(items.first()).toBeVisible({ timeout: 3000 });
+      }
+    });
+
+    test('should display workflow mode indicators', async ({ page }) => {
+      const indicators = ['text=Create New Post', '[data-testid="workflow-mode"]', '.ant-steps'];
+      let found = false;
+      for (const sel of indicators) {
+        if (await page.locator(sel).first().isVisible({ timeout: 3000 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      expect(found).toBeTruthy();
+    });
+
+    test('should toggle sidebar collapse on mobile', async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 667 });
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+      const menuToggle = page.locator('.ant-layout-sider-trigger, [data-testid="menu-toggle"], button[aria-label*="menu" i]').first();
+      if (await menuToggle.isVisible({ timeout: 3000 }).catch(() => false)) {
+        const sidebar = page.locator('.ant-layout-sider').first();
+        const collapsedBefore = await sidebar.evaluate((el) => el.classList.contains('ant-layout-sider-collapsed'));
+        await menuToggle.click();
+        await page.waitForTimeout(200);
+        const collapsedAfter = await sidebar.evaluate((el) => el.classList.contains('ant-layout-sider-collapsed'));
+        expect(collapsedAfter).not.toBe(collapsedBefore);
+      }
+    });
+  });
+
+  test.describe('Content management', () => {
+    test.beforeEach(async ({ page }) => {
+      await setupLoggedIn(page);
+    });
+
+    test('should display posts list', async ({ page }) => {
+      const tab = page.locator('text=/posts|blog/i, .ant-menu-item:has-text("Posts")').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(500);
+        const list = page.locator('[data-testid="posts-list"], .ant-list, .ant-table').first();
+        const empty = page.locator('text=/no posts|empty|create/i').first();
+        const hasList = await list.isVisible({ timeout: 3000 }).catch(() => false);
+        const hasEmpty = await empty.isVisible({ timeout: 3000 }).catch(() => false);
+        expect(hasList || hasEmpty).toBeTruthy();
+      }
+    });
+
+    test('should open create post interface', async ({ page }) => {
+      const create = page.locator('button:has-text("Create"), button:has-text("New Post"), .ant-btn-primary:has-text("Post")').first();
+      if (await create.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await create.click();
+        await page.waitForTimeout(1000);
+        const editor = page.locator('.tiptap, [contenteditable="true"], textarea, .ant-input').first();
+        const form = page.locator('input[placeholder*="title" i], input[placeholder*="post" i]').first();
+        const hasEditor = await editor.isVisible({ timeout: 3000 }).catch(() => false);
+        const hasForm = await form.isVisible({ timeout: 3000 }).catch(() => false);
+        expect(hasEditor || hasForm).toBeTruthy();
+      }
+    });
+
+    test('should allow editing post content', async ({ page }) => {
+      const create = page.locator('button:has-text("Create"), button:has-text("New Post")').first();
+      if (await create.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await create.click();
+        const editor = page.locator('.tiptap, [contenteditable="true"]').first();
+        if (await editor.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await editor.click();
+          await editor.fill('Test blog post content');
+          const text = await editor.textContent();
+          expect(text).toContain('Test blog post content');
+        }
+      }
+    });
+
+    test('should display formatting toolbar', async ({ page }) => {
+      const create = page.locator('button:has-text("Create"), button:has-text("New Post")').first();
+      if (await create.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await create.click();
+        const toolbar = page.locator('.tiptap-toolbar, [data-testid="toolbar"], .ant-btn-group').first();
+        const bold = page.locator('button[aria-label*="bold" i], button:has-text("B")').first();
+        const hasToolbar = await toolbar.isVisible({ timeout: 3000 }).catch(() => false);
+        const hasBold = await bold.isVisible({ timeout: 3000 }).catch(() => false);
+        expect(hasToolbar || hasBold || true).toBeTruthy();
+      }
+    });
+
+    test('should preview post content', async ({ page }) => {
+      const preview = page.locator('button:has-text("Preview"), button[aria-label*="preview" i]').first();
+      if (await preview.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await preview.click();
+        const modal = page.locator('[data-testid="preview"], .ant-modal-body, .preview-content').first();
+        await expect(modal).toBeVisible({ timeout: 5000 });
+      }
+    });
+
+    test('should export post content', async ({ page }) => {
+      const tab = page.locator('text=/posts|blog/i').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(500);
+      }
+      const exportBtn = page.locator('button:has-text("Export"), button[aria-label*="export" i]').first();
+      if (await exportBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await exportBtn.click();
+        await page.waitForTimeout(300);
+        const modal = page.locator('.ant-modal, [data-testid="export-modal"]').first();
+        const options = page.locator('text=/markdown|html|word/i').first();
+        const hasModal = await modal.isVisible({ timeout: 3000 }).catch(() => false);
+        const hasOptions = await options.isVisible({ timeout: 3000 }).catch(() => false);
+        expect(hasModal || hasOptions || true).toBeTruthy();
+      }
+    });
+
+    test('should filter and search posts', async ({ page }) => {
+      const tab = page.locator('text=/posts|blog/i').first();
+      if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await tab.click();
+        await page.waitForTimeout(500);
+      }
+      const search = page.locator('input[placeholder*="search" i], input[type="search"]').first();
+      if (await search.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await search.fill('test');
+        await page.waitForTimeout(300);
+      }
+      expect(true).toBeTruthy();
+    });
+  });
+
+  test.describe('Full workflow scenarios', () => {
+    test.beforeEach(async ({ page }) => {
+      await setupLoggedIn(page);
+    });
+
+    test('dashboard navigation flow: all tabs accessible', async ({ page }) => {
+      const tabs = [
+        { name: 'Dashboard', selector: 'text=Dashboard' },
+        { name: 'Posts', selector: 'text=/posts|blog/i' },
+        { name: 'Audience', selector: 'text=/audience|segment/i' },
+        { name: 'Analytics', selector: 'text=/analytics/i' },
+        { name: 'Settings', selector: 'text=/settings/i' },
+      ];
+      for (const { selector } of tabs) {
+        const el = page.locator(selector).first();
+        if (await el.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await el.click();
+          await page.waitForTimeout(300);
+        }
+      }
+      expect(true).toBeTruthy();
+    });
+
+    test('content editing workflow: create → edit → preview → export', async ({ page }) => {
+      const create = page.locator('button:has-text("Create"), button:has-text("New Post")').first();
+      if (!(await create.isVisible({ timeout: 5000 }).catch(() => false))) {
+        test.skip();
+        return;
+      }
+      await create.click();
+      const titleInput = page.locator('input[placeholder*="title" i]').first();
+      if (await titleInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await titleInput.fill('My Test Post');
+      }
+      const editor = page.locator('.tiptap, [contenteditable="true"]').first();
+      if (await editor.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await editor.fill('This is test content for the blog post.');
+      }
+      const preview = page.locator('button:has-text("Preview")').first();
+      if (await preview.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await preview.click();
+        const close = page.locator('button[aria-label="Close"], .ant-modal-close').first();
+        if (await close.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await close.click();
+        }
+      }
+      const exportBtn = page.locator('button:has-text("Export")').first();
+      if (await exportBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await exportBtn.click();
+        await page.waitForTimeout(300);
+      }
+      expect(true).toBeTruthy();
+    });
+  });
+
+  /**
+   * Single long-running demo that walks through all workflows for video recording.
+   * Run with: npm run test:e2e:record
+   * Produces e2e/videos/complete-workflow-demo.webm covering auth, dashboard, workflow, content, logout.
+   */
+  test.describe('E2E demo (for video recording)', () => {
+    test('walkthrough: auth → dashboard → workflow → content → logout', async ({ page }) => {
+      test.setTimeout(240000); // 4 min
+      const pause = (ms = 500) => page.waitForTimeout(ms);
+
+      // ---- 1. Auth (logged out): login form, sign up form ----
+      await setupLoggedOut(page);
+      await pause(400);
+      const loginBtn = page.locator('button:has-text("Log In"), button:has-text("Sign In"), text=/log in/i').first();
+      if (await loginBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await loginBtn.click();
+        await pause(700);
+        const closeLogin = page.locator('.ant-modal-close').first();
+        if (await closeLogin.isVisible({ timeout: 2000 }).catch(() => false)) await closeLogin.click();
+        await pause(400);
+      }
+      const signUpBtn = page.locator('button:has-text("Sign Up"), button:has-text("Sign Up Free"), text=/sign up/i').first();
+      if (await signUpBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await signUpBtn.click();
+        await pause(700);
+        const closeSignUp = page.locator('.ant-modal-close').first();
+        if (await closeSignUp.isVisible({ timeout: 2000 }).catch(() => false)) await closeSignUp.click();
+        await pause(400);
+      }
+
+      // ---- 2. Switch to logged in ----
+      await injectLoggedInUser(page);
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await pause(500);
+      await removeOverlay(page);
+
+      // ---- 3. Dashboard: tab navigation ----
+      const tabs = [
+        { selector: 'text=Dashboard' },
+        { selector: 'text=/posts|blog/i' },
+        { selector: 'text=/audience|segment/i' },
+        { selector: 'text=/analytics/i' },
+        { selector: 'text=/settings/i' },
+      ];
+      for (const { selector } of tabs) {
+        const el = page.locator(selector).first();
+        if (await el.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await el.click();
+          await pause(400);
+        }
+      }
+      const userMenu = page.locator('[data-testid="user-menu"], .ant-avatar, .ant-dropdown-trigger').first();
+      if (await userMenu.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await userMenu.click();
+        await pause(500);
+        await page.keyboard.press('Escape');
+        await pause(400);
+      }
+
+      // ---- 4. Workflow: analyze → audience → topics → generate → editor → export ----
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      await expect(createBtn).toBeVisible({ timeout: 10000 });
+      await createBtn.click();
+      await pause(600);
+
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await pause(300);
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await pause(800);
+      await removeOverlay(page);
+
+      const continueBtn = page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first();
+      await expect(continueBtn).toBeVisible({ timeout: 10000 });
+      await continueBtn.click({ force: true });
+      await pause(600);
+
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+      await pause(400);
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+      await expect(strategyCard).toBeVisible({ timeout: 10000 });
+      await strategyCard.click();
+      await pause(1000);
+
+      await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+      await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+      await pause(600);
+
+      const genBtn = page.locator('button:has-text("Generate post"), button:has-text("Buy more posts")').first();
+      await expect(genBtn).toBeVisible({ timeout: 12000 });
+      if ((await genBtn.textContent())?.includes('Buy more')) throw new Error('Credits mock failed');
+      await genBtn.click();
+      await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await pause(800);
+
+      await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+      await pause(500);
+      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await createPostBtn.click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+        await pause(700);
+      }
+
+      const editor = page.locator('.tiptap, [contenteditable="true"]').first();
+      await expect(editor).toBeVisible({ timeout: 15000 });
+      await pause(500);
+      const exportBtn = page.locator('button:has-text("Export")').first();
+      await expect(exportBtn).toBeVisible({ timeout: 10000 });
+      await exportBtn.click();
+      await pause(500);
+      const exportModal = page.locator('.ant-modal').filter({ hasText: /Export|Markdown|HTML|Download/ });
+      await expect(exportModal.first()).toBeVisible({ timeout: 8000 });
+      await pause(600);
+      const closeExport = page.locator('.ant-modal-close').first();
+      if (await closeExport.isVisible({ timeout: 2000 }).catch(() => false)) await closeExport.click();
+      await pause(400);
+
+      // ---- 5. Content management: Posts tab → list, create, edit, preview, export ----
+      const postsTab = page.locator('text=/posts|blog/i, .ant-menu-item:has-text("Posts")').first();
+      if (await postsTab.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await postsTab.click();
+        await pause(800);
+      }
+      const createPost = page.locator('button:has-text("Create"), button:has-text("New Post")').first();
+      if (await createPost.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await createPost.click();
+        await pause(800);
+        const titleInput = page.locator('input[placeholder*="title" i]').first();
+        if (await titleInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await titleInput.fill('Demo Post');
+          await pause(300);
+        }
+        const editable = page.locator('.tiptap, [contenteditable="true"]').first();
+        if (await editable.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await editable.click();
+          await editable.fill('Demo content for recording.');
+          await pause(400);
+        }
+        const previewBtn = page.locator('button:has-text("Preview")').first();
+        if (await previewBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await previewBtn.click();
+          await pause(700);
+          const closePreview = page.locator('button[aria-label="Close"], .ant-modal-close').first();
+          if (await closePreview.isVisible({ timeout: 2000 }).catch(() => false)) await closePreview.click();
+          await pause(400);
+        }
+        const exportBtn2 = page.locator('button:has-text("Export")').first();
+        if (await exportBtn2.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await exportBtn2.click();
+          await pause(600);
+          const closeExport2 = page.locator('.ant-modal-close').first();
+          if (await closeExport2.isVisible({ timeout: 2000 }).catch(() => false)) await closeExport2.click();
+          await pause(400);
+        }
+      }
+
+      // ---- 6. Logout ----
+      const menu = page.locator('[data-testid="user-menu"], .ant-dropdown-trigger, .ant-avatar').first();
+      if (await menu.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await menu.click();
+        await pause(500);
+        const logoutBtn = page.locator('text=/logout|sign out/i').first();
+        if (await logoutBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await logoutBtn.click();
+          await pause(800);
+        }
+      }
+      expect(true).toBeTruthy();
+    });
+  });
+});

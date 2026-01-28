@@ -12,12 +12,8 @@ Comprehensive end-to-end clickthrough tests have been added to the project using
    - Screenshots and videos on failure
    - HTML and JSON reporting
 
-2. **Test Suites** (in `e2e/` directory)
-   - `auth.spec.js` - Authentication flows (login, signup, logout)
-   - `workflow.spec.js` - Main content generation workflow
-   - `dashboard.spec.js` - Dashboard navigation and layout
-   - `content-management.spec.js` - Post CRUD operations
-   - `full-workflow.spec.js` - Complete end-to-end scenarios
+2. **E2E Suite** (single spec, mocked backend)
+   - `e2e/e2e.spec.js` - All e2e tests: auth, workflow, dashboard, content management, full workflow. No backend required.
 
 3. **Test Utilities** (`e2e/utils/test-helpers.js`)
    - Reusable helper functions for common test operations
@@ -32,10 +28,10 @@ Comprehensive end-to-end clickthrough tests have been added to the project using
 
 5. **NPM Scripts** (added to `package.json`)
    - `npm run test:e2e` - Run all e2e tests
+   - `npm run test:e2e:record` - Record full-workflow video → `e2e/videos/complete-workflow-demo.webm`
    - `npm run test:e2e:ui` - Interactive UI mode
    - `npm run test:e2e:headed` - Run with visible browser
    - `npm run test:e2e:debug` - Debug mode
-   - Individual suite runners (auth, workflow, dashboard, content)
    - `npm run test:e2e:report` - View HTML report
 
 6. **Documentation** (`e2e/README.md`)
@@ -125,16 +121,15 @@ npm run test:e2e:content
 
 ```
 e2e/
-├── auth.spec.js
-├── workflow.spec.js
-├── dashboard.spec.js
-├── content-management.spec.js
-├── full-workflow.spec.js
+├── e2e.spec.js           # Single e2e suite (all tests, mocked backend)
+├── mocks/
+│   └── workflow-api-mocks.js
+├── videos/
+│   └── complete-workflow-demo.webm
 ├── utils/
 │   └── test-helpers.js
 ├── fixtures/
 │   └── test-data.js
-├── screenshots/ (gitignored)
 └── README.md
 
 playwright.config.js
