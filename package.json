@@ -34,6 +34,7 @@
     "web-vitals": "^2.1.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
@@ -50,7 +51,17 @@
     "lint": "eslint src/ --ext .js,.jsx --max-warnings 0 || true",
     "eject": "react-scripts eject",
     "test:phase1": "node scripts/test-phase1.js",
-    "test:phase1:manual": "echo 'Open http://localhost:3000/test-runner.html in browser while app is running'"
+    "test:phase1:manual": "echo 'Open http://localhost:3000/test-runner.html in browser while app is running'",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:auth": "playwright test e2e/auth.spec.js",
+    "test:e2e:workflow": "playwright test e2e/workflow.spec.js",
+    "test:e2e:dashboard": "playwright test e2e/dashboard.spec.js",
+    "test:e2e:content": "playwright test e2e/content-management.spec.js",
+    "test:e2e:full": "playwright test e2e/full-workflow.spec.js",
+    "test:e2e:report": "playwright show-report"
   },
   "eslintConfig": {
     "extends": [
