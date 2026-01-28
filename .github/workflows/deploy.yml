@@ -1,4 +1,4 @@
-name: Deploy to Vercel
+name: Test and Deploy to Vercel
 
 on:
   push:
@@ -11,10 +11,76 @@ on:
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  CI: true
 
 jobs:
-  deploy:
+  # Run tests first - must pass before deployment
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint --if-present
+        continue-on-error: true
+        
+      - name: Run unit tests
+        run: npm test -- --coverage --watchAll=false --passWithNoTests
+        env:
+          CI: true
+          
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # Build verification - ensure project builds successfully
+  build:
+    name: Verify Build
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        env:
+          CI: true
+          DISABLE_ESLINT_PLUGIN: true
+
+  # Deploy only after tests and build pass
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    # Only deploy on push to main, not on PRs
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
     steps:
       - name: Checkout code
@@ -35,29 +101,65 @@ jobs:
       - name: Link Vercel project
         run: |
           vercel link --yes --token=${{ secrets.VERCEL_TOKEN }} \
-            --project=${{ secrets.VERCEL_PROJECT_ID }} \
-            --scope=${{ secrets.VERCEL_ORG_ID }}
+            --project=${{ secrets.VERCEL_PROJECT_ID }}
         
       - name: Pull Vercel Environment Information
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-          else
-            vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
-          fi
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
         
       - name: Build Project Artifacts
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            vercel build --token=${{ secrets.VERCEL_TOKEN }}
-          else
-            vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
-          fi
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         
       - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+  # Preview deployment for PRs (after tests pass)
+  preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    needs: [test, build]
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+        
+      - name: Link Vercel project
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
-            vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-          else
-            vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
-          fi
+          vercel link --yes --token=${{ secrets.VERCEL_TOKEN }} \
+            --project=${{ secrets.VERCEL_PROJECT_ID }}
+        
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Build Project Artifacts
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        
+      - name: Deploy Preview to Vercel
+        id: deploy-preview
+        run: |
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "preview_url=$url" >> $GITHUB_OUTPUT
+          
+      - name: Comment Preview URL on PR
+        uses: actions/github-script@v7
+        if: success()
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Preview deployment ready!\n\n**Preview URL:** ${{ steps.deploy-preview.outputs.preview_url }}\n\n✅ All tests passed before deployment.`
+            })
