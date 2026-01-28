@@ -1,0 +1,49 @@
+name: Mark Stale PRs and Issues
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  stale:
+    name: Mark Stale PRs and Issues
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Mark stale PRs and issues
+        uses: actions/stale@v9
+        with:
+          # PRs configuration
+          stale-pr-message: 'This PR has been marked as stale because it has had no activity for 30 days. It will be closed in 7 days if no further activity occurs. Please update or rebase to keep it active.'
+          close-pr-message: 'This PR was closed because it has been stale for 7 days with no activity. Feel free to reopen if you want to continue working on it.'
+          days-before-pr-stale: 30
+          days-before-pr-close: 7
+          stale-pr-label: 'stale'
+          exempt-pr-labels: 'work-in-progress,blocked,security,high-priority'
+          only-pr-labels: ''
+          
+          # Issues configuration
+          stale-issue-message: 'This issue has been marked as stale because it has had no activity for 60 days. It will be closed in 14 days if no further activity occurs. Please comment or update to keep it active.'
+          close-issue-message: 'This issue was closed because it has been stale for 14 days with no activity. Feel free to reopen if this is still relevant.'
+          days-before-issue-stale: 60
+          days-before-issue-close: 14
+          stale-issue-label: 'stale'
+          exempt-issue-labels: 'work-in-progress,blocked,security,high-priority,feature-request'
+          only-issue-labels: ''
+          
+          # General configuration
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          operations-per-run: 30
+          remove-stale-when-updated: true
+          ascending: true
+          delete-branch: false
+          start-date: ''
