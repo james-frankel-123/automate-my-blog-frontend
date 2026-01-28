@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -25,19 +29,34 @@ jobs:
       - name: Install dependencies
         run: npm ci
         
-      - name: Build project
-        run: npm run build
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
         
       - name: Link Vercel project
         run: |
-          npx vercel link --yes --token=${{ secrets.VERCEL_TOKEN }} \
+          vercel link --yes --token=${{ secrets.VERCEL_TOKEN }} \
             --project=${{ secrets.VERCEL_PROJECT_ID }}
         
-      - name: Deploy to Vercel
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--yes'
-          working-directory: ./
+      - name: Pull Vercel Environment Information
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          fi
+        
+      - name: Build Project Artifacts
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          fi
+        
+      - name: Deploy Project Artifacts to Vercel
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+          else
+            vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+          fi
