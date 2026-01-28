@@ -211,6 +211,38 @@ export const ComponentHelpers = {
   },
 
   /**
+   * Get theme object with design tokens
+   * @returns {Object} Theme object with colors, typography, spacing, etc.
+   */
+  getTheme() {
+    return {
+      colors: {
+        primary: '#1890ff',
+        secondary: '#f0f2ff',
+        accent: '#722ed1',
+        text: '#262626',
+        textSecondary: '#666',
+        textTertiary: '#999',
+        gray800: '#333',
+        backgroundAlt: '#f0f5ff'
+      },
+      typography: {
+        base: '14px',
+        sm: '13px',
+        lg: '16px'
+      },
+      borderRadius: {
+        sm: '4px',
+        md: '8px',
+        lg: '12px'
+      },
+      shadows: {
+        sm: '0 2px 8px rgba(0,0,0,0.15)'
+      }
+    };
+  },
+
+  /**
    * Create responsive style helper
    * @param {boolean} isMobile - Is mobile viewport
    * @returns {Object} Style helpers
