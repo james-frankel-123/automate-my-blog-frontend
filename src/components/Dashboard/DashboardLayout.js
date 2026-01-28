@@ -19,6 +19,7 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 import DashboardTab from './DashboardTab';
 import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
@@ -83,6 +84,9 @@ const DashboardLayout = ({
     stickyWorkflowSteps,
     stepResults 
   } = useWorkflowMode();
+  
+  // Analytics tracking
+  const { trackPageView } = useAnalytics();
   
   // Step management for logged-out users
   const [currentStep, setCurrentStep] = useState(0);
@@ -367,6 +371,12 @@ const DashboardLayout = ({
   
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
+    // Track page view for analytics
+    trackPageView(newTab, { 
+      previousTab: activeTab,
+      user: user?.id 
+    });
+    
     // For settings, switch to settings tab (not part of scrollable sections)
     if (newTab === 'settings' || newTab.startsWith('admin-')) {
       setActiveTab(newTab);

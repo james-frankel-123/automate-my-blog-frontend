@@ -159,6 +159,25 @@ export const AuthProvider = ({ children }) => {
     const response = await autoBlogAPI.login(email, password);
     // Tokens are now handled in the API service
     setUser(response.user);
+    
+    // Track login completion
+    try {
+      const { useAnalytics } = await import('./AnalyticsContext');
+      // Note: We can't use hooks here, so we'll track via API directly
+      autoBlogAPI.trackEvent({
+        eventType: 'login_completed',
+        eventData: { 
+          userId: response.user?.id,
+          email: response.user?.email,
+          context 
+        },
+        userId: response.user?.id,
+        pageUrl: window.location.href
+      }).catch(err => console.error('Failed to track login:', err));
+    } catch (error) {
+      // Analytics failure shouldn't break login
+      console.error('Analytics import failed:', error);
+    }
     // Handle organization data from Phase 1A auth system
     if (response.user?.organization) {
       setCurrentOrganization(response.user.organization);
@@ -228,6 +247,19 @@ export const AuthProvider = ({ children }) => {
         registration_context: context,
         timestamp: new Date().toISOString()
       }).catch(err => console.error('Failed to track registration:', err));
+      
+      // Track signup completion analytics event
+      autoBlogAPI.trackEvent({
+        eventType: 'signup_completed',
+        eventData: {
+          userId: response.user.id,
+          email: response.user.email,
+          has_organization: !!(response.user?.organization || response.organization),
+          context
+        },
+        userId: response.user.id,
+        pageUrl: window.location.href
+      }).catch(err => console.error('Failed to track signup completion:', err));
 
       // Trigger session adoption to transfer anonymous data to user account
       try {

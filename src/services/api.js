@@ -164,6 +164,14 @@ class AutoBlogAPI {
         headers['x-session-id'] = sessionId;
       }
 
+      // Track scrape_started event
+      this.trackEvent({
+        eventType: 'scrape_started',
+        eventData: { url },
+        userId: this.getCurrentUserId(),
+        pageUrl: window.location.href
+      }).catch(err => console.error('Failed to track scrape_started:', err));
+
       console.log('Step 1/4: Analyzing website...');
 
       // Step 1: Basic website analysis (scrape + web search, NO scenarios)

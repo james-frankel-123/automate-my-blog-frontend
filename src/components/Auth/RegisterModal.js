@@ -12,7 +12,12 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
   const [form] = Form.useForm();
   const [detectedData, setDetectedData] = useState(null);
   const { register } = useAuth();
-  const { trackFormSubmit, trackFunnelStep } = useAnalytics();
+  const { trackFormSubmit, trackFunnelStep, trackEvent } = useAnalytics();
+
+  // Track when registration modal is opened
+  useEffect(() => {
+    trackEvent('signup_started', { context });
+  }, [trackEvent, context]);
 
   useEffect(() => {
     // Extract company data from workflow analysis stored in localStorage
