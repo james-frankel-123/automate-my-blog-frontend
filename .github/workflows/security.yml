@@ -69,22 +69,50 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        
+        with:
+          fetch-depth: 0
+      
+      - name: Check for dependency changes
+        id: check-deps
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.event.after }}"
+          fi
+          
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+          if echo "$CHANGED_FILES" | grep -qE "(package\.json|package-lock\.json)"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+      
       - name: Setup Node.js
+        if: steps.check-deps.outputs.changed == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '18'
           cache: 'npm'
           
       - name: Install dependencies
+        if: steps.check-deps.outputs.changed == 'true'
         run: npm ci
-        
+          
       - name: Run npm audit
+        if: steps.check-deps.outputs.changed == 'true'
         run: npm audit --audit-level=moderate
         continue-on-error: true
-        
+          
       - name: Upload audit results
-        if: always()
+        if: steps.check-deps.outputs.changed == 'true' && always()
         uses: actions/upload-artifact@v4
         with:
           name: npm-audit-report
@@ -104,6 +132,35 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      
+      - name: Check for code changes
+        id: check-code
+        run: |
+          if [ "${{ github.event_name }}" == "schedule" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.event.after }}"
+          fi
+          
+          CHANGED_FILES=$(git diff --name-only $BASE_SHA $HEAD_SHA 2>/dev/null || echo "")
+          if echo "$CHANGED_FILES" | grep -qE "(src/|\.js$|\.jsx$|\.ts$|\.tsx$|package\.json)"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Initialize CodeQL
+        if: steps.check-code.outputs.changed == 'true'
+        uses: github/codeql-action/init@v4
         
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
@@ -112,22 +169,26 @@ jobs:
           queries: +security-and-quality
           
       - name: Setup Node.js
+        if: steps.check-code.outputs.changed == 'true'
         uses: actions/setup-node@v6
         with:
           node-version: '18'
           cache: 'npm'
           
       - name: Install dependencies
+        if: steps.check-code.outputs.changed == 'true'
         run: npm ci
-        
+          
       - name: Build project
+        if: steps.check-code.outputs.changed == 'true'
         run: npm run build
         env:
           CI: true
           DISABLE_ESLINT_PLUGIN: true
         continue-on-error: true
-        
+          
       - name: Perform CodeQL Analysis
+        if: steps.check-code.outputs.changed == 'true'
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:javascript"

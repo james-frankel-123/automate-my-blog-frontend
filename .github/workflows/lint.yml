@@ -5,10 +5,28 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'src/**'
+      - '*.js'
+      - '*.jsx'
+      - '*.ts'
+      - '*.tsx'
+      - 'package.json'
+      - '.eslintrc*'
+      - '.github/workflows/lint.yml'
   push:
     branches:
       - main
       - develop
+    paths:
+      - 'src/**'
+      - '*.js'
+      - '*.jsx'
+      - '*.ts'
+      - '*.tsx'
+      - 'package.json'
+      - '.eslintrc*'
+      - '.github/workflows/lint.yml'
 
 jobs:
   lint:
