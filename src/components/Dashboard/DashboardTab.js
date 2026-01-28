@@ -9,6 +9,7 @@ import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
+import { CardSkeleton } from '../Skeletons';
 import { format } from 'date-fns';
 import autoBlogAPI from '../../services/api';
 

@@ -30,6 +30,7 @@ import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import HighlightedContentSuggestions from '../HighlightedContent/HighlightedContentSuggestions';
+import { PostListSkeleton, TableSkeleton } from '../Skeletons';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLayout';
@@ -1241,6 +1242,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   ];
 
   // Component state tracking (debug logging removed to prevent infinite loops)
+
+  // Show loading skeleton when loading posts
+  if (loading && posts.length === 0) {
+    return (
+      <div style={{ padding: '24px' }}>
+        <Card title="Blog Posts">
+          <TableSkeleton columns={5} rows={5} />
+        </Card>
+      </div>
+    );
+  }
 
   // Show simplified interface when no posts exist AND not in workflow mode
   if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
