@@ -45,8 +45,8 @@ npm run test:e2e:auth     # Run specific suite
 ## 📚 Documentation
 
 - `e2e/README.md` - Test suite documentation
-- `E2E_TEST_SETUP.md` - Setup summary
-- `GITHUB_ACTIONS_SETUP.md` - CI/CD integration guide
+- `docs/E2E_TEST_SETUP.md` - Setup summary
+- `docs/GITHUB_ACTIONS_SETUP.md` - CI/CD integration guide
 - `.github/workflows/README.md` - Workflow documentation
 
 ## 🔍 Files Changed
