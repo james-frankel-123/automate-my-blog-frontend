@@ -1,8 +1,24 @@
 # Frontend Audit: AutomateMyBlog.com
 
 **Date:** January 26, 2026  
-**Auditor:** Sam Hill
-**Scope:** React frontend codebase analysis and UX assessment
+**Auditor:** Sam Hill  
+**Scope:** React frontend codebase analysis and UX assessment  
+**Last updated:** January 2026 (post-audit implementation status added below)
+
+---
+
+## Post-Audit Implementation Status
+
+Since the audit, the following has been implemented (goals and UX work from the usability proposal):
+
+- **System voice:** `src/copy/systemVoice.js` is the single source of truth for step messages, progress text, toasts, errors, empty states. Components (UnifiedWorkflowHeader, WebsiteAnalysisStepStandalone, ProgressiveHeaders, topic/content steps) use this voice—helpful, confident, warm; plain language, no buzzwords.
+- **SystemHint:** One consistent slot for hints, empty states, and non-critical errors (`src/components/Dashboard/SystemHint.js`, `src/contexts/SystemHintContext.js`). Addresses audit pain point “Missing Empty States” and “No Error Recovery” UX by providing a predictable place for guidance.
+- **WorkflowModeContext:** Global workflow state (workflow vs focus mode, step progression, progressive headers). Implemented per UX Architecture plan; used across DashboardLayout, DashboardTab, PostsTab, AudienceSegmentsTab.
+- **Progressive headers:** Stacking headers with systemVoice labels; step enter animations and design tokens (`--transition-step`, `--transition-reveal`) in `design-system.css`.
+- **Topic card stagger:** Topic cards use `.reveal-stagger` and `animation-delay` (e.g. 60ms per card) so results feel revealed, not dumped. Reduces “Intersection Observer Tab Highlighting Flicker” concern by making transitions intentional.
+- **Tab structure:** Dashboard → Audience Segments → Posts → Analytics → Settings; automation settings migrated to Settings → Content Discovery; “Create New Post” terminology used consistently.
+
+**Still outstanding (from audit):** Job progress tracking (polling/streaming), analytics instrumentation, recommendation board, URL state (React Router), security (e.g. httpOnly cookies, consent UI). See `docs/frontend-audit-summary.md` and `docs/frontend-ux-analytics-plan.md`.
 
 ---
 

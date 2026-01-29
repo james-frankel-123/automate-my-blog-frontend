@@ -8,8 +8,11 @@ This document outlines the complete implementation plan for the UX architecture 
 - **Tab Structure Updated**: Dashboard → Audience Segments → Posts → Analytics → Settings
 - **Automation Settings Migrated**: Moved from Discovery to Settings → Content Discovery tab  
 - **Brand Colors Removed**: Completely eliminated non-working brand colors system
-- **Progressive Headers Created**: Basic ProgressiveHeaders component implemented
+- **Progressive Headers Created**: ProgressiveHeaders component with systemVoice labels (“We know your site”, “Audience locked in”, “Topic chosen”, “Content ready”); step enter animations
 - **Terminology Updated**: All references now use "Create New Post"
+- **WorkflowModeContext**: Implemented and in use (DashboardLayout, DashboardTab, PostsTab, AudienceSegmentsTab); workflow vs focus mode, step progression, progressive headers
+- **Motion & transitions**: Design tokens in `design-system.css` (`--transition-step`, `--transition-reveal`, `--stagger-delay`); staggered topic card reveal; step enter animations
+- **System voice**: Headers and step copy use `src/copy/systemVoice.js` (see docs/GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md and PR_UX_ONE_VOICE.md)
 
 ## Remaining Implementation Requirements
 
@@ -233,11 +236,11 @@ WorkflowProvider (Global State)
 
 ### 9. Implementation Phases
 
-#### Phase 1: Core Infrastructure (Current)
+#### Phase 1: Core Infrastructure (Current) — Largely complete
 - ✅ Basic tab structure and routing
 - ✅ Automation settings migration
-- ✅ Progressive headers foundation
-- ⏳ Workflow context creation
+- ✅ Progressive headers foundation (with systemVoice and animations)
+- ✅ WorkflowModeContext created and integrated (DashboardLayout, DashboardTab, PostsTab, AudienceSegmentsTab)
 
 #### Phase 2: Mode System Implementation
 - Workflow/Focus mode detection and switching

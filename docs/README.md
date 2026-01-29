@@ -99,6 +99,18 @@ Each client maintains complete control over their content identity:
 - [API Reference](API_SPECIFICATION.md) - Endpoint documentation and examples
 - [Integration Guide](CLIENT_INTEGRATION.md) - Client implementation patterns
 
+### Frontend Audit & UX
+- [Frontend Audit](frontend-audit.md) - Full codebase and UX audit (Jan 2026)
+- [Frontend Audit Summary](frontend-audit-summary.md) - Executive summary and work completed since audit
+- [Frontend UX & Analytics Plan](frontend-ux-analytics-plan.md) - Implementation plan (analytics, job progress, recommendations)
+- [UX Architecture Implementation Plan](UX_ARCHITECTURE_IMPLEMENTATION_PLAN.md) - Workflow vs focus mode, progressive headers
+- [GitHub Issues from Usability Proposal](GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md) - UX issues and implementation status
+
+### Testing & Roadmap
+- [Phase 1A Test Report](PHASE_1A_COMPREHENSIVE_TEST_REPORT.md) - Comprehensive test results
+- [E2E Test Setup](E2E_TEST_SETUP.md) - End-to-end testing
+- [Roadmap](Roadmap/) - Master implementation roadmap, product roadmap, feature docs
+
 ### Business Documentation  
 - [Business Plan](BUSINESS_PLAN.md) - Strategy, market analysis, financial projections
 - [Product Specifications](docs/product/) - Features, user flows, pricing details
@@ -109,17 +121,43 @@ Each client maintains complete control over their content identity:
 
 ## 🚦 Current Status
 
-**Phase**: Documentation & Architecture Planning
-**Next Steps**: 
-1. Extract AI services from me-search-back-end
-2. Build multi-tenant infrastructure
-3. Create client dashboard MVP
-4. Launch with Lumibears + me-search validation
-5. Scale to external customers
+**Phase:** Frontend implementation & UX refinement (post-audit)
+
+### Goals & Audit Summary
+
+- **Frontend audit (Jan 2026):** Full codebase and UX assessment completed. See [Frontend Audit](frontend-audit.md) and [Audit Summary](frontend-audit-summary.md).
+- **Key audit findings:** No job progress tracking for long-running ops; minimal analytics instrumentation; no recommendation board; tab navigation without URL state; security (token storage). See [Frontend UX & Analytics Plan](frontend-ux-analytics-plan.md) for implementation plan.
+- **Usability proposal (PR #47):** Six UX issues defined in [GitHub Issues from Usability Proposal](GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md). Several have been implemented (see “Work completed” below).
+
+### Work Completed (Post-Audit / UX)
+
+- **System voice:** Single source of truth for copy in `src/copy/systemVoice.js`; one consistent voice (helpful, confident, warm) across headers, progress, toasts, errors. Used in UnifiedWorkflowHeader, WebsiteAnalysisStepStandalone, ProgressiveHeaders, topic/content steps.
+- **SystemHint:** One consistent place for hints, empty states, and non-critical errors (`SystemHint.js` + `SystemHintContext.js`).
+- **WorkflowModeContext:** Global workflow state (workflow vs focus mode, step progression, progressive headers). Used in DashboardLayout, DashboardTab, PostsTab, AudienceSegmentsTab.
+- **Progressive headers:** Stacking headers with systemVoice labels (“We know your site”, “Audience locked in”, “Topic chosen”, “Content ready”).
+- **Motion & transitions:** Design tokens in `design-system.css` (`--transition-step`, `--transition-reveal`, `--stagger-delay`); staggered topic card reveal; step enter animations.
+- **Tab structure:** Dashboard → Audience Segments → Posts → Analytics → Settings; automation settings migrated to Settings → Content Discovery; terminology “Create New Post” standardized.
+- **Phase 1A testing:** Comprehensive test report in [PHASE_1A_COMPREHENSIVE_TEST_REPORT.md](PHASE_1A_COMPREHENSIVE_TEST_REPORT.md). Some backend/DB gaps remain (see report).
+
+### Remaining Priorities (from audit)
+
+1. Job progress tracking (polling/streaming for analysis and content generation).
+2. Analytics instrumentation (core events: signup, login, content generation, publishing).
+3. Recommendation board (Now/Next/Later; suggested next steps).
+4. React Router (or equivalent) for URL state and shareable links.
+5. Security improvements (e.g. httpOnly cookies, consent UI).
+
+### Next Steps
+
+1. Implement job progress tracking (backend job queue + frontend polling).
+2. Add analytics instrumentation for key user actions.
+3. Build recommendation board and “suggest next steps” surfaces.
+4. Extract AI services from me-search-back-end; build multi-tenant infrastructure.
+5. Launch with Lumibears + me-search validation; scale to external customers.
 
 ## 🤝 Contributing
 
-AutoBlog is currently in planning phase. Technical implementation will begin after architectural documentation is complete.
+See [CONTRIBUTING.md](../CONTRIBUTING.md) in the repo root. When changing UI copy or flows, update E2E tests and keep docs (including this README and audit/UX docs) in sync.
 
 ## 📞 Contact
 

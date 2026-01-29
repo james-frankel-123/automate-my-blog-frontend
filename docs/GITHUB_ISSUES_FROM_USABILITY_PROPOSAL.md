@@ -2,6 +2,19 @@
 
 **Audience:** People who are *not* marketers—vibe coders, small businesses, solopreneurs. They don’t know marketing. All copy and issue descriptions use plain language: problem-solving, results, and business impact. No acronyms or industry buzzwords.
 
+## Implementation status (as of Jan 2026)
+
+| Issue | Status | Notes |
+|-------|--------|--------|
+| **1. One consistent voice** | ✅ Done | `src/copy/systemVoice.js`; UnifiedWorkflowHeader, WebsiteAnalysisStepStandalone, ProgressiveHeaders, topic/content steps use it. See `PR_UX_ONE_VOICE.md`. |
+| **2. Suggest next steps** | 🔶 Partial | Some anticipatory lines (e.g. after analysis); Recommendation Board (Now/Next/Later) not built yet. |
+| **3. Show what’s happening** | 🔶 Partial | Progress copy in systemVoice (“Reading your pages…”, “This usually takes 30–60 seconds”); no job polling/status yet. |
+| **4. Light motion and transitions** | ✅ Done | `design-system.css`: `--transition-step`, `--transition-reveal`, `--stagger-delay`; topic cards stagger; step enter animations. |
+| **5. One consistent place for hints/errors** | ✅ Done | `SystemHint.js` + `SystemHintContext.js`; one slot for hints, empty states, non-critical errors. |
+| **6. Quick wins** | ✅ Done | Copy pass, “why we suggested this” surface, anticipatory line after analysis, stagger topic cards, animate progressive header steps. |
+
+---
+
 ## How to create these on GitHub
 
 1. **Script (recommended):** From the repo root, run `./scripts/create-usability-proposal-issues.sh`. Requires [GitHub CLI](https://cli.github.com/) and `gh auth login`.
@@ -12,7 +25,7 @@ There are **6 issues** below. You can create them in any order; Issues 1 and 6 a
 
 ---
 
-## Issue 1: One consistent voice across the app
+## Issue 1: One consistent voice across the app — ✅ Done
 
 **Title:** `[UX] One consistent voice across the app so it feels like one helpful person`
 
@@ -35,7 +48,7 @@ There are **6 issues** below. You can create them in any order; Issues 1 and 6 a
 
 ---
 
-## Issue 2: Suggest next steps so the app feels one step ahead
+## Issue 2: Suggest next steps so the app feels one step ahead — 🔶 Partial
 
 **Title:** `[UX] Suggest next steps so the app feels one step ahead`
 
@@ -58,7 +71,7 @@ There are **6 issues** below. You can create them in any order; Issues 1 and 6 a
 
 ---
 
-## Issue 3: Show what’s happening during analysis and generation (no black-box waiting)
+## Issue 3: Show what’s happening during analysis and generation (no black-box waiting) — 🔶 Partial
 
 **Title:** `[UX] Show what’s happening during analysis and generation (no black-box waiting)`
 
@@ -80,7 +93,7 @@ Keep progress copy in the same voice module as the rest of the app. When we get 
 
 ---
 
-## Issue 4: Light motion and transitions so the flow feels continuous
+## Issue 4: Light motion and transitions so the flow feels continuous — ✅ Done
 
 **Title:** `[UX] Light motion and transitions so the flow feels continuous`
 
@@ -103,7 +116,7 @@ Keep progress copy in the same voice module as the rest of the app. When we get 
 
 ---
 
-## Issue 5: One consistent place for hints, empty states, and errors
+## Issue 5: One consistent place for hints, empty states, and errors — ✅ Done
 
 **Title:** `[UX] One consistent place for hints, empty states, and errors`
 
@@ -124,7 +137,7 @@ Keep progress copy in the same voice module as the rest of the app. When we get 
 
 ---
 
-## Issue 6: Quick wins—copy pass and small UX improvements
+## Issue 6: Quick wins—copy pass and small UX improvements — ✅ Done
 
 **Title:** `[UX] Quick wins: copy pass + “why we suggested this” + one anticipatory line + stagger/animate`
 

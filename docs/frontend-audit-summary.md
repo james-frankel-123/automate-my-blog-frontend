@@ -2,7 +2,8 @@
 
 **Date:** January 26, 2026  
 **Prepared by:** Sam Hill  
-**Status:** Ready for Review
+**Status:** Ready for Review  
+**Last updated:** January 2026 (work completed since audit reflected below)
 
 ---
 
@@ -11,12 +12,31 @@
 This document summarizes a comprehensive frontend audit of AutomateMyBlog.com and provides a prioritized implementation plan for analytics instrumentation, UX improvements, and new feature development.
 
 **Full Details:**
-- `docs/frontend-audit.md` - Complete technical audit (352 lines)
+- `docs/frontend-audit.md` - Complete technical audit (incl. post-audit implementation status)
 - `docs/frontend-ux-analytics-plan.md` - Detailed implementation plan (730 lines)
 
 ---
 
-## Key Findings
+## Work Completed Since Audit
+
+The following work addresses audit findings and the usability proposal (PR #47 / `docs/GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md`):
+
+| Area | Status | Details |
+|------|--------|---------|
+| **System voice** | ✅ Done | Single source of truth in `src/copy/systemVoice.js`; one consistent voice (helpful, confident, warm) across headers, progress, toasts, errors. Used in UnifiedWorkflowHeader, WebsiteAnalysisStepStandalone, ProgressiveHeaders, topic/content steps. |
+| **SystemHint** | ✅ Done | One consistent place for hints, empty states, and non-critical errors (`SystemHint.js` + `SystemHintContext.js`). |
+| **WorkflowModeContext** | ✅ Done | Global workflow state (workflow vs focus mode, step progression). Used in DashboardLayout, DashboardTab, PostsTab, AudienceSegmentsTab. |
+| **Progressive headers** | ✅ Done | Stacking headers with systemVoice labels (“We know your site”, “Audience locked in”, “Topic chosen”, “Content ready”). |
+| **Motion & transitions** | ✅ Done | Design tokens in `design-system.css` (`--transition-step`, `--transition-reveal`, `--stagger-delay`); staggered topic card reveal; step enter animations. |
+| **Tab structure & terminology** | ✅ Done | Dashboard → Audience Segments → Posts → Analytics → Settings; automation settings in Settings → Content Discovery; “Create New Post” standardized. |
+| **Job progress tracking** | ❌ Not done | Still outstanding; depends on backend job queue. |
+| **Analytics instrumentation** | ❌ Not done | Still outstanding per plan. |
+| **Recommendation board** | ❌ Not done | Still outstanding. |
+| **URL state / React Router** | ❌ Not done | Still outstanding. |
+
+---
+
+## Key Findings (from audit)
 
 ### Architecture Summary
 - **Framework:** React 19 (Create React App)
