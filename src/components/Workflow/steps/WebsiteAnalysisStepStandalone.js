@@ -238,17 +238,17 @@ const WebsiteAnalysisStepStandalone = ({
         timestamp: new Date().toISOString()
       });
 
-      // Phase-by-phase progress messages (one voice: systemVoice)
-      const progressMessages = systemVoice.analysis.progress;
+      // Show step 1 message immediately; API will call onProgress(1–4) as each step runs
+      const steps = systemVoice.analysis.steps;
+      updateScanningMessage(steps[0]);
 
-      // Show progress messages with delays
-      for (let i = 0; i < progressMessages.length; i++) {
-        updateScanningMessage(progressMessages[i]);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      // Call API service
-      const result = await analysisAPI.analyzeWebsite(validation.formattedUrl);
+      const result = await analysisAPI.analyzeWebsite(validation.formattedUrl, {
+        onProgress: (step) => {
+          if (step >= 1 && step <= steps.length) {
+            updateScanningMessage(steps[step - 1]);
+          }
+        }
+      });
 
       if (result.success) {
         // Clear any existing cached analysis to prevent flashing

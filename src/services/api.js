@@ -163,8 +163,11 @@ class AutoBlogAPI {
    * 2. Generate audience scenarios
    * 3. Generate conversion funnel pitches
    * 4. Generate DALL-E images for audiences
+   * @param {string} url - Website URL to analyze
+   * @param {{ onProgress?: (step: number) => void }} options - Optional; onProgress(step) called with 1-4 before each step
    */
-  async analyzeWebsite(url) {
+  async analyzeWebsite(url, options = {}) {
+    const { onProgress } = options;
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = { 'Content-Type': 'application/json' };
@@ -183,6 +186,7 @@ class AutoBlogAPI {
         pageUrl: window.location.href
       }).catch(err => console.error('Failed to track scrape_started:', err));
 
+      if (onProgress) onProgress(1);
       console.log('Step 1/4: Analyzing website...');
 
       // Step 1: Basic website analysis (scrape + web search, NO scenarios)
@@ -192,6 +196,7 @@ class AutoBlogAPI {
         body: JSON.stringify({ url }),
       });
 
+      if (onProgress) onProgress(2);
       console.log('Step 2/4: Generating audience scenarios...');
 
       // Step 2: Generate audience scenarios (WITHOUT pitches)
@@ -211,6 +216,7 @@ class AutoBlogAPI {
         }),
       });
 
+      if (onProgress) onProgress(3);
       console.log('Step 3/4: Generating conversion funnel pitches...');
 
       // Step 3: Generate pitches for scenarios
@@ -226,6 +232,7 @@ class AutoBlogAPI {
         }),
       });
 
+      if (onProgress) onProgress(4);
       console.log('Step 4/4: Generating DALL-E images for audiences...');
 
       // Step 4: Generate DALL-E images for each audience with brand voice context
