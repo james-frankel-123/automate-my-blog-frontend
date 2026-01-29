@@ -1200,6 +1200,22 @@ const DashboardLayout = ({
           }}>
             {renderContent()}
           </div>
+
+          {/* Footer with deploy commit hash for deployment verification */}
+          <footer
+            style={{
+              marginTop: '24px',
+              padding: '12px 24px',
+              borderTop: '1px solid #f0f0f0',
+              background: '#fafafa',
+              fontSize: '12px',
+              color: '#8c8c8c',
+              textAlign: 'center'
+            }}
+            title="Git commit of this deployment (for verification)"
+          >
+            Build: <code style={{ fontFamily: 'monospace', fontSize: '11px' }} data-testid="build-commit-hash">{process.env.REACT_APP_GIT_COMMIT_SHA || 'dev'}</code>
+          </footer>
         </div>
 
       {/* Impersonation Banner */}
