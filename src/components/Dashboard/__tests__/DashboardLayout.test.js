@@ -4,6 +4,7 @@ import DashboardLayout from '../DashboardLayout';
 import { AuthProvider } from '../../../contexts/AuthContext';
 import { AnalyticsProvider } from '../../../contexts/AnalyticsContext';
 import { WorkflowModeProvider } from '../../../contexts/WorkflowModeContext';
+import { SystemHintProvider } from '../../../contexts/SystemHintContext';
 import { 
   setupTests, 
   cleanupTests, 
@@ -68,7 +69,9 @@ const renderDashboardLayout = (props = {}, userOverrides = null) => {
     <AuthProvider>
       <AnalyticsProvider>
         <WorkflowModeProvider>
-          <DashboardLayout {...props} />
+          <SystemHintProvider>
+            <DashboardLayout {...props} />
+          </SystemHintProvider>
         </WorkflowModeProvider>
       </AnalyticsProvider>
     </AuthProvider>

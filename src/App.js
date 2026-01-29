@@ -3,6 +3,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
+import { SystemHintProvider } from './contexts/SystemHintContext';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import SEOHead from './components/SEOHead';
 import { storeReferralInfo } from './utils/referralUtils';
@@ -47,7 +48,7 @@ const AppContent = () => {
   // This creates seamless transitions where login only affects layout/spacing
 
   return (
-    <>
+    <SystemHintProvider>
       <SEOHead />
       <DashboardLayout 
         workflowContent={true}
@@ -56,7 +57,7 @@ const AppContent = () => {
         onActiveTabChange={setActiveTab}
         forceWorkflowMode={!user} // Force workflow mode for logged-out users
       />
-    </>
+    </SystemHintProvider>
   );
 };
 
