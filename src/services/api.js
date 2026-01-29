@@ -137,31 +137,35 @@ class AutoBlogAPI {
         return response;
       }
     } catch (error) {
-      // Track error events
-      if (error.name === 'AbortError') {
-        // Track timeout_occurred event
+      // Track error events (but skip if this IS a tracking request to prevent infinite loops)
+      const isTrackingRequest = normalizedEndpoint.includes('/analytics/track');
+
+      if (!isTrackingRequest) {
+        if (error.name === 'AbortError') {
+          // Track timeout_occurred event
+          this.trackEvent({
+            eventType: 'timeout_occurred',
+            eventData: { endpoint: normalizedEndpoint },
+            userId: this.getCurrentUserId(),
+            pageUrl: window.location.href
+          }).catch(err => console.error('Failed to track timeout:', err));
+
+          throw new Error('Request timed out. Please try again.');
+        }
+
+        // Track api_error event
         this.trackEvent({
-          eventType: 'timeout_occurred',
-          eventData: { endpoint: normalizedEndpoint },
+          eventType: 'api_error',
+          eventData: {
+            endpoint: normalizedEndpoint,
+            error: error.message,
+            status: error.status || 'unknown'
+          },
           userId: this.getCurrentUserId(),
           pageUrl: window.location.href
-        }).catch(err => console.error('Failed to track timeout:', err));
-        
-        throw new Error('Request timed out. Please try again.');
+        }).catch(err => console.error('Failed to track api_error:', err));
       }
-      
-      // Track api_error event
-      this.trackEvent({
-        eventType: 'api_error',
-        eventData: { 
-          endpoint: normalizedEndpoint,
-          error: error.message,
-          status: error.status || 'unknown'
-        },
-        userId: this.getCurrentUserId(),
-        pageUrl: window.location.href
-      }).catch(err => console.error('Failed to track api_error:', err));
-      
+
       throw new Error(`API Error: ${error.message}`);
     }
   }
