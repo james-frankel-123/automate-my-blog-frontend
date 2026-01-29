@@ -703,7 +703,7 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Audience Section - Unlocked after step 1 (Issue 4: light motion) */}
+        {/* Audience Section - Unlocked after step 1 (light motion) */}
         {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
           <section id="audience-segments" className="workflow-section-enter" style={{ 
             minHeight: '100vh', 
@@ -720,7 +720,7 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Posts Section - Unlocked after step 2 (Issue 4: light motion) */}
+        {/* Posts Section - Unlocked after step 2 (light motion) */}
         {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience.customerStrategy))) && (
           <section id="posts" className="workflow-section-enter" style={{ 
             minHeight: '100vh', 
@@ -800,7 +800,7 @@ const DashboardLayout = ({
         />
       ) : null}
 
-      {/* Issue 5: one consistent slot for hints */}
+      {/* One consistent slot for hints */}
       <SystemHint />
 
       {/* Main Layout Container - adjusts for fixed sidebar */}

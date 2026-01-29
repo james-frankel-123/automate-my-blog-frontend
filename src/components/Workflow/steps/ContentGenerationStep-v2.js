@@ -228,7 +228,7 @@ const ContentGenerationStepV2 = (props) => {
         </div>
       )}
       
-      {/* Generation process — plain language (Issue 3) */}
+      {/* Generation process — plain language */}
       <div style={{ 
         backgroundColor: '#f8f9fa', 
         padding: '16px', 

@@ -1,5 +1,5 @@
 /**
- * SystemHintContext — one consistent slot for hints, confirmations, and non-critical errors (Issue 5).
+ * SystemHintContext — one consistent slot for hints, confirmations, and non-critical errors.
  * Any component can set a one-line message that appears in the hint strip below the header.
  */
 

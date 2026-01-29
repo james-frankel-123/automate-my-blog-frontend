@@ -1,5 +1,5 @@
 /**
- * SystemHintContext — one consistent slot for hints (Issue 5)
+ * SystemHintContext — one consistent slot for hints
  */
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';

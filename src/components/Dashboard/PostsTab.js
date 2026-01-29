@@ -1335,7 +1335,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         }
                       </Paragraph>
                       
-                      {/* ENHANCED TOPIC CARDS — Issue 4: stagger reveal */}
+                      {/* ENHANCED TOPIC CARDS — stagger reveal */}
                       <Row gutter={responsive.gutter}>
                         {availableTopics.map((topic, index) => {
                           const isSelected = selectedTopic?.id === topic.id;
@@ -2422,7 +2422,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       }
                     </Paragraph>
                     
-                    {/* ENHANCED TOPIC CARDS — Issue 4: stagger reveal */}
+                    {/* ENHANCED TOPIC CARDS — stagger reveal */}
                     <Row gutter={responsive.gutter}>
                       {availableTopics.map((topic, index) => {
                         const isSelected = selectedTopic?.id === topic.id;

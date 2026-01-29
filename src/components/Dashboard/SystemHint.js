@@ -1,5 +1,5 @@
 /**
- * SystemHint — one-line hint strip below the header (Issue 5).
+ * SystemHint — one-line hint strip below the header.
  * Shows contextual hints, confirmations, and non-critical errors from systemVoice.
  */
 

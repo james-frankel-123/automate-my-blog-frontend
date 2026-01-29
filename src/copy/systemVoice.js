@@ -3,7 +3,7 @@
  * For users who are not marketers: builders, small businesses, solopreneurs.
  * Plain language, no buzzwords or acronyms. Helpful, confident, a bit warm.
  *
- * See: docs/USABILITY_PROPOSAL_SENTIENT_MAGIC.md (PR #47), Issue: One consistent voice
+ * See: docs/GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md (usability proposal, PR #47).
  */
 
 export const systemVoice = {
@@ -56,7 +56,7 @@ export const systemVoice = {
     edit: "Edit",
   },
 
-  // ─── Website analysis (WebsiteAnalysisStepStandalone) — Issue 3: no black-box waiting ───
+  // ─── Website analysis (WebsiteAnalysisStepStandalone) ───
   analysis: {
     title: "Analyze your site",
     inputPlaceholder: "Enter your website URL (e.g., https://example.com)",
@@ -80,13 +80,13 @@ export const systemVoice = {
     saveFailed: "We couldn't save your changes. Try again in a moment.",
   },
 
-  // ─── Audience strategies (AudienceSegmentsTab) — Issue 3: progress copy ───
+  // ─── Audience strategies (AudienceSegmentsTab) ───
   audience: {
     generatingStrategies: "Building audience strategies…",
     generatingStrategiesWithTime: "Using your site to create targeted customer strategies. This usually takes a few seconds.",
   },
 
-  // ─── Topic selection (TopicSelectionStep-v2, etc.) — Issue 3: progress copy ───
+  // ─── Topic selection (TopicSelectionStep-v2, etc.) ───
   topics: {
     ideasHeadline: (businessType) =>
       `Here's what we think will resonate with your audience right now${businessType ? ` (${businessType})` : ''}`,
@@ -95,7 +95,7 @@ export const systemVoice = {
     generatingTopicsWithTime: "Creating topic ideas… This usually takes a few seconds.",
   },
 
-  // ─── Content generation — Issue 3: no black-box waiting ───
+  // ─── Content generation ───
   content: {
     readyToGenerate: "Ready to create your post",
     generate: "Generate content",
@@ -123,7 +123,7 @@ export const systemVoice = {
     invalidUrl: "We couldn't read that URL. Check it and try again?",
   },
 
-  // ─── Empty states & hints (Issue 5: one consistent slot) ───
+  // ─── Empty states & hints ───
   empty: {
     noTopicsYet: "We don't have topic ideas yet. Generate some from your audience.",
   },
@@ -132,7 +132,7 @@ export const systemVoice = {
     chooseAudienceNext: "We've got your site. Choose your audience next.",
   },
 
-  // ─── Anticipatory suggestions (Issue 2: app feels one step ahead) ───
+  // ─── Anticipatory suggestions ───
   suggestions: {
     afterAnalysis: (audienceOrType) =>
       audienceOrType

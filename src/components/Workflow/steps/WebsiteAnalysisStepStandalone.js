@@ -86,7 +86,7 @@ const WebsiteAnalysisStepStandalone = ({
   const [organizationCTAs, setOrganizationCTAs] = useState([]);
   const [ctasLoading, setCtasLoading] = useState(false);
 
-  // Issue 4: success highlight when analysis result first appears
+  // Success highlight when analysis result first appears
   const [showSuccessHighlight, setShowSuccessHighlight] = useState(false);
 
   // Use local state if parent doesn't provide state management
@@ -108,7 +108,7 @@ const WebsiteAnalysisStepStandalone = ({
     }
   }, [autoAnalyze, websiteUrl, analysisCompleted, loading]);
 
-  // Issue 4: trigger success highlight when analysis result appears
+  // Trigger success highlight when analysis result appears
   useEffect(() => {
     if (!loading && analysisResults) {
       setShowSuccessHighlight(true);
@@ -610,7 +610,7 @@ const WebsiteAnalysisStepStandalone = ({
             {currentScanningMessage || systemVoice.analysis.defaultProgress}
           </Paragraph>
         </div>
-        {/* Skeleton hint so the result feels like a reveal (Issue 3) */}
+        {/* Skeleton hint so the result feels like a reveal */}
         <div style={{ marginTop: '24px', textAlign: 'left', maxWidth: '400px', margin: '24px auto 0' }}>
           <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', marginBottom: '12px', width: '70%' }} />
           <div style={{ height: '14px', background: '#f0f0f0', borderRadius: '4px', marginBottom: '12px', width: '90%' }} />

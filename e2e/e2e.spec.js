@@ -252,7 +252,7 @@ test.describe('E2E (mocked backend)', () => {
         await expect(anticipatory).toBeVisible({ timeout: 5000 });
       });
 
-      test('should show progress copy during analysis (Issue 3: no black-box waiting)', async ({ page }) => {
+      test('should show progress copy during analysis', async ({ page }) => {
         const createBtn = page.locator('button:has-text("Create New Post")').first();
         if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
           test.skip();
@@ -272,7 +272,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
       });
 
-      test('should show system hint after analysis complete (Issue 5: one consistent slot)', async ({ page }) => {
+      test('should show system hint after analysis complete', async ({ page }) => {
         const createBtn = page.locator('button:has-text("Create New Post")').first();
         if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
           test.skip();
