@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse } from 'antd';
+import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse, Space } from 'antd';
 import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -39,6 +39,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [generatingStrategies, setGeneratingStrategies] = useState(false);
 
   // Keyword editing state
+  const [editingKeywords, setEditingKeywords] = useState(null); // Track which strategy is being edited
   const [editedKeywords, setEditedKeywords] = useState([]); // Temporary keyword data during editing
   const [savingKeywords, setSavingKeywords] = useState(false);
 

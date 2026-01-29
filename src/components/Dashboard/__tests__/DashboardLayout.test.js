@@ -1,6 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen } from '@testing-library/react';
 import DashboardLayout from '../DashboardLayout';
 import { AuthProvider } from '../../../contexts/AuthContext';
 import { AnalyticsProvider } from '../../../contexts/AnalyticsContext';
