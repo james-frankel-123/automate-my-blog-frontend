@@ -150,20 +150,22 @@ export const topicAPI = {
    */
   async generateTrendingTopics(analysisData, selectedStrategy = null, webSearchInsights = {}) {
     try {
-      // Use selected strategy context or fallback to general analysis
-      const targetAudience = selectedStrategy 
-        ? `${analysisData.decisionMakers} struggling with: ${selectedStrategy.customerProblem}`
-        : analysisData.decisionMakers || analysisData.targetAudience;
-      
+      // Use selected strategy context or fallback to general analysis (accept various API shapes)
+      const audienceLabel = analysisData.decisionMakers || analysisData.targetAudience || 'General Audience';
+      const targetAudience = selectedStrategy
+        ? `${audienceLabel} struggling with: ${selectedStrategy.customerProblem}`
+        : audienceLabel;
+
       const contentFocus = selectedStrategy
         ? `Content addressing: ${selectedStrategy.customerProblem}. Target keywords: ${selectedStrategy.seoKeywords?.join(', ') || 'relevant terms'}`
-        : analysisData.contentFocus;
+        : (analysisData.contentFocus || 'Content');
 
       console.log('Generating topics for:', targetAudience);
       console.log('Content focus:', contentFocus);
 
-      // Call real backend API
-      const topics = await autoBlogAPI.getTrendingTopics(analysisData.businessType, targetAudience, contentFocus);
+      // Call real backend API (accept various analysis shapes: businessType, businessName, etc.)
+      const businessType = analysisData.businessType || analysisData.businessName || 'Business';
+      const topics = await autoBlogAPI.getTrendingTopics(businessType, targetAudience, contentFocus || 'Content');
       
       if (topics && topics.length > 0) {
         // Ensure we only use first 2 topics and map them with strategy data
@@ -195,11 +197,12 @@ export const topicAPI = {
       
       // Fallback: create topics from strategy content ideas if available
       if (analysisData.contentIdeas && analysisData.contentIdeas.length > 0) {
+        const fallbackBizType = analysisData.businessType || analysisData.businessName || 'Business';
         const fallbackTopics = analysisData.contentIdeas.slice(0, 2).map((idea, index) => ({
           id: index + 1,
           title: idea,
-          subheader: `Content idea based on ${analysisData.businessType} analysis`,
-          category: analysisData.businessType,
+          subheader: `Content idea based on ${fallbackBizType} analysis`,
+          category: fallbackBizType,
           image: '',
           scenario: selectedStrategy || (analysisData.scenarios && analysisData.scenarios[index] ? analysisData.scenarios[index] : null),
           isLoading: false,

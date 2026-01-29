@@ -416,8 +416,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         stepResults: !!stepResults?.home
       });
 
-      // Check if we have the minimum required data for topic generation
-      if (!analysisData.businessType && !analysisData.targetAudience) {
+      // Check if we have the minimum required data for topic generation (accept various API shapes)
+      const hasMinimumAnalysis = analysisData.businessType || analysisData.targetAudience ||
+        analysisData.decisionMakers || analysisData.businessName;
+      if (!hasMinimumAnalysis) {
         console.warn('⚠️ Missing website analysis data for topic generation');
         message.warning('Website analysis data is required for topic generation. Please analyze your website first.');
         setGeneratingContent(false);
@@ -948,19 +950,25 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     loadMissingAnalysisData();
   }, [user, stepResults?.home?.websiteAnalysis]);
 
-  // Initialize topics if arriving from audience workflow
+  // Initialize topics when user arrives at content step with analysis + selected strategy (only run when both are ready)
+  const topicGenTriggerRef = React.useRef(handleGenerateTopics);
+  topicGenTriggerRef.current = handleGenerateTopics;
+
   useEffect(() => {
     const analysisData = stepResults?.home?.websiteAnalysis || {};
-    const hasMinimumAnalysisData = analysisData.businessType || analysisData.targetAudience;
-    
-    if ((tabMode.mode === 'workflow' || forceWorkflowMode) && 
-        !availableTopics.length && 
+    const hasMinimumAnalysisData = analysisData.businessType || analysisData.targetAudience ||
+      analysisData.decisionMakers || analysisData.businessName;
+    const hasStrategy = !!(selectedCustomerStrategy || tabMode.tabWorkflowData?.selectedCustomerStrategy);
+
+    if ((tabMode.mode === 'workflow' || forceWorkflowMode) &&
+        !availableTopics.length &&
         !generatingContent &&
-        hasMinimumAnalysisData) {
-      // Add a small delay to ensure UI is ready
-      setTimeout(() => {
-        handleGenerateTopics();
-      }, 500);
+        hasMinimumAnalysisData &&
+        hasStrategy) {
+      const t = setTimeout(() => {
+        topicGenTriggerRef.current();
+      }, 800);
+      return () => clearTimeout(t);
     }
   }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent, selectedCustomerStrategy, stepResults?.home?.websiteAnalysis]);
 

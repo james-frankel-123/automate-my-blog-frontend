@@ -347,6 +347,81 @@ test.describe('E2E (mocked backend)', () => {
         const topicTitle = page.locator(`text=${MOCK_TOPICS[0].title}`).first();
         await expect(topicTitle).toBeVisible({ timeout: 12000 });
       });
+
+      // Full workflow: analyze → audience → content step; asserts topic section is never blank (fix for blank topic ideas)
+      test('full workflow: analyze → audience → content step shows topic section (not blank)', async ({ page }) => {
+        test.setTimeout(70000);
+
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(800);
+
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        if (!(await websiteInput.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+
+        const continueToAudience = page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first();
+        if (!(await continueToAudience.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await continueToAudience.click({ force: true });
+        await page.waitForTimeout(800);
+
+        await page.locator('#audience-segments').scrollIntoViewIfNeeded().catch(() => {});
+        await page.waitForTimeout(500);
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario/i }).first();
+        if (!(await strategyCard.isVisible({ timeout: 8000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await strategyCard.click();
+        await page.waitForTimeout(1500);
+
+        // Click "Continue to Content" if present, then ensure we're on the content step
+        const continueToContent = page.locator('button:has-text("Continue to Content")').first();
+        if (await continueToContent.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await continueToContent.click({ force: true });
+          await page.waitForTimeout(1000);
+        }
+
+        const postsSection = page.locator('#posts');
+        await expect(postsSection).toBeVisible({ timeout: 10000 });
+        await postsSection.first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+        await page.waitForTimeout(1200);
+
+        // Topic section must not be blank: either topic cards (auto-generated) or heading + Generate button
+        const topicHeading = page.locator('#posts').locator('text=/AI will generate trending topics|Based on your audience analysis|high-impact blog post ideas|Generate Content Topics/i').first();
+        const generateBtn = page.locator('#posts').locator('button:has-text("Generate post"), button:has-text("Generate topic"), button:has-text("Generating Topics")').first();
+        const topicCard = page.locator('#posts').locator(`text=${MOCK_TOPICS[0].title}`).first();
+
+        const headingVisible = await topicHeading.isVisible({ timeout: 8000 }).catch(() => false);
+        const generateVisible = await generateBtn.isVisible({ timeout: 5000 }).catch(() => false);
+        const topicsVisible = await topicCard.isVisible({ timeout: 15000 }).catch(() => false);
+
+        expect(headingVisible || generateVisible || topicsVisible).toBeTruthy();
+
+        if (generateVisible && !topicsVisible) {
+          await generateBtn.click();
+          await page.waitForSelector('button:has-text("Generating Topics"), button:has-text("Generating…")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+          await page.waitForTimeout(2000);
+          await expect(page.locator('#posts').locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        } else if (!topicsVisible) {
+          // Auto-run may still be generating; wait for topic cards to appear
+          await expect(topicCard).toBeVisible({ timeout: 15000 });
+        }
+      });
     });
 
     test('smoke: analyze → audience → strategy → posts section with generate', async ({ page }) => {

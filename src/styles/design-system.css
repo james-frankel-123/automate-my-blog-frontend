@@ -497,7 +497,7 @@ body {
 }
 
 .reveal-stagger {
-  animation: revealIn var(--transition-reveal) cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: revealIn var(--transition-reveal) cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 
 /* Success moment: quick highlight (e.g. after analysis complete) */
