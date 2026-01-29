@@ -1,70 +1,126 @@
-# Getting Started with Create React App
+# AutoBlog Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A beautiful, modern React application for AutoBlog - an AI-powered platform that automates blog content creation from inspiration discovery to publication. This frontend provides an intuitive interface for managing content workflows, analyzing performance, and customizing your brand voice.
+
+## What is AutoBlog?
+
+AutoBlog transforms content creation from manual work into intelligent automation. It handles the entire content pipeline:
+
+- **Inspiration Discovery** - Finds trending topics in your industry
+- **Content Strategy** - Creates SEO-optimized content briefs
+- **Content Generation** - Writes compelling, brand-aligned articles using AI
+- **Visual Creation** - Generates contextual images and graphics
+- **Quality Assurance** - Ensures brand consistency and accuracy
+- **Publishing** - Deploys content to your website with performance tracking
+
+## Features
+
+✨ **Rich Content Editor** - Powered by Tiptap with full formatting, tables, images, and more  
+📊 **Analytics Dashboard** - Track performance, engagement, and content metrics  
+🎨 **Brand Customization** - Configure voice, style, and visual identity  
+🔄 **Workflow Management** - Step-by-step content creation workflow  
+👥 **Multi-tenant Support** - Manage multiple brands and projects  
+📱 **Responsive Design** - Works beautifully on desktop, tablet, and mobile  
+🔐 **Authentication** - Secure user management and access control  
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js 16+ and npm (or yarn)
+- A backend API server running (see backend configuration)
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/yourusername/automate-my-blog-frontend.git
+cd automate-my-blog-frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Set up environment variables:
+```bash
+cp .env.example .env
+# Edit .env with your API endpoints and configuration
+```
+
+4. Start the development server:
+```bash
+npm start
+```
+
+The app will open at [http://localhost:3000](http://localhost:3000).
 
 ## Available Scripts
 
-In the project directory, you can run:
+- `npm start` - Runs the app in development mode
+- `npm test` - Launches the test runner in interactive watch mode
+- `npm run build` - Builds the app for production
+- `npm run test:e2e` - Runs end-to-end tests with Playwright
+- `npm run test:e2e:ui` - Opens Playwright UI for debugging tests
+- `npm run lint` - Runs ESLint on the codebase
 
-### `npm start`
+## Project Structure
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+src/
+├── components/          # React components
+│   ├── Auth/          # Authentication modals
+│   ├── Dashboard/     # Dashboard tabs and analytics
+│   ├── Editor/        # Rich text editor components
+│   ├── Workflow/      # Content workflow steps
+│   └── ...
+├── contexts/          # React context providers
+├── hooks/             # Custom React hooks
+├── services/          # API service layer
+├── utils/             # Utility functions
+└── styles/            # Global styles and design system
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tech Stack
 
-### `npm test`
+- **React 19** - Modern React with hooks
+- **Ant Design** - UI component library
+- **Tiptap** - Rich text editor framework
+- **Framer Motion** - Smooth animations
+- **Playwright** - End-to-end testing
+- **React Testing Library** - Component testing
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Development
 
-### `npm run build`
+### Code Style
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+This project uses ESLint with React app defaults. Run `npm run lint` to check for issues.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### Testing
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+- Unit tests: `npm test`
+- E2E tests: `npm run test:e2e`
+- Coverage: `npm run test:coverage`
 
-### `npm run eject`
+### Contributing
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Documentation
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+- [API Specification](./docs/API_SPECIFICATION.md)
+- [Client Integration Guide](./docs/CLIENT_INTEGRATION.md)
+- [E2E Test Setup](./E2E_TEST_SETUP.md)
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+## License
 
-## Learn More
+[Add your license here]
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Support
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+For questions or issues, please open an issue on GitHub or contact the maintainers.
 
-### Code Splitting
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Built with ❤️ for content creators who want to focus on what matters most.
