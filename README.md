@@ -111,7 +111,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 - [API Specification](./docs/API_SPECIFICATION.md)
 - [Client Integration Guide](./docs/CLIENT_INTEGRATION.md)
-- [E2E Test Setup](./E2E_TEST_SETUP.md)
+- [E2E Test Setup](./docs/E2E_TEST_SETUP.md)
 
 ## License
 
