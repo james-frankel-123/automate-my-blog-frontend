@@ -51,6 +51,7 @@ const TopicSelectionStepV2 = (props) => {
     // Business logic functions
     generateContent,
     resetWorkflow,
+    onAnalysisComplete,
     
     // Web search insights
     webSearchInsights = { researchQuality: 'basic' },
