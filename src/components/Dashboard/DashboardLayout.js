@@ -36,6 +36,9 @@ import AdminLeadsTab from './AdminLeadsTab';
 import ComprehensiveAnalysisTab from './ComprehensiveAnalysisTab';
 import UserAnalyticsTab from './UserAnalyticsTab';
 import PricingModal from '../Modals/PricingModal';
+import SystemHint from './SystemHint';
+import { useSystemHint } from '../../contexts/SystemHintContext';
+import { systemVoice } from '../../copy/systemVoice';
 
 // Layout components not used directly
 
@@ -81,6 +84,7 @@ const DashboardLayout = ({
   
   // Analytics tracking
   const { trackPageView, trackEvent } = useAnalytics();
+  const { setHint } = useSystemHint();
   
   // Restore collapsed state (needed for sidebar)
   const [collapsed, setCollapsed] = useState(false);
@@ -679,6 +683,7 @@ const DashboardLayout = ({
                         block: 'start' 
                       });
                     }
+                    setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
                     message.success('Complete website analysis first, then select your audience');
                   } else {
                     // Navigate to audience section (normal flow)
@@ -689,6 +694,7 @@ const DashboardLayout = ({
                         block: 'start' 
                       });
                     }
+                    setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
                     message.success('Starting guided creation project');
                   }
                 }, 100);
@@ -788,13 +794,15 @@ const DashboardLayout = ({
             // Clear "just saved" state after 10 seconds
             setTimeout(() => setProjectJustSaved(false), 10000);
             
+            setHint(systemVoice.hint.savedProgress, 'success', 5000);
             message.success('Project saved! Dashboard is now available via sidebar.');
           }}
         />
       ) : null}
-      
-      
-      
+
+      {/* Issue 5: one consistent slot for hints */}
+      <SystemHint />
+
       {/* Main Layout Container - adjusts for fixed sidebar */}
       <div style={{ 
         minHeight: '100vh',
@@ -1102,6 +1110,7 @@ const DashboardLayout = ({
                             block: 'start' 
                           });
                         }
+                        setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
                         message.success('Complete website analysis first, then select your audience');
                       } else {
                         // Navigate to audience section (normal flow)
@@ -1112,6 +1121,7 @@ const DashboardLayout = ({
                             block: 'start' 
                           });
                         }
+                        setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
                         message.success('Starting guided creation project');
                       }
                     }, 100);

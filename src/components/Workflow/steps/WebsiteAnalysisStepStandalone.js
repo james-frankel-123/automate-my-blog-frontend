@@ -16,6 +16,7 @@ import { analysisAPI } from '../../../services/workflowAPI';
 import workflowUtils from '../../../utils/workflowUtils';
 import autoBlogAPI from '../../../services/api';
 import { systemVoice } from '../../../copy/systemVoice';
+import { useSystemHint } from '../../../contexts/SystemHintContext';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -91,6 +92,7 @@ const WebsiteAnalysisStepStandalone = ({
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
   const currentScanningMessage = scanningMessage !== undefined ? scanningMessage : localScanningMessage;
+  const { setHint } = useSystemHint();
   
   // Auto-populate websiteUrl on component mount if user has organization website and no URL is set
   useEffect(() => {
@@ -278,6 +280,7 @@ const WebsiteAnalysisStepStandalone = ({
           pageUrl: window.location.href
         }).catch(err => console.error('Failed to track scrape_completed:', err));
 
+        setHint(systemVoice.toasts.analysisComplete, 'success', 5000);
         message.success(systemVoice.analysis.success);
 
         console.log('🎯 [CTA DEBUG] WebsiteAnalysisStepStandalone: API result contains CTAs:', {
@@ -310,6 +313,7 @@ const WebsiteAnalysisStepStandalone = ({
         if (result.fallbackAnalysis) {
           setAnalysisResults && setAnalysisResults(result.fallbackAnalysis);
           setAnalysisCompleted && setAnalysisCompleted(true);
+          setHint(systemVoice.analysis.successLimited, 'hint', 5000);
           message.warning(systemVoice.analysis.successLimited);
           
           onAnalysisComplete && onAnalysisComplete({
@@ -324,6 +328,7 @@ const WebsiteAnalysisStepStandalone = ({
       }
     } catch (error) {
       console.error('Website analysis error:', error);
+      setHint(systemVoice.toasts.analysisFailed, 'error', 8000);
       message.error(systemVoice.analysis.analysisFailed);
       
       // Track scrape_failed event

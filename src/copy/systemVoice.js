@@ -123,9 +123,13 @@ export const systemVoice = {
     invalidUrl: "We couldn't read that URL. Check it and try again?",
   },
 
-  // ─── Empty states & hints ───
+  // ─── Empty states & hints (Issue 5: one consistent slot) ───
   empty: {
     noTopicsYet: "We don't have topic ideas yet. Generate some from your audience.",
+  },
+  hint: {
+    savedProgress: "We've saved your progress.",
+    chooseAudienceNext: "We've got your site. Choose your audience next.",
   },
 
   // ─── Anticipatory suggestions (Issue 2: app feels one step ahead) ───

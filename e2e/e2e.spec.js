@@ -272,6 +272,28 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
       });
 
+      test('should show system hint after analysis complete (Issue 5: one consistent slot)', async ({ page }) => {
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(500);
+        const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await input.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(800);
+        const hintStrip = page.locator('[data-testid="system-hint"]');
+        await expect(hintStrip).toBeVisible({ timeout: 5000 });
+        await expect(hintStrip).toContainText(/We've got your site|Choose your audience/i);
+      });
+
       // "Why we suggested this" is implemented in PostsTab and TopicSelectionStep-v2 (data-testid="topic-why-suggested").
       // This test verifies the flow reaches topic load; topic cards with that copy may be replaced by the editor quickly in E2E.
       test('topic generation shows mock topics after audience selection', async ({ page }) => {
