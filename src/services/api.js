@@ -3379,6 +3379,157 @@ Please provide analysis in this JSON format:
       return { success: false, error: error.message };
     }
   }
+
+  // ========================================================================
+  // STRATEGY SUBSCRIPTION METHODS (Phase 2 - Dynamic Pricing)
+  // ========================================================================
+
+  /**
+   * Get pricing for a specific strategy
+   * @param {string} strategyId - Strategy ID
+   * @returns {Promise<object>} Pricing details (monthly, annual, posts, projectedProfit, etc.)
+   */
+  async getStrategyPricing(strategyId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/strategies/${strategyId}/pricing`);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get strategy pricing: ${error.message}`);
+    }
+  }
+
+  /**
+   * Subscribe to an individual strategy
+   * @param {string} strategyId - Strategy ID
+   * @param {string} billingInterval - 'monthly' or 'annual'
+   * @returns {Promise<object>} Stripe checkout session URL
+   */
+  async subscribeToStrategy(strategyId, billingInterval) {
+    try {
+      const response = await this.makeRequest(`/api/v1/strategies/${strategyId}/subscribe`, {
+        method: 'POST',
+        body: JSON.stringify({ billingInterval })
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to subscribe to strategy: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get user's subscribed strategies
+   * @returns {Promise<Array>} Array of subscribed strategies with quota information
+   */
+  async getSubscribedStrategies() {
+    try {
+      const response = await this.makeRequest('/api/v1/strategies/subscribed');
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get subscribed strategies: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get subscription details for a specific strategy
+   * @param {string} strategyId - Strategy ID
+   * @returns {Promise<object>} Subscription details (posts remaining, billing info, etc.)
+   */
+  async getStrategySubscription(strategyId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/strategies/${strategyId}/subscription`);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get strategy subscription: ${error.message}`);
+    }
+  }
+
+  /**
+   * Decrement post quota for a strategy (called after content generation)
+   * @param {string} strategyId - Strategy ID
+   * @returns {Promise<object>} Updated quota information
+   */
+  async decrementStrategyPosts(strategyId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/strategies/${strategyId}/decrement`, {
+        method: 'POST'
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to decrement strategy posts: ${error.message}`);
+    }
+  }
+
+  /**
+   * Calculate bundle pricing for all user's strategies
+   * @returns {Promise<object>} Bundle pricing with discounts
+   */
+  async calculateBundlePrice() {
+    try {
+      const response = await this.makeRequest('/api/v1/strategies/bundle/calculate');
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to calculate bundle price: ${error.message}`);
+    }
+  }
+
+  /**
+   * Subscribe to all strategies bundle
+   * @param {string} billingInterval - 'monthly' or 'annual'
+   * @returns {Promise<object>} Stripe checkout session URL
+   */
+  async subscribeToAllStrategies(billingInterval) {
+    try {
+      const response = await this.makeRequest('/api/v1/strategies/bundle/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ billingInterval })
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to subscribe to all strategies bundle: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get bundle subscription details
+   * @returns {Promise<object>} Bundle subscription info
+   */
+  async getBundleSubscription() {
+    try {
+      const response = await this.makeRequest('/api/v1/strategies/bundle');
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get bundle subscription: ${error.message}`);
+    }
+  }
+
+  /**
+   * Cancel bundle subscription
+   * @returns {Promise<object>} Cancellation confirmation
+   */
+  async cancelBundleSubscription() {
+    try {
+      const response = await this.makeRequest('/api/v1/strategies/bundle', {
+        method: 'DELETE'
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to cancel bundle subscription: ${error.message}`);
+    }
+  }
+
+  /**
+   * Check if user has access to a specific strategy
+   * @param {string} strategyId - Strategy ID
+   * @returns {Promise<object>} Access status and quota information
+   */
+  async checkStrategyAccess(strategyId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/strategies/${strategyId}/access`);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to check strategy access: ${error.message}`);
+    }
+  }
 }
 
 // Create singleton instance

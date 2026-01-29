@@ -37,11 +37,16 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [strategies, setStrategies] = useState([]);
   const [generatingStrategies, setGeneratingStrategies] = useState(false);
-  
+
   // Keyword editing state
   const [editedKeywords, setEditedKeywords] = useState([]); // Temporary keyword data during editing
   const [savingKeywords, setSavingKeywords] = useState(false);
-  
+
+  // Strategy pricing state (Phase 2 - Dynamic Pricing)
+  const [strategyPricing, setStrategyPricing] = useState({}); // Map of strategyId -> pricing data
+  const [loadingPricing, setLoadingPricing] = useState(false);
+  const [bundlePricing, setBundlePricing] = useState(null);
+
   // Carousel navigation ref
   const carouselRef = React.useRef(null);
   
@@ -174,6 +179,59 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     
     loadPersistentAudiences();
   }, [user, tabMode.mode, stepResults.home.websiteAnalysis?.scenarios?.length]); // Re-check when scenarios are added
+
+  // Fetch pricing for strategies (Phase 2 - Dynamic Pricing)
+  useEffect(() => {
+    const fetchStrategyPricing = async () => {
+      if (strategies.length === 0 || loadingPricing) return;
+
+      setLoadingPricing(true);
+      console.log('💰 Fetching pricing for strategies:', strategies.length);
+
+      try {
+        // Fetch pricing for each strategy
+        const pricingPromises = strategies.map(async (strategy) => {
+          try {
+            const pricing = await autoBlogAPI.getStrategyPricing(strategy.id || strategy.databaseId);
+            return { strategyId: strategy.id || strategy.databaseId, pricing: pricing.pricing };
+          } catch (error) {
+            console.error(`Failed to fetch pricing for strategy ${strategy.id}:`, error);
+            return null;
+          }
+        });
+
+        const pricingResults = await Promise.all(pricingPromises);
+
+        // Build pricing map
+        const pricingMap = {};
+        pricingResults.forEach(result => {
+          if (result) {
+            pricingMap[result.strategyId] = result.pricing;
+          }
+        });
+
+        setStrategyPricing(pricingMap);
+        console.log('✅ Pricing fetched for strategies:', Object.keys(pricingMap).length);
+
+        // Fetch bundle pricing if user has 2+ strategies
+        if (strategies.length >= 2) {
+          try {
+            const bundle = await autoBlogAPI.calculateBundlePrice();
+            setBundlePricing(bundle.bundlePricing);
+            console.log('✅ Bundle pricing fetched:', bundle.bundlePricing);
+          } catch (error) {
+            console.error('Failed to fetch bundle pricing:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch strategy pricing:', error);
+      } finally {
+        setLoadingPricing(false);
+      }
+    };
+
+    fetchStrategyPricing();
+  }, [strategies.length]); // Re-fetch when strategies change
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
@@ -572,6 +630,98 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     }
   };
 
+  // Strategy subscription handler (Phase 2 - Dynamic Pricing)
+  const handleSubscribeToStrategy = async (strategy, billingInterval) => {
+    try {
+      message.loading({ content: 'Redirecting to checkout...', key: 'subscribe' });
+
+      const strategyId = strategy.id || strategy.databaseId;
+      const response = await autoBlogAPI.subscribeToStrategy(strategyId, billingInterval);
+
+      if (response.url || response.sessionUrl) {
+        // Redirect to Stripe checkout
+        window.location.href = response.url || response.sessionUrl;
+      } else {
+        throw new Error('No checkout URL received');
+      }
+    } catch (error) {
+      console.error('Failed to subscribe to strategy:', error);
+      message.error({
+        content: `Failed to start checkout: ${error.message}`,
+        key: 'subscribe'
+      });
+    }
+  };
+
+  // Keyword editing functions
+  const handleStartEditingKeywords = (strategy) => {
+    setEditingKeywords(strategy.id);
+    // Initialize edited keywords with current keywords or empty array
+    const currentKeywords = strategy.keywords || [];
+    setEditedKeywords(currentKeywords.map(kw => ({
+      keyword: kw.keyword || kw,
+      search_volume: kw.search_volume || null,
+      relevance_score: kw.relevance_score || 0.8
+    })));
+  };
+
+  const handleCancelEditingKeywords = () => {
+    setEditingKeywords(null);
+    setEditedKeywords([]);
+  };
+
+  const handleAddKeyword = () => {
+    setEditedKeywords(prev => [...prev, { 
+      keyword: '', 
+      search_volume: null, 
+      relevance_score: 0.8 
+    }]);
+  };
+
+  const handleUpdateKeyword = (index, field, value) => {
+    setEditedKeywords(prev => prev.map((kw, i) => 
+      i === index ? { ...kw, [field]: value } : kw
+    ));
+  };
+
+  const handleRemoveKeyword = (index) => {
+    setEditedKeywords(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSaveKeywords = async (strategy) => {
+    if (savingKeywords) return;
+    
+    setSavingKeywords(true);
+    try {
+      // Filter out empty keywords
+      const validKeywords = editedKeywords.filter(kw => kw.keyword.trim() !== '');
+      
+      // Update keywords via API
+      if (strategy.databaseId) {
+        await autoBlogAPI.updateAudienceKeywords(strategy.databaseId, validKeywords);
+        
+        // Update local strategies state
+        setStrategies(prev => prev.map(s => 
+          s.id === strategy.id 
+            ? { ...s, keywords: validKeywords }
+            : s
+        ));
+        
+        message.success(`Updated ${validKeywords.length} keywords successfully`);
+      } else {
+        message.error('Cannot save keywords - strategy not saved to database');
+      }
+      
+      setEditingKeywords(null);
+      setEditedKeywords([]);
+      
+    } catch (error) {
+      console.error('Failed to save keywords:', error);
+      message.error('Failed to save keywords. Please try again.');
+    } finally {
+      setSavingKeywords(false);
+    }
+  };
 
   // Render enhanced strategy card with business intelligence
   const renderStrategyCard = (strategy, index) => {
@@ -585,6 +735,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const isSelected = selectedStrategy?.index === index;
     const isOthersSelected = selectedStrategy && !isSelected;
 
+    // Get pricing for this strategy (Phase 2 - Dynamic Pricing)
+    const strategyId = strategy.id || strategy.databaseId;
+    const pricing = strategyPricing[strategyId];
+    const hasPricing = !!pricing;
+
     return (
       <div key={strategy.id} style={{ padding: '0 8px' }}>
         <Card
@@ -597,10 +752,36 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             opacity: isOthersSelected ? 0.5 : 1,
             transition: 'all 0.3s ease',
             margin: '0 auto',
-            maxWidth: '600px'
+            maxWidth: '600px',
+            position: 'relative'
           }}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
+          {/* Pricing Badge (Top-Right Corner) - Phase 2 */}
+          {hasPricing && (
+            <div style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              backgroundColor: theme.colors.primary,
+              color: 'white',
+              padding: '8px 12px',
+              borderRadius: theme.borderRadius.md,
+              fontSize: '13px',
+              fontWeight: 600,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              zIndex: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-end',
+              lineHeight: 1.3
+            }}>
+              <div>${pricing.monthly}/mo</div>
+              <div style={{ fontSize: '11px', opacity: 0.9 }}>
+                or ${pricing.annual}/yr
+              </div>
+            </div>
+          )}
           {/* Card Header - Audience Name */}
           <div style={{ marginBottom: '16px' }}>
 
@@ -813,6 +994,78 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   }
                 ]}
               />
+            </div>
+          )}
+
+          {/* Subscribe Buttons (Phase 2 - Dynamic Pricing) */}
+          {hasPricing && (
+            <div style={{
+              marginTop: '20px',
+              padding: '16px',
+              backgroundColor: '#f0f5ff',
+              borderRadius: theme.borderRadius.md,
+              borderTop: `2px solid ${theme.colors.primary}`
+            }}
+              onClick={(e) => e.stopPropagation()} // Prevent card selection when clicking buttons
+            >
+              <div style={{ marginBottom: '12px', textAlign: 'center' }}>
+                <Text strong style={{
+                  fontSize: '14px',
+                  color: theme.colors.primary,
+                  display: 'block',
+                  marginBottom: '4px'
+                }}>
+                  💰 Projected Profit: ${pricing.projectedLow?.toLocaleString()}-${pricing.projectedHigh?.toLocaleString()}/month
+                </Text>
+                <Text style={{ fontSize: '12px', color: theme.colors.textSecondary }}>
+                  Subscribe for ${pricing.monthly}/month ({pricing.percentage.monthly}% of your projected profit)
+                </Text>
+              </div>
+
+              <Space direction="vertical" style={{ width: '100%' }} size="small">
+                <Button
+                  type="primary"
+                  block
+                  size="large"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubscribeToStrategy(strategy, 'monthly');
+                  }}
+                  style={{
+                    fontWeight: 600,
+                    height: '44px'
+                  }}
+                >
+                  Subscribe - ${pricing.monthly}/month
+                </Button>
+                <Button
+                  block
+                  size="large"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSubscribeToStrategy(strategy, 'annual');
+                  }}
+                  style={{
+                    height: '40px',
+                    borderColor: theme.colors.primary,
+                    color: theme.colors.primary
+                  }}
+                >
+                  Pay Annually - ${pricing.annual}/year
+                  <Tag color="green" style={{ marginLeft: '8px' }}>
+                    Save ${pricing.savings.annualSavingsDollars}
+                  </Tag>
+                </Button>
+                <Text style={{
+                  fontSize: '11px',
+                  color: theme.colors.textSecondary,
+                  display: 'block',
+                  textAlign: 'center',
+                  marginTop: '8px'
+                }}>
+                  {pricing.posts.recommended} posts/month recommended • Up to {pricing.posts.maximum} posts available
+                </Text>
+              </Space>
             </div>
           )}
         </Card>
