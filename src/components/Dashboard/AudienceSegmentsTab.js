@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Tag, Statistic, Space, message, Input, InputNumber, Carousel, Collapse } from 'antd';
-import { UserOutlined, TeamOutlined, BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, EditOutlined, SaveOutlined, CloseOutlined, PlusOutlined, DeleteOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse } from 'antd';
+import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -39,7 +39,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [generatingStrategies, setGeneratingStrategies] = useState(false);
   
   // Keyword editing state
-  const [editingKeywords, setEditingKeywords] = useState(null); // Strategy ID being edited
   const [editedKeywords, setEditedKeywords] = useState([]); // Temporary keyword data during editing
   const [savingKeywords, setSavingKeywords] = useState(false);
   
@@ -498,17 +497,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     }
   };
 
-  // Prepare step data for workflow progression
-  const prepareStepData = () => {
-    if (!selectedStrategy) return null;
-    return {
-      selectedCustomerStrategy: selectedStrategy,
-      audienceSegment: selectedStrategy.targetSegment,
-      businessValue: selectedStrategy.businessValue,
-      timestamp: new Date().toISOString()
-    };
-  };
-
   // Navigate to dashboard and scroll to website analysis
   const handleRunAnalysis = () => {
     console.log('🚀 Navigate to website analysis triggered from audience tab');
@@ -584,69 +572,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     }
   };
 
-  // Keyword editing functions
-  const handleStartEditingKeywords = (strategy) => {
-    setEditingKeywords(strategy.id);
-    // Initialize edited keywords with current keywords or empty array
-    const currentKeywords = strategy.keywords || [];
-    setEditedKeywords(currentKeywords.map(kw => ({
-      keyword: kw.keyword || kw,
-      search_volume: kw.search_volume || null,
-      relevance_score: kw.relevance_score || 0.8
-    })));
-  };
-
-  const handleCancelEditingKeywords = () => {
-    setEditingKeywords(null);
-    setEditedKeywords([]);
-  };
-
-  const handleAddKeyword = () => {
-    setEditedKeywords(prev => [...prev, { 
-      keyword: '', 
-      search_volume: null, 
-      relevance_score: 0.8 
-    }]);
-  };
-
-  const handleUpdateKeyword = (index, field, value) => {
-    setEditedKeywords(prev => prev.map((kw, i) => 
-      i === index ? { ...kw, [field]: value } : kw
-    ));
-  };
-
-  const handleRemoveKeyword = (index) => {
-    setEditedKeywords(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSaveKeywords = async (strategy) => {
-    if (savingKeywords) return;
-    
-    setSavingKeywords(true);
-    try {
-      // Filter out empty keywords
-      const validKeywords = editedKeywords.filter(kw => kw.keyword.trim() !== '');
-      
-      // Update keywords via API
-      if (strategy.databaseId) {
-        await autoBlogAPI.updateAudienceKeywords(strategy.databaseId, validKeywords);
-        
-        // Update local strategies state
-        setStrategies(prev => prev.map(s => 
-          s.id === strategy.id 
-            ? { ...s, keywords: validKeywords }
-            : s
-        ));
-        
-        message.success(`Updated ${validKeywords.length} keywords successfully`);
-      } else {
-        message.error('Cannot save keywords - strategy not saved to database');
-      }
-      
-      setEditingKeywords(null);
-      setEditedKeywords([]);
-      
-    } catch (error) {
+  // Keyword editing functions removed - unused
       console.error('Failed to save keywords:', error);
       message.error('Failed to save keywords. Please try again.');
     } finally {

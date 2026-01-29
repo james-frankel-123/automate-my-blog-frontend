@@ -14,14 +14,11 @@ import {
   Space,
   Button,
   Badge,
-  Timeline,
   List,
-  Switch,
-  Tooltip
+  Switch
 } from 'antd';
 import { 
   DatabaseOutlined,
-  CloudOutlined,
   BugOutlined,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
@@ -29,7 +26,6 @@ import {
   ReloadOutlined,
   SettingOutlined,
   ApiOutlined,
-  SafetyOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { format, subHours } from 'date-fns';
@@ -39,7 +35,7 @@ const { Title, Text } = Typography;
 // ADMIN COMPONENT - Only for super users
 const AdminSystemTab = () => {
   const [systemHealth, setSystemHealth] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {

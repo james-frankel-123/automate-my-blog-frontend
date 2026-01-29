@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { setupTests, cleanupTests, createMockUser } from './tests/testUtils';
 import autoBlogAPI from './services/api';

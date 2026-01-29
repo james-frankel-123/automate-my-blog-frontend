@@ -8,7 +8,6 @@ import {
   MoreOutlined,
   BulbOutlined,
   EyeOutlined,
-  CheckOutlined,
   ReloadOutlined,
   LockOutlined,
   TeamOutlined,

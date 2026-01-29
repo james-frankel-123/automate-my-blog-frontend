@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, message, Typography, Badge, Spin } from 'antd';
+import { Menu, Button, Avatar, Dropdown, message, Spin } from 'antd';
 import api from '../../services/api';
 import {
   DashboardOutlined,
@@ -25,9 +25,7 @@ import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
 import SandboxTab from './SandboxTab';
-import ProgressiveHeaders from '../Workflow/ProgressiveHeaders';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
-import ProgressiveStickyHeader from './ProgressiveStickyHeader';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
 import AdminUsersTab from './AdminUsersTab';
@@ -39,7 +37,7 @@ import ComprehensiveAnalysisTab from './ComprehensiveAnalysisTab';
 import UserAnalyticsTab from './UserAnalyticsTab';
 import PricingModal from '../Modals/PricingModal';
 
-const { Header, Sider, Content } = Layout;
+// Layout components not used directly
 
 const DashboardLayout = ({ 
   user: propUser, 
@@ -56,12 +54,9 @@ const DashboardLayout = ({
   forceWorkflowMode = false
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [collapsed, setCollapsed] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const {
     user: contextUser,
     logout,
-    isAdmin,
     isSuperAdmin,
     hasPermission,
     isImpersonating,
@@ -81,7 +76,6 @@ const DashboardLayout = ({
     setShowAuthModal, 
     authContext, 
     setAuthContext,
-    stickyWorkflowSteps,
     stepResults 
   } = useWorkflowMode();
   
@@ -97,7 +91,6 @@ const DashboardLayout = ({
   const [showDashboardLocal, setShowDashboardLocal] = useState(false);
   const [projectMode, setProjectMode] = useState(!user || forceWorkflowMode); // Start in project mode for logged-out users or when forced
   const [showSaveProjectButton, setShowSaveProjectButton] = useState(false);
-  const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null); // null = loading, true/false = loaded
   const [projectJustSaved, setProjectJustSaved] = useState(false);
   const effectiveShowDashboard = (showDashboard || showDashboardLocal) && !(isNewRegistration && projectMode);
 
@@ -511,10 +504,6 @@ const DashboardLayout = ({
     }
   };
 
-
-  // Animation styles - elements slide in when dashboard is shown
-  const animationDuration = '1s';
-  const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
   // Base menu items available to all users
   const baseMenuItems = [

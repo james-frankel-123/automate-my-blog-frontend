@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Alert, Space } from 'antd';
-import { LockOutlined, MailOutlined, BankOutlined, LinkOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 
