@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, message, Typography, Badge, Spin } from 'antd';
+import { Menu, Button, Avatar, Dropdown, message, Spin } from 'antd';
 import api from '../../services/api';
 import {
   DashboardOutlined,
@@ -19,14 +19,13 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 import DashboardTab from './DashboardTab';
 import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
 import SandboxTab from './SandboxTab';
-import ProgressiveHeaders from '../Workflow/ProgressiveHeaders';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
-import ProgressiveStickyHeader from './ProgressiveStickyHeader';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
 import AdminUsersTab from './AdminUsersTab';
@@ -38,7 +37,7 @@ import ComprehensiveAnalysisTab from './ComprehensiveAnalysisTab';
 import UserAnalyticsTab from './UserAnalyticsTab';
 import PricingModal from '../Modals/PricingModal';
 
-const { Header, Sider, Content } = Layout;
+// Layout components not used directly
 
 const DashboardLayout = ({ 
   user: propUser, 
@@ -55,12 +54,9 @@ const DashboardLayout = ({
   forceWorkflowMode = false
 }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [collapsed, setCollapsed] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const {
     user: contextUser,
     logout,
-    isAdmin,
     isSuperAdmin,
     hasPermission,
     isImpersonating,
@@ -80,9 +76,15 @@ const DashboardLayout = ({
     setShowAuthModal, 
     authContext, 
     setAuthContext,
-    stickyWorkflowSteps,
     stepResults 
   } = useWorkflowMode();
+  
+  // Analytics tracking
+  const { trackPageView, trackEvent } = useAnalytics();
+  
+  // Restore collapsed state (needed for sidebar)
+  const [collapsed, setCollapsed] = useState(false);
+  const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null);
   
   // Step management for logged-out users
   const [currentStep, setCurrentStep] = useState(0);
@@ -93,7 +95,6 @@ const DashboardLayout = ({
   const [showDashboardLocal, setShowDashboardLocal] = useState(false);
   const [projectMode, setProjectMode] = useState(!user || forceWorkflowMode); // Start in project mode for logged-out users or when forced
   const [showSaveProjectButton, setShowSaveProjectButton] = useState(false);
-  const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null); // null = loading, true/false = loaded
   const [projectJustSaved, setProjectJustSaved] = useState(false);
   const effectiveShowDashboard = (showDashboard || showDashboardLocal) && !(isNewRegistration && projectMode);
 
@@ -197,6 +198,11 @@ const DashboardLayout = ({
     window.history.replaceState({}, '', window.location.pathname);
 
     if (paymentStatus === 'success') {
+      // Track payment_completed event
+      trackEvent('payment_completed', {
+        userId: user?.id
+      }).catch(err => console.error('Failed to track payment_completed:', err));
+      
       if (user) {
         message.success('Payment successful! Your credits are being added...');
 
@@ -237,6 +243,12 @@ const DashboardLayout = ({
         message.warning('Payment successful, but you were logged out. Please log in to see your credits.');
       }
     } else if (paymentStatus === 'cancelled') {
+      // Track payment_failed/cancelled event
+      trackEvent('payment_failed', {
+        reason: 'cancelled',
+        userId: user?.id
+      }).catch(err => console.error('Failed to track payment_failed:', err));
+      
       message.info('Payment was cancelled. You can try again anytime.');
     }
   }, [user, loading, refreshQuota]); // Re-run when user or loading changes
@@ -367,6 +379,18 @@ const DashboardLayout = ({
   
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
+    // Track tab_switched event
+    trackEvent('tab_switched', {
+      fromTab: activeTab,
+      toTab: newTab
+    }).catch(err => console.error('Failed to track tab_switched:', err));
+    
+    // Track page view for analytics
+    trackPageView(newTab, { 
+      previousTab: activeTab,
+      user: user?.id 
+    });
+    
     // For settings, switch to settings tab (not part of scrollable sections)
     if (newTab === 'settings' || newTab.startsWith('admin-')) {
       setActiveTab(newTab);
@@ -483,10 +507,6 @@ const DashboardLayout = ({
     }
   };
 
-
-  // Animation styles - elements slide in when dashboard is shown
-  const animationDuration = '1s';
-  const easing = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
   // Base menu items available to all users
   const baseMenuItems = [

@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
-import { Card, List, Tag, Alert, Statistic, Row, Col, Progress, Collapse, Spin, Table, Switch } from 'antd';
+import { Card, List, Tag, Alert, Statistic, Row, Col, Progress, Spin, Table, Switch } from 'antd';
 import { FunnelPlotOutlined, WarningOutlined, DownOutlined } from '@ant-design/icons';
 import autoBlogAPI from '../../../services/api';
-
-const { Panel } = Collapse;
 
 const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, dateRange }) => {
   const [expandedStages, setExpandedStages] = useState({});

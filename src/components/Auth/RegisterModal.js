@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Input, Button, Alert, Space } from 'antd';
-import { LockOutlined, MailOutlined, BankOutlined, LinkOutlined } from '@ant-design/icons';
+import { LockOutlined, MailOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 
@@ -12,7 +12,12 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
   const [form] = Form.useForm();
   const [detectedData, setDetectedData] = useState(null);
   const { register } = useAuth();
-  const { trackFormSubmit, trackFunnelStep } = useAnalytics();
+  const { trackFormSubmit, trackFunnelStep, trackEvent } = useAnalytics();
+
+  // Track when registration modal is opened
+  useEffect(() => {
+    trackEvent('signup_started', { context });
+  }, [trackEvent, context]);
 
   useEffect(() => {
     // Extract company data from workflow analysis stored in localStorage

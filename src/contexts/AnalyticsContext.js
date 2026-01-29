@@ -27,6 +27,7 @@ export const AnalyticsProvider = ({ children }) => {
         eventType,
         eventData,
         pageUrl: window.location.href,
+        userId: user?.id || null, // Include user ID in all events
         metadata: {
           sessionId: sessionId.current,
           referrer: document.referrer,

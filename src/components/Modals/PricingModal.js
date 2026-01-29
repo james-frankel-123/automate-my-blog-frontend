@@ -19,13 +19,18 @@ const PricingModal = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
-  const { trackPageView, trackClick, trackFunnelStep } = useAnalytics();
+  const { trackPageView, trackClick, trackFunnelStep, trackEvent } = useAnalytics();
 
   // Track when pricing modal is opened
   useEffect(() => {
     if (open) {
       trackPageView('pricing_modal', { isAuthenticated: !!user });
       trackFunnelStep('view_pricing');
+      
+      // Track pricing_modal_opened event
+      trackEvent('pricing_modal_opened', {
+        isAuthenticated: !!user
+      }).catch(err => console.error('Failed to track pricing_modal_opened:', err));
     }
   }, [open, user, trackPageView, trackFunnelStep]);
 

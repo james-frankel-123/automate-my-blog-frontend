@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Alert, Statistic, Row, Col, Progress } from 'antd';
-import { FunnelPlotOutlined, UserAddOutlined } from '@ant-design/icons';
+import { UserAddOutlined } from '@ant-design/icons';
 
 const LeadFunnelPanel = ({ leadFunnelData, loading }) => {
   // Process lead funnel visualization data

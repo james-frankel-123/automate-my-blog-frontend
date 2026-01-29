@@ -10,13 +10,9 @@ import {
   Table, 
   Tag, 
   Progress, 
-  Divider,
   Empty,
   Spin,
-  Alert,
-  Tabs,
-  List,
-  Avatar
+  Tabs
 } from 'antd';
 import { 
   BookOutlined, 
@@ -30,9 +26,7 @@ import {
   BulbOutlined,
   BgColorsOutlined,
   NodeIndexOutlined,
-  FundOutlined,
   SearchOutlined,
-  CalendarOutlined,
   ThunderboltOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';

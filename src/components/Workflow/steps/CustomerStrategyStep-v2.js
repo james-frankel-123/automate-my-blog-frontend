@@ -7,6 +7,7 @@ import {
   LockOutlined 
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
+import { useAnalytics } from '../../../contexts/AnalyticsContext';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -62,6 +63,7 @@ const CustomerStrategyStepV2 = (props) => {
   const defaultColors = getDefaultColors();
   const analysis = stepResults?.websiteAnalysis || {};
   const scenarios = analysis.scenarios || [];
+  const { trackEvent } = useAnalytics();
 
   // =============================================================================
   // EVENT HANDLERS
@@ -76,6 +78,13 @@ const CustomerStrategyStepV2 = (props) => {
       ...scenario,
       index: index
     });
+    
+    // Track strategy_selected event
+    trackEvent('strategy_selected', {
+      strategyIndex: index,
+      strategyName: scenario.name || `Strategy ${index + 1}`,
+      targetAudience: scenario.targetAudience
+    }).catch(err => console.error('Failed to track strategy_selected:', err));
   };
 
   /**
@@ -85,6 +94,12 @@ const CustomerStrategyStepV2 = (props) => {
   const continueToTopicGeneration = async () => {
     setStrategySelectionCompleted(true);
     setCurrentStep(3);
+    
+    // Track workflow step completion
+    trackEvent('workflow_step_completed', {
+      step: 'strategy_selection',
+      strategyIndex: selectedCustomerStrategy?.index
+    }).catch(err => console.error('Failed to track workflow_step_completed:', err));
     
     // Auto-start topic generation based on selected strategy
     setTimeout(async () => {

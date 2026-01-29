@@ -11,6 +11,7 @@ import {
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { topicAPI } from '../../../services/workflowAPI';
+import { useAnalytics } from '../../../contexts/AnalyticsContext';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -69,6 +70,7 @@ const TopicSelectionStepStandalone = ({
   const brandColors = getBrandColors({ websiteAnalysis: analysisResults });
   const defaultColors = getDefaultColors();
   const analysis = analysisResults || {};
+  const { trackEvent } = useAnalytics();
   
   // Local state management if parent doesn't provide it
   const [localAvailableTopics, setLocalAvailableTopics] = useState([]);
@@ -120,6 +122,12 @@ const TopicSelectionStepStandalone = ({
     
     updateLoading(true);
     
+    // Track topic_generation_started event
+    trackEvent('topic_generated', {
+      strategySelected: !!selectedCustomerStrategy,
+      strategyIndex: selectedCustomerStrategy?.index
+    }).catch(err => console.error('Failed to track topic_generated:', err));
+    
     try {
       const result = await topicAPI.generateTrendingTopics(
         analysisResults,
@@ -159,6 +167,19 @@ const TopicSelectionStepStandalone = ({
     const updateSelectedTopic = setSelectedTopic || setLocalSelectedTopic;
     updateSelectedTopic(topic);
     
+    // Track topic_selected event
+    trackEvent('topic_selected', {
+      topicId: topicId,
+      topicTitle: topic.title,
+      topicType: topic.type
+    }).catch(err => console.error('Failed to track topic_selected:', err));
+    
+    // Track workflow step completion
+    trackEvent('workflow_step_completed', {
+      step: 'topic_selection',
+      topicId: topicId
+    }).catch(err => console.error('Failed to track workflow_step_completed:', err));
+    
     message.success(`Selected topic: ${topic.title}`);
     onTopicSelected && onTopicSelected(topic, topicId);
   };
@@ -167,6 +188,11 @@ const TopicSelectionStepStandalone = ({
    * Handle strategy editing (premium feature)
    */
   const handleStrategyEdit = () => {
+    // Track strategy_edited event
+    trackEvent('strategy_edited', {
+      fromStep: 'topic_selection'
+    }).catch(err => console.error('Failed to track strategy_edited:', err));
+    
     if (requireAuth) {
       requireAuth('Edit content strategy', 'premium-gate');
     } else {
@@ -178,6 +204,11 @@ const TopicSelectionStepStandalone = ({
    * Handle "see more topics" premium gate
    */
   const handleSeeMoreTopics = () => {
+    // Track topic_regenerated event
+    trackEvent('topic_regenerated', {
+      currentTopicCount: currentTopics.length
+    }).catch(err => console.error('Failed to track topic_regenerated:', err));
+    
     if (requireAuth) {
       requireAuth('View additional content ideas', 'premium-gate');
     } else {

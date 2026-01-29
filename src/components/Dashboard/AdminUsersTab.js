@@ -24,9 +24,7 @@ import {
   EyeOutlined,
   UserSwitchOutlined,
   CrownOutlined,
-  TeamOutlined,
-  MailOutlined,
-  CalendarOutlined
+  TeamOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';

@@ -8,7 +8,6 @@ import {
   MoreOutlined,
   BulbOutlined,
   EyeOutlined,
-  CheckOutlined,
   ReloadOutlined,
   LockOutlined,
   TeamOutlined,
@@ -17,6 +16,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
+import { useAnalytics } from '../../contexts/AnalyticsContext';
 import { format } from 'date-fns';
 import { WorkflowGuidance } from '../Workflow/ModeToggle';
 import api from '../../services/api';
@@ -101,6 +101,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     addStickyWorkflowStep,
     selectedCustomerStrategy
   } = useWorkflowMode();
+  const { trackEvent } = useAnalytics();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSchedulingModal, setShowSchedulingModal] = useState(false);
@@ -349,9 +350,22 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const handleSchedulePost = (post) => {
     setSelectedPost(post);
     setShowSchedulingModal(true);
+    
+    // Track post scheduling started
+    trackEvent('post_scheduled', {
+      postId: post.id,
+      action: 'schedule_modal_opened'
+    }).catch(err => console.error('Failed to track post_scheduled:', err));
   };
 
   const handleScheduleSave = (scheduleData) => {
+    // Track post_scheduled event (completion)
+    trackEvent('post_scheduled', {
+      postId: selectedPost?.id,
+      scheduledDate: scheduleData.date,
+      platform: scheduleData.platform,
+      notifyOnPublish: scheduleData.notify
+    }).catch(err => console.error('Failed to track post_scheduled:', err));
     // Save scheduling info to posts state
     const updatedPosts = posts.map(post => 
       post.id === selectedPost.id 
@@ -548,6 +562,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       
       if (result.success) {
         setEditingContent(result.content);
+        
+        // Track content_generation_completed event
+        trackEvent('content_generation_completed', {
+          topicId: topic.id,
+          contentLength: result.content.length,
+          wordCount: result.content.split(/\s+/).length,
+          useEnhancedGeneration: shouldUseEnhancement
+        }).catch(err => console.error('Failed to track content_generation_completed:', err));
+        
+        // Track workflow step completion
+        trackEvent('workflow_step_completed', {
+          step: 'content_generation',
+          topicId: topic.id
+        }).catch(err => console.error('Failed to track workflow_step_completed:', err));
         setContentGenerated(true);
 
         // Track content generated
@@ -665,6 +693,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   
   // Handle content editing
   const handleContentChange = (value) => {
+    // Track content_edit_started on first edit
+    if (!editingContent && value) {
+      trackEvent('content_edit_started', {
+        postId: currentDraft?.id,
+        topicId: selectedTopic?.id
+      }).catch(err => console.error('Failed to track content_edit_started:', err));
+    }
+    
     setEditingContent(value);
     if (currentDraft) {
       setCurrentDraft({
@@ -736,6 +772,25 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             setTimeout(() => {
               loadPosts();
             }, 100);
+          }
+          
+          // Track content_saved event
+          trackEvent('content_saved', {
+            postId: currentDraft.id,
+            isAutosave: !showUserFeedback,
+            isUpdate: isUpdate,
+            contentLength: editingContent?.length || 0
+          }).catch(err => console.error('Failed to track content_saved:', err));
+          
+          // Track post_created or post_edited events
+          if (isUpdate) {
+            trackEvent('post_edited', {
+              postId: currentDraft.id
+            }).catch(err => console.error('Failed to track post_edited:', err));
+          } else {
+            trackEvent('post_created', {
+              postId: result.post?.id
+            }).catch(err => console.error('Failed to track post_created:', err));
           }
           
           // Track project saved (only for manual saves, not autosaves)
@@ -946,6 +1001,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       
       setEditingContent(post.content);
       setContentGenerated(true);
+      
+      // Track post_opened event
+      trackEvent('post_opened', {
+        postId: post.id,
+        postStatus: post.status
+      }).catch(err => console.error('Failed to track post_opened:', err));
       console.log('🔧 DEBUG: contentGenerated set to true, editorViewMode should show');
       console.log('🔧 DEBUG: Current state after handleEditPost - contentGenerated:', true, 'editorViewMode:', editorViewMode);
       
@@ -1014,6 +1075,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
   // Close post function - saves final changes and returns to posts list
   const handleClosePost = async () => {
+    // Track workflow_abandoned if user closes without exporting
+    if (contentGenerated && !showExportModal) {
+      trackEvent('workflow_abandoned', {
+        step: 'content_editing',
+        postId: currentDraft?.id
+      }).catch(err => console.error('Failed to track workflow_abandoned:', err));
+    }
     try {
       // Perform final save if there are unsaved changes
       if (editingContent !== lastSavedContent && editingContent.trim()) {
@@ -1620,6 +1688,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                             console.log('🔧 DEBUG: Edit button clicked, editorViewMode:', editorViewMode);
                             setEditorViewMode('edit');
                             setPreviewMode(false);
+                            
+                            // Track editor_view_changed event
+                            trackEvent('editor_view_changed', {
+                              view: 'edit',
+                              previousView: editorViewMode
+                            }).catch(err => console.error('Failed to track editor_view_changed:', err));
                           }}
                           size="small"
                         >
@@ -1632,6 +1706,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                             console.log('🔧 DEBUG: Preview button clicked, editorViewMode:', editorViewMode);
                             setEditorViewMode('preview');
                             setPreviewMode(true);
+                            
+                            // Track content_previewed and editor_view_changed events
+                            trackEvent('content_previewed', {
+                              postId: currentDraft?.id
+                            }).catch(err => console.error('Failed to track content_previewed:', err));
+                            
+                            trackEvent('editor_view_changed', {
+                              view: 'preview',
+                              previousView: editorViewMode
+                            }).catch(err => console.error('Failed to track editor_view_changed:', err));
                           }}
                           size="small"
                         >

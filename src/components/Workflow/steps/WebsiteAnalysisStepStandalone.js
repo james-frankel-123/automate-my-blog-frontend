@@ -259,6 +259,18 @@ const WebsiteAnalysisStepStandalone = ({
           timestamp: new Date().toISOString()
         }).catch(err => console.error('Failed to track analysis_completed:', err));
 
+        // Track scrape_completed event
+        autoBlogAPI.trackEvent({
+          eventType: 'scrape_completed',
+          eventData: {
+            url: validation.formattedUrl,
+            businessName: result.analysis?.businessName || result.analysis?.companyName,
+            businessType: result.analysis?.businessType || result.analysis?.industry
+          },
+          userId: autoBlogAPI.getCurrentUserId(),
+          pageUrl: window.location.href
+        }).catch(err => console.error('Failed to track scrape_completed:', err));
+
         message.success('Website analysis completed successfully!');
 
         console.log('🎯 [CTA DEBUG] WebsiteAnalysisStepStandalone: API result contains CTAs:', {
@@ -306,6 +318,18 @@ const WebsiteAnalysisStepStandalone = ({
     } catch (error) {
       console.error('Website analysis error:', error);
       message.error(`Analysis failed: ${error.message}`);
+      
+      // Track scrape_failed event
+      autoBlogAPI.trackEvent({
+        eventType: 'scrape_failed',
+        eventData: {
+          url: websiteUrl,
+          error: error.message
+        },
+        userId: autoBlogAPI.getCurrentUserId(),
+        pageUrl: window.location.href
+      }).catch(err => console.error('Failed to track scrape_failed:', err));
+      
       return false;
     } finally {
       const updateLoading = setIsLoading || setLocalLoading;

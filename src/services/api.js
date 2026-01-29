@@ -137,9 +137,30 @@ class AutoBlogAPI {
         return response;
       }
     } catch (error) {
+      // Track error events
       if (error.name === 'AbortError') {
+        // Track timeout_occurred event
+        this.trackEvent({
+          eventType: 'timeout_occurred',
+          eventData: { endpoint: normalizedEndpoint },
+          userId: this.getCurrentUserId(),
+          pageUrl: window.location.href
+        }).catch(err => console.error('Failed to track timeout:', err));
+        
         throw new Error('Request timed out. Please try again.');
       }
+      
+      // Track api_error event
+      this.trackEvent({
+        eventType: 'api_error',
+        eventData: { 
+          endpoint: normalizedEndpoint,
+          error: error.message,
+          status: error.status || 'unknown'
+        },
+        userId: this.getCurrentUserId(),
+        pageUrl: window.location.href
+      }).catch(err => console.error('Failed to track api_error:', err));
       
       throw new Error(`API Error: ${error.message}`);
     }
@@ -163,6 +184,14 @@ class AutoBlogAPI {
       if (!token) {
         headers['x-session-id'] = sessionId;
       }
+
+      // Track scrape_started event
+      this.trackEvent({
+        eventType: 'scrape_started',
+        eventData: { url },
+        userId: this.getCurrentUserId(),
+        pageUrl: window.location.href
+      }).catch(err => console.error('Failed to track scrape_started:', err));
 
       console.log('Step 1/4: Analyzing website...');
 

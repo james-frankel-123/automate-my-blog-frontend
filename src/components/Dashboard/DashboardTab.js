@@ -135,43 +135,15 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     }
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
 
-
+  // Handle create new post action
   const handleCreateNewPost = () => {
-    // This starts the guided project from Dashboard → Audience → Posts
+    // Navigate to posts tab or trigger post creation
     if (onEnterProjectMode) {
       onEnterProjectMode();
     } else {
       tabMode.enterWorkflowMode();
     }
-    
-    // Check if website analysis is completed
-    const isAnalysisCompleted = stepResults.home?.analysisCompleted;
-    
-    setTimeout(() => {
-      if (!isAnalysisCompleted) {
-        // Navigate to Home section for analysis first
-        const homeSection = document.getElementById('home');
-        if (homeSection) {
-          homeSection.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-          });
-        }
-        message.success('Complete website analysis first, then select your audience');
-      } else {
-        // Navigate to audience section (normal flow)
-        const audienceSection = document.getElementById('audience-segments');
-        if (audienceSection) {
-          audienceSection.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-          });
-        }
-        message.success('Starting guided creation project');
-      }
-    }, 100);
   };
-
 
   // Handle analysis completion from standalone component
   const handleAnalysisComplete = (data) => {
