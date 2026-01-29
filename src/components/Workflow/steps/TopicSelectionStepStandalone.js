@@ -12,7 +12,6 @@ import {
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { topicAPI } from '../../../services/workflowAPI';
 import { useAnalytics } from '../../../contexts/AnalyticsContext';
-import autoBlogAPI from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 

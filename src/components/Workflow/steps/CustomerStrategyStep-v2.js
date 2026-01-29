@@ -8,7 +8,6 @@ import {
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { useAnalytics } from '../../../contexts/AnalyticsContext';
-import autoBlogAPI from '../../../services/api';
 
 const { Title, Text, Paragraph } = Typography;
 

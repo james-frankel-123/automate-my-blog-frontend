@@ -7,7 +7,6 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
-import { useAnalytics } from '../../contexts/AnalyticsContext';
 import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { format } from 'date-fns';
@@ -135,47 +134,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       }, 200); // Slightly longer delay for state propagation
     }
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
-
-
-  // Import analytics
-import { useAnalytics } from '../../contexts/AnalyticsContext';
-
-const DashboardTab = () => {
-    // This starts the guided project from Dashboard → Audience → Posts
-    if (onEnterProjectMode) {
-      onEnterProjectMode();
-    } else {
-      tabMode.enterWorkflowMode();
-    }
-    
-    // Check if website analysis is completed
-    const isAnalysisCompleted = stepResults.home?.analysisCompleted;
-    
-    setTimeout(() => {
-      if (!isAnalysisCompleted) {
-        // Navigate to Home section for analysis first
-        const homeSection = document.getElementById('home');
-        if (homeSection) {
-          homeSection.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-          });
-        }
-        message.success('Complete website analysis first, then select your audience');
-      } else {
-        // Navigate to audience section (normal flow)
-        const audienceSection = document.getElementById('audience-segments');
-        if (audienceSection) {
-          audienceSection.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'start' 
-          });
-        }
-        message.success('Starting guided creation project');
-      }
-    }, 100);
-  };
-
 
   // Handle analysis completion from standalone component
   const handleAnalysisComplete = (data) => {
