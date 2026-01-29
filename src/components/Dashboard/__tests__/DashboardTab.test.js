@@ -184,7 +184,7 @@ describe('DashboardTab', () => {
 
       renderDashboardTab({ forceWorkflowMode: true });
 
-      expect(screen.getByText(/Continue to Audience Selection/i)).toBeInTheDocument();
+      expect(screen.getByText(/Continue to Audience/i)).toBeInTheDocument();
     });
 
     it('does not show continue button before analysis', () => {
@@ -192,7 +192,7 @@ describe('DashboardTab', () => {
 
       renderDashboardTab({ forceWorkflowMode: true });
 
-      expect(screen.queryByText(/Continue to Audience Selection/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Continue to Audience/i)).not.toBeInTheDocument();
     });
 
     it('calls onNextStep when continue button clicked', async () => {

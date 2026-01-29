@@ -117,6 +117,31 @@ export const systemVoice = {
   empty: {
     noTopicsYet: "We don't have topic ideas yet. Generate some from your audience.",
   },
+
+  // ─── Anticipatory suggestions (Issue 2: app feels one step ahead) ───
+  suggestions: {
+    afterAnalysis: (audienceOrType) =>
+      audienceOrType
+        ? `Ready to create something for ${audienceOrType}?`
+        : "We've got your site. Pick your audience next.",
+    afterAudience: (segmentName, count) =>
+      segmentName
+        ? `We've got ${count} topic idea${count !== 1 ? 's' : ''} that match "${segmentName}". Generate them?`
+        : `We've got ${count} topic idea${count !== 1 ? 's' : ''}. Generate them?`,
+    nextStepAudience: "Next: Choose your audience",
+    whySuggested: {
+      trending: "Trending in your niche",
+      matchesGoals: "Matches what you're already saying",
+      fitsAudience: "Fits your audience",
+      default: "Picked for you based on your goals",
+    },
+    getWhySuggestedForTopic: (topic) =>
+      topic?.whySuggested || topic?.reason || "Picked for you based on your goals",
+    welcomeBackCached: (context) =>
+      context
+        ? `Welcome back. Last time you were working on ${context}. Continue or start something new?`
+        : "Welcome back. Continue where you left off or start something new?",
+  },
 };
 
 export default systemVoice;
