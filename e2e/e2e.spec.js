@@ -267,9 +267,37 @@ test.describe('E2E (mocked backend)', () => {
         }
         await input.fill('https://example.com');
         await page.locator('button:has-text("Analyze")').first().click();
-        const progressCopy = page.locator('text=/Reading your site|30–60 seconds|building your profile/').first();
+        // Step messages (1:1 with API): Reading your pages…, Understanding who you're for…, Shaping conversion angles…, Adding audience visuals…
+        const progressCopy = page.locator('text=/Reading your (site|pages)|Understanding who you\'re for|Shaping conversion angles|Adding audience visuals|30–60 seconds|building your profile/i').first();
         await expect(progressCopy).toBeVisible({ timeout: 5000 });
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      });
+
+      test('should show analysis step progress or complete (four steps reflected in UI)', async ({ page }) => {
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(500);
+        const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await input.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        // With real API we see step messages (Reading your pages…, Understanding who you're for…, etc.).
+        // With fast mocks we may see a step briefly or go straight to success. Accept either.
+        const stepMessages = page.locator('text=/Reading your pages|Understanding who you\'re for|Shaping conversion angles|Adding audience visuals/i');
+        const successIndicator = page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience/i').first();
+        const sawStep = await stepMessages.first().isVisible({ timeout: 2000 }).catch(() => false);
+        const sawSuccess = await successIndicator.isVisible({ timeout: 2000 }).catch(() => false);
+        expect(sawStep || sawSuccess).toBeTruthy();
+        // Wait for analysis to complete
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await expect(page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience/i').first()).toBeVisible({ timeout: 5000 });
       });
 
       test('should show system hint after analysis complete', async ({ page }) => {

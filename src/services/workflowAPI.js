@@ -14,9 +14,10 @@ export const analysisAPI = {
   /**
    * Analyze website with comprehensive business intelligence
    * @param {string} websiteUrl - The website URL to analyze
+   * @param {{ onProgress?: (step: number) => void }} options - Optional; onProgress(step) called with 1-4 for each API step
    * @returns {Promise<Object>} Analysis results with business data
    */
-  async analyzeWebsite(websiteUrl) {
+  async analyzeWebsite(websiteUrl, options = {}) {
     try {
       // Ensure URL has protocol for backend API
       let formattedUrl = websiteUrl.trim();
@@ -24,7 +25,7 @@ export const analysisAPI = {
         formattedUrl = 'https://' + formattedUrl;
       }
 
-      const response = await autoBlogAPI.analyzeWebsite(formattedUrl);
+      const response = await autoBlogAPI.analyzeWebsite(formattedUrl, options);
       
       if (response.success && response.analysis) {
         // Determine research quality based on response completeness
