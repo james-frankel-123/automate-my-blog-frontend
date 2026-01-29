@@ -11,6 +11,7 @@ import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStep
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { format } from 'date-fns';
 import autoBlogAPI from '../../services/api';
+import { systemVoice } from '../../copy/systemVoice';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -202,6 +203,15 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     timestamp: new Date().toISOString()
   });
 
+  const hasCachedAnalysis = user && tabMode.mode === 'focus' &&
+    stepResults.home.websiteAnalysis?.businessName &&
+    stepResults.home.websiteAnalysis?.targetAudience;
+  const welcomeBackContext = hasCachedAnalysis
+    ? (stepResults.home.websiteAnalysis?.targetAudience
+        || stepResults.home.websiteAnalysis?.businessType
+        || null)
+    : null;
+
   return (
     <div>
       
@@ -219,6 +229,21 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           completedSteps={[]} // Will be populated based on workflow progress
           projectJustSaved={projectJustSaved}
         />
+
+        {/* Welcome-back hint when user has cached analysis (anticipatory UX) */}
+        {hasCachedAnalysis && welcomeBackContext && (
+          <div style={{
+            padding: '10px 16px',
+            marginBottom: '16px',
+            backgroundColor: '#f6ffed',
+            border: '1px solid #b7eb8f',
+            borderRadius: '8px',
+            fontSize: '14px',
+            color: '#389e0d',
+          }}>
+            {systemVoice.suggestions.welcomeBackCached(`"${welcomeBackContext}"`)}
+          </div>
+        )}
 
         {/* Main Content Area - Consistent layout for both states */}
         <div style={{
@@ -270,21 +295,26 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                   autoAnalyze={false}
                 />
                 
-                {/* Continue Button - Show after analysis completes and only in workflow mode */}
+                {/* Continue Button + anticipatory suggestion - Show after analysis completes and only in workflow mode */}
                 {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
                   <Card style={{ marginTop: '16px' }}>
                     <div style={{ textAlign: 'center', padding: '16px' }}>
+                      <Paragraph style={{ marginBottom: '12px', fontSize: '15px', color: '#333' }}>
+                        {systemVoice.suggestions.afterAnalysis(
+                          stepResults.home.websiteAnalysis.targetAudience || stepResults.home.websiteAnalysis.businessType
+                        )}
+                      </Paragraph>
                       <Button 
                         type="primary" 
                         size="large"
                         onClick={onNextStep || handleContinueToAudience}
                         style={{ minWidth: '200px' }}
                       >
-                        {onNextStep ? 'Next Step: Audience Selection' : 'Continue to Audience Selection'}
+                        {onNextStep ? 'Next Step: Audience Selection' : 'Continue to Audience'}
                       </Button>
                       <div style={{ marginTop: '8px' }}>
                         <Text type="secondary">
-                          Next: Choose your target customer strategy
+                          {systemVoice.suggestions.nextStepAudience}
                         </Text>
                       </div>
                     </div>

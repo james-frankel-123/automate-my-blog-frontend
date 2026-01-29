@@ -553,6 +553,13 @@ const TopicSelectionStepV2 = (props) => {
         {topic.subheader}
       </Paragraph>
       
+      {/* Why we suggested this (anticipatory UX) */}
+      <div data-testid="topic-why-suggested" style={{ marginBottom: '12px' }}>
+        <Text type="secondary" style={{ fontSize: '12px', fontStyle: 'italic' }}>
+          Why we suggested this: {systemVoice.suggestions.getWhySuggestedForTopic(topic)}
+        </Text>
+      </div>
+      
       {/* Traffic Prediction */}
       {topic.trafficPrediction && (
         <div style={{ 
@@ -745,28 +752,39 @@ const TopicSelectionStepV2 = (props) => {
   );
 
   /**
-   * Render empty state when no topics available
+   * Render empty state when no topics available (with anticipatory suggestion when audience is selected)
    */
-  const renderEmptyState = () => (
-    <div style={{ 
-      textAlign: 'center', 
-      padding: '60px 20px',
-      color: '#666'
-    }}>
-      <DatabaseOutlined style={{ 
-        fontSize: '48px', 
-        color: '#d9d9d9', 
-        marginBottom: '16px',
-        display: 'block'
-      }} />
-      <Title level={4} style={{ color: '#999', margin: '0 0 8px 0' }}>
-        No Content Ideas Available
-      </Title>
-      <Text style={{ color: '#666' }}>
-        No AI-generated topic suggestions found. Please try analyzing your website again.
-      </Text>
-    </div>
-  );
+  const renderEmptyState = () => {
+    const segmentName = selectedCustomerStrategy?.customerProblem || selectedCustomerStrategy?.targetSegment?.demographics;
+    const anticipatoryLine = segmentName
+      ? systemVoice.suggestions.afterAudience(segmentName, 3)
+      : null;
+    return (
+      <div style={{ 
+        textAlign: 'center', 
+        padding: '60px 20px',
+        color: '#666'
+      }}>
+        <DatabaseOutlined style={{ 
+          fontSize: '48px', 
+          color: '#d9d9d9', 
+          marginBottom: '16px',
+          display: 'block'
+        }} />
+        {anticipatoryLine && (
+          <Paragraph style={{ marginBottom: '12px', fontSize: '15px', color: '#333' }}>
+            {anticipatoryLine}
+          </Paragraph>
+        )}
+        <Title level={4} style={{ color: '#999', margin: '0 0 8px 0' }}>
+          {anticipatoryLine ? systemVoice.topics.generateTopics : 'No Content Ideas Available'}
+        </Title>
+        <Text style={{ color: '#666' }}>
+          {anticipatoryLine ? systemVoice.empty.noTopicsYet : 'No AI-generated topic suggestions found. Please try analyzing your website again.'}
+        </Text>
+      </div>
+    );
+  };
 
   /**
    * Render premium lead generation CTA

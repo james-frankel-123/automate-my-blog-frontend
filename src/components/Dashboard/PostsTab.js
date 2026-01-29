@@ -31,6 +31,7 @@ import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import HighlightedContentSuggestions from '../HighlightedContent/HighlightedContentSuggestions';
 import { EmptyState } from '../EmptyStates';
+import { systemVoice } from '../../copy/systemVoice';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLayout';
@@ -1427,6 +1428,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   {topic.subheader || topic.description || 'AI-generated content tailored to your audience'}
                                 </Paragraph>
                                 
+                                {/* Why we suggested this (anticipatory UX) */}
+                                <div data-testid="topic-why-suggested" style={{ marginBottom: '12px' }}>
+                                  <Text type="secondary" style={{ fontSize: '12px', fontStyle: 'italic' }}>
+                                    Why we suggested this: {systemVoice.suggestions.getWhySuggestedForTopic(topic)}
+                                  </Text>
+                                </div>
+                                
                                 {/* Traffic Prediction */}
                                 {topic.trafficPrediction && (
                                   <div style={{ 
@@ -2506,6 +2514,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               <Paragraph style={{ color: '#666', fontSize: responsive.fontSize.small, marginBottom: '12px' }}>
                                 {topic.subheader || topic.description || 'AI-generated content tailored to your audience'}
                               </Paragraph>
+                              
+                              {/* Why we suggested this (anticipatory UX) */}
+                              <div data-testid="topic-why-suggested" style={{ marginBottom: '12px' }}>
+                                <Text type="secondary" style={{ fontSize: '12px', fontStyle: 'italic' }}>
+                                  Why we suggested this: {systemVoice.suggestions.getWhySuggestedForTopic(topic)}
+                                </Text>
+                              </div>
                               
                               {/* Traffic Prediction */}
                               {topic.trafficPrediction && (

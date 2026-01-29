@@ -83,8 +83,8 @@ const MOCK_SCENARIOS = [
 ];
 
 const MOCK_TOPICS = [
-  { id: 1, title: 'How to Get Started with Example API', subheader: 'A practical guide', category: 'Technology', image: '', scenario: null },
-  { id: 2, title: 'Best Practices for Developer Integrations', subheader: 'Tips from the team', category: 'Technology', image: '', scenario: null },
+  { id: 1, title: 'How to Get Started with Example API', subheader: 'A practical guide', category: 'Technology', image: '', scenario: null, whySuggested: "Trending in your niche" },
+  { id: 2, title: 'Best Practices for Developer Integrations', subheader: 'Tips from the team', category: 'Technology', image: '', scenario: null, whySuggested: "Matches what you're already saying" },
 ];
 
 const MOCK_CONTENT = `

@@ -231,6 +231,80 @@ test.describe('E2E (mocked backend)', () => {
         await expect(toast.first()).toBeVisible({ timeout: 8000 });
       });
 
+      test('should show anticipatory line after analysis (Ready to create something for...)', async ({ page }) => {
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(500);
+        const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await input.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        const anticipatory = page.locator('text=/Ready to create something for|We\'ve got your site/').first();
+        await expect(anticipatory).toBeVisible({ timeout: 5000 });
+      });
+
+      // "Why we suggested this" is implemented in PostsTab and TopicSelectionStep-v2 (data-testid="topic-why-suggested").
+      // This test verifies the flow reaches topic load; topic cards with that copy may be replaced by the editor quickly in E2E.
+      test('topic generation shows mock topics after audience selection', async ({ page }) => {
+        test.setTimeout(60000);
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(800);
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        if (!(await websiteInput.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+        const continueBtn = page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first();
+        if (!(await continueBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await continueBtn.click({ force: true });
+        await page.waitForTimeout(800);
+        await page.locator('#audience-segments').scrollIntoViewIfNeeded().catch(() => {});
+        await page.waitForTimeout(500);
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+        if (!(await strategyCard.isVisible({ timeout: 8000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await strategyCard.click();
+        await page.waitForTimeout(2000);
+        const postsSection = page.locator('#posts');
+        if (!(await postsSection.isVisible({ timeout: 8000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        const genBtn = page.locator('button:has-text("Generate post"), button:has-text("Generating Topics")').first();
+        if (!(await genBtn.isVisible({ timeout: 8000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await genBtn.click();
+        await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(2000);
+        const topicTitle = page.locator(`text=${MOCK_TOPICS[0].title}`).first();
+        await expect(topicTitle).toBeVisible({ timeout: 12000 });
+      });
     });
 
     test('smoke: analyze → audience → strategy → posts section with generate', async ({ page }) => {
