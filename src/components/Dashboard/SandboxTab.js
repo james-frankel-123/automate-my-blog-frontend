@@ -14,7 +14,7 @@ import {
 } from '@ant-design/icons';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
-import { enUS } from 'date-fns/locale';
+import { enUS } from 'date-fns/locale/en-US';
 import { useAuth } from '../../contexts/AuthContext';
 import { VisualContentSuggestions } from '../VisualContent';
 import ContentDiscoverySettings from './ContentDiscoverySettings';
