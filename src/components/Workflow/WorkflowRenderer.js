@@ -3,6 +3,7 @@ import { message } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
+import { systemVoice } from '../../copy/systemVoice';
 import ModeToggle from './ModeToggle';
 import WebsiteAnalysisStep from './steps/WebsiteAnalysisStep-v2';
 import CustomerStrategyStep from './steps/CustomerStrategyStep-v2';
@@ -66,7 +67,7 @@ const WorkflowRenderer = () => {
             try {
               // Set loading state
               workflowMode.setIsLoading(true);
-              workflowMode.setScanningMessage('Analyzing your website...');
+              workflowMode.setScanningMessage(systemVoice.analysis.analyzing);
               workflowMode.advanceStep(1);
               
               // Simulate website analysis (in real implementation, this would call the API)
@@ -91,7 +92,7 @@ const WorkflowRenderer = () => {
               workflowMode.setAnalysisCompleted(true);
               workflowMode.setIsLoading(false);
               
-              message.success('Website analysis completed! Ready to continue to audience selection.');
+              message.success(systemVoice.toasts.analysisComplete);
               
               // Auto-advance to next step after a brief delay
               setTimeout(() => {
@@ -100,7 +101,7 @@ const WorkflowRenderer = () => {
               
             } catch (error) {
               workflowMode.setIsLoading(false);
-              message.error('Analysis failed. Please try again.');
+              message.error(systemVoice.toasts.analysisFailed);
             }
           }}
           setNavContext={() => {
@@ -119,7 +120,7 @@ const WorkflowRenderer = () => {
             embedded={true}
             onStrategySelected={(strategy) => {
               workflowMode.updateCustomerStrategy(strategy);
-              message.success('Customer strategy selected! Moving to topic selection.');
+              message.success(systemVoice.toasts.strategySelected);
               setTimeout(() => {
                 tabMode.continueToNextStep();
               }, 1000);
@@ -134,7 +135,7 @@ const WorkflowRenderer = () => {
             embedded={true}
             onTopicSelected={(topic) => {
               workflowMode.setSelectedTopic(topic);
-              message.success('Topic selected! Generating content...');
+              message.success(systemVoice.toasts.topicSelected);
               setTimeout(() => {
                 tabMode.continueToNextStep();
               }, 1000);
@@ -149,7 +150,7 @@ const WorkflowRenderer = () => {
             embedded={true}
             onContentGenerated={(content) => {
               workflowMode.setGeneratedContent(content);
-              message.success('Content generated! Ready for editing.');
+              message.success(systemVoice.toasts.contentGenerated);
               setTimeout(() => {
                 tabMode.continueToNextStep();
               }, 1000);
@@ -164,7 +165,7 @@ const WorkflowRenderer = () => {
             embedded={true}
             onContentSaved={(editedContent) => {
               workflowMode.setGeneratedContent(editedContent);
-              message.success('Content saved! Ready for export.');
+              message.success(systemVoice.toasts.contentSaved);
               setTimeout(() => {
                 tabMode.continueToNextStep();
               }, 1000);
@@ -178,9 +179,9 @@ const WorkflowRenderer = () => {
             user={user}
             embedded={true}
             onExportComplete={() => {
-              message.success('Content exported successfully!');
+              message.success(systemVoice.toasts.contentExported);
               if (!user) {
-                message.info('Sign up for more features and content management!');
+                message.info(systemVoice.toasts.signUpPrompt);
               }
             }}
           />

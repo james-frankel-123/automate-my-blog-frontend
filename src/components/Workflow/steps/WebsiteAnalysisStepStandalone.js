@@ -15,6 +15,7 @@ import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { analysisAPI } from '../../../services/workflowAPI';
 import workflowUtils from '../../../utils/workflowUtils';
 import autoBlogAPI from '../../../services/api';
+import { systemVoice } from '../../../copy/systemVoice';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -191,7 +192,7 @@ const WebsiteAnalysisStepStandalone = ({
    */
   const handleWebsiteSubmit = async () => {
     if (!websiteUrl?.trim()) {
-      message.warning('Please enter a website URL');
+      message.warning(systemVoice.analysis.enterUrl);
       return;
     }
     
@@ -223,14 +224,8 @@ const WebsiteAnalysisStepStandalone = ({
         timestamp: new Date().toISOString()
       });
 
-      // Phase-by-phase progress messages
-      const progressMessages = [
-        'Analyzing website content...',
-        '🔍 Researching brand guidelines and social media...',
-        '📊 Analyzing competitor keywords and search trends...',
-        '👥 Gathering customer insights and reviews...',
-        '🧠 Synthesizing insights with AI...'
-      ];
+      // Phase-by-phase progress messages (one voice: systemVoice)
+      const progressMessages = systemVoice.analysis.progress;
 
       // Show progress messages with delays
       for (let i = 0; i < progressMessages.length; i++) {
@@ -271,7 +266,7 @@ const WebsiteAnalysisStepStandalone = ({
           pageUrl: window.location.href
         }).catch(err => console.error('Failed to track scrape_completed:', err));
 
-        message.success('Website analysis completed successfully!');
+        message.success(systemVoice.analysis.success);
 
         console.log('🎯 [CTA DEBUG] WebsiteAnalysisStepStandalone: API result contains CTAs:', {
           hasCTAs: !!result.ctas,
@@ -303,7 +298,7 @@ const WebsiteAnalysisStepStandalone = ({
         if (result.fallbackAnalysis) {
           setAnalysisResults && setAnalysisResults(result.fallbackAnalysis);
           setAnalysisCompleted && setAnalysisCompleted(true);
-          message.warning('Website analysis completed with limited data. You can proceed or try a different URL.');
+          message.warning(systemVoice.analysis.successLimited);
           
           onAnalysisComplete && onAnalysisComplete({
             analysis: result.fallbackAnalysis,
@@ -317,7 +312,7 @@ const WebsiteAnalysisStepStandalone = ({
       }
     } catch (error) {
       console.error('Website analysis error:', error);
-      message.error(`Analysis failed: ${error.message}`);
+      message.error(systemVoice.analysis.analysisFailed);
       
       // Track scrape_failed event
       autoBlogAPI.trackEvent({
@@ -472,7 +467,7 @@ const WebsiteAnalysisStepStandalone = ({
         setEditableResults(null);
         
         // Show success message
-        message.success('Website analysis updated and saved successfully!');
+        message.success(systemVoice.analysis.updated);
         
         console.log('✅ Analysis saved successfully');
       } else {
@@ -481,7 +476,7 @@ const WebsiteAnalysisStepStandalone = ({
       
     } catch (error) {
       console.error('❌ Error saving analysis:', error);
-      message.error(`Failed to save changes: ${error.message}`);
+      message.error(systemVoice.analysis.saveFailed);
     } finally {
       setIsLoading && setIsLoading(false);
     }
@@ -511,7 +506,7 @@ const WebsiteAnalysisStepStandalone = ({
           fontSize: responsive.fontSize.title 
         }}>
           <GlobalOutlined style={{ marginRight: '8px', color: defaultColors.primary }} />
-          Analyze Your Website
+          {systemVoice.analysis.title}
         </Title>
       )}
       
@@ -520,7 +515,7 @@ const WebsiteAnalysisStepStandalone = ({
           <Input
             value={websiteUrl}
             onChange={(e) => setWebsiteUrl && setWebsiteUrl(e.target.value)}
-            placeholder="Enter your website URL (e.g., https://example.com)"
+            placeholder={systemVoice.analysis.inputPlaceholder}
             size="large"
             prefix={<GlobalOutlined style={{ color: '#999' }} />}
             disabled={shouldDisableInput || loading}
@@ -547,7 +542,7 @@ const WebsiteAnalysisStepStandalone = ({
               fontSize: responsive.fontSize.text
             }}
           >
-            {loading ? 'Analyzing...' : 'Analyze'}
+            {loading ? systemVoice.analysis.analyzing : systemVoice.analysis.analyze}
           </Button>
         </Space.Compact>
       </Form>
@@ -595,7 +590,7 @@ const WebsiteAnalysisStepStandalone = ({
             marginBottom: '0',
             fontSize: responsive.fontSize.text 
           }}>
-            {currentScanningMessage || 'Analyzing website content...'}
+            {currentScanningMessage || systemVoice.analysis.defaultProgress}
           </Paragraph>
         </div>
       </div>

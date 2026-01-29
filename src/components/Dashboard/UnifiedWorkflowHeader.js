@@ -8,6 +8,7 @@ import {
   EditOutlined, 
   DownloadOutlined 
 } from '@ant-design/icons';
+import { systemVoice } from '../../copy/systemVoice';
 
 const { Title, Paragraph } = Typography;
 
@@ -83,32 +84,32 @@ const UnifiedWorkflowHeader = ({
   // Determine header content based on state and current step
   const getHeaderContent = () => {
     
-    // Step-specific content for workflow progression
+    // Step-specific content for workflow progression (one voice: systemVoice)
     const stepMessages = {
       0: {
         icon: "🚀",
-        title: "Let's Create Your Perfect Blog Post",
-        description: "We'll analyze your website and create targeted content that speaks to your audience. This guided project will take you step-by-step to create high-converting blog content."
+        title: systemVoice.header.step0Title,
+        description: systemVoice.header.step0Description
       },
       1: {
         icon: "🔍",
-        title: "Analyzing Your Website",
-        description: "We're gathering insights about your business and audience to create highly targeted content recommendations."
+        title: systemVoice.header.step1Title,
+        description: systemVoice.header.step1Description
       },
       2: {
         icon: "🎯",
-        title: "Choose Your Target Audience",
-        description: "Select the audience segment that best matches your business goals. This will help us create content that converts."
+        title: systemVoice.header.step2Title,
+        description: systemVoice.header.step2Description
       },
       3: {
-        icon: "💡", 
-        title: "Generate Content Ideas",
-        description: "We'll create trending topic ideas specifically tailored to your audience and business objectives."
+        icon: "💡",
+        title: systemVoice.header.step3Title,
+        description: systemVoice.header.step3Description
       },
       4: {
         icon: "✍️",
-        title: "Create Your Blog Post",
-        description: "Generate high-quality, SEO-optimized content that speaks directly to your target audience."
+        title: systemVoice.header.step4Title,
+        description: systemVoice.header.step4Description
       }
     };
 
@@ -129,7 +130,7 @@ const UnifiedWorkflowHeader = ({
       return {
         title: `${user.firstName ? `${user.firstName}, ` : ''}${stepInfo.title} ${stepInfo.icon}`,
         description: stepInfo.description,
-        buttonText: analysisCompleted ? "Continue Project" : "Create New Post",
+        buttonText: analysisCompleted ? systemVoice.header.continueProject : systemVoice.header.createNewPost,
         showButton: false // Hide button in project mode (forceWorkflowMode)
       };
     }
@@ -137,10 +138,10 @@ const UnifiedWorkflowHeader = ({
     // Special case: Project just saved
     if (projectJustSaved) {
       return {
-        title: "Project saved! 🎉",
+        title: `${systemVoice.header.projectSavedTitle} 🎉`,
         description: (
           <span>
-            Your content automation dashboard is ready. Go to{' '}
+            {systemVoice.header.projectSavedDescription}{' '}
             <Button 
               type="link" 
               style={{ 
@@ -157,9 +158,8 @@ const UnifiedWorkflowHeader = ({
                 });
               }}
             >
-              Posts
+              {systemVoice.header.goToPosts}
             </Button>
-            {' '}to reopen your content.
           </span>
         ),
         buttonText: null,
@@ -169,8 +169,8 @@ const UnifiedWorkflowHeader = ({
 
     // Logged-in dashboard mode: Full dashboard features (button now floating)
     return {
-      title: `Welcome back${user.firstName ? `, ${user.firstName}` : ''}! 👋`,
-      description: "Your content automation dashboard is ready. Create, discover, and optimize your blog content strategy.",
+      title: `${systemVoice.header.welcomeBack}${user.firstName ? `, ${user.firstName}` : ''}! 👋`,
+      description: systemVoice.header.dashboardDescription,
       buttonText: null,
       showButton: false // Button is now floating in DashboardLayout
     };
@@ -255,10 +255,10 @@ const UnifiedWorkflowHeader = ({
           >
             <div style={{ marginBottom: '12px' }}>
               <div style={{ fontSize: '16px', fontWeight: 600, color: '#52c41a', marginBottom: '4px' }}>
-                🎉 Welcome to Automate My Blog!
+                🎉 {systemVoice.header.newUserWelcome}
               </div>
               <div style={{ fontSize: '14px', color: '#666' }}>
-                Your account has been created successfully. Save your project to access the full dashboard.
+                {systemVoice.header.newUserSavePrompt}
               </div>
             </div>
             <Button 
@@ -272,7 +272,7 @@ const UnifiedWorkflowHeader = ({
                 fontWeight: 600
               }}
             >
-              💾 Save Project
+              💾 {systemVoice.header.saveProject}
             </Button>
           </div>
         )}

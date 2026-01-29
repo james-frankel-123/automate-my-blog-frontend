@@ -8,6 +8,7 @@ import {
   CheckCircleOutlined,
   EditOutlined
 } from '@ant-design/icons';
+import { systemVoice } from '../../copy/systemVoice';
 
 const { Text } = Typography;
 
@@ -22,42 +23,42 @@ const ProgressiveHeaders = ({
   className = ''
 }) => {
   
-  // Step configuration for progressive headers
+  // Step configuration for progressive headers (one voice: systemVoice)
   const stepConfig = {
     website: {
       icon: <GlobalOutlined style={{ color: '#1890ff' }} />,
-      title: 'Website Analyzed',
+      title: systemVoice.progressiveSteps.website,
       getDescription: () => {
         const analysis = stepResults?.websiteAnalysis;
-        const domain = analysis?.websiteUrl ? 
-          analysis.websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : 
+        const domain = analysis?.websiteUrl ?
+          analysis.websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] :
           '';
-        return domain ? `${domain} • ${analysis?.businessType || 'Business'}` : 'Website analysis complete';
+        return systemVoice.progressiveSteps.getWebsiteDescription(domain, analysis?.businessType);
       }
     },
     strategy: {
       icon: <UserOutlined style={{ color: '#52c41a' }} />,
-      title: 'Audience Selected',
+      title: systemVoice.progressiveSteps.strategy,
       getDescription: () => {
         const strategy = stepResults?.selectedStrategy;
-        return strategy?.targetSegment?.demographics || 'Target audience defined';
+        return systemVoice.progressiveSteps.getStrategyDescription(strategy?.targetSegment?.demographics);
       }
     },
     topic: {
       icon: <BulbOutlined style={{ color: '#fa8c16' }} />,
-      title: 'Topic Chosen',
+      title: systemVoice.progressiveSteps.topic,
       getDescription: () => {
         const topic = stepResults?.selectedTopic;
-        return topic?.title || 'Content topic selected';
+        return systemVoice.progressiveSteps.getTopicDescription(topic?.title);
       }
     },
     content: {
       icon: <FileTextOutlined style={{ color: '#722ed1' }} />,
-      title: 'Content Generated',
+      title: systemVoice.progressiveSteps.content,
       getDescription: () => {
         const content = stepResults?.finalContent || stepResults?.generatedContent;
         const wordCount = content ? content.split(' ').length : 0;
-        return wordCount > 0 ? `${wordCount} words generated` : 'Blog post created';
+        return systemVoice.progressiveSteps.getContentDescription(wordCount);
       }
     }
   };
@@ -139,7 +140,7 @@ const ProgressiveHeaders = ({
                   color="success"
                   style={{ fontSize: '11px', margin: 0 }}
                 >
-                  Complete
+                  {systemVoice.progressiveSteps.complete}
                 </Tag>
                 {onEditStep && (
                   <Button
@@ -148,7 +149,7 @@ const ProgressiveHeaders = ({
                     icon={<EditOutlined />}
                     style={{ padding: '4px 8px' }}
                   >
-                    Edit
+                    {systemVoice.progressiveSteps.edit}
                   </Button>
                 )}
               </Space>

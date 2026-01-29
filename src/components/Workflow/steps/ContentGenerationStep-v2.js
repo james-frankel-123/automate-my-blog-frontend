@@ -3,6 +3,7 @@ import { Card, Typography, Spin, Row, Col, Button, Tag } from 'antd';
 import { LockOutlined, BulbOutlined } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import PricingModal from '../../Modals/PricingModal';
+import { systemVoice } from '../../../copy/systemVoice';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -536,7 +537,7 @@ const ContentGenerationStepV2 = (props) => {
           color: defaultColors.primary,
           fontSize: responsive.fontSize.title
         }}>
-          Choose Your Content Topic
+          {systemVoice.content.readyToGenerate}
         </Title>
         
         <Paragraph style={{ 
@@ -546,7 +547,7 @@ const ContentGenerationStepV2 = (props) => {
           maxWidth: '600px',
           margin: '0 auto 30px auto'
         }}>
-          Based on your {analysis.businessType ? analysis.businessType.toLowerCase() : 'business'} analysis, here are high-impact blog post ideas:
+          {systemVoice.topics.ideasHeadline(analysis?.businessType)}
         </Paragraph>
 
         {/* Keyword Research Insight */}
