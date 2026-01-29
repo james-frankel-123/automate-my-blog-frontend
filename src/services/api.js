@@ -51,13 +51,6 @@ class AutoBlogAPI {
     const authHeaders = {};
     if (token) {
       authHeaders['Authorization'] = `Bearer ${token}`;
-      console.log('🔍 makeRequest: Added Authorization header', { 
-        endpoint: normalizedEndpoint,
-        tokenStart: token.substring(0, 20) + '...',
-        hasCustomHeaders: !!options.headers
-      });
-    } else {
-      console.log('🔍 makeRequest: No token found', { endpoint: normalizedEndpoint });
     }
     
     const defaultOptions = {
@@ -83,13 +76,6 @@ class AutoBlogAPI {
       ...(timeoutSignal && { signal: timeoutSignal }),
     };
     
-    // Debug: Log final headers being sent
-    console.log('🔍 makeRequest final headers:', {
-      endpoint: normalizedEndpoint,
-      headers: requestOptions.headers,
-      hasAuth: !!requestOptions.headers?.Authorization
-    });
-
     try {
       const response = await fetch(url, requestOptions);
       

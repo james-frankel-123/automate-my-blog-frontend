@@ -19,9 +19,12 @@ export const AnalyticsProvider = ({ children }) => {
   const flushTimeout = useRef(null);
 
   /**
-   * Track individual event
+   * Track individual event (only sends when user is authenticated; backend returns 401 without token)
    */
   const trackEvent = useCallback(async (eventType, eventData = {}, metadata = {}) => {
+    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('accessToken');
+    if (!hasToken) return;
+
     try {
       const event = {
         eventType,
@@ -58,10 +61,18 @@ export const AnalyticsProvider = ({ children }) => {
   }, [user]);
 
   /**
-   * Batch send events
+   * Batch send events (only when authenticated; backend returns 401 without token)
    */
   const flushEvents = useCallback(async () => {
     if (eventQueue.current.length === 0) return;
+
+    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('accessToken');
+    if (!hasToken) {
+      eventQueue.current = [];
+      clearTimeout(flushTimeout.current);
+      flushTimeout.current = null;
+      return;
+    }
 
     const eventsToSend = [...eventQueue.current];
     eventQueue.current = [];

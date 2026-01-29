@@ -182,8 +182,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     loadPersistentAudiences();
   }, [user, tabMode.mode, stepResults.home.websiteAnalysis?.scenarios?.length]); // Re-check when scenarios are added
 
-  // Fetch pricing for strategies (Phase 2 - Dynamic Pricing)
+  // Fetch pricing for strategies (Phase 2 - Dynamic Pricing) — only when logged in (backend returns 401 without token)
   useEffect(() => {
+    if (!user) return;
+
     const fetchStrategyPricing = async () => {
       if (strategies.length === 0 || loadingPricing) return;
 
@@ -233,7 +235,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     };
 
     fetchStrategyPricing();
-  }, [strategies.length]); // Re-fetch when strategies change
+  }, [user, strategies.length]); // Re-fetch when user or strategies change
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
