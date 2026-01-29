@@ -125,6 +125,7 @@ test.describe('E2E (mocked backend)', () => {
     test('should display workflow steps on homepage', async ({ page }) => {
       const indicators = [
         'text=Create New Post',
+        'text=Your next post starts here',
         'text=Website Analysis',
         'text=Analyze',
         'input[placeholder*="website" i]',
@@ -194,6 +195,42 @@ test.describe('E2E (mocked backend)', () => {
         }));
         expect(state).toBeDefined();
       }
+    });
+
+    test.describe('System voice (UX)', () => {
+      test('should show new header copy when starting workflow', async ({ page }) => {
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(500);
+        const header = page.locator('text=Your next post starts here').first();
+        await expect(header).toBeVisible({ timeout: 5000 });
+      });
+
+      test('should show new success message after website analysis', async ({ page }) => {
+        const createBtn = page.locator('button:has-text("Create New Post")').first();
+        if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await createBtn.click();
+        await page.waitForTimeout(500);
+        const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+          test.skip();
+          return;
+        }
+        await input.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        const toast = page.locator('.ant-message-success').filter({ hasText: /We've got the full picture|Pick your audience next/ });
+        await expect(toast.first()).toBeVisible({ timeout: 8000 });
+      });
+
     });
 
     test('smoke: analyze → audience → strategy → posts section with generate', async ({ page }) => {
