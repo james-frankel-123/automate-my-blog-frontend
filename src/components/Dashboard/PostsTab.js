@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Empty, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Modal } from 'antd';
+import { Card, Button, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Modal } from 'antd';
 import { 
   PlusOutlined, 
   ScheduleOutlined,
@@ -165,7 +165,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [ctasLoading, setCtasLoading] = useState(false);
   const [hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
   const [showManualCTAModal, setShowManualCTAModal] = useState(false);
-  const [manualCTAPromptShown, setManualCTAPromptShown] = useState(false);
 
   // User credits state (live from API)
   const [userCredits, setUserCredits] = useState(null);

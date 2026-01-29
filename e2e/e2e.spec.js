@@ -294,7 +294,7 @@ test.describe('E2E (mocked backend)', () => {
         await expect(hintStrip).toContainText(/We've got your site|Choose your audience/i);
       });
 
-      // "Why we suggested this" is implemented in PostsTab and TopicSelectionStep-v2 (data-testid="topic-why-suggested").
+      // "Why we suggested this" is implemented in PostsTab (data-testid="topic-why-suggested").
       // This test verifies the flow reaches topic load; topic cards with that copy may be replaced by the editor quickly in E2E.
       test('topic generation shows mock topics after audience selection', async ({ page }) => {
         test.setTimeout(60000);

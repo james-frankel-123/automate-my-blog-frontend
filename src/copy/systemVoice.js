@@ -86,7 +86,7 @@ export const systemVoice = {
     generatingStrategiesWithTime: "Using your site to create targeted customer strategies. This usually takes a few seconds.",
   },
 
-  // ─── Topic selection (TopicSelectionStep-v2, etc.) ───
+  // ─── Topic selection (PostsTab, etc.) ───
   topics: {
     ideasHeadline: (businessType) =>
       `Here's what we think will resonate with your audience right now${businessType ? ` (${businessType})` : ''}`,

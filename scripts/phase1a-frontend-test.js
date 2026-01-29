@@ -438,7 +438,7 @@ async function basicFrontendAnalysis() {
   
   // Check if key frontend files exist
   const frontendFiles = [
-    'src/components/Workflow/steps/WebsiteAnalysisStep.js',
+    'src/components/Workflow/steps/WebsiteAnalysisStepStandalone.js',
     'src/components/Dashboard/ComprehensiveAnalysisTab.js',
     'src/components/ContentUpload/ContentUploadModal.js',
     'src/services/api.js'

@@ -31,7 +31,7 @@ export const WorkflowModeProvider = ({ children }) => {
   const prevAuthStateRef = useRef(null);
   
   // =============================================================================
-  // CORE WORKFLOW STATE (Enhanced from useWorkflowState-v2.js)
+  // CORE WORKFLOW STATE
   // =============================================================================
   
   // Mode and navigation state
@@ -46,7 +46,7 @@ export const WorkflowModeProvider = ({ children }) => {
   // Progressive sticky header for workflow steps
   const [stickyWorkflowSteps, setStickyWorkflowSteps] = useState([]);
   
-  // Core workflow progression (mapped from useWorkflowState-v2.js)
+  // Core workflow progression
   const [currentStep, setCurrentStep] = useState(0); // 0-6 workflow steps
   const [websiteUrl, setWebsiteUrl] = useState(''); // User's website URL
   const [selectedTopic, setSelectedTopic] = useState(null); // Selected topic ID
@@ -202,7 +202,7 @@ export const WorkflowModeProvider = ({ children }) => {
   });
   
   // =============================================================================
-  // STATE UPDATE HELPERS (From useWorkflowState-v2.js)
+  // STATE UPDATE HELPERS
   // =============================================================================
   
   // Centralized step progression with validation
@@ -1197,7 +1197,7 @@ export const WorkflowModeProvider = ({ children }) => {
     completedWorkflowSteps,
     workflowData, // Legacy compatibility
     
-    // Core workflow state (from useWorkflowState-v2.js)
+    // Core workflow state
     currentStep,
     setCurrentStep,
     websiteUrl,

@@ -39,15 +39,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [strategies, setStrategies] = useState([]);
   const [generatingStrategies, setGeneratingStrategies] = useState(false);
 
-  // Keyword editing state
-  const [editingKeywords, setEditingKeywords] = useState(null); // Track which strategy is being edited
-  const [editedKeywords, setEditedKeywords] = useState([]); // Temporary keyword data during editing
-  const [savingKeywords, setSavingKeywords] = useState(false);
-
   // Strategy pricing state (Phase 2 - Dynamic Pricing)
   const [strategyPricing, setStrategyPricing] = useState({}); // Map of strategyId -> pricing data
   const [loadingPricing, setLoadingPricing] = useState(false);
-  const [bundlePricing, setBundlePricing] = useState(null);
 
   // Carousel navigation ref
   const carouselRef = React.useRef(null);
@@ -216,17 +210,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
         setStrategyPricing(pricingMap);
         console.log('✅ Pricing fetched for strategies:', Object.keys(pricingMap).length);
-
-        // Fetch bundle pricing if user has 2+ strategies
-        if (strategies.length >= 2) {
-          try {
-            const bundle = await autoBlogAPI.calculateBundlePrice();
-            setBundlePricing(bundle.bundlePricing);
-            console.log('✅ Bundle pricing fetched:', bundle.bundlePricing);
-          } catch (error) {
-            console.error('Failed to fetch bundle pricing:', error);
-          }
-        }
       } catch (error) {
         console.error('Failed to fetch strategy pricing:', error);
       } finally {
@@ -657,76 +640,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     }
   };
 
-  // Keyword editing functions
-  const handleStartEditingKeywords = (strategy) => {
-    setEditingKeywords(strategy.id);
-    // Initialize edited keywords with current keywords or empty array
-    const currentKeywords = strategy.keywords || [];
-    setEditedKeywords(currentKeywords.map(kw => ({
-      keyword: kw.keyword || kw,
-      search_volume: kw.search_volume || null,
-      relevance_score: kw.relevance_score || 0.8
-    })));
-  };
-
-  const handleCancelEditingKeywords = () => {
-    setEditingKeywords(null);
-    setEditedKeywords([]);
-  };
-
-  const handleAddKeyword = () => {
-    setEditedKeywords(prev => [...prev, { 
-      keyword: '', 
-      search_volume: null, 
-      relevance_score: 0.8 
-    }]);
-  };
-
-  const handleUpdateKeyword = (index, field, value) => {
-    setEditedKeywords(prev => prev.map((kw, i) => 
-      i === index ? { ...kw, [field]: value } : kw
-    ));
-  };
-
-  const handleRemoveKeyword = (index) => {
-    setEditedKeywords(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleSaveKeywords = async (strategy) => {
-    if (savingKeywords) return;
-    
-    setSavingKeywords(true);
-    try {
-      // Filter out empty keywords
-      const validKeywords = editedKeywords.filter(kw => kw.keyword.trim() !== '');
-      
-      // Update keywords via API
-      if (strategy.databaseId) {
-        await autoBlogAPI.updateAudienceKeywords(strategy.databaseId, validKeywords);
-        
-        // Update local strategies state
-        setStrategies(prev => prev.map(s => 
-          s.id === strategy.id 
-            ? { ...s, keywords: validKeywords }
-            : s
-        ));
-        
-        message.success(`Updated ${validKeywords.length} keywords successfully`);
-      } else {
-        message.error('Cannot save keywords - strategy not saved to database');
-      }
-      
-      setEditingKeywords(null);
-      setEditedKeywords([]);
-      
-    } catch (error) {
-      console.error('Failed to save keywords:', error);
-      message.error('Failed to save keywords. Please try again.');
-    } finally {
-      setSavingKeywords(false);
-    }
-  };
-
   // Render enhanced strategy card with business intelligence
   const renderStrategyCard = (strategy, index) => {
     console.log(`🎴 Rendering card ${index}:`, {
@@ -910,7 +823,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           const consultationPrice = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : null;
 
                           // Extract monthly revenue range
-                          const step5Match = strategy.pitch.match(/Step 5:[^\$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
+                          const step5Match = strategy.pitch.match(/Step 5:[^$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
 
                           // Calculate ROI multiple
                           const annualFee = 240;
@@ -931,7 +844,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       <div style={{ padding: '0 12px 12px 12px' }}>
                         {/* SEO Range Context Box */}
                         {(() => {
-                          const step5Match = strategy.pitch.match(/Step 5:[^\$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
+                          const step5Match = strategy.pitch.match(/Step 5:[^$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
                           if (step5Match) {
                             const lowRevenue = step5Match[1];
                             const highRevenue = step5Match[2];
