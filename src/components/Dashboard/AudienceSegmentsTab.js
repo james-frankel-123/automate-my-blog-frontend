@@ -572,13 +572,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     }
   };
 
-  // Keyword editing functions removed - unused
-      console.error('Failed to save keywords:', error);
-      message.error('Failed to save keywords. Please try again.');
-    } finally {
-      setSavingKeywords(false);
-    }
-  };
 
   // Render enhanced strategy card with business intelligence
   const renderStrategyCard = (strategy, index) => {

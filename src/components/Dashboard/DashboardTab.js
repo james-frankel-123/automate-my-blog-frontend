@@ -135,6 +135,16 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     }
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
 
+  // Handle create new post action
+  const handleCreateNewPost = () => {
+    // Navigate to posts tab or trigger post creation
+    if (onEnterProjectMode) {
+      onEnterProjectMode();
+    } else {
+      tabMode.enterWorkflowMode();
+    }
+  };
+
   // Handle analysis completion from standalone component
   const handleAnalysisComplete = (data) => {
     // Update unified workflow state only (no local state)

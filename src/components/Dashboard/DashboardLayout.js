@@ -82,6 +82,10 @@ const DashboardLayout = ({
   // Analytics tracking
   const { trackPageView, trackEvent } = useAnalytics();
   
+  // Restore collapsed state (needed for sidebar)
+  const [collapsed, setCollapsed] = useState(false);
+  const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null);
+  
   // Step management for logged-out users
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -376,7 +380,6 @@ const DashboardLayout = ({
   // Handle tab changes with smooth scroll navigation
   const handleTabChange = (newTab) => {
     // Track tab_switched event
-    const { trackEvent } = useAnalytics();
     trackEvent('tab_switched', {
       fromTab: activeTab,
       toTab: newTab
