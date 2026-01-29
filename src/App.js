@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
@@ -59,16 +60,18 @@ const AppContent = () => {
   );
 };
 
-// Main App wrapper with AuthProvider, AnalyticsProvider, and WorkflowModeProvider
+// Main App wrapper with HelmetProvider, AuthProvider, AnalyticsProvider, and WorkflowModeProvider
 const App = () => {
   return (
-    <AuthProvider>
-      <AnalyticsProvider>
-        <WorkflowModeProvider>
-          <AppContent />
-        </WorkflowModeProvider>
-      </AnalyticsProvider>
-    </AuthProvider>
+    <HelmetProvider>
+      <AuthProvider>
+        <AnalyticsProvider>
+          <WorkflowModeProvider>
+            <AppContent />
+          </WorkflowModeProvider>
+        </AnalyticsProvider>
+      </AuthProvider>
+    </HelmetProvider>
   );
 };
 
