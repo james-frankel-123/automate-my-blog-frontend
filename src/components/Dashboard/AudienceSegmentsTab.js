@@ -50,6 +50,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Bundle pricing state
   const [bundlePricing, setBundlePricing] = useState(null);
+  const [bundleOverview, setBundleOverview] = useState(null);
   const [loadingBundlePricing, setLoadingBundlePricing] = useState(false);
   const [hasBundleSubscription, setHasBundleSubscription] = useState(false);
 
@@ -350,6 +351,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         const response = await autoBlogAPI.calculateBundlePrice();
         console.log('🎁 Bundle pricing response:', response);
         setBundlePricing(response.bundlePricing);
+        setBundleOverview(response.bundleOverview);
 
         // Check if user has a bundle subscription
         const subscriptionsResponse = await autoBlogAPI.getBundleSubscription();
@@ -358,6 +360,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       } catch (error) {
         console.error('❌ Failed to fetch bundle pricing:', error);
         setBundlePricing(null);
+        setBundleOverview(null);
       } finally {
         setLoadingBundlePricing(false);
       }
@@ -1278,7 +1281,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     <div style={{ marginBottom: '32px' }}>
                       <Card
                         style={{
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                          background: 'var(--gradient-primary)',
                           border: 'none',
                           borderRadius: 'var(--radius-lg)',
                           position: 'relative',
@@ -1290,7 +1293,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           position: 'absolute',
                           top: '16px',
                           right: '16px',
-                          background: '#10b981',
+                          background: 'var(--color-success)',
                           color: 'white',
                           padding: '6px 16px',
                           borderRadius: 'var(--radius-md)',
@@ -1310,27 +1313,86 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                 <Title level={3} style={{ color: 'white', marginBottom: '12px' }}>
                                   Comprehensive SEO Plan
                                 </Title>
-                                <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
-                                  Get all {bundlePricing.strategyCount} audience strategies with one subscription
-                                </Text>
 
-                                <div style={{
-                                  background: 'rgba(255,255,255,0.1)',
-                                  backdropFilter: 'blur(10px)',
-                                  padding: '16px',
-                                  borderRadius: 'var(--radius-md)',
-                                  marginBottom: '16px'
-                                }}>
-                                  <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-                                    ✓ {bundlePricing.strategyCount} targeted audience strategies
-                                  </Text>
-                                  <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-                                    ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
-                                  </Text>
-                                  <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
-                                    ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
-                                  </Text>
-                                </div>
+                                {/* AI-Generated Outcome-Focused Overview */}
+                                {bundleOverview ? (
+                                  <>
+                                    <Text style={{
+                                      color: 'rgba(255,255,255,0.95)',
+                                      fontSize: '15px',
+                                      display: 'block',
+                                      marginBottom: '20px',
+                                      lineHeight: '1.6'
+                                    }}>
+                                      {bundleOverview.overview}
+                                    </Text>
+
+                                    {/* Key Metrics */}
+                                    <div style={{
+                                      background: 'rgba(255,255,255,0.15)',
+                                      backdropFilter: 'blur(10px)',
+                                      padding: '16px',
+                                      borderRadius: 'var(--radius-md)',
+                                      marginBottom: '16px'
+                                    }}>
+                                      {bundleOverview.totalMonthlySearches && (
+                                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                          📊 <strong>{bundleOverview.totalMonthlySearches.toLocaleString()}</strong> monthly searches targeted
+                                        </Text>
+                                      )}
+                                      {bundleOverview.projectedMonthlyProfit && (
+                                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                          💰 <strong>${bundleOverview.projectedMonthlyProfit.low?.toLocaleString() || 'N/A'}-${bundleOverview.projectedMonthlyProfit.high?.toLocaleString() || 'N/A'}</strong> projected monthly profit
+                                        </Text>
+                                      )}
+                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                                        🎯 <strong>{bundlePricing.strategyCount}</strong> audience segments covered
+                                      </Text>
+                                    </div>
+
+                                    {/* Key Benefits */}
+                                    {bundleOverview.keyBenefits && bundleOverview.keyBenefits.length > 0 && (
+                                      <div style={{
+                                        background: 'rgba(255,255,255,0.1)',
+                                        backdropFilter: 'blur(10px)',
+                                        padding: '16px',
+                                        borderRadius: 'var(--radius-md)',
+                                        marginBottom: '16px'
+                                      }}>
+                                        {bundleOverview.keyBenefits.map((benefit, idx) => (
+                                          <Text key={idx} style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: idx < bundleOverview.keyBenefits.length - 1 ? '8px' : '0' }}>
+                                            ✓ {benefit}
+                                          </Text>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  // Fallback to basic display while AI overview loads
+                                  <>
+                                    <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
+                                      Get all {bundlePricing.strategyCount} audience strategies with one subscription
+                                    </Text>
+
+                                    <div style={{
+                                      background: 'rgba(255,255,255,0.1)',
+                                      backdropFilter: 'blur(10px)',
+                                      padding: '16px',
+                                      borderRadius: 'var(--radius-md)',
+                                      marginBottom: '16px'
+                                    }}>
+                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                        ✓ {bundlePricing.strategyCount} targeted audience strategies
+                                      </Text>
+                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                        ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
+                                      </Text>
+                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                                        ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
+                                      </Text>
+                                    </div>
+                                  </>
+                                )}
                               </div>
                             </Col>
 
@@ -1346,10 +1408,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                     <div style={{ marginBottom: '16px' }}>
                                       <CheckOutlined style={{
                                         fontSize: '32px',
-                                        color: '#10b981',
+                                        color: 'var(--color-success)',
                                         marginBottom: '8px'
                                       }} />
-                                      <Title level={4} style={{ color: '#10b981', margin: 0 }}>
+                                      <Title level={4} style={{ color: 'var(--color-success)', margin: 0 }}>
                                         Active Subscription
                                       </Title>
                                     </div>
@@ -1620,7 +1682,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           <div style={{ marginBottom: '32px' }}>
             <Card
               style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: 'var(--gradient-primary)',
                 border: 'none',
                 borderRadius: 'var(--radius-lg)',
                 position: 'relative',
@@ -1632,7 +1694,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 position: 'absolute',
                 top: '16px',
                 right: '16px',
-                background: '#10b981',
+                background: 'var(--color-success)',
                 color: 'white',
                 padding: '6px 16px',
                 borderRadius: 'var(--radius-md)',
@@ -1652,27 +1714,86 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       <Title level={3} style={{ color: 'white', marginBottom: '12px' }}>
                         Comprehensive SEO Plan
                       </Title>
-                      <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
-                        Get all {bundlePricing.strategyCount} audience strategies with one subscription
-                      </Text>
 
-                      <div style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        backdropFilter: 'blur(10px)',
-                        padding: '16px',
-                        borderRadius: 'var(--radius-md)',
-                        marginBottom: '16px'
-                      }}>
-                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-                          ✓ {bundlePricing.strategyCount} targeted audience strategies
-                        </Text>
-                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-                          ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
-                        </Text>
-                        <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
-                          ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
-                        </Text>
-                      </div>
+                      {/* AI-Generated Outcome-Focused Overview */}
+                      {bundleOverview ? (
+                        <>
+                          <Text style={{
+                            color: 'rgba(255,255,255,0.95)',
+                            fontSize: '15px',
+                            display: 'block',
+                            marginBottom: '20px',
+                            lineHeight: '1.6'
+                          }}>
+                            {bundleOverview.overview}
+                          </Text>
+
+                          {/* Key Metrics */}
+                          <div style={{
+                            background: 'rgba(255,255,255,0.15)',
+                            backdropFilter: 'blur(10px)',
+                            padding: '16px',
+                            borderRadius: 'var(--radius-md)',
+                            marginBottom: '16px'
+                          }}>
+                            {bundleOverview.totalMonthlySearches && (
+                              <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                📊 <strong>{bundleOverview.totalMonthlySearches.toLocaleString()}</strong> monthly searches targeted
+                              </Text>
+                            )}
+                            {bundleOverview.projectedMonthlyProfit && (
+                              <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                💰 <strong>${bundleOverview.projectedMonthlyProfit.low?.toLocaleString() || 'N/A'}-${bundleOverview.projectedMonthlyProfit.high?.toLocaleString() || 'N/A'}</strong> projected monthly profit
+                              </Text>
+                            )}
+                            <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                              🎯 <strong>{bundlePricing.strategyCount}</strong> audience segments covered
+                            </Text>
+                          </div>
+
+                          {/* Key Benefits */}
+                          {bundleOverview.keyBenefits && bundleOverview.keyBenefits.length > 0 && (
+                            <div style={{
+                              background: 'rgba(255,255,255,0.1)',
+                              backdropFilter: 'blur(10px)',
+                              padding: '16px',
+                              borderRadius: 'var(--radius-md)',
+                              marginBottom: '16px'
+                            }}>
+                              {bundleOverview.keyBenefits.map((benefit, idx) => (
+                                <Text key={idx} style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: idx < bundleOverview.keyBenefits.length - 1 ? '8px' : '0' }}>
+                                  ✓ {benefit}
+                                </Text>
+                              ))}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        // Fallback to basic display while AI overview loads
+                        <>
+                          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
+                            Get all {bundlePricing.strategyCount} audience strategies with one subscription
+                          </Text>
+
+                          <div style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            backdropFilter: 'blur(10px)',
+                            padding: '16px',
+                            borderRadius: 'var(--radius-md)',
+                            marginBottom: '16px'
+                          }}>
+                            <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                              ✓ {bundlePricing.strategyCount} targeted audience strategies
+                            </Text>
+                            <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                              ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
+                            </Text>
+                            <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                              ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
+                            </Text>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </Col>
 
@@ -1688,10 +1809,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           <div style={{ marginBottom: '16px' }}>
                             <CheckOutlined style={{
                               fontSize: '32px',
-                              color: '#10b981',
+                              color: 'var(--color-success)',
                               marginBottom: '8px'
                             }} />
-                            <Title level={4} style={{ color: '#10b981', margin: 0 }}>
+                            <Title level={4} style={{ color: 'var(--color-success)', margin: 0 }}>
                               Active Subscription
                             </Title>
                           </div>
