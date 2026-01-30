@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v6
         
       - name: Mark stale PRs and issues
-        uses: actions/stale@v9
+        uses: actions/stale@v10
         with:
           # PRs configuration
           stale-pr-message: 'This PR has been marked as stale because it has had no activity for 30 days. It will be closed in 7 days if no further activity occurs. Please update or rebase to keep it active.'
