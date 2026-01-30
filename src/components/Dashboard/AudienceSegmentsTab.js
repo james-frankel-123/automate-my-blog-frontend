@@ -332,6 +332,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Fetch bundle pricing when strategies are loaded (2+ strategies required)
   useEffect(() => {
+    console.log('🎁 Bundle pricing effect:', {
+      hasUser: !!user,
+      strategiesLength: strategies.length,
+      shouldFetch: user && strategies.length >= 2
+    });
+
     if (!user || strategies.length < 2) {
       setBundlePricing(null);
       return;
@@ -340,14 +346,17 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const fetchBundlePricing = async () => {
       setLoadingBundlePricing(true);
       try {
+        console.log('🎁 Fetching bundle pricing...');
         const response = await autoBlogAPI.calculateBundlePrice();
+        console.log('🎁 Bundle pricing response:', response);
         setBundlePricing(response.bundlePricing);
 
         // Check if user has a bundle subscription
         const subscriptionsResponse = await autoBlogAPI.getBundleSubscription();
+        console.log('🎁 Bundle subscription response:', subscriptionsResponse);
         setHasBundleSubscription(!!subscriptionsResponse.bundleSubscription);
       } catch (error) {
-        console.error('Failed to fetch bundle pricing:', error);
+        console.error('❌ Failed to fetch bundle pricing:', error);
         setBundlePricing(null);
       } finally {
         setLoadingBundlePricing(false);
@@ -1605,7 +1614,170 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             🎯 Strategies ranked using search data: volumes, competitive analysis, and conversion potential
           </Text>
         </div>
-        
+
+        {/* Bundle Option - Comprehensive SEO Plan (FOCUS MODE) */}
+        {bundlePricing && strategies.length >= 2 && !loadingBundlePricing && (
+          <div style={{ marginBottom: '32px' }}>
+            <Card
+              style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                border: 'none',
+                borderRadius: 'var(--radius-lg)',
+                position: 'relative',
+                overflow: 'hidden'
+              }}
+            >
+              {/* Best Value Badge */}
+              <div style={{
+                position: 'absolute',
+                top: '16px',
+                right: '16px',
+                background: '#10b981',
+                color: 'white',
+                padding: '6px 16px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: '12px',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                zIndex: 1
+              }}>
+                BEST VALUE
+              </div>
+
+              <div style={{ padding: '8px' }}>
+                <Row gutter={24} align="middle">
+                  <Col xs={24} md={12}>
+                    <div style={{ color: 'white' }}>
+                      <div style={{ fontSize: '28px', marginBottom: '12px' }}>🎯</div>
+                      <Title level={3} style={{ color: 'white', marginBottom: '12px' }}>
+                        Comprehensive SEO Plan
+                      </Title>
+                      <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
+                        Get all {bundlePricing.strategyCount} audience strategies with one subscription
+                      </Text>
+
+                      <div style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        backdropFilter: 'blur(10px)',
+                        padding: '16px',
+                        borderRadius: 'var(--radius-md)',
+                        marginBottom: '16px'
+                      }}>
+                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                          ✓ {bundlePricing.strategyCount} targeted audience strategies
+                        </Text>
+                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                          ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
+                        </Text>
+                        <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                          ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
+                        </Text>
+                      </div>
+                    </div>
+                  </Col>
+
+                  <Col xs={24} md={12}>
+                    <div style={{
+                      background: 'white',
+                      padding: '24px',
+                      borderRadius: 'var(--radius-md)',
+                      textAlign: 'center'
+                    }}>
+                      {hasBundleSubscription ? (
+                        <>
+                          <div style={{ marginBottom: '16px' }}>
+                            <CheckOutlined style={{
+                              fontSize: '32px',
+                              color: '#10b981',
+                              marginBottom: '8px'
+                            }} />
+                            <Title level={4} style={{ color: '#10b981', margin: 0 }}>
+                              Active Subscription
+                            </Title>
+                          </div>
+                          <Text style={{ color: 'var(--color-text-secondary)', display: 'block', marginBottom: '16px' }}>
+                            You have full access to all {bundlePricing.strategyCount} strategies
+                          </Text>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ marginBottom: '16px' }}>
+                            <div style={{
+                              fontSize: '36px',
+                              fontWeight: 700,
+                              color: 'var(--color-primary)',
+                              lineHeight: 1
+                            }}>
+                              ${bundlePricing.bundleMonthly.toFixed(0)}
+                              <span style={{ fontSize: '16px', fontWeight: 400 }}>/mo</span>
+                            </div>
+                            <Text style={{ color: 'var(--color-text-tertiary)', fontSize: '13px' }}>
+                              Regular price: ${bundlePricing.individualMonthlyTotal.toFixed(0)}/mo
+                            </Text>
+                          </div>
+
+                          <Space direction="vertical" style={{ width: '100%' }} size="small">
+                            <Button
+                              type="primary"
+                              size="large"
+                              block
+                              onClick={() => handleSubscribeToBundle('monthly')}
+                              style={{
+                                height: '48px',
+                                fontSize: '16px',
+                                fontWeight: 600
+                              }}
+                            >
+                              Subscribe Monthly
+                            </Button>
+                            <Button
+                              size="large"
+                              block
+                              onClick={() => handleSubscribeToBundle('annual')}
+                              style={{
+                                height: '44px',
+                                fontSize: '15px'
+                              }}
+                            >
+                              Pay Annually - ${bundlePricing.bundleAnnual.toFixed(0)}
+                              <Tag color="green" style={{ marginLeft: '8px' }}>
+                                Save ${bundlePricing.savings.totalAnnualSavings.toFixed(0)}
+                              </Tag>
+                            </Button>
+                          </Space>
+
+                          <Text style={{
+                            color: 'var(--color-text-tertiary)',
+                            fontSize: '11px',
+                            display: 'block',
+                            marginTop: '12px'
+                          }}>
+                            Cancel anytime • Secure checkout powered by Stripe
+                          </Text>
+                        </>
+                      )}
+                    </div>
+                  </Col>
+                </Row>
+              </div>
+            </Card>
+
+            {/* Or Divider */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              margin: '32px 0',
+              gap: '16px'
+            }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border-base)' }} />
+              <Text style={{ color: 'var(--color-text-tertiary)', fontSize: '13px', fontWeight: 500 }}>
+                OR CHOOSE INDIVIDUAL STRATEGIES
+              </Text>
+              <div style={{ flex: 1, height: '1px', background: 'var(--color-border-base)' }} />
+            </div>
+          </div>
+        )}
+
         {/* Strategy Selection Cards */}
         {strategies.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
