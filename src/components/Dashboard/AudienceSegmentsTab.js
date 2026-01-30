@@ -324,13 +324,15 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       console.log('✅ Subscription success detected for strategy:', strategySubscribed);
 
       // Show success message
-      message.success('Subscription successful! Your strategy is now active.', 5);
+      message.success('Subscription successful! Processing...', 3);
 
-      // Re-fetch subscriptions to update UI
+      // Re-fetch subscriptions with retry logic (webhooks can take a few seconds)
       if (user && !loadingSubscriptions) {
-        const refetchSubscriptions = async () => {
+        const refetchWithRetry = async (attempt = 1, maxAttempts = 5) => {
           try {
+            console.log(`🔄 Fetching subscriptions (attempt ${attempt}/${maxAttempts})...`);
             const response = await autoBlogAPI.getSubscribedStrategies();
+
             const subscriptionsMap = {};
             response.subscriptions?.forEach(sub => {
               subscriptionsMap[sub.strategyId] = {
@@ -341,14 +343,33 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 status: sub.status
               };
             });
-            setSubscribedStrategies(subscriptionsMap);
-            console.log('✅ Re-fetched subscriptions after successful payment');
+
+            // Check if the newly subscribed strategy is in the response
+            const foundNewSubscription = subscriptionsMap[strategySubscribed];
+
+            if (foundNewSubscription) {
+              setSubscribedStrategies(subscriptionsMap);
+              console.log('✅ Found new subscription! Strategy is now active:', strategySubscribed);
+              message.success('Subscription activated! You can now generate content.', 4);
+            } else if (attempt < maxAttempts) {
+              // Webhook hasn't processed yet, retry after delay
+              console.log(`⏳ Subscription not found yet, retrying in ${attempt * 2} seconds...`);
+              setTimeout(() => refetchWithRetry(attempt + 1, maxAttempts), attempt * 2000);
+            } else {
+              // Max retries reached
+              setSubscribedStrategies(subscriptionsMap);
+              console.warn('⚠️ Max retries reached. Subscription may take a moment to appear.');
+              message.warning('Subscription is processing. Refresh the page in a moment if it doesn\'t appear.', 6);
+            }
           } catch (error) {
-            console.error('Failed to re-fetch subscriptions:', error);
+            console.error(`Failed to fetch subscriptions (attempt ${attempt}):`, error);
+            if (attempt < maxAttempts) {
+              setTimeout(() => refetchWithRetry(attempt + 1, maxAttempts), attempt * 2000);
+            }
           }
         };
 
-        refetchSubscriptions();
+        refetchWithRetry();
       }
 
       // Clean up URL by removing the query parameter
