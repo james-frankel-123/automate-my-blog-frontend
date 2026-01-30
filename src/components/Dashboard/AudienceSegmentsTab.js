@@ -43,6 +43,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [strategyPricing, setStrategyPricing] = useState({}); // Map of strategyId -> pricing data
   const [loadingPricing, setLoadingPricing] = useState(false);
 
+  // Strategy subscription state (Phase 2 - Track subscribed strategies)
+  const [subscribedStrategies, setSubscribedStrategies] = useState({}); // Map of strategyId -> subscription data
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(false);
+
   // Carousel navigation ref
   const carouselRef = React.useRef(null);
   
@@ -257,6 +261,101 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
     fetchStrategyPricing();
   }, [user, strategies.length, strategies.map(s => s.id || s.databaseId).join(',')]); // Re-fetch when user or strategies change (including ID changes)
+
+  // Fetch subscribed strategies to show subscription status
+  useEffect(() => {
+    console.log('🔍 Subscription useEffect triggered:', { hasUser: !!user, loadingSubscriptions });
+
+    if (!user) {
+      console.log('⚠️ Subscription fetch skipped: No user');
+      return;
+    }
+
+    if (loadingSubscriptions) {
+      console.log('⚠️ Subscription fetch skipped: Already loading');
+      return;
+    }
+
+    const fetchSubscribedStrategies = async () => {
+      setLoadingSubscriptions(true);
+
+      try {
+        console.log('📊 Fetching subscribed strategies...');
+        const response = await autoBlogAPI.getSubscribedStrategies();
+
+        console.log('📊 Subscribed strategies response:', {
+          subscriptionsCount: response.subscriptions?.length || 0,
+          subscriptions: response.subscriptions
+        });
+
+        // Build map of strategyId -> subscription data
+        const subscriptionsMap = {};
+        response.subscriptions?.forEach(sub => {
+          subscriptionsMap[sub.strategyId] = {
+            postsRemaining: sub.postsRemaining,
+            postsMaximum: sub.postsMaximum,
+            billingInterval: sub.billingInterval,
+            nextBillingDate: sub.nextBillingDate,
+            status: sub.status
+          };
+        });
+
+        setSubscribedStrategies(subscriptionsMap);
+        console.log('✅ Loaded subscriptions:', {
+          count: Object.keys(subscriptionsMap).length,
+          strategyIds: Object.keys(subscriptionsMap)
+        });
+      } catch (error) {
+        console.error('Failed to fetch subscriptions:', error);
+      } finally {
+        setLoadingSubscriptions(false);
+      }
+    };
+
+    fetchSubscribedStrategies();
+  }, [user]); // Re-fetch when user changes
+
+  // Handle successful subscription redirect from Stripe
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const strategySubscribed = urlParams.get('strategy_subscribed');
+
+    if (strategySubscribed) {
+      console.log('✅ Subscription success detected for strategy:', strategySubscribed);
+
+      // Show success message
+      message.success('Subscription successful! Your strategy is now active.', 5);
+
+      // Re-fetch subscriptions to update UI
+      if (user && !loadingSubscriptions) {
+        const refetchSubscriptions = async () => {
+          try {
+            const response = await autoBlogAPI.getSubscribedStrategies();
+            const subscriptionsMap = {};
+            response.subscriptions?.forEach(sub => {
+              subscriptionsMap[sub.strategyId] = {
+                postsRemaining: sub.postsRemaining,
+                postsMaximum: sub.postsMaximum,
+                billingInterval: sub.billingInterval,
+                nextBillingDate: sub.nextBillingDate,
+                status: sub.status
+              };
+            });
+            setSubscribedStrategies(subscriptionsMap);
+            console.log('✅ Re-fetched subscriptions after successful payment');
+          } catch (error) {
+            console.error('Failed to re-fetch subscriptions:', error);
+          }
+        };
+
+        refetchSubscriptions();
+      }
+
+      // Clean up URL by removing the query parameter
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, [user]); // Run when user changes or on mount
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
@@ -718,8 +817,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             transition: 'all 0.3s ease',
             margin: '0 auto',
             maxWidth: '600px',
-            position: 'relative'
+            position: 'relative',
+            boxShadow: 'var(--shadow-card)'
           }}
+          onMouseEnter={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-elevated)'}
+          onMouseLeave={(e) => e.currentTarget.style.boxShadow = 'var(--shadow-card)'}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
           {/* Pricing Badge (Top-Right Corner) - Phase 2 */}
@@ -962,77 +1064,173 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             </div>
           )}
 
-          {/* Subscribe Buttons (Phase 2 - Dynamic Pricing) */}
-          {hasPricing && (
-            <div style={{
-              marginTop: '20px',
-              padding: '16px',
-              backgroundColor: '#f0f5ff',
-              borderRadius: theme.borderRadius.md,
-              borderTop: `2px solid ${theme.colors.primary}`
-            }}
-              onClick={(e) => e.stopPropagation()} // Prevent card selection when clicking buttons
-            >
-              <div style={{ marginBottom: '12px', textAlign: 'center' }}>
-                <Text strong style={{
-                  fontSize: '14px',
-                  color: theme.colors.primary,
-                  display: 'block',
-                  marginBottom: '4px'
-                }}>
-                  💰 Projected Profit: ${pricing.projectedLow?.toLocaleString()}-${pricing.projectedHigh?.toLocaleString()}/month
-                </Text>
-                <Text style={{ fontSize: '12px', color: theme.colors.textSecondary }}>
-                  Subscribe for ${pricing.monthly}/month ({pricing.percentage.monthly}% of your projected profit)
-                </Text>
-              </div>
+          {/* Subscribe Buttons / Subscription Status (Phase 2 - Dynamic Pricing) */}
+          {hasPricing && (() => {
+            const subscription = subscribedStrategies[strategyId];
+            const isSubscribed = !!subscription;
 
-              <Space direction="vertical" style={{ width: '100%' }} size="small">
-                <Button
-                  type="primary"
-                  block
-                  size="large"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSubscribeToStrategy(strategy, 'monthly');
-                  }}
-                  style={{
-                    fontWeight: 600,
-                    height: '44px'
-                  }}
+            if (isSubscribed) {
+              // Show subscription status
+              return (
+                <div style={{
+                  marginTop: '20px',
+                  padding: '16px',
+                  backgroundColor: '#f0f9ff',
+                  borderRadius: theme.borderRadius.md,
+                  border: '2px solid #10b981'
+                }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  Subscribe - ${pricing.monthly}/month
-                </Button>
-                <Button
-                  block
-                  size="large"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleSubscribeToStrategy(strategy, 'annual');
-                  }}
-                  style={{
-                    height: '40px',
-                    borderColor: theme.colors.primary,
-                    color: theme.colors.primary
-                  }}
-                >
-                  Pay Annually - ${pricing.annual}/year
-                  <Tag color="green" style={{ marginLeft: '8px' }}>
-                    Save ${pricing.savings.annualSavingsDollars}
-                  </Tag>
-                </Button>
-                <Text style={{
-                  fontSize: '11px',
-                  color: theme.colors.textSecondary,
-                  display: 'block',
-                  textAlign: 'center',
-                  marginTop: '8px'
-                }}>
-                  {pricing.posts.recommended} posts/month recommended • Up to {pricing.posts.maximum} posts available
-                </Text>
-              </Space>
-            </div>
-          )}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <CheckOutlined style={{
+                      color: '#10b981',
+                      fontSize: '20px',
+                      marginRight: '8px'
+                    }} />
+                    <Text strong style={{
+                      fontSize: '16px',
+                      color: '#10b981'
+                    }}>
+                      Subscribed
+                    </Text>
+                  </div>
+
+                  <div style={{
+                    textAlign: 'center',
+                    marginBottom: '12px'
+                  }}>
+                    <Text style={{
+                      fontSize: '24px',
+                      fontWeight: 700,
+                      color: theme.colors.primary,
+                      display: 'block',
+                      lineHeight: 1.2
+                    }}>
+                      {subscription.postsRemaining}
+                    </Text>
+                    <Text style={{
+                      fontSize: '13px',
+                      color: theme.colors.textSecondary
+                    }}>
+                      posts remaining this month
+                    </Text>
+                  </div>
+
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    paddingTop: '12px',
+                    borderTop: '1px solid #e0e7ff'
+                  }}>
+                    <div>
+                      <Text style={{
+                        fontSize: '11px',
+                        color: theme.colors.textSecondary,
+                        display: 'block'
+                      }}>
+                        Plan: {subscription.billingInterval === 'annual' ? 'Annual' : 'Monthly'}
+                      </Text>
+                      <Text style={{
+                        fontSize: '11px',
+                        color: theme.colors.textSecondary,
+                        display: 'block'
+                      }}>
+                        Renews: {new Date(subscription.nextBillingDate).toLocaleDateString()}
+                      </Text>
+                    </div>
+                    <Button
+                      type="primary"
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectStrategy(strategy, index);
+                      }}
+                    >
+                      Generate Content
+                    </Button>
+                  </div>
+                </div>
+              );
+            }
+
+            // Show subscribe buttons if not subscribed
+            return (
+              <div style={{
+                marginTop: '20px',
+                padding: '16px',
+                backgroundColor: '#f0f5ff',
+                borderRadius: theme.borderRadius.md,
+                borderTop: `2px solid ${theme.colors.primary}`
+              }}
+                onClick={(e) => e.stopPropagation()} // Prevent card selection when clicking buttons
+              >
+                <div style={{ marginBottom: '12px', textAlign: 'center' }}>
+                  <Text strong style={{
+                    fontSize: '14px',
+                    color: theme.colors.primary,
+                    display: 'block',
+                    marginBottom: '4px'
+                  }}>
+                    💰 Projected Profit: ${pricing.projectedLow?.toLocaleString()}-${pricing.projectedHigh?.toLocaleString()}/month
+                  </Text>
+                  <Text style={{ fontSize: '12px', color: theme.colors.textSecondary }}>
+                    Subscribe for ${pricing.monthly}/month ({pricing.percentage.monthly}% of your projected profit)
+                  </Text>
+                </div>
+
+                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                  <Button
+                    type="primary"
+                    block
+                    size="large"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscribeToStrategy(strategy, 'monthly');
+                    }}
+                    style={{
+                      fontWeight: 600,
+                      height: '44px'
+                    }}
+                  >
+                    Subscribe - ${pricing.monthly}/month
+                  </Button>
+                  <Button
+                    block
+                    size="large"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSubscribeToStrategy(strategy, 'annual');
+                    }}
+                    style={{
+                      height: '40px',
+                      borderColor: theme.colors.primary,
+                      color: theme.colors.primary
+                    }}
+                  >
+                    Pay Annually - ${pricing.annual}/year
+                    <Tag color="green" style={{ marginLeft: '8px' }}>
+                      Save ${pricing.savings.annualSavingsDollars}
+                    </Tag>
+                  </Button>
+                  <Text style={{
+                    fontSize: '11px',
+                    color: theme.colors.textSecondary,
+                    display: 'block',
+                    textAlign: 'center',
+                    marginTop: '8px'
+                  }}>
+                    {pricing.posts.recommended} posts/month recommended • Up to {pricing.posts.maximum} posts available
+                  </Text>
+                </Space>
+              </div>
+            );
+          })()}
         </Card>
       </div>
     );
