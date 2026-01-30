@@ -109,9 +109,12 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 
 ## Documentation
 
+- [Docs index](./docs/README.md) – Vision, architecture, goals, and full doc list
 - [API Specification](./docs/API_SPECIFICATION.md)
 - [Client Integration Guide](./docs/CLIENT_INTEGRATION.md)
 - [E2E Test Setup](./docs/E2E_TEST_SETUP.md)
+- [Frontend Audit & Summary](./docs/frontend-audit-summary.md) – Audit findings and work completed since audit
+- [UX / Usability Proposal](./docs/GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md) – UX issues and implementation status
 
 ## License
 

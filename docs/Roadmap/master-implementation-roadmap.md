@@ -9,6 +9,11 @@
 | **Middleware/API** | ❌ Missing | 0% |
 | **External Services** | ❌ Missing | 0% |
 
+### Goals & audit (frontend)
+
+- **Frontend audit (Jan 2026):** Full codebase and UX audit completed. See [Frontend Audit](../frontend-audit.md) and [Audit Summary](../frontend-audit-summary.md). Key findings: job progress tracking, analytics instrumentation, recommendation board, URL state, and security improvements remain priorities.
+- **UX work completed:** System voice (`src/copy/systemVoice.js`), SystemHint, WorkflowModeContext, progressive headers, motion/transitions (design tokens, topic card stagger). See [docs README](../README.md) “Work Completed” and [GitHub Issues from Usability Proposal](../GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md) for implementation status.
+
 ## 📋 **Implementation Strategy: Feature-Focused Development**
 
 ### **Core Philosophy**
