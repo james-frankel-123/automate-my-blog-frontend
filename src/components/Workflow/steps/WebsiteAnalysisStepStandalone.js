@@ -591,7 +591,7 @@ const WebsiteAnalysisStepStandalone = ({
             position: 'relative',
             boxShadow: '0 4px 20px rgba(24, 144, 255, 0.15), 0 0 0 2px rgba(24, 144, 255, 0.1)',
             borderRadius: '8px',
-            transition: 'box-shadow 0.3s ease'
+            transition: 'all 0.3s ease'
           }}
           size="large"
           className={showSparkle ? 'input-sparkle' : ''}
@@ -615,22 +615,26 @@ const WebsiteAnalysisStepStandalone = ({
             }}
             onPressEnter={handleWebsiteSubmit}
           />
-          {isEditing && (
-            <Button
-              type="primary"
-              size="large"
-              onClick={handleWebsiteSubmit}
-              loading={loading}
-              disabled={!websiteUrl?.trim()}
-              style={{
-                borderRadius: '0 8px 8px 0',
-                minWidth: '120px',
-                fontSize: responsive.fontSize.text
-              }}
-            >
-              {loading ? systemVoice.analysis.analyzing : systemVoice.analysis.analyze}
-            </Button>
-          )}
+          <Button
+            type="primary"
+            size="large"
+            onClick={handleWebsiteSubmit}
+            loading={loading}
+            disabled={!websiteUrl?.trim()}
+            style={{
+              borderRadius: '0 8px 8px 0',
+              minWidth: isEditing ? '120px' : '0',
+              maxWidth: isEditing ? '200px' : '0',
+              fontSize: responsive.fontSize.text,
+              opacity: isEditing ? 1 : 0,
+              padding: isEditing ? undefined : '0',
+              overflow: 'hidden',
+              transition: 'all 0.3s ease',
+              pointerEvents: isEditing ? 'auto' : 'none'
+            }}
+          >
+            {loading ? systemVoice.analysis.analyzing : systemVoice.analysis.analyze}
+          </Button>
         </Space.Compact>
       </Form>
       
