@@ -215,7 +215,7 @@ const AdminAnalyticsTab = () => {
             <Statistic
               title="Total Users"
               value={analytics.totalUsers}
-              prefix={<UserOutlined style={{ color: '#1890ff' }} />}
+              prefix={<UserOutlined style={{ color: 'var(--color-primary)' }} />}
               suffix={
                 <Tag color="green" style={{ marginLeft: '8px' }}>
                   Real Data ✓
@@ -389,7 +389,7 @@ const AdminAnalyticsTab = () => {
             <Statistic
               title="Activities (7 days)"
               value={analytics.recentActivity}
-              prefix={<BarChartOutlined style={{ color: '#1890ff' }} />}
+              prefix={<BarChartOutlined style={{ color: 'var(--color-primary)' }} />}
             />
           </Col>
           <Col xs={24} sm={8}>

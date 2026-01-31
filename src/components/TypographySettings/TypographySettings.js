@@ -100,7 +100,7 @@ const TypographySettings = ({
               <Option key={font.value} value={font.value}>
                 <div>
                   <div style={{ fontWeight: 500 }}>{font.label}</div>
-                  <div style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                     {font.description}
                   </div>
                 </div>
@@ -210,11 +210,11 @@ const TypographySettings = ({
       <div style={{ 
         marginTop: '16px', 
         padding: '12px', 
-        border: '1px solid #f0f0f0', 
+        border: '1px solid var(--color-border-base)', 
         borderRadius: '4px',
-        backgroundColor: '#fafafa'
+        backgroundColor: 'var(--color-background-alt)'
       }}>
-        <Text style={{ fontSize: '11px', color: '#666', display: 'block', marginBottom: '8px' }}>
+        <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '8px' }}>
           Preview:
         </Text>
         
@@ -232,7 +232,7 @@ const TypographySettings = ({
           fontFamily: typography?.bodyFont || 'Inter, sans-serif',
           fontSize: `${typography?.fontSize || 16}px`,
           lineHeight: typography?.lineHeight || '1.6',
-          color: '#333',
+          color: 'var(--color-text-primary)',
           marginBottom: `${typography?.paragraphSpacing || 16}px`
         }}>
           This is how your blog post content will appear with the selected typography settings. 

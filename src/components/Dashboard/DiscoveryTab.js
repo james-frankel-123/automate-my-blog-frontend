@@ -115,11 +115,11 @@ const DiscoveryTab = () => {
 
   const getDiscoveryIcon = (type) => {
     switch (type) {
-      case 'keyword': return <RiseOutlined style={{ color: '#1890ff' }} />;
-      case 'customer-segment': return <UserOutlined style={{ color: '#52c41a' }} />;
-      case 'industry-news': return <GlobalOutlined style={{ color: '#fa8c16' }} />;
-      case 'competitor': return <SearchOutlined style={{ color: '#722ed1' }} />;
-      default: return <RobotOutlined style={{ color: '#666' }} />;
+      case 'keyword': return <RiseOutlined style={{ color: 'var(--color-primary)' }} />;
+      case 'customer-segment': return <UserOutlined style={{ color: 'var(--color-success)' }} />;
+      case 'industry-news': return <GlobalOutlined style={{ color: 'var(--color-warning)' }} />;
+      case 'competitor': return <SearchOutlined style={{ color: 'var(--color-primary)' }} />;
+      default: return <RobotOutlined style={{ color: 'var(--color-text-secondary)' }} />;
     }
   };
 
@@ -226,7 +226,7 @@ const DiscoveryTab = () => {
           <Card
             title={
               <Space>
-                <RobotOutlined style={{ color: '#1890ff' }} />
+                <RobotOutlined style={{ color: 'var(--color-primary)' }} />
                 Automation Status
               </Space>
             }
@@ -262,14 +262,14 @@ const DiscoveryTab = () => {
                   <Statistic
                     title="Successful Runs"
                     value={automationSettings.successfulRuns}
-                    prefix={<RiseOutlined style={{ color: '#52c41a' }} />}
+                    prefix={<RiseOutlined style={{ color: 'var(--color-success)' }} />}
                   />
                 </Col>
                 <Col span={12}>
                   <Statistic
                     title="Opportunities Found"
                     value={discoveries.length}
-                    prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
+                    prefix={<SearchOutlined style={{ color: 'var(--color-primary)' }} />}
                   />
                 </Col>
               </Row>
@@ -303,7 +303,7 @@ const DiscoveryTab = () => {
           <Card
             title={
               <Space>
-                <SearchOutlined style={{ color: '#1890ff' }} />
+                <SearchOutlined style={{ color: 'var(--color-primary)' }} />
                 Recent Discoveries
               </Space>
             }
@@ -367,7 +367,7 @@ const DiscoveryTab = () => {
                           <Paragraph style={{ margin: 0, marginBottom: '8px' }}>
                             {discovery.description}
                           </Paragraph>
-                          <Text strong style={{ color: '#1890ff' }}>
+                          <Text strong style={{ color: 'var(--color-primary)' }}>
                             Impact: {discovery.impact}
                           </Text>
                           <br />
@@ -399,7 +399,7 @@ const DiscoveryTab = () => {
         <Timeline
           items={[
             {
-              dot: <PlayCircleOutlined style={{ color: '#52c41a' }} />,
+              dot: <PlayCircleOutlined style={{ color: 'var(--color-success)' }} />,
               children: (
                 <div>
                   <Text strong>Discovery Run Completed</Text>
@@ -409,7 +409,7 @@ const DiscoveryTab = () => {
               )
             },
             {
-              dot: <PlusOutlined style={{ color: '#1890ff' }} />,
+              dot: <PlusOutlined style={{ color: 'var(--color-primary)' }} />,
               children: (
                 <div>
                   <Text strong>Content Generated</Text>
@@ -419,7 +419,7 @@ const DiscoveryTab = () => {
               )
             },
             {
-              dot: <SearchOutlined style={{ color: '#fa8c16' }} />,
+              dot: <SearchOutlined style={{ color: 'var(--color-warning)' }} />,
               children: (
                 <div>
                   <Text strong>Keyword Trend Detected</Text>

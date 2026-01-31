@@ -179,9 +179,9 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
   // Default styles for each type
   const defaultStyles = {
     statistic: {
-      backgroundColor: '#e6f7ff',
-      borderColor: '#1890ff',
-      color: '#0050b3',
+      backgroundColor: 'var(--color-primary-50)',
+      borderColor: 'var(--color-primary)',
+      color: 'var(--color-primary-700)',
       defaultIcon: '📊',
     },
     pullquote: {
@@ -191,15 +191,15 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       defaultIcon: '💬',
     },
     takeaway: {
-      backgroundColor: '#fff7e6',
-      borderColor: '#fa8c16',
-      color: '#d46b08',
+      backgroundColor: 'var(--color-accent-50)',
+      borderColor: 'var(--color-accent)',
+      color: 'var(--color-accent-700)',
       defaultIcon: '💡',
     },
     process: {
-      backgroundColor: '#f9f0ff',
-      borderColor: '#722ed1',
-      color: '#531dab',
+      backgroundColor: 'var(--color-primary-50)',
+      borderColor: 'var(--color-primary)',
+      color: 'var(--color-primary-700)',
       defaultIcon: '🔄',
     },
     warning: {
@@ -209,21 +209,21 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       defaultIcon: '⚠️',
     },
     tip: {
-      backgroundColor: '#e6f7ff',
-      borderColor: '#1890ff',
-      color: '#0050b3',
+      backgroundColor: 'var(--color-primary-50)',
+      borderColor: 'var(--color-primary)',
+      color: 'var(--color-primary-700)',
       defaultIcon: '💡',
     },
     definition: {
-      backgroundColor: '#f0f5ff',
-      borderColor: '#2f54eb',
-      color: '#1d39c4',
+      backgroundColor: 'var(--color-primary-50)',
+      borderColor: 'var(--color-primary)',
+      color: 'var(--color-primary-700)',
       defaultIcon: '📖',
     },
     comparison: {
-      backgroundColor: '#e6fffb',
-      borderColor: '#13c2c2',
-      color: '#006d75',
+      backgroundColor: 'var(--color-primary-50)',
+      borderColor: 'var(--color-primary)',
+      color: 'var(--color-primary-700)',
       defaultIcon: '⚖️',
     },
   };

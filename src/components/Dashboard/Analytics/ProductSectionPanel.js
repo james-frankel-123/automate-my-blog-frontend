@@ -166,7 +166,7 @@ const ProductSectionPanel = ({ productData, loading, platformMetrics }) => {
                       {insight.userSegment}
                     </p>
                     <p>
-                      <strong style={{ color: '#1890ff' }}>🛠️ Action:</strong><br />
+                      <strong style={{ color: 'var(--color-primary)' }}>🛠️ Action:</strong><br />
                       {insight.action}
                     </p>
                     <p>

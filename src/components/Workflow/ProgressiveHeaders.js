@@ -26,7 +26,7 @@ const ProgressiveHeaders = ({
   // Step configuration for progressive headers (one voice: systemVoice)
   const stepConfig = {
     website: {
-      icon: <GlobalOutlined style={{ color: '#1890ff' }} />,
+      icon: <GlobalOutlined style={{ color: 'var(--color-primary)' }} />,
       title: systemVoice.progressiveSteps.website,
       getDescription: () => {
         const analysis = stepResults?.websiteAnalysis;

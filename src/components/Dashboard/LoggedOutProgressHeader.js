@@ -34,9 +34,9 @@ const LoggedOutProgressHeader = ({
       left: 0,
       right: 0,
       zIndex: 1000,
-      backgroundColor: '#fff',
-      borderBottom: '1px solid #e8e8e8',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+      backgroundColor: 'var(--color-background-body)',
+      borderBottom: '1px solid var(--color-border-base)',
+      boxShadow: 'var(--shadow-sm)',
       padding: '16px 24px',
       display: 'flex',
       alignItems: 'center',
@@ -61,27 +61,24 @@ const LoggedOutProgressHeader = ({
         {!user ? (
           // Logged-out users: Show auth buttons
           <Space size="middle">
-            <Button 
+            <Button
               type="text"
               icon={<LoginOutlined />}
               onClick={() => {
                 setAuthContext('login');
                 setShowAuthModal(true);
               }}
-              style={{ color: '#6B8CAE' }}
             >
               Log In
             </Button>
-            <Button 
+            <Button
               type="primary"
               icon={<UserAddOutlined />}
               onClick={() => {
                 setAuthContext('register');
                 setShowAuthModal(true);
               }}
-              style={{ 
-                backgroundColor: '#6B8CAE',
-                borderColor: '#6B8CAE',
+              style={{
                 borderRadius: '6px'
               }}
             >
@@ -90,12 +87,10 @@ const LoggedOutProgressHeader = ({
           </Space>
         ) : isNewRegistration && showSaveProjectButton ? (
           // New registrations: Show Save Project button
-          <Button 
+          <Button
             type="primary"
             onClick={onSaveProject}
-            style={{ 
-              backgroundColor: '#52c41a', 
-              borderColor: '#52c41a',
+            style={{
               fontWeight: 600,
               borderRadius: '6px'
             }}

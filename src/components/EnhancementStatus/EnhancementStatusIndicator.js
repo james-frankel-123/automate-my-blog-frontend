@@ -95,7 +95,7 @@ const EnhancementStatusIndicator = ({
         />
         {enhancementStatus.dataCompleteness === 'low' && (
           <Tooltip title="Add manual inputs or complete website analysis to improve quality">
-            <InfoCircleOutlined style={{ marginLeft: 4, color: '#1890ff' }} />
+            <InfoCircleOutlined style={{ marginLeft: 4, color: 'var(--color-primary)' }} />
           </Tooltip>
         )}
       </div>

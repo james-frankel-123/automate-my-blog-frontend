@@ -11,7 +11,7 @@ const MarkdownPreview = ({ content, typography = {}, style = {} }) => {
   if (!content || !content.trim()) {
     return (
       <div style={{ 
-        color: '#999', 
+        color: 'var(--color-text-tertiary)', 
         fontStyle: 'italic', 
         padding: '20px',
         textAlign: 'center',
@@ -84,10 +84,10 @@ const MarkdownPreview = ({ content, typography = {}, style = {} }) => {
       if (codeBlockContent.length > 0) {
         elements.push(
           <pre key={`code-${elements.length}`} style={{
-            backgroundColor: '#f5f5f5',
+            backgroundColor: 'var(--color-background-alt)',
             padding: '12px',
             borderRadius: '4px',
-            border: '1px solid #e0e0e0',
+            border: '1px solid var(--color-border-base)',
             overflow: 'auto',
             marginBottom: '16px',
             fontFamily: 'Consolas, Monaco, "Courier New", monospace',
@@ -264,7 +264,7 @@ const MarkdownPreview = ({ content, typography = {}, style = {} }) => {
           const codeText = text.substring(i + 1, endIndex);
           parts.push(
             <code key={`code-${parts.length}`} style={{
-              backgroundColor: '#f5f5f5',
+              backgroundColor: 'var(--color-background-alt)',
               padding: '2px 4px',
               borderRadius: '3px',
               fontSize: '0.9em',
@@ -292,7 +292,7 @@ const MarkdownPreview = ({ content, typography = {}, style = {} }) => {
             const linkUrl = text.substring(closingBracket + 2, closingParen);
             parts.push(
               <a key={`link-${parts.length}`} href={linkUrl} target="_blank" rel="noopener noreferrer" style={{
-                color: '#1890ff',
+                color: 'var(--color-primary)',
                 textDecoration: 'none'
               }}>
                 {linkText}
@@ -322,7 +322,7 @@ const MarkdownPreview = ({ content, typography = {}, style = {} }) => {
       lineHeight: lineHeight,
       fontSize: `${fontSize}px`,
       fontFamily: bodyFont,
-      color: '#333',
+      color: 'var(--color-text-primary)',
       ...style 
     }}>
       {elements}

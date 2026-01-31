@@ -6,8 +6,6 @@ import { Button } from '../../DesignSystem';
  * Modern Editor Layout with flexible view modes
  */
 const EditorLayout = ({
-  mode = 'edit', // 'edit', 'preview', 'split'
-  onModeChange,
   children,
   sidebarContent = null,
   toolbarContent = null,
@@ -22,18 +20,19 @@ const EditorLayout = ({
     flexDirection: 'column',
     height: '100%',
     backgroundColor: colors.background.body,
-    borderRadius: isFullscreen ? 0 : borderRadius.md,
+    borderRadius: isFullscreen ? borderRadius.lg : borderRadius.md,
     overflow: 'hidden',
-    boxShadow: isFullscreen ? 'none' : shadows.base,
+    boxShadow: isFullscreen ? shadows.elevated : shadows.base,
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
     ...(isFullscreen && {
       position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      zIndex: 9999,
-      borderRadius: 0
+      top: '5vh',
+      left: '5vw',
+      right: '5vw',
+      bottom: '5vh',
+      width: '90vw',
+      height: '90vh',
+      zIndex: 9999
     }),
     ...style
   };
@@ -57,7 +56,7 @@ const EditorLayout = ({
   const mainContentStyles = {
     flex: 1,
     display: 'flex',
-    flexDirection: mode === 'split' ? 'row' : 'column',
+    flexDirection: 'column',
     overflow: 'hidden'
   };
 
@@ -69,51 +68,18 @@ const EditorLayout = ({
     overflow: 'auto'
   };
 
-  // View mode buttons
-  const ViewModeButtons = () => (
-    <div style={{ display: 'flex', gap: spacing.xs, alignItems: 'center' }}>
+  // Fullscreen button
+  const FullscreenButton = () => (
+    onToggleFullscreen && (
       <Button
-        variant={mode === 'edit' ? 'primary' : 'ghost'}
+        variant="ghost"
         size="small"
-        onClick={() => onModeChange?.('edit')}
+        onClick={onToggleFullscreen}
+        title={isFullscreen ? 'Exit fullscreen (ESC)' : 'Enter fullscreen'}
       >
-        Edit
+        {isFullscreen ? '⤓' : '⤢'}
       </Button>
-      <Button
-        variant={mode === 'preview' ? 'primary' : 'ghost'}
-        size="small"
-        onClick={() => onModeChange?.('preview')}
-      >
-        Preview
-      </Button>
-      <Button
-        variant={mode === 'split' ? 'primary' : 'ghost'}
-        size="small"
-        onClick={() => onModeChange?.('split')}
-      >
-        🔀 Split View
-      </Button>
-
-      {/* Fullscreen button */}
-      {onToggleFullscreen && (
-        <>
-          <div style={{
-            width: '1px',
-            height: '20px',
-            backgroundColor: colors.border.base,
-            margin: `0 ${spacing.xs}`
-          }} />
-          <Button
-            variant="ghost"
-            size="small"
-            onClick={onToggleFullscreen}
-            title={isFullscreen ? 'Exit fullscreen (ESC)' : 'Enter fullscreen'}
-          >
-            {isFullscreen ? '⤓' : '⤢'}
-          </Button>
-        </>
-      )}
-    </div>
+    )
   );
 
   // Keyboard shortcuts for fullscreen
@@ -135,7 +101,26 @@ const EditorLayout = ({
   }, [isFullscreen, onToggleFullscreen]);
 
   return (
-    <div style={layoutStyles} className={className}>
+    <>
+      {/* Backdrop for fullscreen mode */}
+      {isFullscreen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(10, 37, 64, 0.6)',
+            zIndex: 9998,
+            backdropFilter: 'blur(4px)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
+          onClick={onToggleFullscreen}
+        />
+      )}
+
+      <div style={layoutStyles} className={className}>
       {/* Toolbar */}
       <div style={{ ...toolbarStyles, position: 'relative' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
@@ -148,7 +133,7 @@ const EditorLayout = ({
           </span>
           {toolbarContent}
         </div>
-        <ViewModeButtons />
+        <FullscreenButton />
 
         {/* Fullscreen indicator */}
         {isFullscreen && (
@@ -162,7 +147,7 @@ const EditorLayout = ({
             opacity: 0.7,
             pointerEvents: 'none'
           }}>
-            Press ESC to exit fullscreen
+            Press ESC or click outside to close
           </div>
         )}
       </div>
@@ -181,6 +166,7 @@ const EditorLayout = ({
         )}
       </div>
     </div>
+    </>
   );
 };
 
@@ -204,27 +190,5 @@ export const EditorPane = ({ children, style = {} }) => {
   );
 };
 
-/**
- * Preview Pane - Wrapper for preview content
- */
-export const PreviewPane = ({ children, style = {} }) => {
-  const paneStyles = {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'auto',
-    backgroundColor: colors.background.body,
-    borderLeft: `1px solid ${colors.border.light}`,
-    ...style
-  };
-
-  return (
-    <div style={paneStyles}>
-      <div style={{ padding: spacing.lg }}>
-        {children}
-      </div>
-    </div>
-  );
-};
 
 export default EditorLayout;

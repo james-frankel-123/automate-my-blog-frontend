@@ -203,7 +203,7 @@ const ExportModal = ({
         font-family: Consolas, Monaco, 'Courier New', monospace;
       }
       a {
-        color: #1890ff;
+        color: var(--color-primary);
         text-decoration: none;
       }
       ul, ol {
@@ -338,7 +338,7 @@ const ExportModal = ({
                   {format.icon}
                   <div>
                     <div>{format.label}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                       {format.description}
                     </div>
                   </div>
@@ -421,7 +421,7 @@ const ExportModal = ({
         {/* Stats */}
         <div style={{ 
           fontSize: '12px', 
-          color: '#666', 
+          color: 'var(--color-text-secondary)', 
           textAlign: 'center',
           paddingTop: '8px',
           borderTop: '1px solid #f0f0f0'

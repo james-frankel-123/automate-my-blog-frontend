@@ -100,7 +100,7 @@ const LLMInsightsPanel = ({ insights, onRefresh }) => {
                     <div style={{ marginTop: 8 }}>
                       {insight.action && (
                         <p>
-                          <strong style={{ color: '#1890ff' }}>📌 Recommended Action:</strong><br />
+                          <strong style={{ color: 'var(--color-primary)' }}>📌 Recommended Action:</strong><br />
                           {insight.action}
                         </p>
                       )}

@@ -245,7 +245,7 @@ Type and format as you go!
 
       {/* Stats Display */}
       {showStats && (
-        <Space size={16} style={{ color: '#666', fontSize: '11px' }}>
+        <Space size={16} style={{ color: 'var(--color-text-secondary)', fontSize: '11px' }}>
           <span>{wordCount} words</span>
           <span>{calculateReadingTime(wordCount)} min read</span>
         </Space>

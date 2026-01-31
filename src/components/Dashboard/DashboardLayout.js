@@ -555,7 +555,7 @@ const DashboardLayout = ({
   if (isSuperAdmin || hasPermission('manage_team') || hasPermission('manage_users')) {
     adminMenuItems.push({
       key: 'admin-users',
-      icon: <TeamOutlined style={{ color: 'red' }} />,
+      icon: <TeamOutlined style={{ color: 'var(--color-error)' }} />,
       label: 'Admin Users',
     });
   }
@@ -564,44 +564,44 @@ const DashboardLayout = ({
   if (isSuperAdmin) {
     adminMenuItems.push({
       key: 'admin-leads',
-      icon: <UserOutlined style={{ color: 'red' }} />,
+      icon: <UserOutlined style={{ color: 'var(--color-error)' }} />,
       label: 'Website Leads',
     });
     
     adminMenuItems.push({
       key: 'admin-analytics',
-      icon: <LineChartOutlined style={{ color: 'red' }} />,
+      icon: <LineChartOutlined style={{ color: 'var(--color-error)' }} />,
       label: 'Admin Analytics',
     });
 
     adminMenuItems.push({
       key: 'user-analytics',
-      icon: <BarChartOutlined style={{ color: 'red' }} />,
+      icon: <BarChartOutlined style={{ color: 'var(--color-error)' }} />,
       label: 'User Analytics',
     });
 
     adminMenuItems.push({
       key: 'admin-content',
-      icon: <SafetyOutlined style={{ color: 'red' }} />,
+      icon: <SafetyOutlined style={{ color: 'var(--color-error)' }} />,
       label: 'Admin Content',
     });
     
     adminMenuItems.push({
       key: 'admin-system',
-      icon: <DatabaseOutlined style={{ color: 'red' }} />,
+      icon: <DatabaseOutlined style={{ color: 'var(--color-error)' }} />,
       label: 'Admin System',
     });
     
     adminMenuItems.push({
       key: 'sandbox',
-      icon: <EditOutlined style={{ color: '#722ed1' }} />,
+      icon: <EditOutlined style={{ color: 'var(--color-primary)' }} />,
       label: 'Sandbox',
     });
 
     // Content Analysis tab - super admin only
     adminMenuItems.push({
       key: 'comprehensive-analysis',
-      icon: <BarChartOutlined style={{ color: 'red' }} />,
+      icon: <BarChartOutlined style={{ color: 'var(--color-error)' }} />,
       label: 'Content Analysis',
     });
   }
@@ -1178,33 +1178,33 @@ const DashboardLayout = ({
               {/* Exit Project Button - Show when in project mode */}
               {projectMode && (
                 showSaveProjectButton ? (
-                  <Button 
+                  <Button
                     type="primary"
                     onClick={() => {
                       setShowDashboardLocal(true);
                       setShowSaveProjectButton(false);
                       setHasSeenSaveProject(true);
                       setProjectMode(false); // Exit project mode when saving
-                      
+
                       // Clear registration flag since user has now saved their project
                       clearNewRegistration();
-                      
+
                       // Save to localStorage so user never sees this button again
                       if (user) {
                         localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
                       }
                       message.success('Project saved! Dashboard is now available via sidebar.');
                     }}
-                    style={{ 
-                      backgroundColor: '#52c41a', 
-                      borderColor: '#52c41a',
+                    style={{
+                      backgroundColor: 'var(--color-success)',
+                      borderColor: 'var(--color-success)',
                       fontWeight: 600
                     }}
                   >
                     💾 Save Project
                   </Button>
                 ) : (
-                  <Button 
+                  <Button
                     type="primary"
                     danger
                     size="large"
@@ -1212,13 +1212,13 @@ const DashboardLayout = ({
                       setProjectMode(false);
                       message.success('Exited project mode. Full dashboard now available.');
                     }}
-                    style={{ 
-                      backgroundColor: '#ff4d4f',
-                      borderColor: '#ff4d4f',
+                    style={{
+                      backgroundColor: 'var(--color-error)',
+                      borderColor: 'var(--color-error)',
                       color: 'white',
                       fontWeight: 600,
                       boxShadow: 'none',
-                      border: '2px solid #ff4d4f'
+                      border: '2px solid var(--color-error)'
                     }}
                   >
                     🚪 Exit Project Mode
@@ -1263,7 +1263,7 @@ const DashboardLayout = ({
           left: 0,
           right: 0,
           zIndex: 1000,
-          background: '#ff4d4f',
+          background: 'var(--color-error)',
           color: 'white',
           padding: '8px 16px',
           display: 'flex',

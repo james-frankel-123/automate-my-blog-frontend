@@ -109,7 +109,7 @@ class ExportService {
         icon: 'FileMarkdownOutlined',
         mimeType: 'text/markdown',
         extension: '.md',
-        color: '#1890ff'
+        color: 'var(--color-primary)'
       },
       {
         key: 'html',

@@ -59,7 +59,7 @@ const SchedulingModal = ({
       open={open}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ScheduleOutlined style={{ color: '#1890ff' }} />
+          <ScheduleOutlined style={{ color: 'var(--color-primary)' }} />
           <span>Schedule Post</span>
         </div>
       }
@@ -71,13 +71,13 @@ const SchedulingModal = ({
       <div style={{ padding: '20px 0' }}>
         {/* Post Preview */}
         <div style={{
-          background: '#fafafa',
-          border: '1px solid #f0f0f0',
+          background: 'var(--color-background-alt)',
+          border: '1px solid var(--color-border-base)',
           borderRadius: '8px',
           padding: '16px',
           marginBottom: '24px'
         }}>
-          <Title level={5} style={{ margin: '0 0 8px 0', color: '#333' }}>
+          <Title level={5} style={{ margin: '0 0 8px 0', color: 'var(--color-text-primary)' }}>
             {post?.title}
           </Title>
           {post?.isDummy && (
@@ -101,7 +101,7 @@ const SchedulingModal = ({
           <Form.Item
             label={
               <span>
-                <ScheduleOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                <ScheduleOutlined style={{ marginRight: '8px', color: 'var(--color-primary)' }} />
                 Publication Date & Time
               </span>
             }
@@ -131,7 +131,7 @@ const SchedulingModal = ({
           <Form.Item
             label={
               <span>
-                <GlobalOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                <GlobalOutlined style={{ marginRight: '8px', color: 'var(--color-primary)' }} />
                 Publication Platform
               </span>
             }
@@ -152,7 +152,7 @@ const SchedulingModal = ({
           <Form.Item name="notifyOnPublish" valuePropName="checked">
             <Checkbox>
               <span>
-                <MailOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                <MailOutlined style={{ marginRight: '8px', color: 'var(--color-primary)' }} />
                 Send email notification when published
               </span>
             </Checkbox>
@@ -162,13 +162,13 @@ const SchedulingModal = ({
 
           {/* Information Note */}
           <div style={{
-            background: '#f6ffed',
-            border: '1px solid #b7eb8f',
+            background: 'var(--color-success-bg)',
+            border: '1px solid var(--color-success-border)',
             borderRadius: '6px',
             padding: '12px',
             marginBottom: '20px'
           }}>
-            <Text style={{ fontSize: '14px', color: '#389e0d' }}>
+            <Text style={{ fontSize: '14px', color: 'var(--color-success-dark)' }}>
               💡 <strong>Note:</strong> This scheduling feature stores data locally for demonstration. 
               In the full version, posts will be automatically published to your selected platform.
             </Text>

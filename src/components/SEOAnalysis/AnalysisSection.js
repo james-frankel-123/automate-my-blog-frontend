@@ -18,18 +18,18 @@ const AnalysisSection = ({
 }) => {
   // Get score color based on value
   const getScoreColor = (score) => {
-    if (score >= 90) return '#52c41a'; // Green
-    if (score >= 80) return '#1890ff'; // Blue  
-    if (score >= 70) return '#faad14'; // Orange
-    if (score >= 60) return '#fa8c16'; // Dark orange
-    return '#f5222d'; // Red
+    if (score >= 90) return 'var(--color-success)'; // Green
+    if (score >= 80) return 'var(--color-primary)'; // Blue
+    if (score >= 70) return 'var(--color-warning)'; // Orange
+    if (score >= 60) return 'var(--color-warning)'; // Dark orange
+    return 'var(--color-error)'; // Red
   };
 
   // Get score icon based on value
   const getScoreIcon = (score) => {
-    if (score >= 85) return <CheckCircleOutlined style={{ color: '#52c41a' }} />;
-    if (score >= 70) return <InfoCircleOutlined style={{ color: '#1890ff' }} />;
-    return <ExclamationCircleOutlined style={{ color: '#fa8c16' }} />;
+    if (score >= 85) return <CheckCircleOutlined style={{ color: 'var(--color-success)' }} />;
+    if (score >= 70) return <InfoCircleOutlined style={{ color: 'var(--color-primary)' }} />;
+    return <ExclamationCircleOutlined style={{ color: 'var(--color-warning)' }} />;
   };
 
   // Format field label for display
@@ -80,7 +80,7 @@ const AnalysisSection = ({
     <div className="analysis-section" style={{ padding: '0 16px' }}>
       {/* Section Description */}
       {description && (
-        <Paragraph style={{ color: '#666', marginBottom: '16px', fontStyle: 'italic' }}>
+        <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '16px', fontStyle: 'italic' }}>
           {description}
         </Paragraph>
       )}
@@ -89,7 +89,7 @@ const AnalysisSection = ({
       <List
         dataSource={analysisItems}
         renderItem={(item) => (
-          <List.Item style={{ padding: '16px 0', borderBottom: '1px solid #f0f0f0' }}>
+          <List.Item style={{ padding: '16px 0', borderBottom: '1px solid var(--color-border-base)' }}>
             <div style={{ width: '100%' }}>
               {/* Item Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -157,17 +157,17 @@ const AnalysisSection = ({
               {/* Content Quote */}
               {item.quote && (
                 <Card 
-                  size="small" 
-                  style={{ 
-                    marginBottom: '12px', 
-                    backgroundColor: '#f6ffed',
-                    border: '1px solid #b7eb8f'
+                  size="small"
+                  style={{
+                    marginBottom: '12px',
+                    backgroundColor: 'var(--color-success-bg)',
+                    border: '1px solid var(--color-success-border)'
                   }}
                 >
-                  <blockquote style={{ 
-                    margin: 0, 
+                  <blockquote style={{
+                    margin: 0,
                     fontStyle: 'italic',
-                    color: '#389e0d'
+                    color: 'var(--color-success-dark)'
                   }}>
                     "{item.quote}"
                   </blockquote>
@@ -182,7 +182,7 @@ const AnalysisSection = ({
               {/* Suggestions */}
               {item.suggestions && item.suggestions.length > 0 && (
                 <div>
-                  <Text strong style={{ color: '#1890ff', marginBottom: '8px', display: 'block' }}>
+                  <Text strong style={{ color: 'var(--color-primary)', marginBottom: '8px', display: 'block' }}>
                     💡 Specific Suggestions:
                   </Text>
                   <List
@@ -190,10 +190,10 @@ const AnalysisSection = ({
                     dataSource={item.suggestions}
                     renderItem={(suggestion) => (
                       <List.Item style={{ padding: '4px 0' }}>
-                        <Text style={{ color: '#595959' }}>• {suggestion}</Text>
+                        <Text style={{ color: 'var(--color-text-secondary)' }}>• {suggestion}</Text>
                       </List.Item>
                     )}
-                    style={{ backgroundColor: '#fafafa', padding: '8px 12px', borderRadius: '4px' }}
+                    style={{ backgroundColor: 'var(--color-background-alt)', padding: '8px 12px', borderRadius: '4px' }}
                   />
                 </div>
               )}
@@ -207,7 +207,7 @@ const AnalysisSection = ({
         <div style={{ 
           textAlign: 'center', 
           padding: '40px 0', 
-          color: '#999' 
+          color: 'var(--color-text-tertiary)' 
         }}>
           <InfoCircleOutlined style={{ fontSize: '24px', marginBottom: '8px' }} />
           <Paragraph type="secondary">

@@ -350,6 +350,16 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         console.log('🎁 Fetching bundle pricing...');
         const response = await autoBlogAPI.calculateBundlePrice();
         console.log('🎁 Bundle pricing response:', response);
+        console.log('🎁 Bundle overview received:', {
+          hasBundleOverview: !!response.bundleOverview,
+          hasOverviewText: !!response.bundleOverview?.overview,
+          isAIGenerated: response.bundleOverview?.isAIGenerated,
+          hasMetrics: {
+            searches: !!response.bundleOverview?.totalMonthlySearches,
+            profit: !!response.bundleOverview?.projectedMonthlyProfit,
+            benefits: !!response.bundleOverview?.keyBenefits
+          }
+        });
         setBundlePricing(response.bundlePricing);
         setBundleOverview(response.bundleOverview);
 
@@ -826,7 +836,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     return (
       <motion.div
         key={strategy.id}
-        style={{ padding: '0 8px' }}
+        style={{ padding: '0 16px' }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -849,7 +859,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             opacity: isOthersSelected ? 0.5 : 1,
             transition: 'all 0.3s ease',
             margin: '0 auto',
-            maxWidth: '600px',
+            maxWidth: '480px',
             position: 'relative',
             boxShadow: isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)',
             backgroundColor: isSubscribed ? 'var(--color-success-bg)' : 'white'
@@ -1315,7 +1325,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                 </Title>
 
                                 {/* AI-Generated Outcome-Focused Overview */}
-                                {bundleOverview ? (
+                                {bundleOverview && bundleOverview.overview ? (
                                   <>
                                     <Text style={{
                                       color: 'rgba(255,255,255,0.95)',
@@ -1527,32 +1537,60 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                         <>
                           <Button
                             type="text"
-                            icon={<LeftOutlined />}
+                            icon={<LeftOutlined style={{ fontSize: '18px' }} />}
                             onClick={() => carouselRef.current?.prev()}
                             style={{
                               position: 'absolute',
-                              left: '-10px',
+                              left: '-15px',
                               top: '50%',
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'white',
-                              boxShadow: 'var(--shadow-sm)',
-                              border: '1px solid var(--color-border-light)'
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                              border: '1px solid var(--color-border-light)',
+                              width: '40px',
+                              height: '40px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.3s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                              e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                             }}
                           />
                           <Button
                             type="text"
-                            icon={<RightOutlined />}
+                            icon={<RightOutlined style={{ fontSize: '18px' }} />}
                             onClick={() => carouselRef.current?.next()}
                             style={{
                               position: 'absolute',
-                              right: '-10px',
+                              right: '-15px',
                               top: '50%',
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'white',
-                              boxShadow: 'var(--shadow-sm)',
-                              border: '1px solid var(--color-border-light)'
+                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                              border: '1px solid var(--color-border-light)',
+                              width: '40px',
+                              height: '40px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              transition: 'all 0.3s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                              e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                              e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                             }}
                           />
                         </>
@@ -1562,8 +1600,17 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                         ref={carouselRef}
                         dots={strategies.length > 1}
                         infinite={strategies.length > 1}
-                        slidesToShow={1}
+                        slidesToShow={2}
                         slidesToScroll={1}
+                        responsive={[
+                          {
+                            breakpoint: 768,
+                            settings: {
+                              slidesToShow: 1,
+                              slidesToScroll: 1,
+                            }
+                          }
+                        ]}
                         style={{ padding: '0 20px' }}
                       >
                         {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
@@ -1716,7 +1763,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       </Title>
 
                       {/* AI-Generated Outcome-Focused Overview */}
-                      {bundleOverview ? (
+                      {bundleOverview && bundleOverview.overview ? (
                         <>
                           <Text style={{
                             color: 'rgba(255,255,255,0.95)',
@@ -1930,32 +1977,60 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 <>
                   <Button
                     type="text"
-                    icon={<LeftOutlined />}
+                    icon={<LeftOutlined style={{ fontSize: '18px' }} />}
                     onClick={() => carouselRef.current?.prev()}
                     style={{
                       position: 'absolute',
-                      left: '-10px',
+                      left: '-15px',
                       top: '50%',
                       transform: 'translateY(-50%)',
                       zIndex: 10,
                       backgroundColor: 'white',
-                      boxShadow: theme.shadows.sm,
-                      border: '1px solid var(--color-gray-300)'
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      border: '1px solid var(--color-border-light)',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                      e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                      e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                     }}
                   />
                   <Button
                     type="text"
-                    icon={<RightOutlined />}
+                    icon={<RightOutlined style={{ fontSize: '18px' }} />}
                     onClick={() => carouselRef.current?.next()}
                     style={{
                       position: 'absolute',
-                      right: '-10px',
+                      right: '-15px',
                       top: '50%',
                       transform: 'translateY(-50%)',
                       zIndex: 10,
                       backgroundColor: 'white',
-                      boxShadow: theme.shadows.sm,
-                      border: '1px solid var(--color-gray-300)'
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      border: '1px solid var(--color-border-light)',
+                      width: '40px',
+                      height: '40px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                      e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                      e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                     }}
                   />
                 </>
@@ -1965,8 +2040,17 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 ref={carouselRef}
                 dots={strategies.length > 1}
                 infinite={strategies.length > 1}
-                slidesToShow={1}
+                slidesToShow={2}
                 slidesToScroll={1}
+                responsive={[
+                  {
+                    breakpoint: 768,
+                    settings: {
+                      slidesToShow: 1,
+                      slidesToScroll: 1,
+                    }
+                  }
+                ]}
                 style={{ padding: '0 20px' }}
               >
                 {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}

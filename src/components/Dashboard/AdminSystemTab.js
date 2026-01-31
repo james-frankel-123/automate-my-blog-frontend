@@ -307,7 +307,7 @@ const AdminSystemTab = () => {
           <Card 
             title={
               <Space>
-                <DatabaseOutlined style={{ color: '#1890ff' }} />
+                <DatabaseOutlined style={{ color: 'var(--color-primary)' }} />
                 Server Performance
               </Space>
             }
@@ -481,7 +481,7 @@ const AdminSystemTab = () => {
       <Card 
         title={
           <Space>
-            <ApiOutlined style={{ color: '#1890ff' }} />
+            <ApiOutlined style={{ color: 'var(--color-primary)' }} />
             API Health Summary
           </Space>
         }

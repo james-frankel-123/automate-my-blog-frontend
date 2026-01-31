@@ -44,31 +44,31 @@ const DiscoverySettingsModal = ({
       value: 'keywords',
       label: 'Trending Keywords',
       description: 'Monitor search volume trends and emerging keywords in your industry',
-      icon: <RiseOutlined style={{ color: '#1890ff' }} />
+      icon: <RiseOutlined style={{ color: 'var(--color-primary)' }} />
     },
     {
       value: 'customer-segments',
       label: 'Customer Segments',
       description: 'Identify new customer segments and audience opportunities',
-      icon: <UserOutlined style={{ color: '#52c41a' }} />
+      icon: <UserOutlined style={{ color: 'var(--color-success)' }} />
     },
     {
       value: 'industry-news',
       label: 'Industry News',
       description: 'Track relevant industry news and regulatory changes',
-      icon: <GlobalOutlined style={{ color: '#fa8c16' }} />
+      icon: <GlobalOutlined style={{ color: 'var(--color-warning)' }} />
     },
     {
       value: 'competitor-analysis',
       label: 'Competitor Analysis',
       description: 'Monitor competitor content and identify content gaps',
-      icon: <EyeOutlined style={{ color: '#722ed1' }} />
+      icon: <EyeOutlined style={{ color: 'var(--color-primary)' }} />
     },
     {
       value: 'social-trends',
       label: 'Social Media Trends',
       description: 'Track viral topics and social media conversations',
-      icon: <SearchOutlined style={{ color: '#eb2f96' }} />
+      icon: <SearchOutlined style={{ color: 'var(--color-accent)' }} />
     }
   ];
 
@@ -101,7 +101,7 @@ const DiscoverySettingsModal = ({
       open={open}
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <SettingOutlined style={{ color: '#1890ff' }} />
+          <SettingOutlined style={{ color: 'var(--color-primary)' }} />
           <span>Discovery Settings</span>
         </div>
       }
@@ -135,7 +135,7 @@ const DiscoverySettingsModal = ({
           <Form.Item
             label={
               <span>
-                <ClockCircleOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                <ClockCircleOutlined style={{ marginRight: '8px', color: 'var(--color-primary)' }} />
                 Discovery Frequency
               </span>
             }
@@ -163,7 +163,7 @@ const DiscoverySettingsModal = ({
           <Form.Item
             label={
               <span>
-                <SearchOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                <SearchOutlined style={{ marginRight: '8px', color: 'var(--color-primary)' }} />
                 Focus Areas
               </span>
             }
@@ -180,7 +180,7 @@ const DiscoverySettingsModal = ({
                         display: 'flex',
                         alignItems: 'flex-start',
                         padding: '12px',
-                        border: '1px solid #f0f0f0',
+                        border: '1px solid var(--color-border-base)',
                         borderRadius: '6px',
                         margin: 0
                       }}
@@ -190,7 +190,7 @@ const DiscoverySettingsModal = ({
                           {option.icon}
                           <Text strong>{option.label}</Text>
                         </div>
-                        <Text style={{ fontSize: '12px', color: '#666' }}>
+                        <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                           {option.description}
                         </Text>
                       </div>
@@ -252,16 +252,16 @@ const DiscoverySettingsModal = ({
 
           {/* Information Panel */}
           <div style={{
-            background: '#f6ffed',
-            border: '1px solid #b7eb8f',
+            background: 'var(--color-success-bg)',
+            border: '1px solid var(--color-success-border)',
             borderRadius: '6px',
             padding: '16px',
             marginBottom: '20px'
           }}>
-            <Title level={5} style={{ color: '#389e0d', margin: '0 0 8px 0' }}>
+            <Title level={5} style={{ color: 'var(--color-success-dark)', margin: '0 0 8px 0' }}>
               🎯 How Discovery Works
             </Title>
-            <Paragraph style={{ fontSize: '14px', color: '#333', margin: 0 }}>
+            <Paragraph style={{ fontSize: '14px', color: 'var(--color-text-primary)', margin: 0 }}>
               The automated discovery system analyzes trends, monitors competitor content, 
               tracks industry news, and identifies emerging customer segments. When opportunities 
               are found, you can instantly generate targeted content or create new marketing strategies.

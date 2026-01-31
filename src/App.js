@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider, theme as antdTheme } from 'antd';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
@@ -11,16 +11,58 @@ import { storeReferralInfo } from './utils/referralUtils';
 import './styles/design-system.css';
 import './styles/mobile.css';
 
-// Ant Design theme configuration - Stripe-inspired enterprise aesthetic
-const antdTheme = {
+// Detect dark mode
+const useDarkMode = () => {
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      return savedTheme === 'dark';
+    }
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme) {
+        setIsDarkMode(savedTheme === 'dark');
+      }
+    };
+
+    // Listen for changes to localStorage (from ThemeToggle component)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also check for dark-mode class changes on documentElement
+    const observer = new MutationObserver(() => {
+      const hasDarkClass = document.documentElement.classList.contains('dark-mode');
+      setIsDarkMode(hasDarkClass);
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      observer.disconnect();
+    };
+  }, []);
+
+  return isDarkMode;
+};
+
+// Ant Design theme configuration function - Royal Luxury (Deep Purple + Gold)
+const getAntdTheme = (isDark) => ({
+  algorithm: isDark ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
   token: {
-    // Color tokens - Stripe palette
-    colorPrimary: '#635BFF',        // Stripe purple - strategic accent
-    colorSuccess: '#00D924',        // Stripe green
-    colorWarning: '#FFB020',        // Stripe amber
-    colorError: '#DF1B41',          // Stripe red
-    colorInfo: '#635BFF',           // Match primary
-    colorTextBase: '#0A2540',       // Stripe navy (dark text)
+    // Color tokens - Royal Luxury palette (Deep Purple + Gold)
+    colorPrimary: '#6366F1',        // Rich indigo-purple - main brand color
+    colorSuccess: '#059669',        // Deep emerald green
+    colorWarning: '#F59E0B',        // Refined gold
+    colorError: '#EF4444',          // Warm red
+    colorInfo: '#6366F1',           // Match primary (purple)
+    colorTextBase: '#0A2540',       // Navy (dark text)
     colorTextSecondary: '#425466',  // Medium gray
     colorTextTertiary: '#6B7C8E',   // Light gray
     colorBgBase: '#ffffff',         // White background
@@ -28,8 +70,13 @@ const antdTheme = {
     colorBorder: '#E3E8EF',         // Subtle border
     colorBorderSecondary: '#F6F9FC', // Very subtle border
 
-    // Typography - Clear hierarchy
-    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif',
+    // Hover colors - Important for dark mode compatibility
+    colorPrimaryHover: '#4F46E5',   // Deeper purple on hover
+    colorBgTextHover: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)', // Text button hover
+    controlItemBgHover: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F6F9FC', // Default button hover
+
+    // Typography - Sora + Inter
+    fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Ubuntu, sans-serif',
     fontSize: 16,                   // --font-size-base (16px body)
     fontSizeHeading1: 32,           // --font-size-3xl (page titles)
     fontSizeHeading2: 24,           // --font-size-2xl (section headers)
@@ -85,6 +132,11 @@ const antdTheme = {
       borderRadius: 4,              // Consistent with token
       controlHeight: 40,
       paddingContentHorizontal: 16,
+      // Hover colors for dark mode compatibility
+      defaultHoverBg: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F6F9FC',
+      defaultHoverBorderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : '#6366F1',
+      defaultHoverColor: isDark ? '#F5F5F7' : '#6366F1',
+      textHoverBg: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(99, 102, 241, 0.06)',
     },
     Card: {
       boxShadow: '0 1px 2px rgba(10, 37, 64, 0.05)', // Minimal shadow
@@ -93,11 +145,12 @@ const antdTheme = {
       headerBg: 'transparent',
     },
     Table: {
-      headerBg: '#FAFBFC',          // Subtle gray header
-      headerColor: '#425466',       // Medium gray text
-      borderColor: '#E3E8EF',       // Subtle borders
-      cellPaddingBlock: 16,         // Generous padding
+      headerBg: isDark ? '#1A1F29' : '#FAFBFC',
+      headerColor: isDark ? '#A0A0AB' : '#425466',
+      borderColor: isDark ? '#2D3139' : '#E3E8EF',
+      cellPaddingBlock: 16,
       cellPaddingInline: 16,
+      rowHoverBg: isDark ? 'rgba(255, 255, 255, 0.04)' : '#F6F9FC',
     },
     Input: {
       controlHeight: 40,
@@ -121,9 +174,9 @@ const antdTheme = {
     },
     Menu: {
       itemBg: 'transparent',
-      itemHoverBg: '#F6F9FC',       // Subtle hover
-      itemActiveBg: '#F6F9FC',
-      itemSelectedBg: '#F6F9FC',
+      itemHoverBg: isDark ? 'rgba(255, 255, 255, 0.08)' : '#F6F9FC',
+      itemActiveBg: isDark ? 'rgba(255, 255, 255, 0.12)' : '#F6F9FC',
+      itemSelectedBg: isDark ? 'rgba(99, 102, 241, 0.15)' : '#F6F9FC',
       itemBorderRadius: 4,
     },
     Typography: {
@@ -135,12 +188,12 @@ const antdTheme = {
       itemActiveColor: '#0A2540',   // Navy for active
       itemHoverColor: '#425466',    // Medium gray for hover
       itemSelectedColor: '#0A2540',
-      inkBarColor: '#635BFF',       // Purple accent for indicator
+      inkBarColor: '#6366F1',       // Purple brand color for indicator
     },
     Tag: {
       borderRadiusSM: 3,
-      defaultBg: '#F6F9FC',
-      defaultColor: '#425466',
+      defaultBg: isDark ? '#242933' : '#F6F9FC',
+      defaultColor: isDark ? '#A0A0AB' : '#425466',
     },
     Alert: {
       borderRadiusLG: 6,
@@ -154,7 +207,7 @@ const antdTheme = {
       boxShadow: '0 2px 4px rgba(10, 37, 64, 0.08)',
     },
   },
-};
+});
 
 const AppContent = () => {
   const { user, loading, loginContext } = useAuth();
@@ -209,8 +262,10 @@ const AppContent = () => {
 
 // Main App wrapper with HelmetProvider, AuthProvider, AnalyticsProvider, and WorkflowModeProvider
 const App = () => {
+  const isDarkMode = useDarkMode();
+
   return (
-    <ConfigProvider theme={antdTheme}>
+    <ConfigProvider theme={getAntdTheme(isDarkMode)}>
       <HelmetProvider>
         <AuthProvider>
           <AnalyticsProvider>

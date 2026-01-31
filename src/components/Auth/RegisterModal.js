@@ -167,21 +167,21 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
     <div style={{ padding: '20px 0' }}>
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h2>Create Your Free Account</h2>
-        <p style={{ color: '#666', margin: '0 0 16px 0' }}>
+        <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 16px 0' }}>
           Unlock all premium features instantly
         </p>
         
-        <div style={{ 
-          backgroundColor: '#f6ffed', 
-          padding: '12px', 
-          borderRadius: '6px', 
-          border: '1px solid #b7eb8f',
+        <div style={{
+          backgroundColor: 'var(--color-success-bg)',
+          padding: '12px',
+          borderRadius: '6px',
+          border: '1px solid var(--color-success-border)',
           textAlign: 'left'
         }}>
-          <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: '#52c41a', fontSize: '14px' }}>
+          <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: 'var(--color-success)', fontSize: '14px' }}>
             ✨ What you get with your account:
           </p>
-          <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#666' }}>
+          <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
             <li>Access to all customer targeting strategies</li>
             <li>Unlimited content generation and regeneration</li>
             <li>Advanced content editing and customization</li>

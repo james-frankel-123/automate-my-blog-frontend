@@ -41,7 +41,7 @@ const LoginModal = ({ onClose, context = null, onSuccess = null }) => {
     <div style={{ padding: '20px 0' }}>
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h2>Welcome Back</h2>
-        <p style={{ color: '#666', margin: 0 }}>
+        <p style={{ color: 'var(--color-text-secondary)', margin: 0 }}>
           Sign in to your AutoBlog account
         </p>
       </div>

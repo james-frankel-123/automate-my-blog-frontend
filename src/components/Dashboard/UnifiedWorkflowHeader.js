@@ -345,7 +345,6 @@ const UnifiedWorkflowHeader = ({
           // Typewriter animation mode
           <div
             style={{
-              minHeight: '200px',
               opacity: dimText ? 0.3 : 1,
               transition: 'opacity 0.5s ease-out',
               pointerEvents: 'none',

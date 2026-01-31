@@ -9,7 +9,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
   if (!content || !content.trim()) {
     return (
       <div style={{ 
-        color: '#999', 
+        color: 'var(--color-text-tertiary)', 
         fontStyle: 'italic', 
         padding: '20px',
         textAlign: 'center',
@@ -273,7 +273,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
         }
 
         div :global(.tweet-card) a {
-          color: #1DA1F2;
+          color: var(--color-primary);
           text-decoration: none;
           transition: opacity 0.2s ease;
         }
@@ -288,7 +288,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
         }
 
         div :global(.tweet-fallback:hover) {
-          background-color: #e8f5fd !important;
+          background-color: var(--color-primary-50) !important;
         }
       `}</style>
     </div>

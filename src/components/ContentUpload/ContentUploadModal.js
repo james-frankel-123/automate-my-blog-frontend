@@ -180,7 +180,7 @@ const ContentUploadModal = ({ visible, onClose, onSuccess }) => {
           <Card>
             <div style={{ marginBottom: '24px' }}>
               <Title level={4}>Enter Blog Posts Manually</Title>
-              <Paragraph style={{ color: '#666' }}>
+              <Paragraph style={{ color: 'var(--color-text-secondary)' }}>
                 Add your existing blog posts manually. This is useful for small numbers of posts 
                 or when you want precise control over the content.
               </Paragraph>
@@ -293,7 +293,7 @@ const ContentUploadModal = ({ visible, onClose, onSuccess }) => {
           <Card>
             <div style={{ marginBottom: '24px' }}>
               <Title level={4}>Upload Blog Export Files</Title>
-              <Paragraph style={{ color: '#666' }}>
+              <Paragraph style={{ color: 'var(--color-text-secondary)' }}>
                 Upload blog content from WordPress exports, CSV files, or other formats. 
                 We support multiple file types and will automatically extract blog posts.
               </Paragraph>
@@ -302,12 +302,12 @@ const ContentUploadModal = ({ visible, onClose, onSuccess }) => {
             <div style={{ marginBottom: '24px' }}>
               <Upload.Dragger {...uploadProps} style={{ padding: '40px' }}>
                 <p className="ant-upload-drag-icon">
-                  <FileTextOutlined style={{ fontSize: '48px', color: '#1890ff' }} />
+                  <FileTextOutlined style={{ fontSize: '48px', color: 'var(--color-primary)' }} />
                 </p>
                 <p className="ant-upload-text" style={{ fontSize: '16px', fontWeight: 500 }}>
                   Click or drag files to this area to upload
                 </p>
-                <p className="ant-upload-hint" style={{ color: '#666' }}>
+                <p className="ant-upload-hint" style={{ color: 'var(--color-text-secondary)' }}>
                   Supports: .txt, .md, .csv, .json, .html, .xml, .wordpress, .wpress
                   <br />
                   Maximum file size: 50MB per file
@@ -353,7 +353,7 @@ const ContentUploadModal = ({ visible, onClose, onSuccess }) => {
             <Divider />
             
             <div style={{ textAlign: 'center' }}>
-              <Title level={5} style={{ color: '#666' }}>Supported Export Formats</Title>
+              <Title level={5} style={{ color: 'var(--color-text-secondary)' }}>Supported Export Formats</Title>
               <Space wrap>
                 <Tag color="blue">WordPress XML</Tag>
                 <Tag color="green">CSV Export</Tag>

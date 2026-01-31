@@ -48,7 +48,7 @@ const SEOAnalysis = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <Title level={4} style={{ margin: 0 }}>
-                <RocketOutlined style={{ color: '#1890ff' }} /> SEO Analysis
+                <RocketOutlined style={{ color: 'var(--color-primary)' }} /> SEO Analysis
               </Title>
               <Text type="secondary">Choose your analysis level</Text>
             </div>
@@ -84,9 +84,9 @@ const SEOAnalysis = ({
   }
 
   const getScoreColor = (score) => {
-    if (score >= 80) return '#52c41a';
-    if (score >= 60) return '#faad14';
-    return '#ff4d4f';
+    if (score >= 80) return 'var(--color-success)';
+    if (score >= 60) return 'var(--color-warning)';
+    return 'var(--color-error)';
   };
 
   const getScoreStatus = (score) => {
@@ -112,7 +112,7 @@ const SEOAnalysis = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <Title level={4} style={{ margin: 0 }}>
-                <RocketOutlined style={{ color: '#1890ff' }} /> SEO Analysis
+                <RocketOutlined style={{ color: 'var(--color-primary)' }} /> SEO Analysis
               </Title>
               <Text type="secondary">Choose your analysis level</Text>
             </div>
@@ -139,7 +139,7 @@ const SEOAnalysis = ({
       <Card 
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <TrophyOutlined style={{ color: '#1890ff' }} />
+            <TrophyOutlined style={{ color: 'var(--color-primary)' }} />
             <span>Content Analysis & SEO Report</span>
           </div>
         }
@@ -155,7 +155,7 @@ const SEOAnalysis = ({
           <Panel 
             header={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <EyeOutlined style={{ color: '#52c41a' }} />
+                <EyeOutlined style={{ color: 'var(--color-success)' }} />
                 <span style={{ fontWeight: 500 }}>SEO Analysis</span>
                 <Tag color={seoAnalysis.readabilityScore >= 70 ? 'success' : 'warning'}>
                   Readability: {seoAnalysis.readabilityScore}
@@ -203,11 +203,11 @@ const SEOAnalysis = ({
                         format={() => `${seoAnalysis.wordCount >= 800 ? 'Good' : 'Expand'}`}
                       />
                       {seoAnalysis.wordCount >= 800 ? (
-                        <Text style={{ fontSize: '11px', color: '#52c41a' }}>
+                        <Text style={{ fontSize: '11px', color: 'var(--color-success)' }}>
                           ✓ Google favors comprehensive content like yours!
                         </Text>
                       ) : (
-                        <Text style={{ fontSize: '11px', color: '#faad14' }}>
+                        <Text style={{ fontSize: '11px', color: 'var(--color-warning)' }}>
                           💡 Consider expanding to 800+ words for better ranking
                         </Text>
                       )}
@@ -220,11 +220,11 @@ const SEOAnalysis = ({
                       <Tag color={seoAnalysis.headingStructure.hierarchy === 'Good' ? 'success' : 'warning'}>
                         {seoAnalysis.headingStructure.hierarchy}
                       </Tag>
-                      <div style={{ marginTop: '4px', fontSize: '12px', color: '#666' }}>
+                      <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                         H2: {seoAnalysis.headingStructure.h2}, H3: {seoAnalysis.headingStructure.h3}
                       </div>
                       {seoAnalysis.headingStructure.h2 > 0 && (
-                        <Text style={{ fontSize: '11px', color: '#52c41a', display: 'block', marginTop: '4px' }}>
+                        <Text style={{ fontSize: '11px', color: 'var(--color-success)', display: 'block', marginTop: '4px' }}>
                           ✓ Great structure! Headings help Google understand your content hierarchy
                         </Text>
                       )}
@@ -247,7 +247,7 @@ const SEOAnalysis = ({
                               {statusInfo.icon} {data.status}
                             </Tag>
                           </div>
-                          <Text style={{ fontSize: '12px', color: '#666' }}>
+                          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                             {data.count} times ({data.density}%)
                           </Text>
                         </div>
@@ -261,16 +261,16 @@ const SEOAnalysis = ({
               {seoAnalysis.metaDescription && (
                 <Col span={24}>
                   <Card size="small" title="Meta Description Preview">
-                    <div style={{ 
-                      padding: '8px 12px', 
-                      backgroundColor: '#f5f5f5', 
+                    <div style={{
+                      padding: '8px 12px',
+                      backgroundColor: 'var(--color-background-alt)',
                       borderRadius: '4px',
                       fontSize: '13px',
                       lineHeight: '1.4'
                     }}>
                       {seoAnalysis.metaDescription}
                     </div>
-                    <div style={{ marginTop: '4px', fontSize: '12px', color: '#666' }}>
+                    <div style={{ marginTop: '4px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                       Length: {seoAnalysis.metaDescription.length}/155 characters
                     </div>
                   </Card>
@@ -285,7 +285,7 @@ const SEOAnalysis = ({
           <Panel 
             header={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <EditOutlined style={{ color: '#1890ff' }} />
+                <EditOutlined style={{ color: 'var(--color-primary)' }} />
                 <span style={{ fontWeight: 500 }}>Content Quality</span>
                 <Tag color={getScoreColor(contentQuality.overallScore)}>
                   {contentQuality.overallScore}/100
@@ -358,7 +358,7 @@ const SEOAnalysis = ({
           <Panel 
             header={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <BulbOutlined style={{ color: '#52c41a' }} />
+                <BulbOutlined style={{ color: 'var(--color-success)' }} />
                 <span style={{ fontWeight: 500 }}>Strategic Elements</span>
                 <Tag color={strategicElements.ctaPresence ? 'success' : 'warning'}>
                   CTA: {strategicElements.ctaPresence ? 'Present' : 'Missing'}
@@ -425,7 +425,7 @@ const SEOAnalysis = ({
           <Panel 
             header={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <BulbOutlined style={{ color: '#faad14' }} />
+                <BulbOutlined style={{ color: 'var(--color-warning)' }} />
                 <span style={{ fontWeight: 500 }}>Improvement Suggestions</span>
                 <Tag color="processing">{improvementSuggestions.length} tips</Tag>
               </div>
@@ -441,7 +441,7 @@ const SEOAnalysis = ({
                     <div style={{ 
                       minWidth: '20px', 
                       height: '20px', 
-                      backgroundColor: '#1890ff', 
+                      backgroundColor: 'var(--color-primary)', 
                       borderRadius: '50%', 
                       display: 'flex', 
                       alignItems: 'center', 

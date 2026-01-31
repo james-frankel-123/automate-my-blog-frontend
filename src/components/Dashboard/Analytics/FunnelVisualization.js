@@ -99,7 +99,7 @@ const FunnelVisualization = ({ data }) => {
                 value={conversions.signupToPaying || 0}
                 suffix="%"
                 precision={1}
-                valueStyle={{ color: '#1890ff' }}
+                valueStyle={{ color: 'var(--color-primary)' }}
               />
             </Col>
             <Col xs={24} sm={8}>

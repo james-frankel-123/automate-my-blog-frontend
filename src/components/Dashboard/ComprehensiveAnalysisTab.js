@@ -201,7 +201,7 @@ const ComprehensiveAnalysisTab = () => {
                       <Tag color="blue" size="small" style={{ marginBottom: '4px' }}>
                         {cta.cta_text || 'Unknown CTA'}
                       </Tag>
-                      <div style={{ fontSize: '11px', color: '#666' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
                         <div>Type: {cta.cta_type || 'button'}</div>
                         <div>Placement: {cta.placement || 'unknown'}</div>
                         {cta.conversion_potential && (
@@ -213,7 +213,7 @@ const ComprehensiveAnalysisTab = () => {
                 </div>
               ) : (
                 <Empty 
-                  image={<AimOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />}
+                  image={<AimOutlined style={{ fontSize: '32px', color: 'var(--color-border-base)' }} />}
                   description={<Text type="secondary" style={{ fontSize: '12px' }}>No CTAs found</Text>}
                 />
               )}
@@ -230,7 +230,7 @@ const ComprehensiveAnalysisTab = () => {
                       <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>
                         {link.anchor_text || 'Link'}
                       </div>
-                      <div style={{ fontSize: '10px', color: '#666', wordBreak: 'break-all' }}>
+                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', wordBreak: 'break-all' }}>
                         {link.target_url || link.href}
                       </div>
                       <div style={{ marginTop: '4px' }}>
@@ -248,7 +248,7 @@ const ComprehensiveAnalysisTab = () => {
                 </div>
               ) : (
                 <Empty 
-                  image={<LinkOutlined style={{ fontSize: '32px', color: '#d9d9d9' }} />}
+                  image={<LinkOutlined style={{ fontSize: '32px', color: 'var(--color-border-base)' }} />}
                   description={<Text type="secondary" style={{ fontSize: '12px' }}>No internal links found</Text>}
                 />
               )}
@@ -437,11 +437,11 @@ const ComprehensiveAnalysisTab = () => {
       {!hasData ? (
         <Card>
           <Empty
-            image={<FileSearchOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />}
+            image={<FileSearchOutlined style={{ fontSize: '64px', color: 'var(--color-border-base)' }} />}
             description={
               <div>
                 <Title level={4}>No Analysis Data Found</Title>
-                <Paragraph style={{ color: '#666', maxWidth: '400px', margin: '0 auto' }}>
+                <Paragraph style={{ color: 'var(--color-text-secondary)', maxWidth: '400px', margin: '0 auto' }}>
                   Start by uploading your existing blog content or running a website analysis 
                   to discover insights about your content strategy, CTAs, and linking patterns.
                 </Paragraph>
@@ -483,7 +483,7 @@ const ComprehensiveAnalysisTab = () => {
                     value={blogContent.length}
                     prefix={<BookOutlined style={{ color: '#52c41a' }} />}
                   />
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {blogContent.filter(post => post.discovered_from === 'sitemap').length} from sitemap
                   </div>
                 </Card>
@@ -493,9 +493,9 @@ const ComprehensiveAnalysisTab = () => {
                   <Statistic
                     title="CTAs Discovered"
                     value={ctaAnalysis.length}
-                    prefix={<AimOutlined style={{ color: '#1890ff' }} />}
+                    prefix={<AimOutlined style={{ color: 'var(--color-primary)' }} />}
                   />
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {ctaAnalysis.filter(cta => cta.page_type === 'blog_post').length} from blog posts (expand rows to view)
                   </div>
                 </Card>
@@ -508,7 +508,7 @@ const ComprehensiveAnalysisTab = () => {
                     suffix={`/ ${blogContent.length}`}
                     prefix={<BgColorsOutlined style={{ color: '#722ed1' }} />}
                   />
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     Posts with design data
                   </div>
                 </Card>
@@ -521,7 +521,7 @@ const ComprehensiveAnalysisTab = () => {
                     suffix="%"
                     prefix={<TrophyOutlined style={{ color: '#fa8c16' }} />}
                   />
-                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {visualDesignData?.totalPages || 0} pages with visual data
                   </div>
                 </Card>
@@ -540,7 +540,7 @@ const ComprehensiveAnalysisTab = () => {
                     <Progress 
                       percent={Math.round((blogContent.filter(post => post.discovered_from === 'sitemap').length / Math.max(blogContent.length, 1)) * 100)}
                       size="small" 
-                      strokeColor="#1890ff"
+                      strokeColor="var(--color-primary)"
                     />
                   </div>
                   <div style={{ marginBottom: '12px' }}>
@@ -623,7 +623,7 @@ const ComprehensiveAnalysisTab = () => {
                       <div>
                         <Text strong>Content Patterns</Text>
                         <div style={{ marginTop: '8px' }}>
-                          <Text style={{ fontSize: '12px', color: '#666' }}>
+                          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                             {comprehensiveResults.contentPatterns?.tone || 'Professional'} tone with focus on {comprehensiveResults.contentPatterns?.topics?.join(', ') || 'expertise'}
                           </Text>
                         </div>
@@ -632,11 +632,11 @@ const ComprehensiveAnalysisTab = () => {
                   </Col>
                   <Col span={8}>
                     <div style={{ textAlign: 'center' }}>
-                      <AimOutlined style={{ fontSize: '24px', color: '#1890ff', marginBottom: '8px' }} />
+                      <AimOutlined style={{ fontSize: '24px', color: 'var(--color-primary)', marginBottom: '8px' }} />
                       <div>
                         <Text strong>CTA Strategy</Text>
                         <div style={{ marginTop: '8px' }}>
-                          <Text style={{ fontSize: '12px', color: '#666' }}>
+                          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                             {comprehensiveResults.ctaStrategy?.primaryGoal || 'Lead generation'} with {comprehensiveResults.ctaStrategy?.placement || 'strategic'} placement
                           </Text>
                         </div>
@@ -649,7 +649,7 @@ const ComprehensiveAnalysisTab = () => {
                       <div>
                         <Text strong>Linking Strategy</Text>
                         <div style={{ marginTop: '8px' }}>
-                          <Text style={{ fontSize: '12px', color: '#666' }}>
+                          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                             {comprehensiveResults.linkingStrategy?.structure || 'Hub and spoke'} structure focusing on {comprehensiveResults.linkingStrategy?.focus || 'product pages'}
                           </Text>
                         </div>
@@ -779,7 +779,7 @@ const ComprehensiveAnalysisTab = () => {
                     </div>
                   ) : (
                     <Empty 
-                      image={<BgColorsOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />}
+                      image={<BgColorsOutlined style={{ fontSize: '48px', color: 'var(--color-border-base)' }} />}
                       description="No color data available"
                     />
                   )}
@@ -795,7 +795,7 @@ const ComprehensiveAnalysisTab = () => {
                         <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
                           <Text style={{ fontFamily: font }} strong>{font}</Text>
                           <br />
-                          <Text style={{ fontSize: '12px', color: '#666' }}>Sample text in {font}</Text>
+                          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Sample text in {font}</Text>
                         </div>
                       ))}
                       <div style={{ marginTop: '12px' }}>
@@ -806,7 +806,7 @@ const ComprehensiveAnalysisTab = () => {
                     </div>
                   ) : (
                     <Empty 
-                      image={<NodeIndexOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />}
+                      image={<NodeIndexOutlined style={{ fontSize: '48px', color: 'var(--color-border-base)' }} />}
                       description="No typography data available"
                     />
                   )}
@@ -967,7 +967,7 @@ const ComprehensiveAnalysisTab = () => {
                                       <Text strong style={{ fontSize: '12px' }}>
                                         {elementType.toUpperCase()} ({data.count})
                                       </Text>
-                                      <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                                      <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '2px' }}>
                                         {data.description || 'No specific patterns detected'}
                                       </div>
                                     </div>
@@ -996,7 +996,7 @@ const ComprehensiveAnalysisTab = () => {
                                     fontFamily: elementPatterns.headings.h1.patterns.typography?.fontFamily?.[0] || 'inherit'
                                   }}>
                                     Sample H1 Heading
-                                    <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                                       Use: {elementPatterns.headings.h1.patterns.colors?.textColor?.[0] || 'default'} | 
                                       {elementPatterns.headings.h1.patterns.typography?.fontSize?.[0] || 'default size'}
                                     </div>
@@ -1008,7 +1008,7 @@ const ComprehensiveAnalysisTab = () => {
                                     <div style={{ 
                                       display: 'inline-block',
                                       padding: '8px 16px', 
-                                      backgroundColor: elementPatterns.interactive.button.patterns.colors?.backgroundColor?.[0] || '#1890ff',
+                                      backgroundColor: elementPatterns.interactive.button.patterns.colors?.backgroundColor?.[0] || 'var(--color-primary)',
                                       color: elementPatterns.interactive.button.patterns.colors?.textColor?.[0] || 'white',
                                       borderRadius: elementPatterns.interactive.button.patterns.commonStyles?.borderRadius?.[0] || '4px',
                                       border: 'none',
@@ -1016,7 +1016,7 @@ const ComprehensiveAnalysisTab = () => {
                                     }}>
                                       Sample Button
                                     </div>
-                                    <div style={{ fontSize: '10px', color: '#666', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '10px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                                       Use: {elementPatterns.interactive.button.patterns.colors?.backgroundColor?.[0] || 'default'} background
                                     </div>
                                   </div>
@@ -1065,7 +1065,7 @@ const ComprehensiveAnalysisTab = () => {
                     title="Discovery Success"
                     value={blogContent.filter(post => post.discovered_from === 'sitemap').length}
                     suffix={`/ ${blogContent.length}`}
-                    valueStyle={{ color: '#1890ff' }}
+                    valueStyle={{ color: 'var(--color-primary)' }}
                   />
                 </Col>
               </Row>
@@ -1098,7 +1098,7 @@ const ComprehensiveAnalysisTab = () => {
                         <div>Words: {record.word_count || 0}</div>
                         <div>CTAs: {record.ctas_count || 0}</div>
                         {record.content_structure && (
-                          <div style={{ fontSize: '11px', color: '#666', marginTop: 4 }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: 4 }}>
                             Structure: Analyzed
                           </div>
                         )}
@@ -1112,7 +1112,7 @@ const ComprehensiveAnalysisTab = () => {
                       <div>
                         <Tag color="blue" size="small">{record.discovered_from}</Tag>
                         {record.sitemap_priority && (
-                          <div style={{ fontSize: '11px', color: '#666' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
                             Priority: {record.sitemap_priority}
                           </div>
                         )}
@@ -1139,7 +1139,7 @@ const ComprehensiveAnalysisTab = () => {
               {blogContent.filter(post => post.visual_design || post.ctas_count > 0).length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px' }}>
                   <Empty 
-                    image={<SearchOutlined style={{ fontSize: '48px', color: '#d9d9d9' }} />}
+                    image={<SearchOutlined style={{ fontSize: '48px', color: 'var(--color-border-base)' }} />}
                     description={
                       <div>
                         <Title level={5}>No Enhanced Analysis Available</Title>

@@ -277,17 +277,17 @@ const AdminLeadsTab = () => {
               </Text>
             </div>
             {scenariosCount > 0 && (
-              <div style={{ color: '#666' }}>
+              <div style={{ color: 'var(--color-text-secondary)' }}>
                 {scenariosCount} Scenario{scenariosCount > 1 ? 's' : ''}
               </div>
             )}
             {decisionMakers > 0 && (
-              <div style={{ color: '#666' }}>
+              <div style={{ color: 'var(--color-text-secondary)' }}>
                 {decisionMakers} Contact{decisionMakers > 1 ? 's' : ''}
               </div>
             )}
             {record.primaryCustomerProblem && (
-              <div style={{ color: '#999', fontSize: '11px', marginTop: '2px' }}>
+              <div style={{ color: 'var(--color-text-tertiary)', fontSize: '11px', marginTop: '2px' }}>
                 {record.primaryCustomerProblem.substring(0, 40)}...
               </div>
             )}
@@ -332,11 +332,11 @@ const AdminLeadsTab = () => {
       key: 'funnelProgress',
       render: (_, record) => (
         <div style={{ textAlign: 'center' }}>
-          <Text style={{ fontSize: '12px', color: '#666' }}>
+          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             {record.daysInFunnel} days
           </Text>
           <div style={{ marginTop: '4px' }}>
-            <Text style={{ fontSize: '10px', color: '#999' }}>
+            <Text style={{ fontSize: '10px', color: 'var(--color-text-tertiary)' }}>
               {record.conversionStepsCount} steps
             </Text>
           </div>
@@ -550,7 +550,7 @@ const AdminLeadsTab = () => {
       <Modal
         title={
           <div>
-            <GlobalOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+            <GlobalOutlined style={{ marginRight: '8px', color: 'var(--color-primary)' }} />
             Lead Details
           </div>
         }
@@ -636,7 +636,7 @@ const AdminLeadsTab = () => {
             {/* Organization Business Intelligence Section */}
             <div style={{ marginTop: '24px' }}>
               <Title level={5}>
-                <StarOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
+                <StarOutlined style={{ marginRight: '8px', color: 'var(--color-primary)' }} />
                 Business Intelligence
               </Title>
               
@@ -728,7 +728,7 @@ const AdminLeadsTab = () => {
                       <Descriptions.Item label="Business Size Score">
                         <div>
                           <Text strong>{selectedLead.scoringBreakdown?.businessSize || 0}/20</Text>
-                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                             Enterprise (20) • Medium (16) • Small (12) • Startup (8) • Unknown (4)
                           </div>
                         </div>
@@ -736,7 +736,7 @@ const AdminLeadsTab = () => {
                       <Descriptions.Item label="Industry Fit Score">
                         <div>
                           <Text strong>{selectedLead.scoringBreakdown?.industryFit || 0}/20</Text>
-                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                             Tech/E-commerce (20) • Healthcare/Professional/Financial (16) • Education (12) • Other (8)
                           </div>
                         </div>
@@ -744,7 +744,7 @@ const AdminLeadsTab = () => {
                       <Descriptions.Item label="Engagement Score">
                         <div>
                           <Text strong>{selectedLead.scoringBreakdown?.engagement || 0}/20</Text>
-                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                             Base (12) + time analyzing + conversion steps completed
                           </div>
                         </div>
@@ -752,7 +752,7 @@ const AdminLeadsTab = () => {
                       <Descriptions.Item label="Content Quality Score">
                         <div>
                           <Text strong>{selectedLead.scoringBreakdown?.contentQuality || 0}/20</Text>
-                          <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                          <div style={{ fontSize: '11px', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
                             Rich keywords (8) + target audience (6) + content focus (6)
                           </div>
                         </div>
@@ -778,14 +778,14 @@ const AdminLeadsTab = () => {
                         borderRadius: '6px',
                         backgroundColor: '#fafafa'
                       }}>
-                        <Text strong style={{ color: '#1890ff' }}>
+                        <Text strong style={{ color: 'var(--color-primary)' }}>
                           Scenario {index + 1}
                         </Text>
                         <div style={{ marginTop: '4px' }}>
                           <Text>{scenario.customerProblem || scenario.problem || scenario}</Text>
                         </div>
                         {scenario.businessValue && (
-                          <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                             Priority: {scenario.businessValue.priority} | 
                             Search Volume: {scenario.businessValue.searchVolume} |
                             Conversion Potential: {scenario.businessValue.conversionPotential}
@@ -830,7 +830,7 @@ const AdminLeadsTab = () => {
                         </div>
                         <Text strong>{contact.name || contact.title}</Text>
                         {contact.title && contact.name && (
-                          <div style={{ fontSize: '12px', color: '#666' }}>
+                          <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                             {contact.title}
                           </div>
                         )}
@@ -930,7 +930,7 @@ const AdminLeadsTab = () => {
                     >
                       <div>
                         <Text strong>{step.step.replace('_', ' ').toUpperCase()}</Text>
-                        <div style={{ color: '#666', fontSize: '12px' }}>
+                        <div style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>
                           {new Date(step.completedAt).toLocaleDateString('en-US', { 
                             year: 'numeric', 
                             month: 'short', 

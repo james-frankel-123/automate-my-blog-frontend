@@ -51,7 +51,7 @@ const PricingModal = ({
       priceDetails: 'one-time',
       description: 'Purchase a single blog post',
       icon: <StarOutlined />,
-      color: '#52c41a',
+      color: 'var(--color-success)',
       planType: 'one_time',
       features: [
         '1 high-quality blog post',
@@ -72,7 +72,7 @@ const PricingModal = ({
       priceDetails: '/month',
       description: '4 blog posts per month',
       icon: <CheckOutlined />,
-      color: '#1890ff',
+      color: 'var(--color-primary)',
       planType: 'subscription',
       features: [
         '4 blog posts per month included',
@@ -93,7 +93,7 @@ const PricingModal = ({
       priceDetails: '/month',
       description: '8 blog posts + unlimited strategies',
       icon: <CrownOutlined />,
-      color: '#722ed1',
+      color: 'var(--color-primary)',
       planType: 'subscription',
       features: [
         '8 blog posts per month included',
@@ -113,7 +113,7 @@ const PricingModal = ({
       priceDetails: 'Pricing',
       description: 'For teams and agencies',
       icon: <CrownOutlined />,
-      color: '#8B5CF6',
+      color: 'var(--color-accent)',
       features: [
         'Unlimited blog posts',
         'Everything in Professional',
@@ -216,7 +216,7 @@ const PricingModal = ({
       <Card
         style={{
           height: '100%',
-          border: plan.popular ? `2px solid ${plan.color}` : '1px solid #f0f0f0',
+          border: plan.popular ? `2px solid ${plan.color}` : '1px solid var(--color-border-base)',
           borderRadius: '12px',
           position: 'relative'
         }}
@@ -260,13 +260,13 @@ const PricingModal = ({
             <Text style={{ 
               fontSize: '32px', 
               fontWeight: 600,
-              color: '#333'
+              color: 'var(--color-text-primary)'
             }}>
               {plan.price}
             </Text>
             <Text style={{ 
               fontSize: '16px',
-              color: '#666',
+              color: 'var(--color-text-secondary)',
               marginLeft: '4px'
             }}>
               {plan.priceDetails}
@@ -274,7 +274,7 @@ const PricingModal = ({
           </div>
           
           <Text style={{ 
-            color: '#666',
+            color: 'var(--color-text-secondary)',
             fontSize: '14px'
           }}>
             {plan.description}
@@ -335,7 +335,7 @@ const PricingModal = ({
           </Title>
           <Paragraph style={{ 
             fontSize: '16px', 
-            color: '#666',
+            color: 'var(--color-text-secondary)',
             maxWidth: '600px',
             margin: '0 auto'
           }}>
@@ -351,7 +351,7 @@ const PricingModal = ({
           <Alert
             message={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <GiftOutlined style={{ fontSize: '18px', color: '#52c41a' }} />
+                <GiftOutlined style={{ fontSize: '18px', color: 'var(--color-success)' }} />
                 <strong>Free Option: Refer Friends!</strong>
               </div>
             }
@@ -390,7 +390,7 @@ const PricingModal = ({
         {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
           <Divider />
-          <Text style={{ color: '#666', fontSize: '14px' }}>
+          <Text style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             All plans include AI content generation with enhanced research and export functionality
           </Text>
         </div>

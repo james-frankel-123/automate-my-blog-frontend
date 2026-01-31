@@ -101,10 +101,10 @@ const ContentDiscoverySettings = () => {
   return (
     <div style={{ padding: '20px 0' }}>
       {/* Content Discovery Automation */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #1890ff' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-primary)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-primary)' }}>
               <RobotOutlined style={{ marginRight: '8px' }} />
               Content Discovery Automation
             </Title>
@@ -152,7 +152,7 @@ const ContentDiscoverySettings = () => {
               <Statistic
                 title="Next Run"
                 value={format(new Date(automationSettings.nextRun), 'MMM dd')}
-                prefix={<SearchOutlined style={{ color: '#1890ff' }} />}
+                prefix={<SearchOutlined style={{ color: 'var(--color-primary)' }} />}
               />
             </Card>
           </Col>
@@ -274,7 +274,7 @@ const ContentDiscoverySettings = () => {
               )
             },
             {
-              dot: <RiseOutlined style={{ color: '#1890ff' }} />,
+              dot: <RiseOutlined style={{ color: 'var(--color-primary)' }} />,
               children: (
                 <div>
                   <Text strong style={{ fontSize: '13px' }}>Industry Analysis Complete</Text>

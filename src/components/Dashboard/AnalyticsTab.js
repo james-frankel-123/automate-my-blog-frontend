@@ -11,7 +11,7 @@ const AnalyticsTab = () => {
           image={Empty.PRESENTED_IMAGE_SIMPLE}
           imageStyle={{ height: 60 }}
         >
-          <div style={{ color: '#666', textAlign: 'center' }}>
+          <div style={{ color: 'var(--color-text-secondary)', textAlign: 'center' }}>
             <BarChartOutlined style={{ fontSize: '24px', marginBottom: '8px', display: 'block' }} />
             Create some blog posts to see analytics data here
           </div>

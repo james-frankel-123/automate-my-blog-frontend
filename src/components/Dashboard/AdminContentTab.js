@@ -350,7 +350,7 @@ const AdminContentTab = () => {
             <Statistic
               title="Total Content"
               value={content.length}
-              prefix={<FileTextOutlined style={{ color: '#1890ff' }} />}
+              prefix={<FileTextOutlined style={{ color: 'var(--color-primary)' }} />}
               suffix={
                 <Tag color="green">Real Data ✓</Tag>
               }

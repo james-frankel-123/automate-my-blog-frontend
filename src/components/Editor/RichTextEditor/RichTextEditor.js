@@ -501,14 +501,14 @@ const RichTextEditor = ({
 
                       // Default styles
                       const defaultStyles = {
-                        statistic: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '📊' },
+                        statistic: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '📊' },
                         pullquote: { backgroundColor: '#f6ffed', borderColor: '#52c41a', color: '#389e0d', defaultIcon: '💬' },
-                        takeaway: { backgroundColor: '#fff7e6', borderColor: '#fa8c16', color: '#d46b08', defaultIcon: '💡' },
-                        process: { backgroundColor: '#f9f0ff', borderColor: '#722ed1', color: '#531dab', defaultIcon: '🔄' },
+                        takeaway: { backgroundColor: 'var(--color-accent-50)', borderColor: 'var(--color-accent)', color: 'var(--color-accent-700)', defaultIcon: '💡' },
+                        process: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '🔄' },
                         warning: { backgroundColor: '#fff1f0', borderColor: '#ff4d4f', color: '#cf1322', defaultIcon: '⚠️' },
-                        tip: { backgroundColor: '#e6f7ff', borderColor: '#1890ff', color: '#0050b3', defaultIcon: '💡' },
-                        definition: { backgroundColor: '#f0f5ff', borderColor: '#2f54eb', color: '#1d39c4', defaultIcon: '📖' },
-                        comparison: { backgroundColor: '#e6fffb', borderColor: '#13c2c2', color: '#006d75', defaultIcon: '⚖️' },
+                        tip: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '💡' },
+                        definition: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '📖' },
+                        comparison: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '⚖️' },
                       };
 
                       const typeStyle = defaultStyles[attrs.type] || defaultStyles.takeaway;

@@ -205,9 +205,9 @@ export const ComponentHelpers = {
    */
   getDefaultColors() {
     return {
-      primary: '#6366f1',   // --color-primary (indigo)
+      primary: '#0D9488',   // --color-primary (teal)
       secondary: '#f1f5f9', // --color-secondary
-      accent: '#06b6d4'     // --color-accent (cyan)
+      accent: '#F97316'     // --color-accent (orange)
     };
   },
 
@@ -220,11 +220,11 @@ export const ComponentHelpers = {
     return {
       colors: {
         // Core colors from design-system.css
-        primary: '#6366f1',        // --color-primary (indigo)
-        primaryLight: '#818cf8',   // --color-primary-light
-        primaryDark: '#4f46e5',    // --color-primary-dark
+        primary: '#0D9488',        // --color-primary (teal)
+        primaryLight: '#14B8A6',   // --color-primary-light
+        primaryDark: '#0F766E',    // --color-primary-dark
         secondary: '#f1f5f9',      // --color-secondary
-        accent: '#06b6d4',         // --color-accent (cyan)
+        accent: '#F97316',         // --color-accent (orange)
         success: '#10b981',        // --color-success
         warning: '#f59e0b',        // --color-warning
         error: '#ef4444',          // --color-error
@@ -330,7 +330,7 @@ export const ComponentHelpers = {
     <div style={{ textAlign: 'center', padding: '40px 20px' }}>
       <div style={{ 
         fontSize: '48px', 
-        color: '#1890ff', 
+        color: 'var(--color-primary)', 
         marginBottom: '24px',
         animation: 'pulse 2s infinite'
       }}>
@@ -338,7 +338,7 @@ export const ComponentHelpers = {
       </div>
       <div style={{ 
         fontSize: '16px', 
-        color: '#666', 
+        color: 'var(--color-text-secondary)', 
         marginBottom: '16px' 
       }}>
         {message}
@@ -363,7 +363,7 @@ export const ComponentHelpers = {
       </div>
       <div style={{ 
         fontSize: '16px', 
-        color: '#666', 
+        color: 'var(--color-text-secondary)', 
         marginBottom: '24px' 
       }}>
         {message}
@@ -373,7 +373,7 @@ export const ComponentHelpers = {
           onClick={onRetry}
           style={{
             padding: '8px 16px',
-            backgroundColor: '#1890ff',
+            backgroundColor: 'var(--color-primary)',
             color: 'white',
             border: 'none',
             borderRadius: '4px',

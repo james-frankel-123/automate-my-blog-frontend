@@ -195,10 +195,10 @@ const ManualCTAInputModal = ({
       <div style={{ padding: '12px 0' }}>
         <Space direction="vertical" size={4} style={{ width: '100%', marginBottom: 24 }}>
           <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <LinkOutlined style={{ color: '#1890ff' }} />
+            <LinkOutlined style={{ color: 'var(--color-primary)' }} />
             Add Calls-to-Action
           </Title>
-          <Paragraph style={{ margin: 0, color: '#666', fontSize: '14px' }}>
+          <Paragraph style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             We couldn't find enough CTAs on your website. Please add at least 3 CTAs to generate
             effective content with working links.
           </Paragraph>
@@ -222,9 +222,9 @@ const ManualCTAInputModal = ({
               style={{
                 padding: 16,
                 marginBottom: 12,
-                border: '1px solid #f0f0f0',
+                border: '1px solid var(--color-border-base)',
                 borderRadius: 8,
-                backgroundColor: '#fafafa'
+                backgroundColor: 'var(--color-background-alt)'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
@@ -244,7 +244,7 @@ const ManualCTAInputModal = ({
 
               <Space direction="vertical" size={12} style={{ width: '100%' }}>
                 <div>
-                  <Text style={{ fontSize: 13, color: '#666' }}>CTA Text *</Text>
+                  <Text style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>CTA Text *</Text>
                   <Input
                     placeholder="e.g., Schedule Your Free Consultation"
                     value={cta.text}
@@ -254,7 +254,7 @@ const ManualCTAInputModal = ({
                 </div>
 
                 <div>
-                  <Text style={{ fontSize: 13, color: '#666' }}>CTA URL *</Text>
+                  <Text style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>CTA URL *</Text>
                   <Input
                     placeholder="e.g., /contact or https://calendly.com/..."
                     value={cta.href}
@@ -266,7 +266,7 @@ const ManualCTAInputModal = ({
 
                 <div style={{ display: 'flex', gap: 12 }}>
                   <div style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, color: '#666' }}>CTA Type *</Text>
+                    <Text style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>CTA Type *</Text>
                     <Select
                       value={cta.type}
                       onChange={(value) => handleCTAChange(index, 'type', value)}
@@ -281,7 +281,7 @@ const ManualCTAInputModal = ({
                   </div>
 
                   <div style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, color: '#666' }}>Placement *</Text>
+                    <Text style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Placement *</Text>
                     <Select
                       value={cta.placement}
                       onChange={(value) => handleCTAChange(index, 'placement', value)}

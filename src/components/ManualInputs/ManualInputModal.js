@@ -222,7 +222,7 @@ const ManualInputModal = ({
           {field.required && <Text type="danger">*</Text>}
           {field.tooltip && (
             <Tooltip title={field.tooltip}>
-              <InfoCircleOutlined style={{ color: '#1890ff' }} />
+              <InfoCircleOutlined style={{ color: 'var(--color-primary)' }} />
             </Tooltip>
           )}
         </Space>
@@ -273,7 +273,7 @@ const ManualInputModal = ({
     <Modal
       title={
         <Space>
-          <BulbOutlined style={{ color: '#1890ff' }} />
+          <BulbOutlined style={{ color: 'var(--color-primary)' }} />
           Manual Data Input
         </Space>
       }

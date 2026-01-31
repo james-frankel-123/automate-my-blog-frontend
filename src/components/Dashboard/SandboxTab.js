@@ -205,11 +205,11 @@ const SandboxTab = () => {
   // Content Discovery helper functions
   const getDiscoveryIcon = (type) => {
     switch (type) {
-      case 'keyword': return <RiseOutlined style={{ color: '#1890ff' }} />;
+      case 'keyword': return <RiseOutlined style={{ color: 'var(--color-primary)' }} />;
       case 'customer-segment': return <UserOutlined style={{ color: '#52c41a' }} />;
       case 'industry-news': return <GlobalOutlined style={{ color: '#fa8c16' }} />;
-      case 'competitor': return <SearchOutlined style={{ color: '#722ed1' }} />;
-      default: return <RobotOutlined style={{ color: '#666' }} />;
+      case 'competitor': return <SearchOutlined style={{ color: 'var(--color-accent)' }} />;
+      default: return <RobotOutlined style={{ color: 'var(--color-text-secondary)' }} />;
     }
   };
 
@@ -272,7 +272,7 @@ const SandboxTab = () => {
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
         <Title level={2} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center' }}>
-          <RobotOutlined style={{ marginRight: '12px', color: '#722ed1' }} />
+          <RobotOutlined style={{ marginRight: '12px', color: 'var(--color-accent)' }} />
           Sandbox
         </Title>
         <Text type="secondary">
@@ -293,7 +293,7 @@ const SandboxTab = () => {
       <Card 
         title={
           <Space>
-            <SearchOutlined style={{ color: '#1890ff' }} />
+            <SearchOutlined style={{ color: 'var(--color-primary)' }} />
             Content Discovery Automation
             <Tag color="purple">EXPERIMENTAL</Tag>
           </Space>
@@ -385,7 +385,7 @@ const SandboxTab = () => {
         {/* Recent Discoveries */}
         <div style={{ marginBottom: '16px' }}>
           <Text strong style={{ fontSize: '16px' }}>Recent Discoveries</Text>
-          <Text style={{ marginLeft: '8px', fontSize: '12px', color: '#666' }}>
+          <Text style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             ({filteredDiscoveries.length} results)
           </Text>
         </div>
@@ -440,16 +440,16 @@ const SandboxTab = () => {
                         </Space>
                       </div>
                       <div style={{ marginBottom: '8px' }}>
-                        <Text style={{ fontSize: '14px', color: '#666' }}>
+                        <Text style={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}>
                           {discovery.description}
                         </Text>
                       </div>
                       <div style={{ marginBottom: '12px' }}>
-                        <Text strong style={{ fontSize: '14px', color: '#1890ff' }}>
+                        <Text strong style={{ fontSize: '14px', color: 'var(--color-primary)' }}>
                           💡 {discovery.impact}
                         </Text>
                       </div>
-                      <div style={{ fontSize: '12px', color: '#999' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-text-tertiary)' }}>
                         Discovered: {new Date(discovery.date).toLocaleDateString()}
                       </div>
                     </div>
@@ -576,7 +576,7 @@ const SandboxTab = () => {
       <Card
         title={
           <Space>
-            <PictureOutlined style={{ color: '#722ed1' }} />
+            <PictureOutlined style={{ color: 'var(--color-accent)' }} />
             Visual Content Generation Testing
             <Tag color="orange">ADMIN ONLY</Tag>
           </Space>
@@ -715,7 +715,7 @@ const SandboxTab = () => {
       <Card
         title={
           <Space>
-            <RobotOutlined style={{ color: '#722ed1' }} />
+            <RobotOutlined style={{ color: 'var(--color-accent)' }} />
             Content Discovery Settings
             <Tag color="purple">ADMIN ONLY</Tag>
           </Space>

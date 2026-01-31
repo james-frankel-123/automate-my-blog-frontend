@@ -140,7 +140,7 @@ const UserAnalyticsTab = () => {
                   title="Active Paying Users"
                   value={platformMetrics?.total_paying_users || 0}
                   prefix={<DollarOutlined />}
-                  valueStyle={{ color: '#1890ff' }}
+                  valueStyle={{ color: 'var(--color-primary)' }}
                 />
               </Card>
             </Col>
@@ -212,7 +212,7 @@ const UserAnalyticsTab = () => {
                 <Statistic
                   title="Professional Plans"
                   value={platformMetrics?.professional_count || 0}
-                  valueStyle={{ color: '#1890ff' }}
+                  valueStyle={{ color: 'var(--color-primary)' }}
                 />
               </Card>
             </Col>

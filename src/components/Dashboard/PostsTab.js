@@ -29,12 +29,11 @@ import HTMLPreview from '../HTMLPreview/HTMLPreview';
 import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
-import HighlightedContentSuggestions from '../HighlightedContent/HighlightedContentSuggestions';
 import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
 
 // New Enhanced Components
-import EditorLayout, { EditorPane, PreviewPane } from '../Editor/Layout/EditorLayout';
+import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
 import EditorToolbar from '../Editor/Toolbar/EditorToolbar';
 import RichTextEditor from '../Editor/RichTextEditor/RichTextEditor';
 import SEOAnalysis from '../SEOAnalysis/SEOAnalysis';
@@ -57,21 +56,21 @@ const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
 
   const getStatusText = () => {
     if (isAutosaving) {
-      return { text: 'Saving...', color: '#1890ff' };
+      return { text: 'Saving...', color: 'var(--color-primary)' };
     }
     if (autosaveError) {
-      return { text: `Error: ${autosaveError}`, color: '#ff4d4f' };
+      return { text: `Error: ${autosaveError}`, color: 'var(--color-error)' };
     }
     if (lastSaved) {
       const timeAgo = Math.round((currentTime - lastSaved) / 1000);
       if (timeAgo < 60) {
-        return { text: `Saved ${timeAgo}s ago`, color: '#52c41a' };
+        return { text: `Saved ${timeAgo}s ago`, color: 'var(--color-success)' };
       } else {
         const minutesAgo = Math.round(timeAgo / 60);
-        return { text: `Saved ${minutesAgo}m ago`, color: '#52c41a' };
+        return { text: `Saved ${minutesAgo}m ago`, color: 'var(--color-success)' };
       }
     }
-    return { text: 'Autosave enabled', color: '#d9d9d9' };
+    return { text: 'Autosave enabled', color: 'var(--color-gray-300)' };
   };
 
   const status = getStatusText();
@@ -119,7 +118,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Content editing state
   const [editingContent, setEditingContent] = useState('');
   const [previewMode, setPreviewMode] = useState(true);
-  const [editorViewMode, setEditorViewMode] = useState('edit'); // 'edit', 'preview', 'split'
   const [typography, setTypography] = useState({
     preset: 'modern',
     headingFont: 'Inter, sans-serif',
@@ -1016,8 +1014,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         postId: post.id,
         postStatus: post.status
       }).catch(err => console.error('Failed to track post_opened:', err));
-      console.log('🔧 DEBUG: contentGenerated set to true, editorViewMode should show');
-      console.log('🔧 DEBUG: Current state after handleEditPost - contentGenerated:', true, 'editorViewMode:', editorViewMode);
+      console.log('🔧 DEBUG: contentGenerated set to true');
+      console.log('🔧 DEBUG: Current state after handleEditPost - contentGenerated:', true);
       
       // Restore topic if available
       if (topicData) {
@@ -1277,9 +1275,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             <div>
               {!contentGenerated ? (
                 // Topic Generation Phase
-                <Card title="Generate Content Topics" style={{ marginBottom: '24px' }}>
-                  <Paragraph style={{ color: '#666', marginBottom: '20px' }}>
-                    {tabMode.tabWorkflowData?.selectedCustomerStrategy ? 
+                <Card title={<h3 className="heading-subsection" style={{ marginBottom: 0 }}>Generate Content Topics</h3>} style={{ marginBottom: 'var(--space-6)' }}>
+                  <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-5)' }}>
+                    {tabMode.tabWorkflowData?.selectedCustomerStrategy ?
                       'AI will generate trending topics based on your selected audience strategy.' :
                       'Generate content topics that resonate with your target audience.'
                     }
@@ -1297,7 +1295,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           >
                             {systemVoice.topics.generatingTopics}
                           </Button>
-                          <div style={{ marginTop: '12px', color: '#666', fontSize: '14px' }}>
+                          <div style={{ marginTop: 'var(--space-3)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                             {systemVoice.topics.generatingTopicsWithTime}
                           </div>
                         </div>
@@ -1333,7 +1331,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       <Paragraph style={{ 
                         textAlign: 'center', 
                         marginBottom: '30px', 
-                        color: '#666',
+                        color: 'var(--color-text-secondary)',
                         fontSize: responsive.fontSize.text
                       }}>
                         {tabMode.tabWorkflowData?.selectedCustomerStrategy ? 
@@ -1357,7 +1355,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     // Image loading skeleton
                                     <div style={{ 
                                       height: '200px', 
-                                      backgroundColor: '#f5f5f5', 
+                                      backgroundColor: 'var(--color-background-alt)', 
                                       display: 'flex', 
                                       flexDirection: 'column',
                                       alignItems: 'center', 
@@ -1368,14 +1366,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       <div style={{ 
                                         marginBottom: '12px',
                                         fontSize: responsive.fontSize.small, 
-                                        color: '#666',
+                                        color: 'var(--color-text-secondary)',
                                         fontWeight: 500
                                       }}>
                                         🎨 Generating image...
                                       </div>
                                       <div style={{ 
                                         fontSize: '12px', 
-                                        color: '#999'
+                                        color: 'var(--color-text-tertiary)'
                                       }}>
                                         (takes ~30 seconds)
                                       </div>
@@ -1397,7 +1395,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       height: '200px',
                                       background: topic.gradientColors ? 
                                         `linear-gradient(135deg, ${topic.gradientColors[0]} 0%, ${topic.gradientColors[1]} 100%)` :
-                                        'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                        'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-700) 100%)',
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'center',
@@ -1412,7 +1410,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   )
                                 }
                                 style={{
-                                  border: isSelected ? `2px solid ${defaultColors.primary}` : '1px solid #f0f0f0',
+                                  border: isSelected ? `2px solid ${defaultColors.primary}` : '1px solid var(--color-border-base)',
                                   marginBottom: '20px',
                                   opacity: isGenerating ? 0.8 : 1
                                 }}
@@ -1431,7 +1429,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 <Title level={4} style={{ marginBottom: '8px', fontSize: responsive.fontSize.text }}>
                                   {topic.title}
                                 </Title>
-                                <Paragraph style={{ color: '#666', fontSize: responsive.fontSize.small, marginBottom: '12px' }}>
+                                <Paragraph style={{ color: 'var(--color-text-secondary)', fontSize: responsive.fontSize.small, marginBottom: '12px' }}>
                                   {topic.subheader || topic.description || 'AI-generated content tailored to your audience'}
                                 </Paragraph>
                                 
@@ -1447,14 +1445,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   <div style={{ 
                                     marginBottom: '16px', 
                                     padding: '12px', 
-                                    backgroundColor: '#f0f8ff', 
+                                    backgroundColor: 'var(--color-primary-50)', 
                                     borderRadius: '6px',
-                                    border: '1px solid #d6e7ff'
+                                    border: '1px solid var(--color-primary-100)'
                                   }}>
-                                    <Text style={{ fontSize: '12px', color: '#1890ff', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                                    <Text style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
                                       📊 Traffic Prediction:
                                     </Text>
-                                    <Text style={{ fontSize: '11px', color: '#666', lineHeight: '1.4' }}>
+                                    <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
                                       {topic.trafficPrediction}
                                     </Text>
                                   </div>
@@ -1492,8 +1490,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       width: '100%',
                                       marginTop: '8px',
                                       borderColor: defaultColors.primary,
-                                      color: user ? '#52c41a' : defaultColors.primary,
-                                      background: user ? `linear-gradient(135deg, #52c41a05, #52c41a10)` : `linear-gradient(135deg, ${defaultColors.primary}05, ${defaultColors.primary}10)`,
+                                      color: user ? 'var(--color-success)' : defaultColors.primary,
+                                      background: user ? `linear-gradient(135deg, var(--color-success)05, var(--color-success)10)` : `linear-gradient(135deg, ${defaultColors.primary}05, ${defaultColors.primary}10)`,
                                       fontWeight: '500'
                                     }}
                                   >
@@ -1519,7 +1517,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     }}>
                                       📋 What You'll Get
                                     </Text>
-                                    <Text style={{ fontSize: '12px', color: '#666' }}>
+                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                       Your blog post will include all these strategic elements
                                     </Text>
                                   </div>
@@ -1529,7 +1527,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                                       📝 Content Structure
                                     </Text>
-                                    <Text style={{ fontSize: '12px', color: '#666' }}>
+                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                       Problem identification → Solution framework → Implementation guidance
                                     </Text>
                                   </div>
@@ -1551,7 +1549,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                           </Tag>
                                         ))}
                                         {topic.scenario.seoKeywords.length > 3 && (
-                                          <Text style={{ fontSize: '11px', color: '#999' }}>
+                                          <Text style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
                                             +{topic.scenario.seoKeywords.length - 3} more
                                           </Text>
                                         )}
@@ -1564,7 +1562,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                                       🎯 Competitive Edge
                                     </Text>
-                                    <Text style={{ fontSize: '12px', color: '#666' }}>
+                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                       Establishes thought leadership with unique insights and fresh perspectives
                                     </Text>
                                   </div>
@@ -1589,12 +1587,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     </div>
 
                                     {ctasLoading ? (
-                                      <Text style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
+                                      <Text style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
                                         Loading CTAs...
                                       </Text>
                                     ) : organizationCTAs.length > 0 ? (
                                       <div>
-                                        <div style={{ fontSize: '12px', color: '#666' }}>
+                                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                           {organizationCTAs.slice(0, 3).map((cta, index) => (
                                             <div key={cta.id || index} style={{ marginBottom: '2px' }}>
                                               • {cta.text}
@@ -1602,13 +1600,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                           ))}
                                         </div>
                                         {!hasSufficientCTAs && organizationCTAs.length < 3 && (
-                                          <Text style={{ fontSize: '11px', color: '#ff4d4f', marginTop: '4px', display: 'block' }}>
+                                          <Text style={{ fontSize: '11px', color: 'var(--color-error)', marginTop: '4px', display: 'block' }}>
                                             ⚠️ {3 - organizationCTAs.length} more CTA{3 - organizationCTAs.length !== 1 ? 's' : ''} recommended
                                           </Text>
                                         )}
                                       </div>
                                     ) : (
-                                      <Text style={{ fontSize: '12px', color: '#666' }}>
+                                      <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                         Strategic CTAs aligned with your primary business objectives and customer journey
                                       </Text>
                                     )}
@@ -1619,7 +1617,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                                       ✨ Content Quality
                                     </Text>
-                                    <Text style={{ fontSize: '12px', color: '#666' }}>
+                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                       1000-1500 words with balanced depth and readability • Expert authority tone
                                     </Text>
                                   </div>
@@ -1629,64 +1627,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           );
                         })}
                       </Row>
-                      
-                      {/* Lead Generation CTA - Want More Content Ideas? */}
-                      {availableTopics.length >= 1 && (
-                        <div style={{ 
-                          marginTop: '32px', 
-                          textAlign: 'center',
-                          padding: '24px',
-                          background: `linear-gradient(135deg, ${defaultColors.accent}08, ${defaultColors.primary}08)`,
-                          borderRadius: '12px',
-                          border: `2px dashed ${defaultColors.accent}40`
-                        }}>
-                          <BulbOutlined style={{ 
-                            fontSize: '32px', 
-                            color: defaultColors.accent, 
-                            marginBottom: '12px',
-                            display: 'block'
-                          }} />
-                          <Title level={4} style={{ 
-                            margin: '0 0 8px 0', 
-                            color: defaultColors.primary,
-                            fontSize: responsive.fontSize.text
-                          }}>
-                            Want More Content Ideas?
-                          </Title>
-                          <Text style={{ 
-                            fontSize: responsive.fontSize.text, 
-                            color: '#666',
-                            display: 'block',
-                            marginBottom: '20px'
-                          }}>
-                            Get {availableTopics.length > 2 ? availableTopics.length - 2 : 5} more strategic topic ideas with detailed customer psychology insights
-                          </Text>
-                          <Button 
-                            size="large"
-                            type="primary"
-                            style={{
-                              backgroundColor: user ? '#52c41a' : defaultColors.accent,
-                              borderColor: user ? '#52c41a' : defaultColors.accent,
-                              color: 'white',
-                              borderRadius: '8px',
-                              fontWeight: '500',
-                              height: '48px',
-                              padding: '0 32px',
-                              fontSize: responsive.fontSize.text,
-                              boxShadow: user ? `0 2px 8px #52c41a30` : `0 2px 8px ${defaultColors.accent}30`
-                            }}
-                            onClick={() => {
-                              if (!user) {
-                                requireSignUp('Unlock more content ideas', 'Access premium features');
-                              } else {
-                                message.info('Additional topic ideas available with premium access');
-                              }
-                            }}
-                          >
-                            {user ? 'See All Your Ideas' : 'Unlock More Ideas'}
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   )}
                 </Card>
@@ -1696,80 +1636,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   title={
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Edit Your Content</span>
-                      <Space>
-                        <Button 
-                          type={editorViewMode === 'edit' ? "primary" : "default"}
-                          icon={<EditOutlined />}
-                          onClick={() => {
-                            console.log('🔧 DEBUG: Edit button clicked, editorViewMode:', editorViewMode);
-                            setEditorViewMode('edit');
-                            setPreviewMode(false);
-                            
-                            // Track editor_view_changed event
-                            trackEvent('editor_view_changed', {
-                              view: 'edit',
-                              previousView: editorViewMode
-                            }).catch(err => console.error('Failed to track editor_view_changed:', err));
-                          }}
-                          size="small"
-                        >
-                          Edit
-                        </Button>
-                        <Button 
-                          type={editorViewMode === 'preview' ? "primary" : "default"}
-                          icon={<EyeOutlined />}
-                          onClick={() => {
-                            console.log('🔧 DEBUG: Preview button clicked, editorViewMode:', editorViewMode);
-                            setEditorViewMode('preview');
-                            setPreviewMode(true);
-                            
-                            // Track content_previewed and editor_view_changed events
-                            trackEvent('content_previewed', {
-                              postId: currentDraft?.id
-                            }).catch(err => console.error('Failed to track content_previewed:', err));
-                            
-                            trackEvent('editor_view_changed', {
-                              view: 'preview',
-                              previousView: editorViewMode
-                            }).catch(err => console.error('Failed to track editor_view_changed:', err));
-                          }}
-                          size="small"
-                        >
-                          Preview
-                        </Button>
-                        <Button 
-                          type={editorViewMode === 'split' ? "primary" : "default"}
-                          onClick={() => {
-                            console.log('🔧 DEBUG: Split View button clicked, editorViewMode:', editorViewMode);
-                            setEditorViewMode('split');
-                            setPreviewMode(false);
-                          }}
-                          size="small"
-                          style={{ 
-                            marginLeft: '4px',
-                            backgroundColor: editorViewMode === 'split' ? '#1890ff' : '#52c41a',
-                            borderColor: editorViewMode === 'split' ? '#1890ff' : '#52c41a',
-                            color: 'white',
-                            fontWeight: 'bold'
-                          }}
-                        >
-                          🔀 Split View
-                        </Button>
-                      </Space>
                     </div>
                   }
                   style={{ marginBottom: '24px' }}
                 >
                   {selectedTopic && (
                     <div style={{ 
-                      backgroundColor: '#f6ffed',
-                      border: '1px solid #b7eb8f',
+                      backgroundColor: 'var(--color-success-bg)',
+                      border: '1px solid var(--color-success-border)',
                       borderRadius: '6px',
                       padding: '12px',
                       marginBottom: '16px'
                     }}>
-                      <Text strong style={{ color: '#389e0d' }}>Selected Topic: </Text>
-                      <Text style={{ color: '#389e0d' }}>{selectedTopic.title}</Text>
+                      <Text strong style={{ color: 'var(--color-success)' }}>Selected Topic: </Text>
+                      <Text style={{ color: 'var(--color-success)' }}>{selectedTopic.title}</Text>
                     </div>
                   )}
                   
@@ -1778,9 +1658,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   <div style={{ 
                     marginBottom: '20px',
                     padding: '16px',
-                    backgroundColor: '#f0f9ff',
+                    backgroundColor: 'var(--color-primary-50)',
                     borderRadius: '8px',
-                    border: '1px solid #e0f2fe'
+                    border: '1px solid var(--color-primary-100)'
                   }}>
                     <div style={{ 
                       display: 'flex', 
@@ -1790,10 +1670,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       gap: '8px'
                     }}>
                       <div>
-                        <Text strong style={{ fontSize: '14px', color: '#0369a1' }}>
+                        <Text strong style={{ fontSize: '14px', color: 'var(--color-primary-600)' }}>
                           Enhanced AI Generation
                         </Text>
-                        <div style={{ fontSize: '12px', color: '#0369a1', marginTop: '2px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--color-primary-600)', marginTop: '2px' }}>
                           Comprehensive context, SEO optimization, strategic CTAs
                         </div>
                       </div>
@@ -1809,18 +1689,18 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   {/* Content Strategy Panel */}
                   <div style={{ 
                     marginBottom: '20px',
-                    border: `2px solid ${previewMode ? '#e8e8e8' : defaultColors.primary}`,
+                    border: `2px solid ${previewMode ? 'var(--color-gray-200)' : defaultColors.primary}`,
                     borderRadius: '12px',
                     overflow: 'hidden'
                   }}>
                     <div style={{ 
-                      backgroundColor: previewMode ? '#fafafa' : defaultColors.primary + '10',
+                      backgroundColor: previewMode ? 'var(--color-background-alt)' : defaultColors.primary + '10',
                       padding: '16px',
-                      borderBottom: previewMode ? '1px solid #e8e8e8' : `1px solid ${defaultColors.primary}30`
+                      borderBottom: previewMode ? '1px solid var(--color-gray-200)' : `1px solid ${defaultColors.primary}30`
                     }}>
                       <Text strong style={{ 
                         fontSize: '16px', 
-                        color: previewMode ? '#666' : defaultColors.primary 
+                        color: previewMode ? 'var(--color-text-secondary)' : defaultColors.primary 
                       }}>
                         Content Strategy
                       </Text>
@@ -1831,25 +1711,25 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         // Strategy Preview
                         <Row gutter={[16, 16]}>
                           <Col span={12}>
-                            <Text style={{ fontSize: '13px', color: '#999' }}>Goal:</Text>
+                            <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Goal:</Text>
                             <div style={{ fontSize: '15px', fontWeight: 500 }}>
                               {getStrategyDisplayText('goal', contentStrategy.goal)}
                             </div>
                           </Col>
                           <Col span={12}>
-                            <Text style={{ fontSize: '13px', color: '#999' }}>Voice:</Text>
+                            <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Voice:</Text>
                             <div style={{ fontSize: '15px', fontWeight: 500 }}>
                               {getStrategyDisplayText('voice', contentStrategy.voice)}
                             </div>
                           </Col>
                           <Col span={12}>
-                            <Text style={{ fontSize: '13px', color: '#999' }}>Template:</Text>
+                            <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Template:</Text>
                             <div style={{ fontSize: '15px', fontWeight: 500 }}>
                               {getStrategyDisplayText('template', contentStrategy.template)}
                             </div>
                           </Col>
                           <Col span={12}>
-                            <Text style={{ fontSize: '13px', color: '#999' }}>Length:</Text>
+                            <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Length:</Text>
                             <div style={{ fontSize: '15px', fontWeight: 500 }}>
                               {getStrategyDisplayText('length', contentStrategy.length)}
                             </div>
@@ -1922,131 +1802,32 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       )}
                     </div>
                   </div>
-                  
-                  {editorViewMode === 'preview' ? (
-                    // Preview Only Mode
-                    <div style={{ 
-                      border: '1px solid #f0f0f0',
-                      borderRadius: '6px',
-                      padding: '20px',
-                      backgroundColor: '#fafafa',
-                      minHeight: '400px'
-                    }}>
-                      <MarkdownPreview 
-                        content={editingContent || 'No content generated yet.'} 
-                        typography={typography}
-                        style={{ minHeight: '360px' }}
-                      />
-                    </div>
-                  ) : editorViewMode === 'split' ? (
-                    // Split Pane Mode with Typography Settings
-                    <div>
-                      {/* Typography Settings Panel */}
-                      <div style={{ marginBottom: '16px' }}>
-                        <TypographySettings 
-                          typography={typography}
-                          onTypographyChange={handleTypographyChange}
-                        />
-                      </div>
-                      
-                      {/* Split Editor */}
-                      <div style={{ 
-                        display: 'flex', 
-                        gap: '16px', 
-                        minHeight: '500px',
-                        border: '1px solid #f0f0f0',
-                        borderRadius: '6px',
-                        overflow: 'hidden'
-                      }}>
-                      {/* Edit Pane */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <FormattingToolbar 
-                          onInsert={handleTextInsert}
-                          wordCount={getWordCount(editingContent)}
-                          showStats={false}
-                          style={{ 
-                            borderRadius: 0,
-                            borderBottom: '1px solid #e0e0e0',
-                            fontSize: '11px'
-                          }}
-                        />
-                        <TextArea
-                          value={editingContent}
-                          onChange={(e) => handleContentChange(e.target.value)}
-                          placeholder="Your generated content will appear here for editing..."
-                          bordered={false}
-                          style={{ 
-                            fontFamily: 'Consolas, Monaco, "Courier New", monospace', 
-                            fontSize: '13px', 
-                            lineHeight: '1.5',
-                            flex: 1,
-                            resize: 'none',
-                            minHeight: '430px'
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Divider */}
-                      <div style={{ 
-                        width: '1px', 
-                        backgroundColor: '#f0f0f0',
-                        cursor: 'col-resize'
-                      }} />
-                      
-                      {/* Preview Pane */}
-                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ 
-                          padding: '8px 12px', 
-                          backgroundColor: '#fafafa', 
-                          borderBottom: '1px solid #f0f0f0',
-                          fontSize: '12px',
-                          fontWeight: 500,
-                          color: '#666'
-                        }}>
-                          Live Preview
-                        </div>
-                        <div style={{ 
-                          padding: '16px',
-                          backgroundColor: '#fafafa',
-                          flex: 1,
-                          overflow: 'auto'
-                        }}>
-                          <MarkdownPreview 
-                            content={editingContent}
-                            typography={typography}
-                            style={{ minHeight: '420px' }}
-                          />
-                        </div>
-                      </div>
-                      </div>
-                    </div>
-                  ) : (
-                    // Edit Only Mode
-                    <div style={{ 
-                      border: '1px solid #d9d9d9',
-                      borderRadius: '6px',
-                      overflow: 'hidden'
-                    }}>
-                      <FormattingToolbar 
-                        onInsert={handleTextInsert}
-                        wordCount={getWordCount(editingContent)}
-                        style={{ borderRadius: '6px 6px 0 0' }}
-                      />
-                      <TextArea
-                        value={editingContent}
-                        onChange={(e) => handleContentChange(e.target.value)}
-                        placeholder="Your generated content will appear here for editing..."
-                        rows={22}
-                        bordered={false}
-                        style={{ 
-                          fontFamily: 'Consolas, Monaco, "Courier New", monospace', 
-                          fontSize: '13px', 
-                          lineHeight: '1.5',
-                          borderRadius: '0 0 6px 6px'
-                        }}
-                      />
-                    </div>
-                  )}
+
+                  {/* Edit Mode */}
+                  <div style={{
+                    border: '1px solid var(--color-gray-300)',
+                    borderRadius: '6px',
+                    overflow: 'hidden'
+                  }}>
+                    <FormattingToolbar
+                      onInsert={handleTextInsert}
+                      wordCount={getWordCount(editingContent)}
+                      style={{ borderRadius: '6px 6px 0 0' }}
+                    />
+                    <TextArea
+                      value={editingContent}
+                      onChange={(e) => handleContentChange(e.target.value)}
+                      placeholder="Your generated content will appear here for editing..."
+                      rows={22}
+                      bordered={false}
+                      style={{
+                        fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                        fontSize: '13px',
+                        lineHeight: '1.5',
+                        borderRadius: '0 0 6px 6px'
+                      }}
+                    />
+                  </div>
                   
                   {/* Action Buttons - Different for workflow vs focus mode */}
                   <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
@@ -2065,8 +1846,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                             onClick={() => setShowExportModal(true)}
                             disabled={!editingContent.trim() || postState === 'exported'}
                             style={{
-                              backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
-                              borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                              backgroundColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
+                              borderColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
                               fontWeight: '500',
                               minWidth: '180px'
                             }}
@@ -2127,8 +1908,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             </div>
           ) : (
             // Focus Mode: Show Empty State for No Posts
-            <Card 
-              title="Blog Posts"
+            <Card
+              title={<h2 className="heading-section" style={{ marginBottom: 0 }}>Blog Posts</h2>}
             >
               <EmptyState
                 title="No blog posts yet"
@@ -2147,7 +1928,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     }
                   }
                 }}
-                icon={<PlusOutlined style={{ fontSize: '64px', color: '#d9d9d9' }} />}
+                icon={<PlusOutlined style={{ fontSize: '64px', color: 'var(--color-gray-300)' }} />}
                 tips="Start by analyzing your website, then select an audience strategy, and finally generate your first post."
               />
             </Card>
@@ -2182,7 +1963,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           {!selectedCustomerStrategy && (
             <Card title="Content Topics Preview" style={{ marginBottom: '24px' }}>
               <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                <Paragraph style={{ fontSize: '16px', color: '#666', marginBottom: '16px' }}>
+                <Paragraph style={{ fontSize: '16px', color: 'var(--color-text-secondary)', marginBottom: '16px' }}>
                   Select an audience strategy to generate personalized content topics like these:
                 </Paragraph>
               </div>
@@ -2195,11 +1976,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     cover={
                       <div style={{
                         height: '200px',
-                        background: 'linear-gradient(135deg, #667eea30 0%, #764ba230 100%)',
+                        background: 'linear-gradient(135deg, var(--color-primary-100) 0%, var(--color-primary-200) 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#999',
+                        color: 'var(--color-text-tertiary)',
                         fontSize: '16px',
                         fontWeight: 500,
                         padding: '20px',
@@ -2215,14 +1996,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           padding: '12px 20px',
                           borderRadius: '6px',
                           fontSize: '14px',
-                          color: '#666'
+                          color: 'var(--color-text-secondary)'
                         }}>
                           🎯 Topic Preview
                         </div>
                       </div>
                     }
                     style={{
-                      border: '2px dashed #d9d9d9',
+                      border: '2px dashed var(--color-gray-300)',
                       opacity: 0.6
                     }}
                   >
@@ -2234,10 +2015,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     </div>
                     
                     {/* Preview Title and Description */}
-                    <Title level={4} style={{ marginBottom: '8px', color: '#ccc' }}>
+                    <Title level={4} style={{ marginBottom: '8px', color: 'var(--color-gray-300)' }}>
                       Your Custom Topic Title
                     </Title>
-                    <Paragraph style={{ color: '#999', fontSize: '14px', marginBottom: '12px' }}>
+                    <Paragraph style={{ color: 'var(--color-text-tertiary)', fontSize: '14px', marginBottom: '12px' }}>
                       AI-generated content idea tailored specifically to your selected audience strategy and business goals.
                     </Paragraph>
                     
@@ -2265,11 +2046,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     cover={
                       <div style={{
                         height: '200px',
-                        background: 'linear-gradient(135deg, #f093fb30 0%, #f5576c30 100%)',
+                        background: 'linear-gradient(135deg, var(--color-accent-100) 0%, var(--color-accent-200) 100%)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        color: '#999',
+                        color: 'var(--color-text-tertiary)',
                         fontSize: '16px',
                         fontWeight: 500,
                         padding: '20px',
@@ -2285,14 +2066,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           padding: '12px 20px',
                           borderRadius: '6px',
                           fontSize: '14px',
-                          color: '#666'
+                          color: 'var(--color-text-secondary)'
                         }}>
                           📊 Topic Preview
                         </div>
                       </div>
                     }
                     style={{
-                      border: '2px dashed #d9d9d9',
+                      border: '2px dashed var(--color-gray-300)',
                       opacity: 0.6
                     }}
                   >
@@ -2304,10 +2085,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     </div>
                     
                     {/* Preview Title and Description */}
-                    <Title level={4} style={{ marginBottom: '8px', color: '#ccc' }}>
+                    <Title level={4} style={{ marginBottom: '8px', color: 'var(--color-gray-300)' }}>
                       Another Targeted Topic
                     </Title>
-                    <Paragraph style={{ color: '#999', fontSize: '14px', marginBottom: '12px' }}>
+                    <Paragraph style={{ color: 'var(--color-text-tertiary)', fontSize: '14px', marginBottom: '12px' }}>
                       Personalized content suggestions based on your audience's search behavior and pain points.
                     </Paragraph>
                     
@@ -2330,8 +2111,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               </Row>
 
               {/* Call to Action */}
-              <div style={{ textAlign: 'center', marginTop: '24px', padding: '20px', backgroundColor: '#f6ffed', borderRadius: '8px', border: '1px solid #b7eb8f' }}>
-                <Title level={4} style={{ color: '#52c41a', marginBottom: '12px' }}>
+              <div style={{ textAlign: 'center', marginTop: '24px', padding: '20px', backgroundColor: 'var(--color-success-bg)', borderRadius: '8px', border: '1px solid var(--color-success-border)' }}>
+                <Title level={4} style={{ color: 'var(--color-success)', marginBottom: '12px' }}>
                   Ready to Generate Your Topics?
                 </Title>
                 <Button 
@@ -2348,8 +2129,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     }
                   }}
                   style={{
-                    backgroundColor: '#52c41a',
-                    borderColor: '#52c41a',
+                    backgroundColor: 'var(--color-success)',
+                    borderColor: 'var(--color-success)',
                     minWidth: '200px'
                   }}
                 >
@@ -2365,7 +2146,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             {!contentGenerated ? (
               // Topic Generation Phase
               <Card title="Generate Content Topics" style={{ marginBottom: '24px' }}>
-                <Paragraph style={{ color: '#666', marginBottom: '20px' }}>
+                <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '20px' }}>
                   {selectedCustomerStrategy ? 
                     'AI will generate trending topics based on your selected audience strategy.' :
                     'Generate content topics that resonate with your target audience.'
@@ -2384,7 +2165,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         >
                           {systemVoice.topics.generatingTopics}
                         </Button>
-                        <div style={{ marginTop: '12px', color: '#666', fontSize: '14px' }}>
+                        <div style={{ marginTop: '12px', color: 'var(--color-text-secondary)', fontSize: '14px' }}>
                           {systemVoice.topics.generatingTopicsWithTime}
                         </div>
                       </div>
@@ -2417,10 +2198,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 ) : (
                   // Enhanced Topic Cards Section - Same for both modes
                   <div>
-                    <Paragraph style={{ 
-                      textAlign: 'center', 
-                      marginBottom: '30px', 
-                      color: '#666',
+                    <Paragraph style={{
+                      textAlign: 'center',
+                      marginBottom: 'var(--space-7)',
+                      color: 'var(--color-text-secondary)',
                       fontSize: responsive.fontSize.text
                     }}>
                       {tabMode.tabWorkflowData?.selectedCustomerStrategy ? 
@@ -2444,7 +2225,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   // Image loading skeleton
                                   <div style={{ 
                                     height: '200px', 
-                                    backgroundColor: '#f5f5f5', 
+                                    backgroundColor: 'var(--color-background-alt)', 
                                     display: 'flex', 
                                     flexDirection: 'column',
                                     alignItems: 'center', 
@@ -2455,14 +2236,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     <div style={{ 
                                       marginBottom: '12px',
                                       fontSize: responsive.fontSize.small, 
-                                      color: '#666',
+                                      color: 'var(--color-text-secondary)',
                                       fontWeight: 500
                                     }}>
                                       🎨 Generating image...
                                     </div>
                                     <div style={{ 
                                       fontSize: '12px', 
-                                      color: '#999'
+                                      color: 'var(--color-text-tertiary)'
                                     }}>
                                       (takes ~30 seconds)
                                     </div>
@@ -2484,7 +2265,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     height: '200px',
                                     background: topic.gradientColors ? 
                                       `linear-gradient(135deg, ${topic.gradientColors[0]} 0%, ${topic.gradientColors[1]} 100%)` :
-                                      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                                      'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-700) 100%)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -2499,7 +2280,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 )
                               }
                               style={{
-                                border: isSelected ? `2px solid ${defaultColors.primary}` : '1px solid #f0f0f0',
+                                border: isSelected ? `2px solid ${defaultColors.primary}` : '1px solid var(--color-border-base)',
                                 marginBottom: '20px',
                                 opacity: isGenerating ? 0.8 : 1
                               }}
@@ -2518,7 +2299,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               <Title level={4} style={{ marginBottom: '8px', fontSize: responsive.fontSize.text }}>
                                 {topic.title}
                               </Title>
-                              <Paragraph style={{ color: '#666', fontSize: responsive.fontSize.small, marginBottom: '12px' }}>
+                              <Paragraph style={{ color: 'var(--color-text-secondary)', fontSize: responsive.fontSize.small, marginBottom: '12px' }}>
                                 {topic.subheader || topic.description || 'AI-generated content tailored to your audience'}
                               </Paragraph>
                               
@@ -2534,14 +2315,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 <div style={{ 
                                   marginBottom: '16px', 
                                   padding: '12px', 
-                                  backgroundColor: '#f0f8ff', 
+                                  backgroundColor: 'var(--color-primary-50)', 
                                   borderRadius: '6px',
-                                  border: '1px solid #d6e7ff'
+                                  border: '1px solid var(--color-primary-100)'
                                 }}>
-                                  <Text style={{ fontSize: '12px', color: '#1890ff', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
+                                  <Text style={{ fontSize: '12px', color: 'var(--color-primary)', fontWeight: 500, display: 'block', marginBottom: '4px' }}>
                                     📊 Traffic Prediction:
                                   </Text>
-                                  <Text style={{ fontSize: '11px', color: '#666', lineHeight: '1.4' }}>
+                                  <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)', lineHeight: '1.4' }}>
                                     {topic.trafficPrediction}
                                   </Text>
                                 </div>
@@ -2591,8 +2372,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     width: '100%',
                                     marginTop: '8px',
                                     borderColor: defaultColors.primary,
-                                    color: user ? '#52c41a' : defaultColors.primary,
-                                    background: user ? `linear-gradient(135deg, #52c41a05, #52c41a10)` : `linear-gradient(135deg, ${defaultColors.primary}05, ${defaultColors.primary}10)`,
+                                    color: user ? 'var(--color-success)' : defaultColors.primary,
+                                    background: user ? `linear-gradient(135deg, var(--color-success)05, var(--color-success)10)` : `linear-gradient(135deg, ${defaultColors.primary}05, ${defaultColors.primary}10)`,
                                     fontWeight: '500'
                                   }}
                                 >
@@ -2618,7 +2399,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   }}>
                                     📋 What You'll Get
                                   </Text>
-                                  <Text style={{ fontSize: '12px', color: '#666' }}>
+                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                     Your blog post will include all these strategic elements
                                   </Text>
                                 </div>
@@ -2628,7 +2409,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                                     📝 Content Structure
                                   </Text>
-                                  <Text style={{ fontSize: '12px', color: '#666' }}>
+                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                     Problem identification → Solution framework → Implementation guidance
                                   </Text>
                                 </div>
@@ -2650,7 +2431,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                         </Tag>
                                       ))}
                                       {topic.scenario.seoKeywords.length > 3 && (
-                                        <Text style={{ fontSize: '11px', color: '#999' }}>
+                                        <Text style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
                                           +{topic.scenario.seoKeywords.length - 3} more
                                         </Text>
                                       )}
@@ -2663,7 +2444,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                                     🎯 Competitive Edge
                                   </Text>
-                                  <Text style={{ fontSize: '12px', color: '#666' }}>
+                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                     Establishes thought leadership with unique insights and fresh perspectives
                                   </Text>
                                 </div>
@@ -2688,12 +2469,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   </div>
 
                                   {ctasLoading ? (
-                                    <Text style={{ fontSize: '12px', color: '#999', fontStyle: 'italic' }}>
+                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
                                       Loading CTAs...
                                     </Text>
                                   ) : organizationCTAs.length > 0 ? (
                                     <div>
-                                      <div style={{ fontSize: '12px', color: '#666' }}>
+                                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                         {organizationCTAs.slice(0, 3).map((cta, index) => (
                                           <div key={cta.id || index} style={{ marginBottom: '2px' }}>
                                             • {cta.text}
@@ -2701,13 +2482,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                         ))}
                                       </div>
                                       {!hasSufficientCTAs && organizationCTAs.length < 3 && (
-                                        <Text style={{ fontSize: '11px', color: '#ff4d4f', marginTop: '4px', display: 'block' }}>
+                                        <Text style={{ fontSize: '11px', color: 'var(--color-error)', marginTop: '4px', display: 'block' }}>
                                           ⚠️ {3 - organizationCTAs.length} more CTA{3 - organizationCTAs.length !== 1 ? 's' : ''} recommended
                                         </Text>
                                       )}
                                     </div>
                                   ) : (
-                                    <Text style={{ fontSize: '12px', color: '#666' }}>
+                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                       Strategic CTAs aligned with your primary business objectives and customer journey
                                     </Text>
                                   )}
@@ -2718,7 +2499,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
                                     ✨ Content Quality
                                   </Text>
-                                  <Text style={{ fontSize: '12px', color: '#666' }}>
+                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                                     1000-1500 words with balanced depth and readability • Expert authority tone
                                   </Text>
                                 </div>
@@ -2754,7 +2535,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         </Title>
                         <Text style={{ 
                           fontSize: responsive.fontSize.text, 
-                          color: '#666',
+                          color: 'var(--color-text-secondary)',
                           display: 'block',
                           marginBottom: '20px'
                         }}>
@@ -2764,15 +2545,15 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           size="large"
                           type="primary"
                           style={{
-                            backgroundColor: user ? '#52c41a' : defaultColors.accent,
-                            borderColor: user ? '#52c41a' : defaultColors.accent,
+                            backgroundColor: user ? 'var(--color-success)' : defaultColors.accent,
+                            borderColor: user ? 'var(--color-success)' : defaultColors.accent,
                             color: 'white',
                             borderRadius: '8px',
                             fontWeight: '500',
                             height: '48px',
                             padding: '0 32px',
                             fontSize: responsive.fontSize.text,
-                            boxShadow: user ? `0 2px 8px #52c41a30` : `0 2px 8px ${defaultColors.accent}30`
+                            boxShadow: user ? `0 2px 8px var(--color-success)30` : `0 2px 8px ${defaultColors.accent}30`
                           }}
                           onClick={() => {
                             if (!user) {
@@ -2797,15 +2578,15 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         {contentGenerated && (
           <div style={{ marginBottom: '24px' }}>
             {selectedTopic && (
-              <div style={{ 
-                backgroundColor: '#f6ffed',
-                border: '1px solid #b7eb8f',
+              <div style={{
+                backgroundColor: 'var(--color-background-container)',
+                border: '1px solid var(--color-border-base)',
                 borderRadius: '6px',
                 padding: '12px',
                 marginBottom: '16px'
               }}>
-                <Text strong style={{ color: '#389e0d' }}>Selected Topic: </Text>
-                <Text style={{ color: '#389e0d' }}>{selectedTopic.title}</Text>
+                <Text strong style={{ color: 'var(--color-text-secondary)' }}>Selected Topic: </Text>
+                <Text style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--font-weight-semibold)' }}>{selectedTopic.title}</Text>
               </div>
             )}
 
@@ -2813,9 +2594,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             <div style={{ 
               marginBottom: '20px',
               padding: '16px',
-              backgroundColor: '#f0f9ff',
+              backgroundColor: 'var(--color-primary-50)',
               borderRadius: '8px',
-              border: '1px solid #e0f2fe'
+              border: '1px solid var(--color-primary-100)'
             }}>
               <div style={{ 
                 display: 'flex', 
@@ -2825,10 +2606,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 gap: '8px'
               }}>
                 <div>
-                  <Text strong style={{ fontSize: '14px', color: '#0369a1' }}>
+                  <Text strong style={{ fontSize: '14px', color: 'var(--color-primary-600)' }}>
                     Enhanced AI Generation
                   </Text>
-                  <div style={{ fontSize: '12px', color: '#0369a1', marginTop: '2px' }}>
+                  <div style={{ fontSize: '12px', color: 'var(--color-primary-600)', marginTop: '2px' }}>
                     Comprehensive context, SEO optimization, strategic CTAs
                   </div>
                 </div>
@@ -2860,18 +2641,18 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             {/* Content Strategy Panel */}
             <div style={{ 
               marginBottom: '20px',
-              border: `2px solid ${previewMode ? '#e8e8e8' : defaultColors.primary}`,
+              border: `2px solid ${previewMode ? 'var(--color-gray-200)' : defaultColors.primary}`,
               borderRadius: '12px',
               overflow: 'hidden'
             }}>
               <div style={{ 
-                backgroundColor: previewMode ? '#fafafa' : defaultColors.primary + '10',
+                backgroundColor: previewMode ? 'var(--color-background-alt)' : defaultColors.primary + '10',
                 padding: '16px',
-                borderBottom: previewMode ? '1px solid #e8e8e8' : `1px solid ${defaultColors.primary}30`
+                borderBottom: previewMode ? '1px solid var(--color-gray-200)' : `1px solid ${defaultColors.primary}30`
               }}>
                 <Text strong style={{ 
                   fontSize: '16px', 
-                  color: previewMode ? '#666' : defaultColors.primary 
+                  color: previewMode ? 'var(--color-text-secondary)' : defaultColors.primary 
                 }}>
                   Content Strategy
                 </Text>
@@ -2882,25 +2663,25 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   // Strategy Preview
                   <Row gutter={[16, 16]}>
                     <Col span={12}>
-                      <Text style={{ fontSize: '13px', color: '#999' }}>Goal:</Text>
+                      <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Goal:</Text>
                       <div style={{ fontSize: '15px', fontWeight: 500 }}>
                         {getStrategyDisplayText('goal', contentStrategy.goal)}
                       </div>
                     </Col>
                     <Col span={12}>
-                      <Text style={{ fontSize: '13px', color: '#999' }}>Voice:</Text>
+                      <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Voice:</Text>
                       <div style={{ fontSize: '15px', fontWeight: 500 }}>
                         {getStrategyDisplayText('voice', contentStrategy.voice)}
                       </div>
                     </Col>
                     <Col span={12}>
-                      <Text style={{ fontSize: '13px', color: '#999' }}>Template:</Text>
+                      <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Template:</Text>
                       <div style={{ fontSize: '15px', fontWeight: 500 }}>
                         {getStrategyDisplayText('template', contentStrategy.template)}
                       </div>
                     </Col>
                     <Col span={12}>
-                      <Text style={{ fontSize: '13px', color: '#999' }}>Length:</Text>
+                      <Text style={{ fontSize: '13px', color: 'var(--color-text-tertiary)' }}>Length:</Text>
                       <div style={{ fontSize: '15px', fontWeight: 500 }}>
                         {getStrategyDisplayText('length', contentStrategy.length)}
                       </div>
@@ -2976,8 +2757,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             
             {/* ENHANCED MODERN EDITOR SECTION */}
             <EditorLayout
-              mode={editorViewMode}
-              onModeChange={setEditorViewMode}
               isFullscreen={isEditorFullscreen}
               onToggleFullscreen={handleToggleFullscreen}
               toolbarContent={
@@ -2988,40 +2767,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 />
               }
             >
-              {editorViewMode === 'split' ? (
-                <>
-                  <EditorPane>
-                    <RichTextEditor
-                      content={editingContent}
-                      onChange={handleContentChange}
-                      onEditorReady={setRichTextEditor}
-                      placeholder="Your generated content will appear here for editing..."
-                    />
-                  </EditorPane>
-                  <PreviewPane>
-                    <HTMLPreview 
-                      content={editingContent || 'No content generated yet.'}
-                      typographySettings={typography}
-                    />
-                  </PreviewPane>
-                </>
-              ) : editorViewMode === 'preview' ? (
-                <PreviewPane>
-                  <HTMLPreview 
-                    content={editingContent || 'No content generated yet.'}
-                    typographySettings={typography}
-                  />
-                </PreviewPane>
-              ) : (
-                <EditorPane>
-                  <RichTextEditor
-                    content={editingContent}
-                    onChange={handleContentChange}
-                    onEditorReady={setRichTextEditor}
-                    placeholder="Your generated content will appear here for editing..."
-                  />
-                </EditorPane>
-              )}
+              <EditorPane>
+                <RichTextEditor
+                  content={editingContent}
+                  onChange={handleContentChange}
+                  onEditorReady={setRichTextEditor}
+                  placeholder="Your generated content will appear here for editing..."
+                />
+              </EditorPane>
             </EditorLayout>
             
             {/* Typography Settings Panel - Temporarily disabled to fix infinite loop */}
@@ -3055,16 +2808,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               </div>
             )}
 
-            {/* Highlighted Content Suggestions - New user-facing feature */}
-            {editingContent && editingContent.length >= 100 && (
-              <div style={{ marginBottom: '20px' }}>
-                <HighlightedContentSuggestions
-                  editor={richTextEditor}
-                  style={{ marginTop: 0 }}
-                />
-              </div>
-            )}
-            
+
             {/* Action Buttons */}
             <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
               <Space>
@@ -3139,14 +2883,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             >
               {selectedTopic && (
                 <div style={{ 
-                  backgroundColor: '#f6ffed',
-                  border: '1px solid #b7eb8f',
+                  backgroundColor: 'var(--color-success-bg)',
+                  border: '1px solid var(--color-success-border)',
                   borderRadius: '6px',
                   padding: '12px',
                   marginBottom: '16px'
                 }}>
-                  <Text strong style={{ color: '#389e0d' }}>Selected Topic: </Text>
-                  <Text style={{ color: '#389e0d' }}>{selectedTopic.title}</Text>
+                  <Text strong style={{ color: 'var(--color-success)' }}>Selected Topic: </Text>
+                  <Text style={{ color: 'var(--color-success)' }}>{selectedTopic.title}</Text>
                 </div>
               )}
               
@@ -3182,35 +2926,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 </div>
               )}
 
-              {/* Highlighted Content Suggestions - Focus mode */}
-              {editingContent && editingContent.length >= 100 && (
-                <div style={{ marginBottom: '20px' }}>
-                  <HighlightedContentSuggestions
-                    editor={richTextEditor}
-                    style={{ marginTop: 0 }}
-                  />
-                </div>
-              )}
 
               {/* Modern Content Editor */}
               <EditorLayout
-                mode={previewMode ? 'preview' : 'edit'}
-                onModeChange={(mode) => setPreviewMode(mode === 'preview')}
                 isFullscreen={isEditorFullscreen}
                 onToggleFullscreen={handleToggleFullscreen}
                 minHeight="400px"
               >
                 {previewMode ? (
-                  <PreviewPane>
+                  <div style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'auto',
+                    backgroundColor: 'var(--color-background-body)',
+                    padding: 'var(--space-5)'
+                  }}>
                     <HTMLPreview
                       content={editingContent || 'Enter your blog content...'}
                       style={{
                         minHeight: '400px',
                         padding: '20px',
-                        backgroundColor: '#fafafa'
+                        backgroundColor: 'var(--color-background-alt)'
                       }}
                     />
-                  </PreviewPane>
+                  </div>
                 ) : (
                   <EditorPane>
                     <div style={{ position: 'relative', height: '100%' }}>
@@ -3263,8 +3003,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     onClick={() => handleAutosave(true)}
                     disabled={!editingContent.trim() || postState === 'exported'}
                     style={{
-                      backgroundColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
-                      borderColor: postState === 'exported' ? '#52c41a' : defaultColors.primary,
+                      backgroundColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
+                      borderColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
                       fontWeight: '500'
                     }}
                   >
@@ -3275,7 +3015,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             </Card>
           ) : (
             /* Posts List View */
-            <Card title="Blog Posts">
+            <Card title={<h2 className="heading-section" style={{ marginBottom: 0 }}>Blog Posts</h2>}>
 
               <Table
                 columns={columns}

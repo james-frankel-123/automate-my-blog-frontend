@@ -94,7 +94,7 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
       dataIndex: 'website_url',
       key: 'website_url',
       width: '40%',
-      render: (url) => url || <span style={{ color: '#999' }}>No website</span>
+      render: (url) => url || <span style={{ color: 'var(--color-text-tertiary)' }}>No website</span>
     },
     {
       title: 'Joined',
@@ -109,7 +109,7 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
     <Card
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <FunnelPlotOutlined style={{ fontSize: 24, color: '#1890ff' }} />
+          <FunnelPlotOutlined style={{ fontSize: 24, color: 'var(--color-primary)' }} />
           <span>{title}</span>
           {priority === 'monitor' && (
             <Tag color="orange">REQUIRES MONITORING</Tag>
@@ -211,7 +211,7 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
                             onChange={(checked) => handleToggleExcludeAdvanced(stageKey, checked)}
                             size="small"
                           />
-                          <span style={{ fontSize: 12, color: '#666' }}>
+                          <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
                             Hide users who have progressed to next stage
                           </span>
                         </div>
@@ -276,7 +276,7 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
                       {insight.userSegment}
                     </p>
                     <p>
-                      <strong style={{ color: '#1890ff' }}>📌 Action:</strong><br />
+                      <strong style={{ color: 'var(--color-primary)' }}>📌 Action:</strong><br />
                       {insight.action}
                     </p>
                     <p>

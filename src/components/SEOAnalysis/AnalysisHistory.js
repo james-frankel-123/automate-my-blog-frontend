@@ -22,11 +22,11 @@ const AnalysisHistory = ({ onSelectAnalysis, limit = 10 }) => {
 
   // Get score color based on value
   const getScoreColor = (score) => {
-    if (score >= 90) return '#52c41a';
-    if (score >= 80) return '#1890ff';
-    if (score >= 70) return '#faad14';
-    if (score >= 60) return '#fa8c16';
-    return '#f5222d';
+    if (score >= 90) return 'var(--color-success)';
+    if (score >= 80) return 'var(--color-primary)';
+    if (score >= 70) return 'var(--color-warning)';
+    if (score >= 60) return 'var(--color-warning)';
+    return 'var(--color-error)';
   };
 
   // Get score tag color
@@ -163,12 +163,12 @@ const AnalysisHistory = ({ onSelectAnalysis, limit = 10 }) => {
                 <div style={{ flex: 1, paddingRight: '16px' }}>
                   {/* Content Preview */}
                   <div style={{ marginBottom: '8px' }}>
-                    <FileTextOutlined style={{ color: '#1890ff', marginRight: '8px' }} />
+                    <FileTextOutlined style={{ color: 'var(--color-primary)', marginRight: '8px' }} />
                     <Text strong>Content Preview</Text>
                   </div>
                   <Paragraph 
                     ellipsis={{ rows: 2, expandable: false }}
-                    style={{ color: '#666', marginBottom: '12px' }}
+                    style={{ color: 'var(--color-text-secondary)', marginBottom: '12px' }}
                   >
                     {analysis.contentPreview}
                   </Paragraph>
@@ -176,12 +176,12 @@ const AnalysisHistory = ({ onSelectAnalysis, limit = 10 }) => {
                   {/* Metadata */}
                   <Space size={16} wrap>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <CalendarOutlined style={{ color: '#999' }} />
+                      <CalendarOutlined style={{ color: 'var(--color-text-tertiary)' }} />
                       <Text type="secondary">{formatDate(analysis.createdAt)}</Text>
                     </div>
                     
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <FileTextOutlined style={{ color: '#999' }} />
+                      <FileTextOutlined style={{ color: 'var(--color-text-tertiary)' }} />
                       <Text type="secondary">{analysis.wordCount} words</Text>
                     </div>
                   </Space>

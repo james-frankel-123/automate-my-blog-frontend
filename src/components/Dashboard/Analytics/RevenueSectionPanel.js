@@ -114,7 +114,7 @@ const RevenueSectionPanel = ({ revenueData, loading }) => {
                 />
                 <Legend />
                 <Line type="monotone" dataKey="total_revenue" stroke="#52c41a" strokeWidth={2} name="Total Revenue" />
-                <Line type="monotone" dataKey="pay_per_use_revenue" stroke="#1890ff" name="Pay-Per-Use" />
+                <Line type="monotone" dataKey="pay_per_use_revenue" stroke="var(--color-primary)" name="Pay-Per-Use" />
                 <Line type="monotone" dataKey="starter_mrr" stroke="#faad14" name="Starter MRR" />
                 <Line type="monotone" dataKey="professional_mrr" stroke="#722ed1" name="Pro MRR" />
               </LineChart>
@@ -152,7 +152,7 @@ const RevenueSectionPanel = ({ revenueData, loading }) => {
                       {insight.userSegment}
                     </p>
                     <p>
-                      <strong style={{ color: '#1890ff' }}>📌 Action:</strong><br />
+                      <strong style={{ color: 'var(--color-primary)' }}>📌 Action:</strong><br />
                       {insight.action}
                     </p>
                     <p>

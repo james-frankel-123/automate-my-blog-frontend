@@ -62,10 +62,10 @@ const ModeToggle = ({
               width: '8px',
               height: '8px',
               borderRadius: '50%',
-              backgroundColor: '#1890ff',
+              backgroundColor: 'var(--color-primary)',
               animation: 'pulse 2s infinite'
             }} />
-            <Text style={{ fontWeight: 500, color: '#1890ff' }}>
+            <Text style={{ fontWeight: 500, color: 'var(--color-primary)' }}>
               Workflow Mode: {workflowStep?.title || 'Guided Creation'}
             </Text>
           </>
@@ -73,8 +73,8 @@ const ModeToggle = ({
         
         {mode === 'focus' && (
           <>
-            <EyeOutlined style={{ color: '#52c41a' }} />
-            <Text style={{ fontWeight: 500, color: '#52c41a' }}>
+            <EyeOutlined style={{ color: 'var(--color-success)' }} />
+            <Text style={{ fontWeight: 500, color: 'var(--color-success)' }}>
               Focus Mode: Complete Management
             </Text>
           </>
@@ -192,7 +192,7 @@ export const WorkflowGuidance = ({
         <Text strong style={{ color: '#389e0d' }}>{stepTitle}</Text>
       </div>
       {stepDescription && (
-        <Text style={{ color: '#52c41a', fontSize: '14px' }}>
+        <Text style={{ color: 'var(--color-success)', fontSize: '14px' }}>
           {stepDescription}
         </Text>
       )}

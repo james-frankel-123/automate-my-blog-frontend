@@ -41,7 +41,7 @@ const VisualContentSuggestions = ({
     return (
       <Card style={style} size="small">
         <div style={{ textAlign: 'center', padding: 16 }}>
-          <PictureOutlined style={{ fontSize: 32, color: '#d9d9d9', marginBottom: 8 }} />
+          <PictureOutlined style={{ fontSize: 32, color: 'var(--color-gray-300)', marginBottom: 8 }} />
           <Text type="secondary">No visual suggestions available</Text>
         </div>
       </Card>
@@ -70,15 +70,15 @@ const VisualContentSuggestions = ({
   const getContentTypeIcon = (type) => {
     switch (type) {
       case 'hero_image':
-        return <PictureOutlined style={{ color: '#52c41a' }} />;
+        return <PictureOutlined style={{ color: 'var(--color-success)' }} />;
       case 'infographic':
-        return <BarChartOutlined style={{ color: '#1890ff' }} />;
+        return <BarChartOutlined style={{ color: 'var(--color-primary)' }} />;
       case 'chart':
-        return <BarChartOutlined style={{ color: '#722ed1' }} />;
+        return <BarChartOutlined style={{ color: 'var(--color-primary)' }} />;
       case 'diagram':
-        return <PictureOutlined style={{ color: '#fa8c16' }} />;
+        return <PictureOutlined style={{ color: 'var(--color-warning)' }} />;
       default:
-        return <PictureOutlined style={{ color: '#595959' }} />;
+        return <PictureOutlined style={{ color: 'var(--color-text-secondary)' }} />;
     }
   };
 
@@ -112,9 +112,9 @@ const VisualContentSuggestions = ({
       <Card 
         title={
           <Space>
-            <PictureOutlined style={{ color: '#1890ff' }} />
+            <PictureOutlined style={{ color: 'var(--color-primary)' }} />
             Visual Content Suggestions
-            <Badge count={validSuggestions.length} style={{ backgroundColor: '#52c41a' }} />
+            <Badge count={validSuggestions.length} style={{ backgroundColor: 'var(--color-success)' }} />
           </Space>
         }
         size="small"
@@ -201,8 +201,8 @@ const VisualContentSuggestions = ({
                 });
               }}
               style={{
-                background: 'linear-gradient(90deg, #1890ff 0%, #722ed1 100%)',
-                borderColor: '#1890ff',
+                background: 'var(--gradient-primary)',
+                borderColor: 'var(--color-primary)',
                 fontSize: '16px',
                 height: '48px',
                 padding: '0 32px'
@@ -226,7 +226,7 @@ const VisualContentSuggestions = ({
               key={suggestion.id || `test-case-${index}`}
               size="small"
               style={{ 
-                borderLeft: '4px solid #1890ff',
+                borderLeft: '4px solid var(--color-primary)',
                 marginBottom: 8
               }}
               title={
@@ -240,7 +240,7 @@ const VisualContentSuggestions = ({
                       <>
                         <Button 
                           size="small" 
-                          style={{ backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+                          style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-success)', color: 'white' }}
                           icon={<PictureOutlined />}
                           loading={generating === `${suggestion.id}-pullout-style`}
                           onClick={() => handleGenerateVisual({...suggestion, testService: 'pullout-style', id: `${suggestion.id}-pullout-style`})}
@@ -249,7 +249,7 @@ const VisualContentSuggestions = ({
                         </Button>
                         <Button 
                           size="small" 
-                          style={{ backgroundColor: '#722ed1', borderColor: '#722ed1', color: 'white' }}
+                          style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: 'white' }}
                           icon={<PictureOutlined />}
                           loading={generating === `${suggestion.id}-box-style`}
                           onClick={() => handleGenerateVisual({...suggestion, testService: 'box-style', id: `${suggestion.id}-box-style`})}
@@ -258,7 +258,7 @@ const VisualContentSuggestions = ({
                         </Button>
                         <Button 
                           size="small" 
-                          style={{ backgroundColor: '#fa8c16', borderColor: '#fa8c16', color: 'white' }}
+                          style={{ backgroundColor: 'var(--color-warning)', borderColor: 'var(--color-warning)', color: 'white' }}
                           icon={<PictureOutlined />}
                           loading={generating === `${suggestion.id}-inline-style`}
                           onClick={() => handleGenerateVisual({...suggestion, testService: 'inline-style', id: `${suggestion.id}-inline-style`})}
@@ -273,16 +273,16 @@ const VisualContentSuggestions = ({
             >
               {/* Test Prompt Section */}
               <div style={{ marginBottom: 12 }}>
-                <Text strong style={{ fontSize: 13, color: '#1890ff' }}>Test Prompt:</Text>
+                <Text strong style={{ fontSize: 13, color: 'var(--color-primary)' }}>Test Prompt:</Text>
                 <div style={{ 
                   marginTop: 4, 
                   padding: 12, 
-                  background: '#f8f9fa', 
+                  background: 'var(--color-background-alt)', 
                   borderRadius: 6, 
                   fontSize: 12,
                   fontFamily: 'monospace',
                   lineHeight: '1.4',
-                  border: '1px solid #e1e5e9'
+                  border: '1px solid var(--color-border-base)'
                 }}>
                   {suggestion.prompt}
                 </div>
@@ -315,9 +315,9 @@ const VisualContentSuggestions = ({
                     <div style={{ 
                       padding: 16, 
                       textAlign: 'center', 
-                      background: '#fafafa', 
+                      background: 'var(--color-background-alt)', 
                       borderRadius: 4,
-                      border: '1px dashed #d9d9d9' 
+                      border: '1px dashed var(--color-gray-300)' 
                     }}>
                       <Text type="secondary" style={{ fontSize: 12 }}>
                         Click style buttons above to render highlight examples
@@ -342,17 +342,17 @@ const VisualContentSuggestions = ({
                         
                         return (
                           <div key={style} style={{ 
-                            border: '1px solid #e1e5e9', 
+                            border: '1px solid var(--color-border-base)', 
                             borderRadius: 8, 
                             padding: 8, 
                             textAlign: 'center',
-                            background: imageData ? '#fff' : '#f8f9fa'
+                            background: imageData ? 'var(--color-white)' : 'var(--color-background-alt)'
                           }}>
                             <div style={{ 
                               fontSize: 11, 
                               fontWeight: 'bold', 
                               marginBottom: 8,
-                              color: style === 'pullout-style' ? '#52c41a' : style === 'box-style' ? '#722ed1' : '#fa8c16'
+                              color: style === 'pullout-style' ? 'var(--color-success)' : style === 'box-style' ? 'var(--color-primary)' : 'var(--color-warning)'
                             }}>
                               {styleName}
                             </div>
@@ -367,7 +367,7 @@ const VisualContentSuggestions = ({
                                   height: '150px', 
                                   objectFit: 'cover',
                                   borderRadius: 4,
-                                  border: '1px solid #d9d9d9',
+                                  border: '1px solid var(--color-gray-300)',
                                   cursor: 'pointer'
                                 }}
                                 onClick={() => setZoomModal({
@@ -385,12 +385,12 @@ const VisualContentSuggestions = ({
                                 width: '100%', 
                                 maxWidth: '200px',
                                 height: '150px', 
-                                border: '1px dashed #d9d9d9',
+                                border: '1px dashed var(--color-gray-300)',
                                 borderRadius: 4,
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                color: '#999',
+                                color: 'var(--color-text-tertiary)',
                                 fontSize: 11
                               }}>
                                 Click button above
@@ -408,7 +408,7 @@ const VisualContentSuggestions = ({
         </div>
 
         {/* Cost Summary */}
-        <div style={{ marginTop: 16, padding: 12, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
+        <div style={{ marginTop: 16, padding: 12, background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 6 }}>
           <Text style={{ fontSize: 12 }}>
             <strong>Total estimated cost:</strong> ${' '}
             {validSuggestions.reduce((sum, s) => sum + (s.estimatedCost || 0), 0).toFixed(3)}
@@ -440,7 +440,7 @@ const VisualContentSuggestions = ({
                 maxWidth: '100%', 
                 maxHeight: '70vh', 
                 objectFit: 'contain',
-                border: '1px solid #d9d9d9',
+                border: '1px solid var(--color-gray-300)',
                 borderRadius: 4
               }}
             />

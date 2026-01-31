@@ -19,7 +19,7 @@ const OverviewTab = () => {
               title="Total Posts"
               value={23}
               prefix={<FileTextOutlined />}
-              valueStyle={{ color: '#3f8600' }}
+              valueStyle={{ color: 'var(--color-success)' }}
             />
           </Card>
         </Col>
@@ -29,7 +29,7 @@ const OverviewTab = () => {
               title="Projects"
               value={4}
               prefix={<FolderOutlined />}
-              valueStyle={{ color: '#1890ff' }}
+              valueStyle={{ color: 'var(--color-primary)' }}
             />
           </Card>
         </Col>
@@ -39,7 +39,7 @@ const OverviewTab = () => {
               title="Total Views"
               value={1284}
               prefix={<EyeOutlined />}
-              valueStyle={{ color: '#722ed1' }}
+              valueStyle={{ color: 'var(--color-primary)' }}
             />
           </Card>
         </Col>
@@ -50,7 +50,7 @@ const OverviewTab = () => {
               value={93}
               suffix="%"
               prefix={<TrophyOutlined />}
-              valueStyle={{ color: '#f5222d' }}
+              valueStyle={{ color: 'var(--color-error)' }}
             />
           </Card>
         </Col>
@@ -75,14 +75,14 @@ const OverviewTab = () => {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
           <Card title="Recent Posts" extra={<a href="#posts">View All</a>}>
-            <div style={{ color: '#666' }}>
+            <div style={{ color: 'var(--color-text-secondary)' }}>
               Your recent blog posts will appear here once you create them.
             </div>
           </Card>
         </Col>
         <Col xs={24} lg={12}>
           <Card title="Recent Projects" extra={<a href="#projects">View All</a>}>
-            <div style={{ color: '#666' }}>
+            <div style={{ color: 'var(--color-text-secondary)' }}>
               Your recent projects will appear here once you create them.
             </div>
           </Card>

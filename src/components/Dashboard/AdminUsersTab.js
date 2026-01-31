@@ -182,7 +182,7 @@ const AdminUsersTab = () => {
           <Avatar 
             size="small" 
             icon={<UserOutlined />}
-            style={{ backgroundColor: '#1890ff' }}
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             {record.firstName?.[0]}{record.lastName?.[0]}
           </Avatar>
@@ -420,7 +420,7 @@ const AdminUsersTab = () => {
                       <Avatar 
                         size={64} 
                         icon={<UserOutlined />}
-                        style={{ backgroundColor: '#1890ff' }}
+                        style={{ backgroundColor: 'var(--color-primary)' }}
                       >
                         {selectedUser.firstName?.[0]}{selectedUser.lastName?.[0]}
                       </Avatar>

@@ -93,7 +93,7 @@ const ProfileSettings = () => {
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>👤 Personal Information</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>👤 Personal Information</Title>
           </Col>
           <Col>
             <Tag color="green">✓ Database Connected</Tag>
@@ -143,19 +143,19 @@ const ProfileSettings = () => {
                 disabled
                 style={{ marginTop: '8px' }}
                 suffix={
-                  <Text style={{ fontSize: '12px', color: '#666' }}>
+                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {user?.organizationRole ? `(${user.organizationRole})` : ''}
                   </Text>
                 }
               />
             )}
             {!canEditOrganization && (
-              <Text style={{ fontSize: '12px', color: '#666', display: 'block', marginTop: '4px' }}>
+              <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'block', marginTop: '4px' }}>
                 Only organization owners can modify the organization name. Contact your admin to make changes.
               </Text>
             )}
             {!hasOrganization && (
-              <Text style={{ fontSize: '12px', color: '#52c41a', display: 'block', marginTop: '4px' }}>
+              <Text style={{ fontSize: '12px', color: 'var(--color-success)', display: 'block', marginTop: '4px' }}>
                 Enter an organization name to create a new organization (you'll become the owner).
               </Text>
             )}
@@ -171,14 +171,14 @@ const ProfileSettings = () => {
                 onChange={(e) => setProfileData({ ...profileData, organizationWebsite: e.target.value })}
                 placeholder={hasOrganization ? "Update organization website" : "Organization website (optional)"}
                 style={{ marginTop: '8px' }}
-                prefix={<span style={{ color: '#666' }}>🌐</span>}
+                prefix={<span style={{ color: 'var(--color-text-secondary)' }}>🌐</span>}
               />
             ) : (
               <Input
                 value={profileData.organizationWebsite}
                 disabled
                 style={{ marginTop: '8px' }}
-                prefix={<span style={{ color: '#666' }}>🌐</span>}
+                prefix={<span style={{ color: 'var(--color-text-secondary)' }}>🌐</span>}
               />
             )}
             {profileData.organizationWebsite && (
@@ -211,10 +211,10 @@ const ProfileSettings = () => {
       </Card>
 
       {/* Account Security */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #1890ff' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-primary)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>🔐 Account Security</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-primary)' }}>🔐 Account Security</Title>
           </Col>
           <Col>
             <Tag color="blue">Password Protection</Tag>
@@ -264,7 +264,7 @@ const ProfileSettings = () => {
               type="primary" 
               onClick={handlePasswordChange}
               loading={changingPassword}
-              style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+              style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
             >
               {changingPassword ? 'Changing Password...' : 'Change Password'}
             </Button>
@@ -281,7 +281,7 @@ const ProfileSettings = () => {
               <Statistic
                 title="Account Type"
                 value={user?.role?.toUpperCase() || 'USER'}
-                valueStyle={{ color: '#1890ff', fontSize: '16px' }}
+                valueStyle={{ color: 'var(--color-primary)', fontSize: '16px' }}
               />
             </Card>
           </Col>
@@ -290,7 +290,7 @@ const ProfileSettings = () => {
               <Statistic
                 title="Member Since"
                 value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
-                valueStyle={{ color: '#52c41a', fontSize: '14px' }}
+                valueStyle={{ color: 'var(--color-success)', fontSize: '14px' }}
               />
             </Card>
           </Col>
@@ -318,7 +318,7 @@ const ProfileSettings = () => {
                 }}
               />
               {hasOrganization && (
-                <Text style={{ fontSize: '11px', color: '#666' }}>
+                <Text style={{ fontSize: '11px', color: 'var(--color-text-secondary)' }}>
                   in {user.organizationName}
                 </Text>
               )}
@@ -428,7 +428,7 @@ const OrganizationSettings = () => {
         <div>
           <Text strong>{record.first_name} {record.last_name}</Text>
           <br />
-          <Text style={{ color: '#666', fontSize: '12px' }}>{record.email}</Text>
+          <Text style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{record.email}</Text>
         </div>
       ),
     },
@@ -479,10 +479,10 @@ const OrganizationSettings = () => {
   return (
     <div style={{ padding: '20px 0' }}>
       {/* Organization Overview */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #1890ff' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-primary)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>🏢 {orgData.organization.name}</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-primary)' }}>🏢 {orgData.organization.name}</Title>
           </Col>
           <Col>
             <Tag color="blue">✓ Database Connected</Tag>
@@ -495,8 +495,8 @@ const OrganizationSettings = () => {
               <Statistic
                 title="Total Members"
                 value={orgData.members?.length || 0}
-                prefix={<TeamOutlined style={{ color: '#1890ff' }} />}
-                valueStyle={{ color: '#1890ff', fontSize: '20px' }}
+                prefix={<TeamOutlined style={{ color: 'var(--color-primary)' }} />}
+                valueStyle={{ color: 'var(--color-primary)', fontSize: '20px' }}
               />
             </Card>
           </Col>
@@ -505,7 +505,7 @@ const OrganizationSettings = () => {
               <Statistic
                 title="Your Role"
                 value={orgData.organization.userRole?.toUpperCase() || 'MEMBER'}
-                valueStyle={{ color: '#1890ff', fontSize: '16px' }}
+                valueStyle={{ color: 'var(--color-primary)', fontSize: '16px' }}
               />
             </Card>
           </Col>
@@ -514,8 +514,8 @@ const OrganizationSettings = () => {
               <Statistic
                 title="Active Members"
                 value={orgData.members?.filter(m => m.status === 'active')?.length || 0}
-                prefix={<UserOutlined style={{ color: '#52c41a' }} />}
-                valueStyle={{ color: '#52c41a', fontSize: '20px' }}
+                prefix={<UserOutlined style={{ color: 'var(--color-success)' }} />}
+                valueStyle={{ color: 'var(--color-success)', fontSize: '20px' }}
               />
             </Card>
           </Col>
@@ -534,7 +534,7 @@ const OrganizationSettings = () => {
         <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
           <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
             <Col>
-              <Title level={4} style={{ margin: 0, color: '#52c41a' }}>➕ Invite Team Member</Title>
+              <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>➕ Invite Team Member</Title>
             </Col>
           </Row>
           
@@ -572,7 +572,7 @@ const OrganizationSettings = () => {
             >
               {sendingInvite ? 'Sending Invitation...' : 'Send Team Invitation'}
             </Button>
-            <Text style={{ fontSize: '12px', color: '#666' }}>
+            <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
               Team invitations do not provide referral rewards - they're for collaboration only
             </Text>
           </Space>
@@ -691,7 +691,7 @@ const BillingSettings = () => {
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>💳 Current Billing Status</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>💳 Current Billing Status</Title>
           </Col>
           <Col>
             <Tag color="green">✓ Database Connected</Tag>
@@ -705,9 +705,9 @@ const BillingSettings = () => {
                 title="Current Month Usage"
                 value={estimatedBill}
                 prefix="$"
-                valueStyle={{ color: '#52c41a', fontSize: '24px' }}
+                valueStyle={{ color: 'var(--color-success)', fontSize: '24px' }}
               />
-              <Text style={{ color: '#666', fontSize: '12px' }}>{currentUsage} posts generated</Text>
+              <Text style={{ color: 'var(--color-text-secondary)', fontSize: '12px' }}>{currentUsage} posts generated</Text>
             </Card>
           </Col>
           <Col xs={24} sm={8}>
@@ -715,7 +715,7 @@ const BillingSettings = () => {
               <Statistic
                 title="Plan Type"
                 value={user?.billingStatus || 'Pay-as-you-go'}
-                valueStyle={{ color: '#1890ff', fontSize: '16px' }}
+                valueStyle={{ color: 'var(--color-primary)', fontSize: '16px' }}
               />
             </Card>
           </Col>
@@ -739,10 +739,10 @@ const BillingSettings = () => {
       </Card>
 
       {/* Billing Information */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #1890ff' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-primary)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>🏢 Billing Information</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-primary)' }}>🏢 Billing Information</Title>
           </Col>
         </Row>
 
@@ -827,7 +827,7 @@ const BillingSettings = () => {
               type="primary" 
               onClick={handleSaveBillingInfo}
               loading={savingBillingInfo}
-              style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+              style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
             >
               {savingBillingInfo ? 'Saving...' : 'Save Billing Information'}
             </Button>
@@ -958,7 +958,7 @@ const ReferralSettings = () => {
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>🎁 Your Referral Statistics</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>🎁 Your Referral Statistics</Title>
           </Col>
           <Col>
             <Tag color="green">✓ Live Database Data</Tag>
@@ -971,8 +971,8 @@ const ReferralSettings = () => {
               <Statistic
                 title="Successful Referrals"
                 value={stats?.successfulReferrals || 0}
-                prefix={<TeamOutlined style={{ color: '#52c41a' }} />}
-                valueStyle={{ color: '#52c41a', fontSize: '20px' }}
+                prefix={<TeamOutlined style={{ color: 'var(--color-success)' }} />}
+                valueStyle={{ color: 'var(--color-success)', fontSize: '20px' }}
               />
             </Card>
           </Col>
@@ -981,8 +981,8 @@ const ReferralSettings = () => {
               <Statistic
                 title="Invites Sent"
                 value={stats?.inviteStats?.totalSent || 0}
-                prefix={<SendOutlined style={{ color: '#722ed1' }} />}
-                valueStyle={{ color: '#722ed1', fontSize: '20px' }}
+                prefix={<SendOutlined style={{ color: 'var(--color-accent)' }} />}
+                valueStyle={{ color: 'var(--color-accent)', fontSize: '20px' }}
               />
             </Card>
           </Col>
@@ -1000,7 +1000,7 @@ const ReferralSettings = () => {
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>🔗 Your Personal Referral Link</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>🔗 Your Personal Referral Link</Title>
           </Col>
           <Col>
             <Tag color="green">✓ {referralData?.referralCode}</Tag>
@@ -1024,7 +1024,7 @@ const ReferralSettings = () => {
                 Copy Link
               </Button>
             </Input.Group>
-            <Text style={{ fontSize: '12px', color: '#666', display: 'block', marginTop: '8px' }}>
+            <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', display: 'block', marginTop: '8px' }}>
               {referralData?.description || 'Share this link to earn 1 free blog post for each new customer!'}
             </Text>
           </Col>
@@ -1032,7 +1032,7 @@ const ReferralSettings = () => {
             <div style={{ textAlign: 'center' }}>
               <QRCode value={referralData?.referralLink || ''} size={100} />
               <br />
-              <Text style={{ fontSize: '12px', color: '#666', marginTop: '8px', display: 'block' }}>
+              <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '8px', display: 'block' }}>
                 QR Code for mobile sharing
               </Text>
             </div>
@@ -1044,7 +1044,7 @@ const ReferralSettings = () => {
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>📧 Send Referral Invitations</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>📧 Send Referral Invitations</Title>
           </Col>
           <Col>
             <Tag color="green">✓ Database Connected</Tag>
@@ -1060,7 +1060,7 @@ const ReferralSettings = () => {
         />
         
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Text strong style={{ color: '#52c41a' }}>Invite Friends by Email</Text>
+          <Text strong style={{ color: 'var(--color-success)' }}>Invite Friends by Email</Text>
           <Input.TextArea
             placeholder="Enter email addresses separated by commas&#10;e.g. friend1@email.com, friend2@email.com"
             value={inviteEmails}
@@ -1076,7 +1076,7 @@ const ReferralSettings = () => {
           >
             {sendingInvite ? 'Sending Invitations...' : 'Send Invitations'}
           </Button>
-          <Text style={{ fontSize: '12px', color: '#666' }}>
+          <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
             Each invitation will include your personal referral link and a message about the free blog post reward
           </Text>
         </Space>
@@ -1086,7 +1086,7 @@ const ReferralSettings = () => {
       <Card style={{ border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>📱 Social Sharing</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>📱 Social Sharing</Title>
           </Col>
           <Col>
             <Tag color="green">✓ Pure frontend functionality</Tag>
@@ -1221,7 +1221,7 @@ const SubscriptionSettings = () => {
       <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#52c41a' }}>📊 Current Plan</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>📊 Current Plan</Title>
           </Col>
           <Col>
             <Tag color="green" icon={<StarOutlined />}>
@@ -1233,15 +1233,15 @@ const SubscriptionSettings = () => {
           </Col>
         </Row>
         
-        <Paragraph style={{ color: '#666', marginBottom: '16px' }}>
+        <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '16px' }}>
           You're currently on the {billingStatus} plan. You have {usageLimit} posts available.
           {bonusCredits > 0 && (
-            <span style={{ color: '#52c41a' }}>
+            <span style={{ color: 'var(--color-success)' }}>
               <br />🎉 Including {bonusCredits} bonus post{bonusCredits > 1 ? 's' : ''} from referral rewards!
             </span>
           )}
           <br />
-          <Text style={{ color: '#52c41a', fontWeight: 500 }}>
+          <Text style={{ color: 'var(--color-success)', fontWeight: 500 }}>
             💡 Earn more free posts by referring friends! Check the Referrals tab.
           </Text>
         </Paragraph>
@@ -1252,19 +1252,19 @@ const SubscriptionSettings = () => {
               <Statistic
                 title="Posts Used"
                 value={currentUsage}
-                valueStyle={{ color: '#52c41a', fontSize: '24px' }}
+                valueStyle={{ color: 'var(--color-success)', fontSize: '24px' }}
               />
-              <Text style={{ color: '#52c41a', fontSize: '10px' }}>✓ Database tracking</Text>
+              <Text style={{ color: 'var(--color-success)', fontSize: '10px' }}>✓ Database tracking</Text>
             </Card>
           </Col>
           <Col xs={24} sm={6}>
-            <Card size="small" style={{ textAlign: 'center', border: '2px solid #1890ff' }}>
+            <Card size="small" style={{ textAlign: 'center', border: '2px solid var(--color-primary)' }}>
               <Statistic
                 title="Posts Remaining"
                 value={remainingPosts}
-                valueStyle={{ color: '#1890ff', fontSize: '24px' }}
+                valueStyle={{ color: 'var(--color-primary)', fontSize: '24px' }}
               />
-              <Text style={{ color: '#1890ff', fontSize: '10px' }}>✓ Real calculation</Text>
+              <Text style={{ color: 'var(--color-primary)', fontSize: '10px' }}>✓ Real calculation</Text>
             </Card>
           </Col>
           <Col xs={24} sm={6}>
@@ -1272,9 +1272,9 @@ const SubscriptionSettings = () => {
               <Statistic
                 title="Base Plan Posts"
                 value={userCredits?.baseCredits || 1}
-                valueStyle={{ color: '#722ed1', fontSize: '24px' }}
+                valueStyle={{ color: 'var(--color-accent)', fontSize: '24px' }}
               />
-              <Text style={{ color: '#722ed1', fontSize: '10px' }}>✓ Free plan</Text>
+              <Text style={{ color: 'var(--color-accent)', fontSize: '10px' }}>✓ Free plan</Text>
             </Card>
           </Col>
           <Col xs={24} sm={6}>
@@ -1293,10 +1293,10 @@ const SubscriptionSettings = () => {
       </Card>
 
       {/* Usage Analytics */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #1890ff' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-primary)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
-            <Title level={4} style={{ margin: 0, color: '#1890ff' }}>📈 Usage Analytics</Title>
+            <Title level={4} style={{ margin: 0, color: 'var(--color-primary)' }}>📈 Usage Analytics</Title>
           </Col>
           <Col>
             <Tag color="blue">Last 30 Days</Tag>
@@ -1337,12 +1337,12 @@ const SubscriptionSettings = () => {
           <Col xs={24} lg={8}>
             <Card size="small" style={{ border: billingStatus === 'Pay-as-you-go' ? '2px solid #52c41a' : '1px solid #d9d9d9' }}>
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Text strong style={{ color: '#52c41a' }}>Pay-as-you-go</Text>
+                <Text strong style={{ color: 'var(--color-success)' }}>Pay-as-you-go</Text>
                 <div>
                   <Text style={{ fontSize: '20px', fontWeight: 600 }}>$15</Text>
-                  <Text style={{ color: '#666' }}>/post</Text>
+                  <Text style={{ color: 'var(--color-text-secondary)' }}>/post</Text>
                 </div>
-                <Text style={{ fontSize: '12px', color: '#666' }}>Perfect for occasional use</Text>
+                <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Perfect for occasional use</Text>
                 {billingStatus === 'Pay-as-you-go' ? (
                   <Tag color="green">Current Plan</Tag>
                 ) : (
@@ -1358,14 +1358,14 @@ const SubscriptionSettings = () => {
             </Card>
           </Col>
           <Col xs={24} lg={8}>
-            <Card size="small" style={{ border: billingStatus === 'Creator' ? '2px solid #1890ff' : '1px solid #d9d9d9' }}>
+            <Card size="small" style={{ border: billingStatus === 'Creator' ? '2px solid var(--color-primary)' : '1px solid #d9d9d9' }}>
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Text strong style={{ color: '#1890ff' }}>Creator</Text>
+                <Text strong style={{ color: 'var(--color-primary)' }}>Creator</Text>
                 <div>
                   <Text style={{ fontSize: '20px', fontWeight: 600 }}>$20</Text>
-                  <Text style={{ color: '#666' }}>/month</Text>
+                  <Text style={{ color: 'var(--color-text-secondary)' }}>/month</Text>
                 </div>
-                <Text style={{ fontSize: '12px', color: '#666' }}>4 posts/month + priority support</Text>
+                <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>4 posts/month + priority support</Text>
                 {billingStatus === 'Creator' ? (
                   <Tag color="blue">Current Plan</Tag>
                 ) : (
@@ -1374,7 +1374,7 @@ const SubscriptionSettings = () => {
                     size="small" 
                     onClick={() => handlePlanRequest('Creator')}
                     loading={requestingPlan}
-                    style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+                    style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
                   >
                     Upgrade to Creator
                   </Button>
@@ -1385,12 +1385,12 @@ const SubscriptionSettings = () => {
           <Col xs={24} lg={8}>
             <Card size="small" style={{ border: billingStatus === 'Professional' ? '2px solid #722ed1' : '1px solid #d9d9d9' }}>
               <Space direction="vertical" style={{ width: '100%' }}>
-                <Text strong style={{ color: '#722ed1' }}>Professional</Text>
+                <Text strong style={{ color: 'var(--color-accent)' }}>Professional</Text>
                 <div>
                   <Text style={{ fontSize: '20px', fontWeight: 600 }}>$50</Text>
-                  <Text style={{ color: '#666' }}>/month</Text>
+                  <Text style={{ color: 'var(--color-text-secondary)' }}>/month</Text>
                 </div>
-                <Text style={{ fontSize: '12px', color: '#666' }}>8 posts + unlimited strategies + white-label</Text>
+                <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>8 posts + unlimited strategies + white-label</Text>
                 {billingStatus === 'Professional' ? (
                   <Tag color="purple">Current Plan</Tag>
                 ) : (

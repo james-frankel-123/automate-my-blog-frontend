@@ -118,11 +118,11 @@ const ComprehensiveAnalysis = ({
 
   // Get score color based on value
   const getScoreColor = (score) => {
-    if (score >= 90) return '#52c41a'; // Green
-    if (score >= 80) return '#1890ff'; // Blue  
-    if (score >= 70) return '#faad14'; // Orange
-    if (score >= 60) return '#fa8c16'; // Dark orange
-    return '#f5222d'; // Red
+    if (score >= 90) return 'var(--color-success)'; // Green
+    if (score >= 80) return 'var(--color-primary)'; // Blue
+    if (score >= 70) return 'var(--color-warning)'; // Orange
+    if (score >= 60) return 'var(--color-warning)'; // Dark orange
+    return 'var(--color-error)'; // Red
   };
 
   // Get score status based on value
@@ -224,10 +224,10 @@ const ComprehensiveAnalysis = ({
       <Card style={{ marginBottom: '16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div style={{ flex: 1 }}>
-            <Title level={3} style={{ margin: 0, color: '#1890ff' }}>
+            <Title level={3} style={{ margin: 0, color: 'var(--color-primary)' }}>
               🧠 Comprehensive SEO Analysis
             </Title>
-            <Paragraph style={{ marginBottom: '8px', color: '#666' }}>
+            <Paragraph style={{ marginBottom: '8px', color: 'var(--color-text-secondary)' }}>
               Educational insights to help your content attract and convert customers
             </Paragraph>
             
@@ -285,7 +285,7 @@ const ComprehensiveAnalysis = ({
               indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />}
               size="large"
             />
-            <Title level={4} style={{ marginTop: '16px', color: '#1890ff' }}>
+            <Title level={4} style={{ marginTop: '16px', color: 'var(--color-primary)' }}>
               Analyzing Your Content...
             </Title>
             <Paragraph>
@@ -347,12 +347,12 @@ const ComprehensiveAnalysis = ({
                 {/* Top Strengths & Improvements */}
                 <div style={{ display: 'flex', gap: '24px' }}>
                   <div style={{ flex: 1 }}>
-                    <Text strong style={{ color: '#52c41a', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Text strong style={{ color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <TrophyOutlined /> Top Strengths
                     </Text>
                     <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                       {(analysis.topStrengths || []).map((strength, index) => (
-                        <li key={index} style={{ color: '#52c41a', marginBottom: '4px' }}>
+                        <li key={index} style={{ color: 'var(--color-success)', marginBottom: '4px' }}>
                           <Text>{strength}</Text>
                         </li>
                       ))}
@@ -360,12 +360,12 @@ const ComprehensiveAnalysis = ({
                   </div>
 
                   <div style={{ flex: 1 }}>
-                    <Text strong style={{ color: '#fa8c16', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Text strong style={{ color: 'var(--color-warning)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <BulbOutlined /> Top Improvements
                     </Text>
                     <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
                       {(analysis.topImprovements || []).map((improvement, index) => (
-                        <li key={index} style={{ color: '#fa8c16', marginBottom: '4px' }}>
+                        <li key={index} style={{ color: 'var(--color-warning)', marginBottom: '4px' }}>
                           <Text>{improvement}</Text>
                         </li>
                       ))}
@@ -451,7 +451,7 @@ const ComprehensiveAnalysis = ({
       {!analysis && !loading && !error && (
         <Card>
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <RocketOutlined style={{ fontSize: '48px', color: '#1890ff', marginBottom: '16px' }} />
+            <RocketOutlined style={{ fontSize: '48px', color: 'var(--color-primary)', marginBottom: '16px' }} />
             <Title level={4}>Ready to Analyze Your Content</Title>
             <Paragraph>
               Add at least 200 characters of content to get comprehensive SEO insights that will help you 

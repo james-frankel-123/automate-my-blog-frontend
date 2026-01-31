@@ -47,23 +47,23 @@ const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSucc
     >
       {/* Premium Features Header */}
       <div style={{ 
-        textAlign: 'center', 
+        textAlign: 'center',
         marginBottom: '24px',
         padding: '20px',
-        background: 'linear-gradient(135deg, #f0f8ff 0%, #e6f7ff 100%)',
+        background: 'linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-primary-100) 100%)',
         borderRadius: '8px',
-        border: '1px solid #91d5ff'
+        border: '1px solid var(--color-primary-200)'
       }}>
         <LockOutlined style={{ 
           fontSize: '32px', 
-          color: '#1890ff', 
+          color: 'var(--color-primary)', 
           marginBottom: '12px',
           display: 'block' 
         }} />
-        <Title level={3} style={{ margin: '0 0 8px 0', color: '#1890ff' }}>
+        <Title level={3} style={{ margin: '0 0 8px 0', color: 'var(--color-primary)' }}>
           Unlock Premium Features
         </Title>
-        <Text style={{ color: '#666', fontSize: '14px' }}>
+        <Text style={{ color: 'var(--color-text-secondary)', fontSize: '14px' }}>
           Get access to advanced strategies, unlimited content generation, and premium tools
         </Text>
         
@@ -75,16 +75,16 @@ const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSucc
           flexWrap: 'wrap'
         }}>
           <div style={{ textAlign: 'center' }}>
-            <StarOutlined style={{ fontSize: '20px', color: '#52c41a', display: 'block', marginBottom: '4px' }} />
-            <Text style={{ fontSize: '12px', color: '#666' }}>Additional Strategies</Text>
+            <StarOutlined style={{ fontSize: '20px', color: 'var(--color-success)', display: 'block', marginBottom: '4px' }} />
+            <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Additional Strategies</Text>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <ThunderboltOutlined style={{ fontSize: '20px', color: '#fa8c16', display: 'block', marginBottom: '4px' }} />
-            <Text style={{ fontSize: '12px', color: '#666' }}>Unlimited Content</Text>
+            <ThunderboltOutlined style={{ fontSize: '20px', color: 'var(--color-warning)', display: 'block', marginBottom: '4px' }} />
+            <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Unlimited Content</Text>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <LockOutlined style={{ fontSize: '20px', color: '#722ed1', display: 'block', marginBottom: '4px' }} />
-            <Text style={{ fontSize: '12px', color: '#666' }}>Premium Tools</Text>
+            <LockOutlined style={{ fontSize: '20px', color: 'var(--color-primary)', display: 'block', marginBottom: '4px' }} />
+            <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Premium Tools</Text>
           </div>
         </div>
       </div>
