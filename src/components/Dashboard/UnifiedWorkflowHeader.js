@@ -364,7 +364,11 @@ const UnifiedWorkflowHeader = ({
         textAlign: 'center',
         padding: '24px',
         position: 'relative',
-        cursor: enableSequentialAnimation && !animationComplete ? 'pointer' : 'default'
+        cursor: enableSequentialAnimation && !animationComplete ? 'pointer' : 'default',
+        transform: !inputIsEditing ? 'translateY(-100%)' : 'translateY(0)',
+        opacity: !inputIsEditing ? 0 : 1,
+        transition: 'all 0.3s ease',
+        pointerEvents: !inputIsEditing ? 'none' : 'auto'
       }}
       onClick={enableSequentialAnimation && !animationComplete ? handleSkipAnimation : undefined}
       >
@@ -372,7 +376,7 @@ const UnifiedWorkflowHeader = ({
           // Typewriter animation mode
           <div
             style={{
-              opacity: !inputIsEditing ? 0 : (dimText ? 0.4 : 1),
+              opacity: dimText ? 0.4 : 1,
               transition: 'all 0.3s ease',
               pointerEvents: 'none',
               position: 'relative'
