@@ -35,12 +35,19 @@ const UnifiedWorkflowHeader = ({
   const [previousUser, setPreviousUser] = useState(user);
   const [showGradientSweep, setShowGradientSweep] = useState(false);
 
-  // Sequential animation state
-  const [currentPhraseIndex, setCurrentPhraseIndex] = useState(-1);
-  const [visiblePhrases, setVisiblePhrases] = useState(new Set());
+  // Typewriter animation state
+  const [displayedTitle, setDisplayedTitle] = useState('');
+  const [displayedSubtitle, setDisplayedSubtitle] = useState('');
+  const [showTitleCursor, setShowTitleCursor] = useState(true);
+  const [showSubtitleCursor, setShowSubtitleCursor] = useState(false);
+  const [titleComplete, setTitleComplete] = useState(false);
+  const [subtitleComplete, setSubtitleComplete] = useState(false);
+  const [showFlash, setShowFlash] = useState(null); // 'title', 'subtitle', or 'ding'
+  const [cursorRemoved, setCursorRemoved] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
   const [dimText, setDimText] = useState(false);
+  const [dingPosition, setDingPosition] = useState(null);
 
   // Trigger text transition animation when auth state changes
   useEffect(() => {
@@ -61,51 +68,106 @@ const UnifiedWorkflowHeader = ({
     }
   }, [user, previousUser]);
 
-  // Sequential animation effect
+  // Typewriter animation effect
   useEffect(() => {
     if (!enableSequentialAnimation) return;
 
     // Check if animation has already played this session
-    const animationKey = 'autoblog-step0-animation-played';
+    const animationKey = 'autoblog-step0-typewriter-played';
     const hasPlayed = sessionStorage.getItem(animationKey);
 
     if (hasPlayed) {
+      // Show full text immediately
+      setDisplayedTitle(systemVoice.header.step0Title);
+      setDisplayedSubtitle(systemVoice.header.step0Description);
+      setShowTitleCursor(false);
+      setShowSubtitleCursor(false);
+      setTitleComplete(true);
+      setSubtitleComplete(true);
+      setCursorRemoved(true);
       setSkipAnimation(true);
       setAnimationComplete(true);
-      setVisiblePhrases(new Set([0]));
       onSequenceComplete?.();
       return;
     }
 
-    // Simplified timing - just title animation then input reveal
+    const fullTitle = systemVoice.header.step0Title;
+    const fullSubtitle = systemVoice.header.step0Description;
+    const charDelay = 50; // 50ms per character
     const timeouts = [];
 
-    // Show title immediately
-    const titleTimeout = setTimeout(() => {
-      setVisiblePhrases(new Set([0]));
-      setCurrentPhraseIndex(0);
-    }, 0);
-    timeouts.push(titleTimeout);
+    // Type title character by character
+    for (let i = 0; i <= fullTitle.length; i++) {
+      const timeout = setTimeout(() => {
+        setDisplayedTitle(fullTitle.slice(0, i));
 
-    // Mark animation complete and notify parent after 2 seconds
-    const completeTimeout = setTimeout(() => {
-      setAnimationComplete(true);
-      sessionStorage.setItem(animationKey, 'true');
-      onSequenceComplete?.();
+        if (i === fullTitle.length) {
+          // Title complete - flash it
+          setTitleComplete(true);
+          setShowFlash('title');
 
-      // Dim text after input appears (300ms delay for input fade-in)
-      const dimTimeout = setTimeout(() => {
-        setDimText(true);
+          const flashTimeout = setTimeout(() => setShowFlash(null), 200);
+          timeouts.push(flashTimeout);
 
-        // Auto un-dim after 5 seconds
-        const undimTimeout = setTimeout(() => {
-          setDimText(false);
-        }, 5000);
-        timeouts.push(undimTimeout);
-      }, 300);
-      timeouts.push(dimTimeout);
-    }, 2000); // Title appears, wait 2s, then show input
-    timeouts.push(completeTimeout);
+          // Hide title cursor, show subtitle cursor after flash
+          const cursorTimeout = setTimeout(() => {
+            setShowTitleCursor(false);
+            setShowSubtitleCursor(true);
+          }, 200);
+          timeouts.push(cursorTimeout);
+        }
+      }, i * charDelay);
+      timeouts.push(timeout);
+    }
+
+    // Type subtitle (starts after title + flash delay)
+    const subtitleStartDelay = (fullTitle.length * charDelay) + 200;
+    for (let i = 0; i <= fullSubtitle.length; i++) {
+      const timeout = setTimeout(() => {
+        setDisplayedSubtitle(fullSubtitle.slice(0, i));
+
+        if (i === fullSubtitle.length) {
+          // Subtitle complete - flash it
+          setSubtitleComplete(true);
+          setShowFlash('subtitle');
+
+          const flashTimeout = setTimeout(() => setShowFlash(null), 200);
+          timeouts.push(flashTimeout);
+
+          // Remove cursor with ding effect
+          const dingTimeout = setTimeout(() => {
+            setShowSubtitleCursor(false);
+            setShowFlash('ding');
+            setCursorRemoved(true);
+
+            const dingEndTimeout = setTimeout(() => setShowFlash(null), 200);
+            timeouts.push(dingEndTimeout);
+
+            // Mark animation complete
+            const completeTimeout = setTimeout(() => {
+              setAnimationComplete(true);
+              sessionStorage.setItem(animationKey, 'true');
+              onSequenceComplete?.();
+
+              // Dim text after input appears (300ms delay for input fade-in)
+              const dimTimeout = setTimeout(() => {
+                setDimText(true);
+
+                // Auto un-dim after 5 seconds
+                const undimTimeout = setTimeout(() => {
+                  setDimText(false);
+                }, 5000);
+                timeouts.push(undimTimeout);
+              }, 300);
+              timeouts.push(dimTimeout);
+            }, 200);
+            timeouts.push(completeTimeout);
+          }, 200);
+          timeouts.push(dingTimeout);
+        }
+      }, subtitleStartDelay + (i * charDelay));
+      timeouts.push(timeout);
+    }
 
     // Cleanup timeouts on unmount
     return () => {
@@ -117,11 +179,18 @@ const UnifiedWorkflowHeader = ({
   const handleSkipAnimation = () => {
     if (animationComplete || !enableSequentialAnimation) return;
 
+    // Show full text immediately
+    setDisplayedTitle(systemVoice.header.step0Title);
+    setDisplayedSubtitle(systemVoice.header.step0Description);
+    setShowTitleCursor(false);
+    setShowSubtitleCursor(false);
+    setTitleComplete(true);
+    setSubtitleComplete(true);
+    setCursorRemoved(true);
     setSkipAnimation(true);
-    setVisiblePhrases(new Set([0]));
     setAnimationComplete(true);
 
-    const animationKey = 'autoblog-step0-animation-played';
+    const animationKey = 'autoblog-step0-typewriter-played';
     sessionStorage.setItem(animationKey, 'true');
     onSequenceComplete?.();
 
@@ -273,13 +342,14 @@ const UnifiedWorkflowHeader = ({
       onClick={enableSequentialAnimation && !animationComplete ? handleSkipAnimation : undefined}
       >
         {enableSequentialAnimation ? (
-          // Sequential animation mode
+          // Typewriter animation mode
           <div
             style={{
               minHeight: '200px',
               opacity: dimText ? 0.3 : 1,
               transition: 'opacity 0.5s ease-out',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              position: 'relative'
             }}
             onClick={(e) => {
               if (dimText) {
@@ -288,34 +358,61 @@ const UnifiedWorkflowHeader = ({
               }
             }}
           >
-            {visiblePhrases.has(0) && (
-              <div
-                style={{
-                  animation: skipAnimation ? 'none' : 'phraseReveal 0.6s ease-out forwards',
-                  opacity: 1
-                }}
-              >
-                <Title level={2} style={{
-                  color: 'var(--color-primary)',
-                  marginBottom: 'var(--space-2)',
-                  fontFamily: 'var(--font-family-display)',
-                  fontSize: 'var(--font-size-3xl)',
-                  fontWeight: 'var(--font-weight-semibold)',
-                  letterSpacing: 'var(--letter-spacing-tight)'
-                }}>
-                  {systemVoice.header.step0Title}
-                </Title>
-                <Paragraph style={{
-                  color: 'var(--color-text-secondary)',
-                  fontSize: 'var(--font-size-lg)',
-                  marginBottom: 0,
-                  maxWidth: '800px',
-                  margin: '0 auto',
-                  lineHeight: 'var(--line-height-relaxed)'
-                }}>
-                  {systemVoice.header.step0Description}
-                </Paragraph>
-              </div>
+            {/* Title with typewriter effect */}
+            <div
+              className={showFlash === 'title' ? 'flash-highlight' : ''}
+              style={{
+                marginBottom: 'var(--space-2)',
+                display: 'inline-block'
+              }}
+            >
+              <Title level={2} style={{
+                color: 'var(--color-primary)',
+                marginBottom: 0,
+                fontFamily: 'var(--font-family-display)',
+                fontSize: 'var(--font-size-3xl)',
+                fontWeight: 'var(--font-weight-semibold)',
+                letterSpacing: 'var(--letter-spacing-tight)',
+                display: 'inline'
+              }}>
+                {displayedTitle}
+              </Title>
+              {showTitleCursor && (
+                <span className="typewriter-cursor" style={{ verticalAlign: 'middle' }} />
+              )}
+            </div>
+
+            {/* Subtitle with typewriter effect */}
+            <div
+              className={showFlash === 'subtitle' ? 'flash-highlight' : ''}
+              style={{
+                display: 'inline-block',
+                maxWidth: '800px',
+                margin: '0 auto'
+              }}
+            >
+              <Paragraph style={{
+                color: 'var(--color-text-secondary)',
+                fontSize: 'var(--font-size-lg)',
+                marginBottom: 0,
+                lineHeight: 'var(--line-height-relaxed)',
+                display: 'inline'
+              }}>
+                {displayedSubtitle}
+              </Paragraph>
+              {showSubtitleCursor && (
+                <span className="typewriter-cursor" style={{ verticalAlign: 'middle' }} />
+              )}
+            </div>
+
+            {/* Ding ripple effect */}
+            {showFlash === 'ding' && (
+              <div className="ding-effect" style={{
+                left: '50%',
+                top: '50%',
+                marginLeft: '-10px',
+                marginTop: '-10px'
+              }} />
             )}
           </div>
         ) : (
