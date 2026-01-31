@@ -360,13 +360,15 @@ const UnifiedWorkflowHeader = ({
   return (
     <>
       <div style={{
-        marginBottom: '24px',
+        marginBottom: !inputIsEditing ? '0' : '24px',
         textAlign: 'center',
-        padding: '24px',
+        padding: !inputIsEditing ? '0' : '24px',
         position: 'relative',
         cursor: enableSequentialAnimation && !animationComplete ? 'pointer' : 'default',
         transform: !inputIsEditing ? 'translateY(-100%)' : 'translateY(0)',
         opacity: !inputIsEditing ? 0 : 1,
+        height: !inputIsEditing ? '0' : 'auto',
+        overflow: !inputIsEditing ? 'hidden' : 'visible',
         transition: 'all 0.3s ease',
         pointerEvents: !inputIsEditing ? 'none' : 'auto'
       }}
