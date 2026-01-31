@@ -97,6 +97,9 @@ const WebsiteAnalysisStepStandalone = ({
   const [inputVisible, setInputVisible] = useState(!delayedReveal);
   const [showSparkle, setShowSparkle] = useState(false);
 
+  // Input editing mode state (controls button/icon visibility)
+  const [isEditing, setIsEditing] = useState(true);
+
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
   const currentScanningMessage = scanningMessage !== undefined ? scanningMessage : localScanningMessage;
@@ -142,8 +145,23 @@ const WebsiteAnalysisStepStandalone = ({
     }
   }, [showInput, inputVisible]);
 
-  // Remove sparkle on input focus or interaction
+  // Handle 0.5 second delay before hiding button/icon when loading starts
+  useEffect(() => {
+    if (loading && isEditing) {
+      // Wait 0.5 seconds before hiding button/icon and centering text
+      const timer = setTimeout(() => {
+        setIsEditing(false);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [loading, isEditing]);
+
+  // Remove sparkle on input focus or interaction, and restore editing mode
   const handleInputFocus = () => {
+    // Restore button and icon when user clicks to edit URL
+    setIsEditing(true);
+
     if (showSparkle) {
       setShowSparkle(false);
     }
@@ -583,32 +601,36 @@ const WebsiteAnalysisStepStandalone = ({
             onChange={(e) => setWebsiteUrl && setWebsiteUrl(e.target.value)}
             placeholder={systemVoice.analysis.inputPlaceholder}
             size="large"
-            prefix={<GlobalOutlined style={{ color: 'var(--color-text-tertiary)' }} />}
+            prefix={isEditing ? <GlobalOutlined style={{ color: 'var(--color-text-tertiary)' }} /> : null}
             disabled={shouldDisableInput || loading}
             onFocus={handleInputFocus}
             style={{
-              borderRadius: '8px 0 0 8px',
-              borderRight: 'none',
+              borderRadius: isEditing ? '8px 0 0 8px' : '8px',
+              borderRight: isEditing ? 'none' : undefined,
               fontSize: responsive.fontSize.text,
               backgroundColor: hasAnalysisRestriction ? 'var(--color-background-container)' : '#ffffff',
-              color: hasAnalysisRestriction ? 'var(--color-text-tertiary)' : undefined
+              color: hasAnalysisRestriction ? 'var(--color-text-tertiary)' : undefined,
+              textAlign: isEditing ? 'left' : 'center',
+              transition: 'all 0.3s ease'
             }}
             onPressEnter={handleWebsiteSubmit}
           />
-          <Button
-            type="primary"
-            size="large"
-            onClick={handleWebsiteSubmit}
-            loading={loading}
-            disabled={!websiteUrl?.trim()}
-            style={{
-              borderRadius: '0 8px 8px 0',
-              minWidth: '120px',
-              fontSize: responsive.fontSize.text
-            }}
-          >
-            {loading ? systemVoice.analysis.analyzing : systemVoice.analysis.analyze}
-          </Button>
+          {isEditing && (
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleWebsiteSubmit}
+              loading={loading}
+              disabled={!websiteUrl?.trim()}
+              style={{
+                borderRadius: '0 8px 8px 0',
+                minWidth: '120px',
+                fontSize: responsive.fontSize.text
+              }}
+            >
+              {loading ? systemVoice.analysis.analyzing : systemVoice.analysis.analyze}
+            </Button>
+          )}
         </Space.Compact>
       </Form>
       

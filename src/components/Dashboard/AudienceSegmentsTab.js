@@ -357,7 +357,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           hasMetrics: {
             searches: !!response.bundleOverview?.totalMonthlySearches,
             profit: !!response.bundleOverview?.projectedMonthlyProfit,
-            benefits: !!response.bundleOverview?.keyBenefits
+            audienceCount: response.bundleOverview?.audienceCount
           }
         });
         setBundlePricing(response.bundlePricing);
@@ -1360,22 +1360,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                       </Text>
                                     </div>
 
-                                    {/* Key Benefits */}
-                                    {bundleOverview.keyBenefits && bundleOverview.keyBenefits.length > 0 && (
-                                      <div style={{
-                                        background: 'rgba(255,255,255,0.1)',
-                                        backdropFilter: 'blur(10px)',
-                                        padding: '16px',
-                                        borderRadius: 'var(--radius-md)',
-                                        marginBottom: '16px'
-                                      }}>
-                                        {bundleOverview.keyBenefits.map((benefit, idx) => (
-                                          <Text key={idx} style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: idx < bundleOverview.keyBenefits.length - 1 ? '8px' : '0' }}>
-                                            ✓ {benefit}
-                                          </Text>
-                                        ))}
-                                      </div>
-                                    )}
                                   </>
                                 ) : (
                                   // Fallback to basic display while AI overview loads
@@ -1798,22 +1782,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                             </Text>
                           </div>
 
-                          {/* Key Benefits */}
-                          {bundleOverview.keyBenefits && bundleOverview.keyBenefits.length > 0 && (
-                            <div style={{
-                              background: 'rgba(255,255,255,0.1)',
-                              backdropFilter: 'blur(10px)',
-                              padding: '16px',
-                              borderRadius: 'var(--radius-md)',
-                              marginBottom: '16px'
-                            }}>
-                              {bundleOverview.keyBenefits.map((benefit, idx) => (
-                                <Text key={idx} style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: idx < bundleOverview.keyBenefits.length - 1 ? '8px' : '0' }}>
-                                  ✓ {benefit}
-                                </Text>
-                              ))}
-                            </div>
-                          )}
                         </>
                       ) : (
                         // Fallback to basic display while AI overview loads
