@@ -72,31 +72,22 @@ const UnifiedWorkflowHeader = ({
     if (hasPlayed) {
       setSkipAnimation(true);
       setAnimationComplete(true);
-      setVisiblePhrases(new Set([0, 1, 2, 3]));
+      setVisiblePhrases(new Set([0]));
       onSequenceComplete?.();
       return;
     }
 
-    // Phrase timing configuration (75% slower = 1.75x original timings)
-    const phraseTiming = [
-      { index: 0, delay: 0 },        // Immediate
-      { index: 1, delay: 1750 },     // 1000ms * 1.75
-      { index: 2, delay: 3150 },     // 1800ms * 1.75
-      { index: 3, delay: 4900 }      // 2800ms * 1.75
-    ];
-
+    // Simplified timing - just title animation then input reveal
     const timeouts = [];
 
-    // Schedule each phrase
-    phraseTiming.forEach(({ index, delay }) => {
-      const timeout = setTimeout(() => {
-        setVisiblePhrases(prev => new Set([...prev, index]));
-        setCurrentPhraseIndex(index);
-      }, delay);
-      timeouts.push(timeout);
-    });
+    // Show title immediately
+    const titleTimeout = setTimeout(() => {
+      setVisiblePhrases(new Set([0]));
+      setCurrentPhraseIndex(0);
+    }, 0);
+    timeouts.push(titleTimeout);
 
-    // Mark animation complete and notify parent
+    // Mark animation complete and notify parent after 2 seconds
     const completeTimeout = setTimeout(() => {
       setAnimationComplete(true);
       sessionStorage.setItem(animationKey, 'true');
@@ -113,7 +104,7 @@ const UnifiedWorkflowHeader = ({
         timeouts.push(undimTimeout);
       }, 300);
       timeouts.push(dimTimeout);
-    }, 7000); // 4000ms * 1.75
+    }, 2000); // Title appears, wait 2s, then show input
     timeouts.push(completeTimeout);
 
     // Cleanup timeouts on unmount
@@ -127,7 +118,7 @@ const UnifiedWorkflowHeader = ({
     if (animationComplete || !enableSequentialAnimation) return;
 
     setSkipAnimation(true);
-    setVisiblePhrases(new Set([0, 1, 2, 3]));
+    setVisiblePhrases(new Set([0]));
     setAnimationComplete(true);
 
     const animationKey = 'autoblog-step0-animation-played';
@@ -297,65 +288,35 @@ const UnifiedWorkflowHeader = ({
               }
             }}
           >
-            {systemVoice.header.step0Phrases.map((phrase, index) => {
-              // Skip phrase 2 here since it will be rendered inline with phrase 1
-              if (index === 2) return null;
-
-              return visiblePhrases.has(index) && (
-                <div
-                  key={`phrase-${index}`}
-                  style={{
-                    animation: skipAnimation ? 'none' : 'phraseReveal 0.6s ease-out forwards',
-                    opacity: 1,
-                    marginBottom: index === 0 ? 'var(--space-4)' : 'var(--space-2)'
-                  }}
-                >
-                  {index === 0 ? (
-                    <Title level={2} style={{
-                      color: 'var(--color-primary)',
-                      marginBottom: 0,
-                      fontFamily: 'var(--font-family-display)',
-                      fontSize: 'var(--font-size-3xl)',
-                      fontWeight: 'var(--font-weight-semibold)',
-                      letterSpacing: 'var(--letter-spacing-tight)'
-                    }}>
-                      🚀 {phrase}
-                    </Title>
-                  ) : index === 1 ? (
-                    <Paragraph style={{
-                      color: 'var(--color-text-secondary)',
-                      fontSize: 'var(--font-size-lg)',
-                      marginBottom: 0,
-                      maxWidth: '800px',
-                      margin: '0 auto',
-                      lineHeight: 'var(--line-height-relaxed)'
-                    }}>
-                      {phrase}
-                      {visiblePhrases.has(2) && (
-                        <span
-                          style={{
-                            animation: skipAnimation ? 'none' : 'phraseReveal 0.6s ease-out forwards'
-                          }}
-                        >
-                          {' '}{systemVoice.header.step0Phrases[2]}
-                        </span>
-                      )}
-                    </Paragraph>
-                  ) : (
-                    <Paragraph style={{
-                      color: 'var(--color-text-secondary)',
-                      fontSize: 'var(--font-size-lg)',
-                      marginBottom: 0,
-                      maxWidth: '800px',
-                      margin: '0 auto',
-                      lineHeight: 'var(--line-height-relaxed)'
-                    }}>
-                      {phrase}
-                    </Paragraph>
-                  )}
-                </div>
-              );
-            })}
+            {visiblePhrases.has(0) && (
+              <div
+                style={{
+                  animation: skipAnimation ? 'none' : 'phraseReveal 0.6s ease-out forwards',
+                  opacity: 1
+                }}
+              >
+                <Title level={2} style={{
+                  color: 'var(--color-primary)',
+                  marginBottom: 'var(--space-2)',
+                  fontFamily: 'var(--font-family-display)',
+                  fontSize: 'var(--font-size-3xl)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  letterSpacing: 'var(--letter-spacing-tight)'
+                }}>
+                  {systemVoice.header.step0Title}
+                </Title>
+                <Paragraph style={{
+                  color: 'var(--color-text-secondary)',
+                  fontSize: 'var(--font-size-lg)',
+                  marginBottom: 0,
+                  maxWidth: '800px',
+                  margin: '0 auto',
+                  lineHeight: 'var(--line-height-relaxed)'
+                }}>
+                  {systemVoice.header.step0Description}
+                </Paragraph>
+              </div>
+            )}
           </div>
         ) : (
           // Standard animation mode (existing behavior)
