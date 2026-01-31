@@ -157,38 +157,30 @@ const UnifiedWorkflowHeader = ({
         setDisplayedSubtitlePart2(subtitlePart2.slice(0, i));
 
         if (i === subtitlePart2.length) {
-          // Subtitle complete - NO FLASH, just ding effect
+          // Subtitle complete - hide cursor and mark complete
           setSubtitleComplete(true);
+          setShowSubtitleCursor(false);
+          setCursorRemoved(true);
 
-          const dingTimeout = setTimeout(() => {
-            setShowSubtitleCursor(false);
-            setShowFlash('ding');
-            setCursorRemoved(true);
+          // Mark animation complete
+          const completeTimeout = setTimeout(() => {
+            setAnimationComplete(true);
+            sessionStorage.setItem(animationKey, 'true');
+            onSequenceComplete?.();
 
-            const dingEndTimeout = setTimeout(() => setShowFlash(null), 200);
-            timeouts.push(dingEndTimeout);
+            // Dim text after input appears (300ms delay for input fade-in)
+            const dimTimeout = setTimeout(() => {
+              setDimText(true);
 
-            // Mark animation complete
-            const completeTimeout = setTimeout(() => {
-              setAnimationComplete(true);
-              sessionStorage.setItem(animationKey, 'true');
-              onSequenceComplete?.();
-
-              // Dim text after input appears (300ms delay for input fade-in)
-              const dimTimeout = setTimeout(() => {
-                setDimText(true);
-
-                // Auto un-dim after 5 seconds
-                const undimTimeout = setTimeout(() => {
-                  setDimText(false);
-                }, 5000);
-                timeouts.push(undimTimeout);
-              }, 300);
-              timeouts.push(dimTimeout);
-            }, 200);
-            timeouts.push(completeTimeout);
+              // Auto un-dim after 5 seconds
+              const undimTimeout = setTimeout(() => {
+                setDimText(false);
+              }, 5000);
+              timeouts.push(undimTimeout);
+            }, 300);
+            timeouts.push(dimTimeout);
           }, 0);
-          timeouts.push(dingTimeout);
+          timeouts.push(completeTimeout);
         }
       }, part2StartDelay + (i * charDelay));
       timeouts.push(timeout);
@@ -445,16 +437,6 @@ const UnifiedWorkflowHeader = ({
                 <span className="typewriter-cursor" style={{ verticalAlign: 'middle' }} />
               )}
             </div>
-
-            {/* Ding ripple effect */}
-            {showFlash === 'ding' && (
-              <div className="ding-effect" style={{
-                left: '50%',
-                top: '50%',
-                marginLeft: '-10px',
-                marginTop: '-10px'
-              }} />
-            )}
           </div>
         ) : (
           // Standard animation mode (existing behavior)

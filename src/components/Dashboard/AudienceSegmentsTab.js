@@ -1319,23 +1319,24 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           <Row gutter={24} align="middle">
                             <Col xs={24} md={12}>
                               <div style={{ color: 'white' }}>
-                                <div style={{ fontSize: '28px', marginBottom: '12px' }}>🎯</div>
-                                <Title level={3} style={{ color: 'white', marginBottom: '12px' }}>
-                                  Comprehensive SEO Plan
+                                <Title level={3} style={{ color: 'white', marginBottom: '16px', marginTop: '0' }}>
+                                  {bundleOverview?.title || 'Multi-Audience Content Strategy'}
                                 </Title>
 
                                 {/* AI-Generated Outcome-Focused Overview */}
                                 {bundleOverview && bundleOverview.overview ? (
                                   <>
-                                    <Text style={{
+                                    <div style={{
                                       color: 'rgba(255,255,255,0.95)',
                                       fontSize: '15px',
-                                      display: 'block',
                                       marginBottom: '20px',
-                                      lineHeight: '1.6'
+                                      lineHeight: '1.7',
+                                      whiteSpace: 'pre-line'
                                     }}>
-                                      {bundleOverview.overview}
-                                    </Text>
+                                      {bundleOverview.overview.split(/\*\*(.*?)\*\*/g).map((part, idx) =>
+                                        idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
+                                      )}
+                                    </div>
 
                                     {/* Key Metrics */}
                                     <div style={{
