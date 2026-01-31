@@ -43,6 +43,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   // Keep only UI-specific local state
   const [scanningMessage, setScanningMessage] = useState('');
   const [textAnimationComplete, setTextAnimationComplete] = useState(false);
+  const [inputIsEditing, setInputIsEditing] = useState(true); // Track input editing state for header fade
 
   // Load cached analysis for logged-in users
   useEffect(() => {
@@ -231,6 +232,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           projectJustSaved={projectJustSaved}
           enableSequentialAnimation={!user && currentStep === 0}
           onSequenceComplete={() => setTextAnimationComplete(true)}
+          inputIsEditing={inputIsEditing}
         />
 
         {/* Welcome-back hint when user has cached analysis (anticipatory UX) */}
@@ -291,6 +293,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                   onAnalysisComplete={handleAnalysisComplete}
                   addStickyWorkflowStep={addStickyWorkflowStep}
                   updateStickyWorkflowStep={updateStickyWorkflowStep}
+                  onEditingStateChange={setInputIsEditing}
 
                   // Configuration
                   embedded={true}

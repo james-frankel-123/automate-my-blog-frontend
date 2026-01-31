@@ -29,7 +29,8 @@ const UnifiedWorkflowHeader = ({
   completedSteps = [],
   projectJustSaved = false,
   enableSequentialAnimation = false,
-  onSequenceComplete = null
+  onSequenceComplete = null,
+  inputIsEditing = true
 }) => {
   const [textKey, setTextKey] = useState(0);
   const [previousUser, setPreviousUser] = useState(user);
@@ -371,8 +372,8 @@ const UnifiedWorkflowHeader = ({
           // Typewriter animation mode
           <div
             style={{
-              opacity: dimText ? 0.4 : 1,
-              transition: 'opacity 0.5s ease-out',
+              opacity: !inputIsEditing ? 0 : (dimText ? 0.4 : 1),
+              transition: 'all 0.3s ease',
               pointerEvents: 'none',
               position: 'relative'
             }}

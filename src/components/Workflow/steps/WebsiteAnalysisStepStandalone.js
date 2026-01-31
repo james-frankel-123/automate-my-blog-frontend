@@ -51,6 +51,7 @@ const WebsiteAnalysisStepStandalone = ({
   onStartOver,
   addStickyWorkflowStep,
   updateStickyWorkflowStep,
+  onEditingStateChange,
 
   // Configuration
   embedded = false,
@@ -156,6 +157,13 @@ const WebsiteAnalysisStepStandalone = ({
       return () => clearTimeout(timer);
     }
   }, [loading, isEditing]);
+
+  // Notify parent when editing state changes (for header text fade)
+  useEffect(() => {
+    if (onEditingStateChange) {
+      onEditingStateChange(isEditing);
+    }
+  }, [isEditing, onEditingStateChange]);
 
   // Remove sparkle on input focus or interaction, and restore editing mode
   const handleInputFocus = () => {
