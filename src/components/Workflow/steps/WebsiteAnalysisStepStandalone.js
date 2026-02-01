@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message } from 'antd';
+import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message, Collapse } from 'antd';
 import {
   GlobalOutlined,
   ScanOutlined,
@@ -17,8 +17,10 @@ import workflowUtils from '../../../utils/workflowUtils';
 import autoBlogAPI from '../../../services/api';
 import { systemVoice } from '../../../copy/systemVoice';
 import { useSystemHint } from '../../../contexts/SystemHintContext';
+import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 
 const { Title, Text, Paragraph } = Typography;
+const { Panel } = Collapse;
 
 /**
  * Standalone Website Analysis Step Component
@@ -575,12 +577,18 @@ const WebsiteAnalysisStepStandalone = ({
   const renderUrlInput = () => (
     <div
       style={{
-        marginBottom: '30px',
-        animation: delayedReveal && inputVisible ? 'fadeInInput 0.8s ease-out forwards' : 'none',
-        opacity: delayedReveal && !inputVisible ? 0 : 1,
-        position: 'relative'
+        transform: !isEditing ? 'translateY(-200px)' : 'translateY(0)',
+        transition: 'all 1s ease'
       }}
     >
+      <div
+        style={{
+          marginBottom: '30px',
+          animation: delayedReveal && inputVisible ? 'fadeInInput 0.8s ease-out forwards' : 'none',
+          opacity: delayedReveal && !inputVisible ? 0 : 1,
+          position: 'relative'
+        }}
+      >
       {showTitle && (
         <Title level={3} style={{
           textAlign: 'center',
@@ -619,7 +627,7 @@ const WebsiteAnalysisStepStandalone = ({
               backgroundColor: hasAnalysisRestriction ? 'var(--color-background-container)' : '#ffffff',
               color: hasAnalysisRestriction ? 'var(--color-text-tertiary)' : undefined,
               textAlign: isEditing ? 'left' : 'center',
-              transition: 'all 0.3s ease'
+              transition: 'all 1s ease'
             }}
             onPressEnter={handleWebsiteSubmit}
           />
@@ -637,7 +645,7 @@ const WebsiteAnalysisStepStandalone = ({
               opacity: isEditing ? 1 : 0,
               padding: isEditing ? undefined : '0',
               overflow: 'hidden',
-              transition: 'all 0.3s ease',
+              transition: 'all 1s ease',
               pointerEvents: isEditing ? 'auto' : 'none'
             }}
           >
@@ -669,6 +677,7 @@ const WebsiteAnalysisStepStandalone = ({
           )}
         </div>
       )}
+      </div>
     </div>
   );
   
@@ -707,14 +716,73 @@ const WebsiteAnalysisStepStandalone = ({
    */
   const renderAnalysisResults = () => {
     if (!analysisResults) return null;
-    
+
     const analysis = analysisResults;
-    
+
     // Extract domain for display
-    const domain = websiteUrl ? 
-      websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : 
+    const domain = websiteUrl ?
+      websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] :
       '';
 
+    // Show narrative as primary display if available
+    const hasNarrative = analysis.narrative && analysis.narrative.trim().length > 0;
+
+    console.log('🎨 [FRONTEND NARRATIVE] Rendering analysis:', {
+      hasAnalysis: !!analysis,
+      hasNarrativeField: 'narrative' in analysis,
+      narrativeValue: analysis.narrative,
+      narrativeType: typeof analysis.narrative,
+      narrativeLength: analysis.narrative?.length || 0,
+      hasNarrative: hasNarrative,
+      hasConfidence: !!analysis.narrativeConfidence,
+      confidence: analysis.narrativeConfidence,
+      hasKeyInsights: !!analysis.keyInsights,
+      keyInsightsCount: analysis.keyInsights?.length || 0,
+      allAnalysisKeys: Object.keys(analysis)
+    });
+
+    return (
+      <>
+        {/* Narrative Analysis Card - Primary Display */}
+        {hasNarrative && (
+          <NarrativeAnalysisCard
+            narrative={analysis.narrative}
+            confidence={analysis.narrativeConfidence}
+            keyInsights={analysis.keyInsights}
+          />
+        )}
+
+        {/* Structured Data - Always show, but can be collapsed if narrative exists */}
+        {hasNarrative ? (
+          <Collapse
+            ghost
+            style={{ marginBottom: '20px' }}
+            items={[
+              {
+                key: '1',
+                label: (
+                  <Text style={{
+                    fontSize: responsive.fontSize.text,
+                    color: 'var(--color-text-secondary)'
+                  }}>
+                    📋 Technical Details
+                  </Text>
+                ),
+                children: renderStructuredAnalysis(analysis, domain)
+              }
+            ]}
+          />
+        ) : (
+          renderStructuredAnalysis(analysis, domain)
+        )}
+      </>
+    );
+  };
+
+  /**
+   * Render structured analysis data (field-by-field)
+   */
+  const renderStructuredAnalysis = (analysis, domain) => {
     return (
       <Card
         className={showSuccessHighlight ? 'success-highlight' : ''}
@@ -1161,11 +1229,11 @@ const WebsiteAnalysisStepStandalone = ({
             )}
           </div>
         )}
-        
+
       </Card>
     );
   };
-  
+
   // =============================================================================
   // MAIN RENDER
   // =============================================================================
