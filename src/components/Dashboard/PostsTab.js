@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Modal } from 'antd';
+import { Card, Button, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Modal, Progress } from 'antd';
 import { 
   PlusOutlined, 
   ScheduleOutlined,
@@ -40,6 +40,205 @@ import SEOAnalysis from '../SEOAnalysis/SEOAnalysis';
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+
+// SEO Analysis Display Component
+const SEOAnalysisDisplay = ({ post }) => {
+  const seoAnalysis = post.generation_metadata?.seoAnalysis;
+  const qualityPrediction = post.generation_metadata?.qualityPrediction;
+  const overallScore = qualityPrediction?.actualSEOScore || post.seo_score_prediction;
+
+  if (!seoAnalysis && !overallScore) {
+    return (
+      <div style={{ textAlign: 'center', padding: '40px' }}>
+        <Text type="secondary">No SEO analysis available for this post.</Text>
+      </div>
+    );
+  }
+
+  const getScoreColor = (score) => {
+    if (score >= 95) return '#52c41a';
+    if (score >= 90) return '#1890ff';
+    if (score >= 80) return '#fa8c16';
+    return '#ff4d4f';
+  };
+
+  const getScoreStatus = (score) => {
+    if (score >= 95) return 'success';
+    if (score >= 90) return 'active';
+    if (score >= 80) return 'normal';
+    return 'exception';
+  };
+
+  return (
+    <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+      {/* Overall Score */}
+      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <Title level={4} style={{ marginBottom: '16px' }}>Overall SEO Score</Title>
+        <Progress
+          type="circle"
+          percent={overallScore}
+          strokeColor={getScoreColor(overallScore)}
+          status={getScoreStatus(overallScore)}
+          width={120}
+          format={percent => (
+            <div>
+              <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{percent}</div>
+              <div style={{ fontSize: '14px', color: '#999' }}>out of 100</div>
+            </div>
+          )}
+        />
+        {overallScore >= 95 && (
+          <div style={{ marginTop: '16px', color: '#52c41a', fontSize: '16px', fontWeight: '500' }}>
+            ✅ Excellent! This post meets our quality standards.
+          </div>
+        )}
+        {overallScore >= 90 && overallScore < 95 && (
+          <div style={{ marginTop: '16px', color: '#1890ff', fontSize: '16px', fontWeight: '500' }}>
+            ✓ Great! Just a few tweaks needed to reach 95+.
+          </div>
+        )}
+        {overallScore < 90 && (
+          <div style={{ marginTop: '16px', color: '#fa8c16', fontSize: '16px', fontWeight: '500' }}>
+            ⚠️ This post needs improvement to reach our 95+ target.
+          </div>
+        )}
+      </div>
+
+      {/* Top Strengths */}
+      {qualityPrediction?.topStrengths?.length > 0 && (
+        <Card
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '20px' }}>💪</span>
+              <span>Top Strengths</span>
+            </div>
+          }
+          style={{ marginBottom: '16px' }}
+          size="small"
+        >
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            {qualityPrediction.topStrengths.map((strength, index) => (
+              <li key={index} style={{ marginBottom: '8px', color: '#52c41a' }}>
+                <Text>{strength}</Text>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {/* Top Improvements */}
+      {qualityPrediction?.topImprovements?.length > 0 && (
+        <Card
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '20px' }}>🎯</span>
+              <span>Suggested Improvements</span>
+            </div>
+          }
+          style={{ marginBottom: '16px' }}
+          size="small"
+        >
+          <ul style={{ margin: 0, paddingLeft: '20px' }}>
+            {qualityPrediction.topImprovements.map((improvement, index) => (
+              <li key={index} style={{ marginBottom: '8px', color: '#fa8c16' }}>
+                <Text>{improvement}</Text>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {/* Detailed Analysis Sections */}
+      {seoAnalysis && (
+        <>
+          {seoAnalysis.titleAnalysis && (
+            <Card title="📝 Title & Headlines" style={{ marginBottom: '16px' }} size="small">
+              {Object.entries(seoAnalysis.titleAnalysis).map(([key, value]) => (
+                value && value.score !== undefined && (
+                  <div key={key} style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <Text strong style={{ textTransform: 'capitalize' }}>
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </Text>
+                      <Text style={{ color: getScoreColor(value.score) }}>{value.score}/100</Text>
+                    </div>
+                    <Progress percent={value.score} strokeColor={getScoreColor(value.score)} showInfo={false} size="small" />
+                    {value.explanation && (
+                      <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px' }}>
+                        {value.explanation}
+                      </Text>
+                    )}
+                  </div>
+                )
+              ))}
+            </Card>
+          )}
+
+          {seoAnalysis.contentFlow && (
+            <Card title="📖 Content Structure" style={{ marginBottom: '16px' }} size="small">
+              {Object.entries(seoAnalysis.contentFlow).map(([key, value]) => (
+                value && value.score !== undefined && (
+                  <div key={key} style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <Text strong style={{ textTransform: 'capitalize' }}>
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </Text>
+                      <Text style={{ color: getScoreColor(value.score) }}>{value.score}/100</Text>
+                    </div>
+                    <Progress percent={value.score} strokeColor={getScoreColor(value.score)} showInfo={false} size="small" />
+                  </div>
+                )
+              ))}
+            </Card>
+          )}
+
+          {seoAnalysis.engagementUX && (
+            <Card title="💡 Reader Engagement" style={{ marginBottom: '16px' }} size="small">
+              {Object.entries(seoAnalysis.engagementUX).map(([key, value]) => (
+                value && value.score !== undefined && (
+                  <div key={key} style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <Text strong style={{ textTransform: 'capitalize' }}>
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </Text>
+                      <Text style={{ color: getScoreColor(value.score) }}>{value.score}/100</Text>
+                    </div>
+                    <Progress percent={value.score} strokeColor={getScoreColor(value.score)} showInfo={false} size="small" />
+                  </div>
+                )
+              ))}
+            </Card>
+          )}
+
+          {seoAnalysis.technicalSEO && (
+            <Card title="🔍 Technical SEO" style={{ marginBottom: '16px' }} size="small">
+              {Object.entries(seoAnalysis.technicalSEO).map(([key, value]) => (
+                value && value.score !== undefined && (
+                  <div key={key} style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <Text strong style={{ textTransform: 'capitalize' }}>
+                        {key.replace(/([A-Z])/g, ' $1').trim()}
+                      </Text>
+                      <Text style={{ color: getScoreColor(value.score) }}>{value.score}/100</Text>
+                    </div>
+                    <Progress percent={value.score} strokeColor={getScoreColor(value.score)} showInfo={false} size="small" />
+                  </div>
+                )
+              ))}
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* AI Summary */}
+      {seoAnalysis?.aiSummary && (
+        <Card title="📊 AI Summary" style={{ marginBottom: '16px' }} size="small">
+          <Paragraph style={{ margin: 0 }}>{seoAnalysis.aiSummary}</Paragraph>
+        </Card>
+      )}
+    </div>
+  );
+};
 
 // Save Status Indicator Component
 const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
@@ -108,6 +307,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [showSchedulingModal, setShowSchedulingModal] = useState(false);
   const [selectedPost, setSelectedPost] = useState(null);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showSEOAnalysisModal, setShowSEOAnalysisModal] = useState(false);
+  const [selectedPostForSEO, setSelectedPostForSEO] = useState(null);
   
   // Workflow content generation state
   const [contentGenerated, setContentGenerated] = useState(false);
@@ -1080,6 +1281,35 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     }
   };
 
+  // Re-analyze SEO for existing posts
+  const handleReanalyzeSEO = async (post) => {
+    try {
+      message.loading({ content: 'Analyzing SEO...', key: 'seo-analysis', duration: 0 });
+
+      const result = await api.reanalyzeSEO(post.id);
+
+      if (result.success) {
+        message.success({
+          content: `SEO Analysis Complete! Score: ${result.analysis.overallScore}/100`,
+          key: 'seo-analysis',
+          duration: 3
+        });
+
+        // Refresh posts list to show new score
+        await loadPosts();
+
+        // Optionally open the SEO analysis modal
+        setSelectedPostForSEO(result.post);
+        setShowSEOAnalysisModal(true);
+      }
+    } catch (error) {
+      message.error({
+        content: `Failed to analyze SEO: ${error.message}`,
+        key: 'seo-analysis'
+      });
+    }
+  };
+
   // Close post function - saves final changes and returns to posts list
   const handleClosePost = async () => {
     // Track workflow_abandoned if user closes without exporting
@@ -1175,6 +1405,30 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }
     ];
 
+    // Add SEO-related actions
+    const hasSEOAnalysis = post.generation_metadata?.seoAnalysis || post.seo_score_prediction;
+
+    // Always show "Re-analyze SEO" or "Analyze SEO" option
+    actions.push({
+      key: 'reanalyze-seo',
+      label: hasSEOAnalysis ? 'Re-analyze SEO' : 'Analyze SEO',
+      icon: <TrophyOutlined />,
+      onClick: () => handleReanalyzeSEO(post)
+    });
+
+    // Add "View SEO Analysis" if analysis exists
+    if (hasSEOAnalysis) {
+      actions.push({
+        key: 'view-seo-analysis',
+        label: 'View SEO Analysis',
+        icon: <EyeOutlined />,
+        onClick: () => {
+          setSelectedPostForSEO(post);
+          setShowSEOAnalysisModal(true);
+        }
+      });
+    }
+
     if (canSchedule && post.status !== 'published') {
       actions.unshift({
         key: 'schedule',
@@ -1197,6 +1451,42 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           <div style={{ fontWeight: 500, marginBottom: '4px' }}>{title}</div>
         </div>
       )
+    },
+    {
+      title: 'SEO Score',
+      dataIndex: 'seo_score_prediction',
+      key: 'seo_score',
+      width: 120,
+      render: (score, record) => {
+        const actualScore = record.generation_metadata?.qualityPrediction?.actualSEOScore || score;
+
+        if (!actualScore) {
+          return <Text type="secondary" style={{ fontSize: '12px' }}>Not analyzed</Text>;
+        }
+
+        const getScoreColor = (score) => {
+          if (score >= 95) return '#52c41a'; // Green
+          if (score >= 90) return '#1890ff'; // Blue
+          if (score >= 80) return '#fa8c16'; // Orange
+          return '#ff4d4f'; // Red
+        };
+
+        const getScoreIcon = (score) => {
+          if (score >= 95) return '✅';
+          if (score >= 90) return '✓';
+          if (score >= 80) return '⚠️';
+          return '❌';
+        };
+
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span>{getScoreIcon(actualScore)}</span>
+            <Text strong style={{ color: getScoreColor(actualScore), fontSize: '14px' }}>
+              {actualScore}/100
+            </Text>
+          </div>
+        );
+      }
     },
     {
       title: 'Status',
@@ -3048,6 +3338,28 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           title={selectedTopic?.title || 'Blog Post'}
           typography={typography}
         />
+      )}
+
+      {/* SEO Analysis Modal */}
+      {showSEOAnalysisModal && selectedPostForSEO && (
+        <Modal
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <TrophyOutlined style={{ color: 'var(--color-primary)' }} />
+              <span>SEO Analysis</span>
+            </div>
+          }
+          open={showSEOAnalysisModal}
+          onCancel={() => {
+            setShowSEOAnalysisModal(false);
+            setSelectedPostForSEO(null);
+          }}
+          footer={null}
+          width={800}
+          style={{ top: 20 }}
+        >
+          <SEOAnalysisDisplay post={selectedPostForSEO} />
+        </Modal>
       )}
 
       {/* Manual CTA Input Modal */}

@@ -190,10 +190,16 @@ class AutoBlogAPI {
       console.log('Step 1/4: Analyzing website...');
 
       // Step 1: Basic website analysis (scrape + web search, NO scenarios)
+      // Use extended timeout (90s) since narrative generation happens async in background
+      const extendedTimeoutSignal = typeof AbortSignal.timeout === 'function'
+        ? AbortSignal.timeout(90000)  // 90 seconds
+        : undefined;
+
       const analysisResponse = await this.makeRequest('/api/analyze-website', {
         method: 'POST',
         headers,
         body: JSON.stringify({ url }),
+        ...(extendedTimeoutSignal && { signal: extendedTimeoutSignal })
       });
 
       if (onProgress) onProgress(2);
@@ -2861,6 +2867,35 @@ Please provide analysis in this JSON format:
     } catch (error) {
       console.error('❌ Post deletion failed:', error);
       throw new Error(`Failed to delete post: ${error.message}`);
+    }
+  }
+
+  /**
+   * Re-analyze SEO for an existing blog post
+   */
+  async reanalyzeSEO(postId) {
+    try {
+      console.log('🔍 Re-analyzing SEO for post:', postId);
+
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      const token = localStorage.getItem('accessToken');
+
+      const headers = {};
+
+      if (!token && sessionId) {
+        headers['x-session-id'] = sessionId;
+      }
+
+      const response = await this.makeRequest(`/api/v1/posts/${postId}/reanalyze-seo`, {
+        method: 'POST',
+        headers,
+      });
+
+      console.log('✅ SEO re-analysis complete:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ SEO re-analysis failed:', error);
+      throw new Error(`Failed to re-analyze SEO: ${error.message}`);
     }
   }
 
