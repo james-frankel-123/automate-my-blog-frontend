@@ -741,6 +741,21 @@ test.describe('E2E (mocked backend)', () => {
 
       await page.waitForSelector('.ant-modal', { state: 'hidden', timeout: 10000 }).catch(() => {});
     });
+
+    test('posts and credits load in parallel on dashboard mount', async ({ page }) => {
+      test.setTimeout(45000);
+      await setupLoggedIn(page);
+
+      const postsTab = page.locator('.ant-menu-item').filter({ hasText: /posts|blog/i }).first();
+      await expect(postsTab).toBeVisible({ timeout: 8000 });
+      await postsTab.click();
+      await page.waitForTimeout(1000);
+
+      const postsSection = page.locator('#posts');
+      await expect(postsSection).toBeVisible({ timeout: 8000 });
+      const hasContent = await page.locator('.ant-table, .ant-empty, button:has-text("Create"), button:has-text("Generate post")').first().isVisible({ timeout: 5000 }).catch(() => false);
+      expect(hasContent).toBeTruthy();
+    });
   });
 
   test.describe('Dashboard', () => {
