@@ -2,6 +2,7 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import React from 'react';
 import { NodeViewWrapper } from '@tiptap/react';
+import DOMPurify from 'dompurify';
 import * as FaIcons from 'react-icons/fa';
 import * as MdIcons from 'react-icons/md';
 
@@ -284,7 +285,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
                 fontWeight: type === 'statistic' || fontSize === 'xxlarge' || fontSize === 'xlarge' ? '600' : '500',
                 textAlign: align || 'left',
               }}
-              dangerouslySetInnerHTML={{ __html: content }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(content) }}
             />
             {citation && (
               <div
@@ -294,7 +295,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
                   color: '#8c8c8c',
                   fontStyle: 'italic',
                 }}
-                dangerouslySetInnerHTML={{ __html: citation }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(citation) }}
               />
             )}
           </div>

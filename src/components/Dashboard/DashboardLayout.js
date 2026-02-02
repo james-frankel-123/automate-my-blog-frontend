@@ -1022,18 +1022,20 @@ const DashboardLayout = ({
             alignItems: 'center',
             gap: '12px'
           }}>
-            {/* Theme Toggle - Always visible for all users */}
-            <div style={{
-              background: 'var(--color-background-body)',
-              padding: 'var(--space-2)',
-              borderRadius: 'var(--radius-lg)',
-              boxShadow: 'var(--shadow-md)',
-              display: 'flex',
-              alignItems: 'center',
-              border: '2px solid var(--color-border-base)'
-            }}>
-              <ThemeToggle />
-            </div>
+            {/* Theme Toggle - Only visible for logged-in users */}
+            {user && (
+              <div style={{
+                background: 'var(--color-background-body)',
+                padding: 'var(--space-2)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-md)',
+                display: 'flex',
+                alignItems: 'center',
+                border: '2px solid var(--color-border-base)'
+              }}>
+                <ThemeToggle />
+              </div>
+            )}
 
             {/* Quota Counter - Only visible for logged-in users */}
             {user && (

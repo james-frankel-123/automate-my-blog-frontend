@@ -802,9 +802,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   // Bundle subscription handler
   const handleSubscribeToBundle = async (billingInterval) => {
     try {
+      console.log('🎫 [FRONTEND] Starting checkout:', { billingInterval });
       message.loading({ content: 'Redirecting to checkout...', key: 'bundle-subscribe' });
 
       const response = await autoBlogAPI.subscribeToAllStrategies(billingInterval);
+      console.log('🎫 [FRONTEND] API response:', response);
 
       if (response.url || response.sessionUrl) {
         // Redirect to Stripe checkout
@@ -813,10 +815,15 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         throw new Error('No checkout URL received');
       }
     } catch (error) {
-      console.error('Failed to subscribe to bundle:', error);
+      console.error('❌ [FRONTEND] Checkout error:', {
+        message: error.message,
+        response: error.response?.data
+      });
+
       message.error({
-        content: `Failed to start checkout: ${error.message}`,
-        key: 'bundle-subscribe'
+        content: `Checkout failed: ${error.response?.data?.message || error.message}`,
+        key: 'bundle-subscribe',
+        duration: 5
       });
     }
   };
@@ -1039,13 +1046,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           // Extract monthly revenue range
                           const step5Match = strategy.pitch.match(/Step 5:[^$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
 
-                          // Calculate ROI multiple
-                          const annualFee = 240;
-                          const roiMultiple = consultationPrice ? Math.floor(consultationPrice / annualFee) : null;
-
-                          if (consultationPrice && roiMultiple) {
-                            return `✅ Just 1 deal/year at $${consultationPrice.toLocaleString()} = ${roiMultiple}x your annual fees back. What's the risk?`;
-                          }
                           // Fallback if extraction fails
                           if (step5Match) {
                             return `💡 Potential: $${step5Match[1]}-$${step5Match[2]}/month`;
@@ -1357,7 +1357,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                         </Text>
                                       )}
                                       <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
-                                        🎯 <strong>{bundlePricing.strategyCount}</strong> audience segments covered
+                                        <strong>{bundlePricing.strategyCount}</strong> audience segments covered
                                       </Text>
                                     </div>
 
@@ -1742,23 +1742,24 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 <Row gutter={24} align="middle">
                   <Col xs={24} md={12}>
                     <div style={{ color: 'white' }}>
-                      <div style={{ fontSize: '28px', marginBottom: '12px' }}>🎯</div>
-                      <Title level={3} style={{ color: 'white', marginBottom: '12px' }}>
-                        Comprehensive SEO Plan
+                      <Title level={3} style={{ color: 'white', marginBottom: '16px', marginTop: '0' }}>
+                        {bundleOverview?.title || 'Multi-Audience Content Strategy'}
                       </Title>
 
                       {/* AI-Generated Outcome-Focused Overview */}
                       {bundleOverview && bundleOverview.overview ? (
                         <>
-                          <Text style={{
+                          <div style={{
                             color: 'rgba(255,255,255,0.95)',
                             fontSize: '15px',
-                            display: 'block',
                             marginBottom: '20px',
-                            lineHeight: '1.6'
+                            lineHeight: '1.7',
+                            whiteSpace: 'pre-line'
                           }}>
-                            {bundleOverview.overview}
-                          </Text>
+                            {bundleOverview.overview.split(/\*\*(.*?)\*\*/g).map((part, idx) =>
+                              idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
+                            )}
+                          </div>
 
                           {/* Key Metrics */}
                           <div style={{

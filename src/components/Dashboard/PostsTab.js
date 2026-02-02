@@ -380,6 +380,19 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
   // Calculate remaining posts from live credits
   const remainingPosts = userCredits ? userCredits.availableCredits : null;
+
+  // Debug logging for credits
+  React.useEffect(() => {
+    if (userCredits) {
+      console.log('💰 User Credits Debug:', {
+        availableCredits: userCredits.availableCredits,
+        totalCredits: userCredits.totalCredits,
+        usedCredits: userCredits.usedCredits,
+        remainingPosts,
+        breakdown: userCredits.breakdown
+      });
+    }
+  }, [userCredits, remainingPosts]);
   
 
   useEffect(() => {
@@ -1676,7 +1689,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           {!tabMode.tabWorkflowData?.selectedCustomerStrategy
                             ? 'Select an audience first'
                             : user
-                              ? (remainingPosts > 0 ? 'Generate post' : 'Buy more posts')
+                              ? (remainingPosts !== 0 ? 'Generate post' : 'Buy more posts')
                               : 'Register to claim free post'
                           }
                         </Button>
@@ -1855,154 +1868,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     }}
                                   >
                                     {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
-                                     user ? 'Create Post' : 'Get One Free Post'}
+                                     user ? (remainingPosts > 0 ? 'Create Post' : 'Buy More Posts') : 'Get One Free Post'}
                                   </Button>
-                                  
-                                  <Button
-                                    size="large"
-                                    icon={user ? <EditOutlined /> : <LockOutlined />}
-                                    onClick={() => {
-                                      if (!user) {
-                                        requireSignUp('Edit content strategy', 'Customize your approach');
-                                      } else {
-                                        message.info('Strategy editing will be available after backend integration');
-                                      }
-                                    }}
-                                    style={{
-                                      width: '100%',
-                                      marginTop: '8px',
-                                      borderColor: defaultColors.primary,
-                                      color: user ? 'var(--color-success)' : defaultColors.primary,
-                                      background: user ? `linear-gradient(135deg, var(--color-success)05, var(--color-success)10)` : `linear-gradient(135deg, ${defaultColors.primary}05, ${defaultColors.primary}10)`,
-                                      fontWeight: '500'
-                                    }}
-                                  >
-                                    {user ? '✓ Edit Strategy' : 'Edit Strategy'}
-                                  </Button>
-                                </div>
-                                
-                                {/* Blog Post Blueprint */}
-                                <Divider style={{ margin: '20px 0 16px 0' }} />
-                                
-                                <div style={{ 
-                                  padding: '16px',
-                                  backgroundColor: defaultColors.secondary + '20',
-                                  borderRadius: '8px',
-                                  border: `1px solid ${defaultColors.secondary}60`
-                                }}>
-                                  <div style={{ marginBottom: '12px', textAlign: 'center' }}>
-                                    <Text strong style={{ 
-                                      color: defaultColors.primary, 
-                                      fontSize: responsive.fontSize.text,
-                                      display: 'block',
-                                      marginBottom: '4px'
-                                    }}>
-                                      📋 What You'll Get
-                                    </Text>
-                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                      Your blog post will include all these strategic elements
-                                    </Text>
-                                  </div>
-
-                                  {/* Content Structure */}
-                                  <div style={{ marginBottom: '12px' }}>
-                                    <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                      📝 Content Structure
-                                    </Text>
-                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                      Problem identification → Solution framework → Implementation guidance
-                                    </Text>
-                                  </div>
-
-                                  {/* SEO Keywords */}
-                                  {topic.scenario?.seoKeywords && topic.scenario.seoKeywords.length > 0 && (
-                                    <div style={{ marginBottom: '12px' }}>
-                                      <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                        🔑 SEO Keywords Integrated
-                                      </Text>
-                                      <Space wrap size="small">
-                                        {topic.scenario.seoKeywords.slice(0, 3).map((keyword, keywordIndex) => (
-                                          <Tag 
-                                            key={keywordIndex}
-                                            color={defaultColors.primary}
-                                            style={{ fontSize: '11px', borderRadius: '4px' }}
-                                          >
-                                            {keyword}
-                                          </Tag>
-                                        ))}
-                                        {topic.scenario.seoKeywords.length > 3 && (
-                                          <Text style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
-                                            +{topic.scenario.seoKeywords.length - 3} more
-                                          </Text>
-                                        )}
-                                      </Space>
-                                    </div>
-                                  )}
-
-                                  {/* Competitive Positioning */}
-                                  <div style={{ marginBottom: '12px' }}>
-                                    <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                      🎯 Competitive Edge
-                                    </Text>
-                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                      Establishes thought leadership with unique insights and fresh perspectives
-                                    </Text>
-                                  </div>
-
-                                  {/* Strategic CTAs */}
-                                  <div style={{ marginBottom: '12px' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                      <Text strong style={{ color: defaultColors.primary, fontSize: '13px' }}>
-                                        🚀 Conversion Elements
-                                      </Text>
-                                      {!hasSufficientCTAs && (
-                                        <Button
-                                          size="small"
-                                          type="link"
-                                          icon={<PlusOutlined />}
-                                          onClick={() => setShowManualCTAModal(true)}
-                                          style={{ fontSize: '12px', padding: 0 }}
-                                        >
-                                          Add More
-                                        </Button>
-                                      )}
-                                    </div>
-
-                                    {ctasLoading ? (
-                                      <Text style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
-                                        Loading CTAs...
-                                      </Text>
-                                    ) : organizationCTAs.length > 0 ? (
-                                      <div>
-                                        <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                          {organizationCTAs.slice(0, 3).map((cta, index) => (
-                                            <div key={cta.id || index} style={{ marginBottom: '2px' }}>
-                                              • {cta.text}
-                                            </div>
-                                          ))}
-                                        </div>
-                                        {!hasSufficientCTAs && organizationCTAs.length < 3 && (
-                                          <Text style={{ fontSize: '11px', color: 'var(--color-error)', marginTop: '4px', display: 'block' }}>
-                                            ⚠️ {3 - organizationCTAs.length} more CTA{3 - organizationCTAs.length !== 1 ? 's' : ''} recommended
-                                          </Text>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                        Strategic CTAs aligned with your primary business objectives and customer journey
-                                      </Text>
-                                    )}
-                                  </div>
-
-                                  {/* Content Quality */}
-                                  <div style={{ marginBottom: '0' }}>
-                                    <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                      ✨ Content Quality
-                                    </Text>
-                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                      1000-1500 words with balanced depth and readability • Expert authority tone
-                                    </Text>
-                                  </div>
                                 </div>
                               </Card>
                             </Col>
@@ -2571,7 +2438,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         {!selectedCustomerStrategy
                           ? 'Select an audience first'
                           : user
-                            ? (remainingPosts > 0 ? 'Generate post' : 'Buy more posts')
+                            ? (remainingPosts !== 0 ? 'Generate post' : 'Buy more posts')
                             : 'Register to claim free post'
                         }
                       </Button>
@@ -2760,220 +2627,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 >
                                   {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
                                    user ?
-                                     (remainingPosts > 0 ? 'Generate post' : 'Buy more posts') :
+                                     (remainingPosts !== 0 ? 'Generate post' : 'Buy more posts') :
                                      'Register to claim free post'
                                   }
                                 </Button>
-                                
-                                <Button
-                                  size="large"
-                                  icon={user ? <EditOutlined /> : <LockOutlined />}
-                                  onClick={() => {
-                                    if (!user) {
-                                      requireSignUp('Edit content strategy', 'Customize your approach');
-                                    } else {
-                                      message.info('Strategy editing will be available after backend integration');
-                                    }
-                                  }}
-                                  style={{
-                                    width: '100%',
-                                    marginTop: '8px',
-                                    borderColor: defaultColors.primary,
-                                    color: user ? 'var(--color-success)' : defaultColors.primary,
-                                    background: user ? `linear-gradient(135deg, var(--color-success)05, var(--color-success)10)` : `linear-gradient(135deg, ${defaultColors.primary}05, ${defaultColors.primary}10)`,
-                                    fontWeight: '500'
-                                  }}
-                                >
-                                  {user ? '✓ Edit Strategy' : 'Edit Strategy'}
-                                </Button>
-                              </div>
-                              
-                              {/* Blog Post Blueprint */}
-                              <Divider style={{ margin: '20px 0 16px 0' }} />
-                              
-                              <div style={{ 
-                                padding: '16px',
-                                backgroundColor: defaultColors.secondary + '20',
-                                borderRadius: '8px',
-                                border: `1px solid ${defaultColors.secondary}60`
-                              }}>
-                                <div style={{ marginBottom: '12px', textAlign: 'center' }}>
-                                  <Text strong style={{ 
-                                    color: defaultColors.primary, 
-                                    fontSize: responsive.fontSize.text,
-                                    display: 'block',
-                                    marginBottom: '4px'
-                                  }}>
-                                    📋 What You'll Get
-                                  </Text>
-                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                    Your blog post will include all these strategic elements
-                                  </Text>
-                                </div>
-
-                                {/* Content Structure */}
-                                <div style={{ marginBottom: '12px' }}>
-                                  <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                    📝 Content Structure
-                                  </Text>
-                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                    Problem identification → Solution framework → Implementation guidance
-                                  </Text>
-                                </div>
-
-                                {/* SEO Keywords */}
-                                {topic.scenario?.seoKeywords && topic.scenario.seoKeywords.length > 0 && (
-                                  <div style={{ marginBottom: '12px' }}>
-                                    <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                      🔑 SEO Keywords Integrated
-                                    </Text>
-                                    <Space wrap size="small">
-                                      {topic.scenario.seoKeywords.slice(0, 3).map((keyword, keywordIndex) => (
-                                        <Tag 
-                                          key={keywordIndex}
-                                          color={defaultColors.primary}
-                                          style={{ fontSize: '11px', borderRadius: '4px' }}
-                                        >
-                                          {keyword}
-                                        </Tag>
-                                      ))}
-                                      {topic.scenario.seoKeywords.length > 3 && (
-                                        <Text style={{ fontSize: '11px', color: 'var(--color-text-tertiary)' }}>
-                                          +{topic.scenario.seoKeywords.length - 3} more
-                                        </Text>
-                                      )}
-                                    </Space>
-                                  </div>
-                                )}
-
-                                {/* Competitive Positioning */}
-                                <div style={{ marginBottom: '12px' }}>
-                                  <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                    🎯 Competitive Edge
-                                  </Text>
-                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                    Establishes thought leadership with unique insights and fresh perspectives
-                                  </Text>
-                                </div>
-
-                                {/* Strategic CTAs */}
-                                <div style={{ marginBottom: '12px' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                                    <Text strong style={{ color: defaultColors.primary, fontSize: '13px' }}>
-                                      🚀 Conversion Elements
-                                    </Text>
-                                    {!hasSufficientCTAs && (
-                                      <Button
-                                        size="small"
-                                        type="link"
-                                        icon={<PlusOutlined />}
-                                        onClick={() => setShowManualCTAModal(true)}
-                                        style={{ fontSize: '12px', padding: 0 }}
-                                      >
-                                        Add More
-                                      </Button>
-                                    )}
-                                  </div>
-
-                                  {ctasLoading ? (
-                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-tertiary)', fontStyle: 'italic' }}>
-                                      Loading CTAs...
-                                    </Text>
-                                  ) : organizationCTAs.length > 0 ? (
-                                    <div>
-                                      <div style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                        {organizationCTAs.slice(0, 3).map((cta, index) => (
-                                          <div key={cta.id || index} style={{ marginBottom: '2px' }}>
-                                            • {cta.text}
-                                          </div>
-                                        ))}
-                                      </div>
-                                      {!hasSufficientCTAs && organizationCTAs.length < 3 && (
-                                        <Text style={{ fontSize: '11px', color: 'var(--color-error)', marginTop: '4px', display: 'block' }}>
-                                          ⚠️ {3 - organizationCTAs.length} more CTA{3 - organizationCTAs.length !== 1 ? 's' : ''} recommended
-                                        </Text>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                      Strategic CTAs aligned with your primary business objectives and customer journey
-                                    </Text>
-                                  )}
-                                </div>
-
-                                {/* Content Quality */}
-                                <div style={{ marginBottom: '0' }}>
-                                  <Text strong style={{ color: defaultColors.primary, fontSize: '13px', display: 'block', marginBottom: '4px' }}>
-                                    ✨ Content Quality
-                                  </Text>
-                                  <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                                    1000-1500 words with balanced depth and readability • Expert authority tone
-                                  </Text>
-                                </div>
                               </div>
                             </Card>
                           </Col>
                         );
                       })}
                     </Row>
-                    
-                    {/* Lead Generation CTA - Want More Content Ideas? */}
-                    {availableTopics.length >= 1 && (
-                      <div style={{ 
-                        marginTop: '32px', 
-                        textAlign: 'center',
-                        padding: '24px',
-                        background: `linear-gradient(135deg, ${defaultColors.accent}08, ${defaultColors.primary}08)`,
-                        borderRadius: '12px',
-                        border: `2px dashed ${defaultColors.accent}40`
-                      }}>
-                        <BulbOutlined style={{ 
-                          fontSize: '32px', 
-                          color: defaultColors.accent, 
-                          marginBottom: '12px',
-                          display: 'block'
-                        }} />
-                        <Title level={4} style={{ 
-                          margin: '0 0 8px 0', 
-                          color: defaultColors.primary,
-                          fontSize: responsive.fontSize.text
-                        }}>
-                          Want More Content Ideas?
-                        </Title>
-                        <Text style={{ 
-                          fontSize: responsive.fontSize.text, 
-                          color: 'var(--color-text-secondary)',
-                          display: 'block',
-                          marginBottom: '20px'
-                        }}>
-                          Get {availableTopics.length > 2 ? availableTopics.length - 2 : 5} more strategic topic ideas with detailed customer psychology insights
-                        </Text>
-                        <Button 
-                          size="large"
-                          type="primary"
-                          style={{
-                            backgroundColor: user ? 'var(--color-success)' : defaultColors.accent,
-                            borderColor: user ? 'var(--color-success)' : defaultColors.accent,
-                            color: 'white',
-                            borderRadius: '8px',
-                            fontWeight: '500',
-                            height: '48px',
-                            padding: '0 32px',
-                            fontSize: responsive.fontSize.text,
-                            boxShadow: user ? `0 2px 8px var(--color-success)30` : `0 2px 8px ${defaultColors.accent}30`
-                          }}
-                          onClick={() => {
-                            if (!user) {
-                              requireSignUp('Unlock more content ideas', 'Access premium features');
-                            } else {
-                              message.info('Additional topic ideas available with premium access');
-                            }
-                          }}
-                        >
-                          {user ? 'See All Your Ideas' : 'Unlock More Ideas'}
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 )}
               </Card>
@@ -3173,6 +2836,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   onInsert={handleTextInsert}
                 />
               }
+              sidebarContent={
+                seoAnalysisVisible && currentDraft?.generation_metadata?.seoAnalysis ? (
+                  <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+                    <SEOAnalysisDisplay post={currentDraft} />
+                  </div>
+                ) : null
+              }
             >
               <EditorPane>
                 <RichTextEditor
@@ -3339,6 +3009,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 isFullscreen={isEditorFullscreen}
                 onToggleFullscreen={handleToggleFullscreen}
                 minHeight="400px"
+                sidebarContent={
+                  seoAnalysisVisible && currentDraft?.generation_metadata?.seoAnalysis ? (
+                    <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+                      <SEOAnalysisDisplay post={currentDraft} />
+                    </div>
+                  ) : null
+                }
               >
                 {previewMode ? (
                   <div style={{
@@ -3374,9 +3051,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         onEditorReady={setRichTextEditor}
                         placeholder="Enter your blog content..."
                         minHeight="400px"
-                        style={{ 
+                        style={{
                           marginTop: '8px',
-                          fontSize: '14px' 
+                          fontSize: '14px'
                         }}
                       />
                     </div>
