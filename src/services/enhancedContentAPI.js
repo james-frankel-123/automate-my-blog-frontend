@@ -1,9 +1,11 @@
 import autoBlogAPI from './api';
+import jobsAPI from './jobsAPI';
 import { ContentPromptEngine, StrategicCTABuilder } from './contentPromptEngine';
 
 /**
  * Enhanced Content Generation API
- * Implements comprehensive OpenAI content enhancement system
+ * Implements comprehensive OpenAI content enhancement system.
+ * Uses worker queue (POST /api/v1/jobs/content-generation) for long-running tasks.
  */
 export class EnhancedContentAPI {
   constructor() {
@@ -12,120 +14,233 @@ export class EnhancedContentAPI {
   }
 
   /**
-   * Generate enhanced content with comprehensive context
-   * Implements the approved OpenAI enhancement plan
+   * Build job payload matching backend /api/v1/jobs/content-generation expectations
+   */
+  _buildContentGenerationPayload(selectedTopic, analysisData, strategy, enhancementOptions) {
+    const comprehensivePrompt = this.promptEngine.buildComprehensivePrompt(
+      selectedTopic,
+      analysisData,
+      strategy,
+      enhancementOptions
+    );
+    const strategicCTAs = this.ctaBuilder.buildStrategicCTAs(
+      analysisData,
+      strategy,
+      enhancementOptions.goal
+    );
+
+    return {
+      topic: selectedTopic,
+      businessInfo: analysisData || {},
+      organizationId: enhancementOptions.organizationId,
+      additionalInstructions: enhancementOptions.additionalInstructions || '',
+      options: {
+        autoSave: true,
+        status: enhancementOptions.status || 'draft',
+        includeVisuals: !!enhancementOptions.includeVisuals
+      },
+      comprehensiveContext: comprehensivePrompt,
+      strategicCTAs,
+      enhancementOptions,
+      requestEnhancedResponse: true,
+      organizationName: enhancementOptions.organizationName,
+      targetSEOScore: enhancementOptions.targetSEOScore,
+      websiteAnalysis: analysisData || enhancementOptions.websiteAnalysis || enhancementOptions.comprehensiveContext?.websiteAnalysis,
+      tweets: enhancementOptions.tweets
+    };
+  }
+
+  /**
+   * Map job result (result.data, result.savedPost) to enhancedContentAPI response shape
+   */
+  _mapResultToResponse(result, comprehensivePrompt, strategicCTAs, selectedTopic) {
+    const data = result.data || {};
+    const savedPost = result.savedPost;
+    const blogPost = savedPost || data.blogPost || data;
+    const content = blogPost?.content || data.content || blogPost;
+
+    return {
+      success: true,
+      content,
+      visualSuggestions: data.visualSuggestions || [],
+      enhancedMetadata: data.enhancedMetadata || {
+        seoAnalysis: data.seoAnalysis,
+        contentQuality: data.contentQuality,
+        strategicElements: data.strategicElements,
+        improvementSuggestions: data.improvementSuggestions,
+        keywordOptimization: data.keywordOptimization,
+        visualSuggestions: data.visualSuggestions || []
+      },
+      seoAnalysis: data.seoAnalysis,
+      contentQuality: data.contentQuality,
+      strategicElements: data.strategicElements,
+      improvementSuggestions: data.improvementSuggestions,
+      keywordOptimization: data.keywordOptimization,
+      generationContext: comprehensivePrompt,
+      strategicCTAs,
+      selectedTopic,
+      blogPost,
+      imageGeneration: data.imageGeneration || result.imageGeneration
+    };
+  }
+
+  /**
+   * Generate enhanced content via worker queue
+   * POST /api/v1/jobs/content-generation → poll until succeeded/failed
    */
   async generateEnhancedContent(selectedTopic, analysisData, strategy = null, enhancementOptions = {}) {
+    const { onProgress, ...restOptions } = enhancementOptions;
+    let comprehensivePrompt;
+    let strategicCTAs;
+
     try {
-      console.log('🔧 Enhanced content generation starting:', { 
-        hasStrategy: !!strategy, 
+      console.log('🔧 Enhanced content generation starting (worker queue):', {
+        hasStrategy: !!strategy,
         strategyKeys: strategy ? Object.keys(strategy) : 'null',
-        enhancementOptions 
-      });
-      
-      // Build comprehensive prompt using new engine
-      const comprehensivePrompt = this.promptEngine.buildComprehensivePrompt(
-        selectedTopic, 
-        analysisData, 
-        strategy, 
         enhancementOptions
-      );
-
-      // Build strategic CTAs
-      const strategicCTAs = this.ctaBuilder.buildStrategicCTAs(
-        analysisData, 
-        strategy, 
-        enhancementOptions.goal
-      );
-
-      // Create enhanced payload for backend
-      const enhancedPayload = {
-        topic: selectedTopic,
-        businessInfo: analysisData,
-        comprehensiveContext: comprehensivePrompt,
-        strategicCTAs: strategicCTAs,
-        enhancementOptions: enhancementOptions,
-        requestEnhancedResponse: true, // Flag for backend to return enhanced structure
-        // Extract organization data from enhancementOptions for API detection
-        organizationId: enhancementOptions.organizationId,
-        organizationName: enhancementOptions.organizationName,
-        targetSEOScore: enhancementOptions.targetSEOScore,
-        includeVisuals: enhancementOptions.includeVisuals,
-        // Pass website analysis for enhancement detection - try multiple possible sources
-        websiteAnalysis: analysisData || enhancementOptions.websiteAnalysis || enhancementOptions.comprehensiveContext?.websiteAnalysis,
-        // Pass tweets if provided
-        tweets: enhancementOptions.tweets
-      };
-
-      // Call enhanced generation endpoint with rich metadata
-      console.log('📊 Requesting enhanced content with comprehensive metadata...');
-      const response = await autoBlogAPI.generateEnhancedContent(enhancedPayload);
-      console.log('📈 Enhanced response received:', {
-        hasContent: !!(response.blogPost || response.content),
-        hasSEOAnalysis: !!response.seoAnalysis,
-        hasQualityMetrics: !!response.contentQuality,
-        hasImprovement: !!response.improvementSuggestions,
-        needsImageGeneration: !!response.imageGeneration?.needsImageGeneration
       });
 
-      // Step 2: Generate images if needed (after blog is saved)
-      let content = response.blogPost?.content || response.content || response.blogPost;
+      const payload = this._buildContentGenerationPayload(
+        selectedTopic,
+        analysisData,
+        strategy,
+        restOptions
+      );
+      comprehensivePrompt = payload.comprehensiveContext;
+      strategicCTAs = payload.strategicCTAs;
 
-      if (response.imageGeneration?.needsImageGeneration && response.imageGeneration.blogPostId) {
+      // 1. Create job
+      let jobId;
+      try {
+        const createResponse = await jobsAPI.createContentGenerationJob(payload);
+        jobId = createResponse.jobId;
+      } catch (err) {
+        if (err.status === 503) {
+          return {
+            success: false,
+            error: 'Service temporarily unavailable. The content generation queue is not available. Please try again later.',
+            queueUnavailable: true
+          };
+        }
+        throw err;
+      }
+
+      console.log('📋 Content generation job created:', jobId);
+
+      // 2. Poll until succeeded or failed
+      const finalStatus = await jobsAPI.pollJobStatus(jobId, {
+        onProgress,
+        pollIntervalMs: 2500,
+        maxAttempts: 120
+      });
+
+      if (finalStatus.status === 'failed') {
+        return {
+          success: false,
+          error: finalStatus.error || 'Content generation failed',
+          errorCode: finalStatus.errorCode,
+          jobId,
+          retryable: finalStatus.status === 'failed'
+        };
+      }
+
+      const result = finalStatus.result;
+      if (!result) {
+        return {
+          success: false,
+          error: 'No result received from job'
+        };
+      }
+
+      // Map result (result.data, result.savedPost) to response shape
+      const response = this._mapResultToResponse(
+        result,
+        comprehensivePrompt,
+        strategicCTAs,
+        selectedTopic
+      );
+
+      // 3. Generate images if needed (same as before)
+      const imageGen = result.imageGeneration || result.data?.imageGeneration;
+      if (imageGen?.needsImageGeneration && imageGen.blogPostId) {
         console.log('🎨 Triggering image generation for blog post...');
-
         try {
           const imageResult = await autoBlogAPI.generateImagesForBlog(
-            response.imageGeneration.blogPostId,
-            content,
-            response.imageGeneration.topic,
-            response.imageGeneration.organizationId
+            imageGen.blogPostId,
+            response.content,
+            imageGen.topic,
+            imageGen.organizationId
           );
-
           if (imageResult.success) {
-            console.log('✅ Images generated successfully, updating content');
-            content = imageResult.content; // Update with content containing actual images
+            response.content = imageResult.content;
           } else {
             console.warn('⚠️ Image generation failed, keeping placeholders:', imageResult.error);
-            // Continue with placeholder content
           }
         } catch (imageError) {
           console.error('❌ Image generation error:', imageError.message);
-          // Continue with placeholder content
         }
       }
 
-      if (response && (response.blogPost || response.content)) {
-        
-        return {
-          success: true,
-          content: content,
-          visualSuggestions: response.visualSuggestions || [],
-          enhancedMetadata: response.enhancedMetadata || {
-            seoAnalysis: response.seoAnalysis,
-            contentQuality: response.contentQuality,
-            strategicElements: response.strategicElements,
-            improvementSuggestions: response.improvementSuggestions,
-            keywordOptimization: response.keywordOptimization,
-            visualSuggestions: response.visualSuggestions || []
-          },
-          seoAnalysis: response.seoAnalysis,
-          contentQuality: response.contentQuality,
-          strategicElements: response.strategicElements,
-          improvementSuggestions: response.improvementSuggestions,
-          keywordOptimization: response.keywordOptimization,
-          generationContext: comprehensivePrompt,
-          strategicCTAs: strategicCTAs,
-          selectedTopic: selectedTopic
-        };
-      } else {
-        return {
-          success: false,
-          error: 'Enhanced content generation failed: No content received'
-        };
-      }
+      return response;
     } catch (error) {
       console.error('Enhanced content generation error:', error);
+      return {
+        success: false,
+        error: error.message,
+        fallbackAvailable: true
+      };
+    }
+  }
+
+  /**
+   * Retry a failed content generation job
+   * POST /api/v1/jobs/:jobId/retry → poll until succeeded/failed
+   * @param {string} jobId - Job ID from failed response
+   * @param {{ onProgress?: (status) => void }} options
+   */
+  async retryContentGenerationJob(jobId, options = {}) {
+    const { onProgress } = options;
+    try {
+      await jobsAPI.retryJob(jobId);
+      const finalStatus = await jobsAPI.pollJobStatus(jobId, {
+        onProgress,
+        pollIntervalMs: 2500,
+        maxAttempts: 120
+      });
+      if (finalStatus.status === 'failed') {
+        return {
+          success: false,
+          error: finalStatus.error || 'Content generation failed',
+          errorCode: finalStatus.errorCode,
+          jobId,
+          retryable: true
+        };
+      }
+      const result = finalStatus.result;
+      if (!result) {
+        return { success: false, error: 'No result received from job' };
+      }
+      const data = result.data || {};
+      const response = this._mapResultToResponse(
+        result,
+        data.generationContext || '',
+        data.strategicCTAs || [],
+        data.selectedTopic || {}
+      );
+      const imageGen = result.imageGeneration || result.data?.imageGeneration;
+      if (imageGen?.needsImageGeneration && imageGen.blogPostId) {
+        try {
+          const imageResult = await autoBlogAPI.generateImagesForBlog(
+            imageGen.blogPostId,
+            response.content,
+            imageGen.topic,
+            imageGen.organizationId
+          );
+          if (imageResult.success) response.content = imageResult.content;
+        } catch (_) {}
+      }
+      return response;
+    } catch (error) {
       return {
         success: false,
         error: error.message,
