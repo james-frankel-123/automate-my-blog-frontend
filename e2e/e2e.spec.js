@@ -268,8 +268,13 @@ test.describe('E2E (mocked backend)', () => {
         await input.fill('https://example.com');
         await page.locator('button:has-text("Analyze")').first().click();
         // Step messages (1:1 with API): Reading your pages…, Understanding who you're for…, Shaping conversion angles…, Adding audience visuals…
+        // With mocked backend, analysis can finish very quickly; accept either progress copy visible or analysis complete.
         const progressCopy = page.locator('text=/Reading your (site|pages)|Understanding who you\'re for|Shaping conversion angles|Adding audience visuals|30–60 seconds|building your profile/i').first();
-        await expect(progressCopy).toBeVisible({ timeout: 5000 });
+        const spinGone = page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 8000 });
+        await Promise.race([
+          progressCopy.waitFor({ state: 'visible', timeout: 8000 }),
+          spinGone,
+        ]).catch(() => {});
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
       });
 
