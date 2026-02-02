@@ -151,11 +151,9 @@ const WebsiteAnalysisStepStandalone = ({
       try {
         console.log(`📡 [NARRATIVE POLL] Attempt ${pollCount}/${maxPolls}`);
 
-        const response = await fetch(
-          `${process.env.REACT_APP_API_URL}/api/narrative/${analysisResults.organizationId}`
+        const data = await autoBlogAPI.makeRequest(
+          `/api/narrative/${analysisResults.organizationId}`
         );
-
-        const data = await response.json();
 
         // Update UI with job status
         if (data.job) {
@@ -190,6 +188,10 @@ const WebsiteAnalysisStepStandalone = ({
           }));
         }
       } catch (error) {
+        if (error.isUnauthorized) {
+          clearInterval(pollInterval);
+          return;
+        }
         console.error('❌ [NARRATIVE POLL] Error:', error);
         if (pollCount >= maxPolls) {
           clearInterval(pollInterval);

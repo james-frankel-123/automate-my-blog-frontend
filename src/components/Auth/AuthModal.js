@@ -7,7 +7,7 @@ import { useAnalytics } from '../../contexts/AnalyticsContext';
 
 const { Title, Text } = Typography;
 
-const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSuccess = null }) => {
+const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSuccess = null, sessionExpiredMessage = null }) => {
   const [activeTab, setActiveTab] = useState(defaultTab);
   const { trackPageView, trackClick } = useAnalytics();
 
@@ -27,7 +27,7 @@ const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSucc
     {
       key: 'login',
       label: 'Sign In',
-      children: <LoginModal onClose={onClose} context={context} onSuccess={onSuccess} />,
+      children: <LoginModal onClose={onClose} context={context} onSuccess={onSuccess} sessionExpiredMessage={sessionExpiredMessage} />,
     },
     {
       key: 'register',

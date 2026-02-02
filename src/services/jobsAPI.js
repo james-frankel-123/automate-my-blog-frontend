@@ -8,8 +8,16 @@
  * See: docs/backend-queue-system-specification.md (Frontend Handoff)
  */
 
+import { getOnUnauthorized } from './api';
+
 const DEFAULT_POLL_INTERVAL_MS = 2500;
 const DEFAULT_MAX_POLL_ATTEMPTS = 120; // ~5 minutes at 2.5s interval
+
+function clearAuthStorage() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('auth_user_cache');
+}
 
 class JobsAPI {
   constructor() {
@@ -34,12 +42,25 @@ class JobsAPI {
     const options = {
       method,
       headers: this._getHeaders(),
+      credentials: 'include', // Send cookies/credentials on cross-origin requests (CORS)
     };
     if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
       options.body = JSON.stringify(body);
     }
     const response = await fetch(url, options);
     const data = await response.json().catch(() => ({}));
+    if (response.status === 401) {
+      clearAuthStorage();
+      const onUnauthorized = getOnUnauthorized();
+      if (typeof onUnauthorized === 'function') {
+        onUnauthorized();
+      }
+      const err = new Error('Session expired, please log in again.');
+      err.isUnauthorized = true;
+      err.status = 401;
+      err.data = data;
+      throw err;
+    }
     if (!response.ok) {
       const err = new Error(data.error || data.message || `HTTP ${response.status}`);
       err.status = response.status;

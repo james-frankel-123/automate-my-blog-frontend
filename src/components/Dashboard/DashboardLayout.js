@@ -68,7 +68,9 @@ const DashboardLayout = ({
     endImpersonation,
     isNewRegistration,
     clearNewRegistration,
-    loading
+    loading,
+    sessionExpiredMessage,
+    clearSessionExpiredMessage
   } = useAuth();
   
   // Use prop user if provided, otherwise fall back to context user
@@ -82,6 +84,14 @@ const DashboardLayout = ({
     setAuthContext,
     stepResults 
   } = useWorkflowMode();
+
+  // When API returns 401, open auth modal and show "Session expired" message
+  useEffect(() => {
+    if (sessionExpiredMessage) {
+      setShowAuthModal(true);
+      setAuthContext('gate');
+    }
+  }, [sessionExpiredMessage, setShowAuthModal, setAuthContext]);
   
   // Analytics tracking
   const { trackPageView, trackEvent } = useAnalytics();
@@ -1317,9 +1327,11 @@ const DashboardLayout = ({
           onClose={() => {
             setShowAuthModal(false);
             setAuthContext(null);
+            clearSessionExpiredMessage();
           }}
           context={authContext}
           defaultTab={authContext === 'register' ? 'register' : 'login'}
+          sessionExpiredMessage={sessionExpiredMessage}
         />
       )}
 

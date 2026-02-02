@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import autoBlogAPI from '../services/api';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import autoBlogAPI, { setOnUnauthorized } from '../services/api';
 import { getStoredInviteCode, getStoredReferralCode, clearStoredReferralInfo } from '../utils/referralUtils';
 
 // Module-level cache for deduplicating auth requests
@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [currentOrganization, setCurrentOrganization] = useState(null);
   const [loginContext, setLoginContext] = useState(null); // 'gate' or 'nav'
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState(null); // set when API returns 401
   const [impersonationData, setImpersonationData] = useState(null); // stores original admin info
   const [isNewRegistration, setIsNewRegistration] = useState(false); // tracks if user just registered
 
@@ -48,6 +49,18 @@ export const AuthProvider = ({ children }) => {
 
     return () => clearTimeout(retryAuthCheck);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Register global 401 handler: API client clears tokens and calls this; we clear auth state and show message
+  const handleUnauthorized = useCallback(() => {
+    setUser(null);
+    setCurrentOrganization(null);
+    setLoginContext(null);
+    setSessionExpiredMessage('Session expired, please log in again.');
+  }, []);
+  useEffect(() => {
+    setOnUnauthorized(handleUnauthorized);
+    return () => setOnUnauthorized(null);
+  }, [handleUnauthorized]);
 
   const checkAuthStatus = async () => {
     try {
@@ -136,7 +149,8 @@ export const AuthProvider = ({ children }) => {
 
       // Only clear tokens if authentication is explicitly invalid (401/403)
       // Don't clear on network errors, timeouts, or other temporary issues
-      const isAuthError = error.message?.includes('401') ||
+      const isAuthError = error.isUnauthorized === true ||
+                         error.message?.includes('401') ||
                          error.message?.includes('403') ||
                          error.message?.includes('Unauthorized') ||
                          error.message?.includes('Invalid token');
@@ -354,6 +368,10 @@ export const AuthProvider = ({ children }) => {
     setLoginContext(null);
   };
 
+  const clearSessionExpiredMessage = () => {
+    setSessionExpiredMessage(null);
+  };
+
   const setNavContext = () => {
     setLoginContext('nav');
   };
@@ -464,6 +482,8 @@ export const AuthProvider = ({ children }) => {
     loginContext,
     clearLoginContext,
     setNavContext,
+    sessionExpiredMessage,
+    clearSessionExpiredMessage,
     // Registration tracking
     isNewRegistration,
     clearNewRegistration: () => setIsNewRegistration(false),

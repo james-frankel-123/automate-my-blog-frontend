@@ -1,10 +1,25 @@
 // Module-level cache for request deduplication (shared across all instances)
 const activeRequests = new Map();
 
+// Global 401 handler: clear session and notify app (set by AuthContext)
+let onUnauthorizedCallback = null;
+export function setOnUnauthorized(callback) {
+  onUnauthorizedCallback = callback;
+}
+export function getOnUnauthorized() {
+  return onUnauthorizedCallback;
+}
+
+function clearAuthStorage() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  sessionStorage.removeItem('auth_user_cache');
+}
+
 // Automate My Blog API Service
 class AutoBlogAPI {
   constructor() {
-    // Use environment variable for backend URL and ensure no trailing slash
+    // Use environment variable for backend URL (same as backend; no mixed http/https or wrong domain)
     this.baseURL = (process.env.REACT_APP_API_URL || 'http://localhost:3001').replace(/\/+$/, '');
   }
 
@@ -73,11 +88,24 @@ class AutoBlogAPI {
         ...defaultOptions.headers,  // Start with default headers (including auth)
         ...options.headers,         // Merge in custom headers (preserving auth)
       },
+      credentials: 'include', // Send cookies/credentials on cross-origin requests (CORS)
       ...(timeoutSignal && { signal: timeoutSignal }),
     };
     
     try {
       const response = await fetch(url, requestOptions);
+      
+      // 401: treat as not authenticated (expired/invalid token or missing session)
+      if (response.status === 401) {
+        clearAuthStorage();
+        if (typeof onUnauthorizedCallback === 'function') {
+          onUnauthorizedCallback();
+        }
+        const err = new Error('Session expired, please log in again.');
+        err.isUnauthorized = true;
+        err.status = 401;
+        throw err;
+      }
       
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -123,6 +151,10 @@ class AutoBlogAPI {
         return response;
       }
     } catch (error) {
+      // Rethrow 401 as-is so callers get "Session expired" and isUnauthorized (no generic "Something went wrong")
+      if (error.isUnauthorized === true || error.status === 401) {
+        throw error;
+      }
       // Track error events (but skip if this IS a tracking request to prevent infinite loops)
       const isTrackingRequest = normalizedEndpoint.includes('/analytics/track');
 

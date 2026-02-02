@@ -4,7 +4,7 @@ import { UserOutlined, LockOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 
-const LoginModal = ({ onClose, context = null, onSuccess = null }) => {
+const LoginModal = ({ onClose, context = null, onSuccess = null, sessionExpiredMessage = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { login } = useAuth();
@@ -45,6 +45,15 @@ const LoginModal = ({ onClose, context = null, onSuccess = null }) => {
           Sign in to your AutoBlog account
         </p>
       </div>
+
+      {sessionExpiredMessage && (
+        <Alert
+          message={sessionExpiredMessage}
+          type="warning"
+          showIcon
+          style={{ marginBottom: '20px' }}
+        />
+      )}
 
       {error && (
         <Alert
