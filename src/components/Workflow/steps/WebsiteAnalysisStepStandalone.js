@@ -131,6 +131,72 @@ const WebsiteAnalysisStepStandalone = ({
     }
   }, [loading, analysisResults]);
 
+  // Poll for narrative when it's generating
+  useEffect(() => {
+    if (!analysisResults?.narrativeGenerating || !analysisResults?.organizationId) {
+      return;
+    }
+
+    console.log('⏳ [NARRATIVE POLL] Starting to poll for narrative:', analysisResults.organizationId);
+
+    let pollCount = 0;
+    const maxPolls = 120; // Max 2 minutes of polling (increased for queue processing)
+
+    const pollInterval = setInterval(async () => {
+      pollCount++;
+
+      try {
+        console.log(`📡 [NARRATIVE POLL] Attempt ${pollCount}/${maxPolls}`);
+
+        const response = await fetch(
+          `${process.env.REACT_APP_API_URL}/api/narrative/${analysisResults.organizationId}`
+        );
+
+        const data = await response.json();
+
+        // Update UI with job status
+        if (data.job) {
+          setAnalysisResults(prev => ({
+            ...prev,
+            narrativeJobStatus: data.job.status,
+            narrativeJobAttempts: data.job.attempts
+          }));
+        }
+
+        if (data.ready && data.narrative) {
+          console.log('✅ [NARRATIVE POLL] Narrative ready!');
+          clearInterval(pollInterval);
+
+          // Update analysisResults with the narrative
+          setAnalysisResults({
+            ...analysisResults,
+            narrative: data.narrative,
+            narrativeConfidence: data.narrativeConfidence,
+            keyInsights: data.keyInsights,
+            narrativeGenerating: false,
+            narrativeJobStatus: 'completed'
+          });
+        } else if (pollCount >= maxPolls) {
+          console.log('⏱️ [NARRATIVE POLL] Max polls reached, stopping');
+          clearInterval(pollInterval);
+          // Mark as timeout
+          setAnalysisResults(prev => ({
+            ...prev,
+            narrativeGenerating: false,
+            narrativeJobStatus: 'timeout'
+          }));
+        }
+      } catch (error) {
+        console.error('❌ [NARRATIVE POLL] Error:', error);
+        if (pollCount >= maxPolls) {
+          clearInterval(pollInterval);
+        }
+      }
+    }, 1000); // Poll every second
+
+    return () => clearInterval(pollInterval);
+  }, [analysisResults?.narrativeGenerating, analysisResults?.organizationId]);
+
   // Handle delayed reveal animation
   useEffect(() => {
     if (showInput && !inputVisible) {
@@ -741,8 +807,76 @@ const WebsiteAnalysisStepStandalone = ({
       allAnalysisKeys: Object.keys(analysis)
     });
 
+    // Helper function to get status message
+    const getStatusMessage = (status, attempts) => {
+      switch (status) {
+        case 'pending':
+          return {
+            message: 'Your analysis is queued for processing...',
+            icon: '⏳',
+            color: '#1890ff'
+          };
+        case 'processing':
+          return {
+            message: `Generating your narrative analysis${attempts > 1 ? ` (attempt ${attempts})` : ''}...`,
+            icon: '🤖',
+            color: '#52c41a'
+          };
+        case 'completed':
+          return {
+            message: 'Analysis complete!',
+            icon: '✅',
+            color: '#52c41a'
+          };
+        case 'failed':
+          return {
+            message: 'Analysis generation failed. Please try again.',
+            icon: '❌',
+            color: '#ff4d4f'
+          };
+        case 'timeout':
+          return {
+            message: 'Analysis is taking longer than expected. Please refresh to check status.',
+            icon: '⏱️',
+            color: '#faad14'
+          };
+        default:
+          return {
+            message: 'Processing...',
+            icon: '⏳',
+            color: '#1890ff'
+          };
+      }
+    };
+
     return (
       <>
+        {/* Narrative Job Status Indicator */}
+        {analysis.narrativeGenerating && analysis.narrativeJobStatus && (
+          <Card style={{ marginBottom: 16 }}>
+            <Row align="middle" gutter={12}>
+              <Col>
+                <span style={{ fontSize: 24 }}>
+                  {getStatusMessage(analysis.narrativeJobStatus, analysis.narrativeJobAttempts).icon}
+                </span>
+              </Col>
+              <Col flex={1}>
+                <Text style={{
+                  color: getStatusMessage(analysis.narrativeJobStatus, analysis.narrativeJobAttempts).color,
+                  fontWeight: 500
+                }}>
+                  {getStatusMessage(analysis.narrativeJobStatus, analysis.narrativeJobAttempts).message}
+                </Text>
+              </Col>
+              {analysis.narrativeJobStatus === 'processing' && (
+                <Col>
+                  <Spin size="small" />
+                </Col>
+              )}
+            </Row>
+          </Card>
+        )}
+
         {/* Narrative Analysis Card - Primary Display */}
         {hasNarrative && (
           <NarrativeAnalysisCard
