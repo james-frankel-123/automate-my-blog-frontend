@@ -21,11 +21,8 @@ const fontSizes = {
 
 // React component to render the highlight box
 const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) => {
-  const [isDragging, setIsDragging] = React.useState(false);
-  const deleteScheduledRef = React.useRef(false);
   const boxRef = React.useRef(null);                    // Ref for DOM measurement
   const [minHeight, setMinHeight] = React.useState(null); // Dynamic min-height
-  const transparentCanvasRef = React.useRef(null);      // Pre-created transparent canvas for drag ghost
 
   const {
     type,
@@ -40,21 +37,6 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
     iconName,
     align
   } = node.attrs;
-
-  // Create transparent canvas for drag ghost ONCE on mount
-  React.useEffect(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 1;
-    canvas.height = 1;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 1, 1);  // Fully transparent
-
-    transparentCanvasRef.current = canvas;  // Store in ref (NOT in DOM)
-
-    return () => {
-      transparentCanvasRef.current = null;
-    };
-  }, []);
 
   // Dynamically match height of adjacent wrapped content for float layouts
   React.useEffect(() => {
@@ -112,68 +94,9 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
     } else if (layout === 'float-right') {
       updateAttributes({ layout: 'float-left' });
     } else {
-      // If block, default to float-right
-      updateAttributes({ layout: 'float-right', width: '50%' });
+      // If block, default to float-right with 90% width
+      updateAttributes({ layout: 'float-right', width: '90%' });
     }
-  };
-
-  // Handler to toggle full width
-  const handleToggleWidth = () => {
-    if (width === '100%') {
-      updateAttributes({ width: '50%', layout: 'float-right' });
-    } else {
-      updateAttributes({ width: '100%', layout: 'block' });
-    }
-  };
-
-  // Drag start handler - serialize node data
-  const handleDragStart = (e) => {
-    setIsDragging(true);
-    deleteScheduledRef.current = false;
-
-    // Add global flag for drag detection
-    document.body.setAttribute('data-highlight-dragging', 'true');
-
-    // Allow move operation
-    e.dataTransfer.effectAllowed = "move";
-
-    // Serialize complete node data including position for deletion
-    const nodeData = {
-      type: 'highlightBox',
-      attrs: node.attrs,
-      sourcePos: typeof getPos === 'function' ? getPos() : null,
-    };
-
-    e.dataTransfer.setData('application/x-tiptap-highlight', JSON.stringify(nodeData));
-    e.dataTransfer.setData('text/plain', content); // Fallback for text
-
-    // Dispatch custom event with node data for preview
-    window.dispatchEvent(new CustomEvent('highlight-drag-start', {
-      detail: nodeData
-    }));
-
-    // Hide the browser's default drag ghost
-    if (transparentCanvasRef.current) {
-      try {
-        e.dataTransfer.setDragImage(transparentCanvasRef.current, 0, 0);
-      } catch (error) {
-        console.warn('setDragImage failed:', error);
-      }
-    }
-  };
-
-  // Drag end handler
-  const handleDragEnd = (e) => {
-    // Remove global drag flag
-    document.body.removeAttribute('data-highlight-dragging');
-
-    // Dispatch drag end event
-    window.dispatchEvent(new CustomEvent('highlight-drag-end'));
-
-    // Reset dragging state after a delay to allow drop to complete first
-    setTimeout(() => {
-      setIsDragging(false);
-    }, 100);
   };
 
   // Default styles for each type
@@ -269,7 +192,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       case 'float-left':
         return {
           ...base,
-          width: width || '90%',
+          width: '90%',  // Hardcoded to ensure consistent design
           float: 'left',
           marginRight: '16px',
           marginLeft: 0,
@@ -277,7 +200,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       case 'float-right':
         return {
           ...base,
-          width: width || '90%',
+          width: '90%',  // Hardcoded to ensure consistent design
           float: 'right',
           marginLeft: '16px',
           marginRight: 0,
@@ -285,7 +208,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       default:
         return {
           ...base,
-          width: width || '100%',
+          width: '100%',
         };
     }
   };
@@ -296,37 +219,10 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
         ref={boxRef}
         style={{
           ...getLayoutStyles(),
-          opacity: isDragging ? 0 : 1,  // Completely hide during drag - user only sees preview
-          transition: 'opacity 0.2s',
         }}
         contentEditable={false}
         className={`highlight-box highlight-${layout}`}
-        draggable="true"
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        data-drag-handle
       >
-        {/* Visual drag indicator */}
-        {!isDragging && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '8px',
-              left: '8px',
-              cursor: 'grab',
-              padding: '4px',
-              background: 'rgba(114, 46, 209, 0.1)',
-              borderRadius: '4px',
-              fontSize: '12px',
-              opacity: 0,
-              transition: 'opacity 0.2s',
-            }}
-            className="drag-indicator"
-          >
-            ⋮⋮
-          </div>
-        )}
-
         {/* Control Buttons Bar */}
         <div
           style={{
@@ -357,22 +253,6 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
               {layout === 'float-left' ? '→' : '←'}
             </button>
           )}
-
-          {/* Toggle Width */}
-          <button
-            onClick={handleToggleWidth}
-            style={{
-              background: '#fff',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              padding: '4px 8px',
-              cursor: 'pointer',
-              fontSize: '12px',
-            }}
-            title={width === '100%' ? 'Make 50% width' : 'Make full width'}
-          >
-            {width === '100%' ? '⇅' : '↔'}
-          </button>
 
           {/* Delete Button */}
           <button
@@ -424,9 +304,6 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       {/* Add CSS for hover effect */}
       <style jsx>{`
         .highlight-box:hover .highlight-controls {
-          opacity: 1 !important;
-        }
-        .highlight-box:hover .drag-indicator {
           opacity: 1 !important;
         }
       `}</style>
