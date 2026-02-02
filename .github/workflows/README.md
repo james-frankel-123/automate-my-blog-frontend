@@ -38,6 +38,7 @@ General CI workflow for running tests on all PRs and pushes.
 **Triggers:**
 - Push to main, feat/**, or fix/** branches
 - Pull requests to main
+- **merge_group** – when a PR is in the merge queue (so required checks run on the merge group ref)
 
 **What it does:**
 - Runs E2E tests
