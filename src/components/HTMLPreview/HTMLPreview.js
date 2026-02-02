@@ -1,4 +1,5 @@
 import React from 'react';
+import DOMPurify from 'dompurify';
 import { colors, typography } from '../DesignSystem/tokens';
 
 /**
@@ -106,7 +107,16 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
 
   // Check if content looks like markdown (has markdown syntax)
   const isMarkdown = /^#{1,6}\s|^\*\*|^\*\s|^-\s|```|\[.*\]\(.*\)/.test(content);
-  const htmlContent = isMarkdown ? markdownToHTML(content) : content;
+  const rawHtml = isMarkdown ? markdownToHTML(content) : content;
+  
+  // Sanitize HTML to prevent XSS attacks
+  const htmlContent = DOMPurify.sanitize(rawHtml, {
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 
+                   'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'div', 'span', 
+                   'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id'],
+    ALLOW_DATA_ATTR: false
+  });
 
   // Extract typography settings with defaults
   const {
