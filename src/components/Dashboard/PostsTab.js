@@ -3173,6 +3173,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   onInsert={handleTextInsert}
                 />
               }
+              sidebarContent={
+                seoAnalysisVisible && currentDraft?.generation_metadata?.seoAnalysis ? (
+                  <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+                    <SEOAnalysisDisplay post={currentDraft} />
+                  </div>
+                ) : null
+              }
             >
               <EditorPane>
                 <RichTextEditor
@@ -3339,6 +3346,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 isFullscreen={isEditorFullscreen}
                 onToggleFullscreen={handleToggleFullscreen}
                 minHeight="400px"
+                sidebarContent={
+                  seoAnalysisVisible && currentDraft?.generation_metadata?.seoAnalysis ? (
+                    <div style={{ padding: '20px', height: '100%', overflowY: 'auto' }}>
+                      <SEOAnalysisDisplay post={currentDraft} />
+                    </div>
+                  ) : null
+                }
               >
                 {previewMode ? (
                   <div style={{
@@ -3374,9 +3388,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         onEditorReady={setRichTextEditor}
                         placeholder="Enter your blog content..."
                         minHeight="400px"
-                        style={{ 
+                        style={{
                           marginTop: '8px',
-                          fontSize: '14px' 
+                          fontSize: '14px'
                         }}
                       />
                     </div>

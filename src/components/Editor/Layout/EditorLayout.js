@@ -61,7 +61,8 @@ const EditorLayout = ({
   };
 
   const sidebarStyles = {
-    width: '300px',
+    width: '400px',
+    maxWidth: '40%',
     backgroundColor: colors.background.container,
     borderLeft: `1px solid ${colors.border.light}`,
     flexShrink: 0,
