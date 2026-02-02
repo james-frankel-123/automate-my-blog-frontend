@@ -25,6 +25,8 @@ on:
       - 'package-lock.json'
       - 'playwright.config.js'
       - '.github/workflows/**'
+  # Run required checks when a PR is in the merge queue (merge group ref)
+  merge_group:
 
 jobs:
   # Run E2E tests on all PRs and pushes (only when frontend-impacting changes)

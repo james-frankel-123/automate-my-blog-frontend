@@ -125,7 +125,7 @@ test.describe('E2E (mocked backend)', () => {
     test('should display workflow steps on homepage', async ({ page }) => {
       const indicators = [
         'text=Create New Post',
-        'text=Your next post starts here',
+        'text=The new era of marketing has started.',
         'text=Website Analysis',
         'text=Analyze',
         'input[placeholder*="website" i]',
@@ -206,7 +206,7 @@ test.describe('E2E (mocked backend)', () => {
         }
         await createBtn.click();
         await page.waitForTimeout(500);
-        const header = page.locator('text=Your next post starts here').first();
+        const header = page.locator('text=The new era of marketing has started.').first();
         await expect(header).toBeVisible({ timeout: 5000 });
       });
 
