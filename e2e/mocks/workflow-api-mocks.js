@@ -93,6 +93,13 @@ const MOCK_CONTENT = `
 <p>Key points include setup, authentication, and your first request.</p>
 `.trim();
 
+const MOCK_CONTENT_WITH_IMAGES = `
+<h2>How to Get Started with Example API</h2>
+<p><img src="https://via.placeholder.com/800x400?text=Hero" alt="Hero" /></p>
+<p>This is mock AI-generated blog content for E2E testing. Images have been added.</p>
+<p>Key points include setup, authentication, and your first request.</p>
+`.trim();
+
 /** JSON response helper */
 function json(obj) {
   return {
@@ -148,18 +155,31 @@ const MOCK_CONTENT_GENERATION_RESULT = {
   imageGeneration: { needsImageGeneration: false },
 };
 
+/** Job result with image generation needed (for background image test) */
+const MOCK_CONTENT_WITH_IMAGE_GEN = {
+  ...MOCK_CONTENT_GENERATION_RESULT,
+  imageGeneration: {
+    needsImageGeneration: true,
+    blogPostId: MOCK_POST.id,
+    topic: MOCK_TOPICS[0],
+    organizationId: MOCK_USER.organizationId,
+  },
+};
+
 /**
  * Install mocks with optional behavior for worker queue tests.
  * @param {import('@playwright/test').Page} page
- * @param {{ progressiveJobStatus?: boolean, failFirstThenRetry?: boolean }} options
+ * @param {{ progressiveJobStatus?: boolean, failFirstThenRetry?: boolean, imageGenerationInBackground?: boolean }} options
  *   - progressiveJobStatus: job status returns "running" on first poll, "succeeded" on second (shows progress UI)
  *   - failFirstThenRetry: job status returns "failed" on first poll, "succeeded" on subsequent (tests retry flow)
+ *   - imageGenerationInBackground: job result includes needsImageGeneration; images API returns content with images (progressive UX)
  */
 async function installWorkflowMocksWithOptions(page, options = {}) {
-  const { progressiveJobStatus = false, failFirstThenRetry = false } = options;
+  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false } = options;
   const pollCounts = {};
 
   await installWorkflowMocksBase(page, {
+    imageGenerationInBackground,
     jobsStatusHandler: (jobId) => {
       pollCounts[jobId] = (pollCounts[jobId] || 0) + 1;
       const pollNum = pollCounts[jobId];
@@ -193,7 +213,9 @@ async function installWorkflowMocksWithOptions(page, options = {}) {
         };
       }
 
-      const result = isAnalysis ? { ...MOCK_ANALYSIS } : MOCK_CONTENT_GENERATION_RESULT;
+      const result = isAnalysis
+        ? { ...MOCK_ANALYSIS }
+        : (imageGenerationInBackground ? MOCK_CONTENT_WITH_IMAGE_GEN : MOCK_CONTENT_GENERATION_RESULT);
       return {
         jobId,
         status: 'succeeded',
@@ -215,7 +237,7 @@ async function installWorkflowMocks(page) {
 }
 
 async function installWorkflowMocksBase(page, options = {}) {
-  const { jobsStatusHandler } = options;
+  const { jobsStatusHandler, imageGenerationInBackground = false } = options;
   const patterns = [
     { path: '/api/analyze-website', method: 'POST', body: () => json(MOCK_ANALYSIS) },
     { path: '/api/generate-audiences', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
@@ -234,6 +256,7 @@ async function installWorkflowMocksBase(page, options = {}) {
         }),
     },
     { path: '/api/export', method: 'POST', body: () => json({ success: true }) },
+    { path: '/api/images/generate-for-blog', method: 'POST', body: () => json({ success: true, content: MOCK_CONTENT_WITH_IMAGES, blogPostId: MOCK_POST.id }) },
     { path: '/api/v1/jobs/content-generation', method: 'POST', body: () => ({ status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_CONTENT }) }) },
     { path: '/api/v1/jobs/website-analysis', method: 'POST', body: () => ({ status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_ANALYSIS }) }) },
     { path: '/api/v1/session/create', method: 'POST', body: () => json({ session_id: 'e2e-session-id' }) },
@@ -288,9 +311,8 @@ async function installWorkflowMocksBase(page, options = {}) {
         return route.fulfill(json(custom));
       }
       const isAnalysis = jobId === E2E_JOB_ANALYSIS;
-      const result = isAnalysis
-        ? { ...MOCK_ANALYSIS }
-        : MOCK_CONTENT_GENERATION_RESULT;
+      const contentResult = imageGenerationInBackground ? MOCK_CONTENT_WITH_IMAGE_GEN : MOCK_CONTENT_GENERATION_RESULT;
+      const result = isAnalysis ? { ...MOCK_ANALYSIS } : contentResult;
       return route.fulfill(json({
         jobId,
         status: 'succeeded',
@@ -302,6 +324,9 @@ async function installWorkflowMocksBase(page, options = {}) {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       }));
+    }
+    if (pathPrefixMatch(url, '/api/v1/organizations') && method === 'GET' && url.includes('/ctas')) {
+      return route.fulfill(json({ success: true, ctas: [], count: 0, has_sufficient_ctas: false }));
     }
     if (pathPrefixMatch(url, '/api/v1/jobs/') && method === 'POST' && url.includes('/retry')) {
       const jobIdMatch = url.match(/\/api\/v1\/jobs\/([^/]+)\/retry/);
