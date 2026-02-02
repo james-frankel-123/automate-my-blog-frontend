@@ -802,9 +802,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   // Bundle subscription handler
   const handleSubscribeToBundle = async (billingInterval) => {
     try {
+      console.log('🎫 [FRONTEND] Starting checkout:', { billingInterval });
       message.loading({ content: 'Redirecting to checkout...', key: 'bundle-subscribe' });
 
       const response = await autoBlogAPI.subscribeToAllStrategies(billingInterval);
+      console.log('🎫 [FRONTEND] API response:', response);
 
       if (response.url || response.sessionUrl) {
         // Redirect to Stripe checkout
@@ -813,10 +815,15 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         throw new Error('No checkout URL received');
       }
     } catch (error) {
-      console.error('Failed to subscribe to bundle:', error);
+      console.error('❌ [FRONTEND] Checkout error:', {
+        message: error.message,
+        response: error.response?.data
+      });
+
       message.error({
-        content: `Failed to start checkout: ${error.message}`,
-        key: 'bundle-subscribe'
+        content: `Checkout failed: ${error.response?.data?.message || error.message}`,
+        key: 'bundle-subscribe',
+        duration: 5
       });
     }
   };
@@ -1039,13 +1046,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           // Extract monthly revenue range
                           const step5Match = strategy.pitch.match(/Step 5:[^$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
 
-                          // Calculate ROI multiple
-                          const annualFee = 240;
-                          const roiMultiple = consultationPrice ? Math.floor(consultationPrice / annualFee) : null;
-
-                          if (consultationPrice && roiMultiple) {
-                            return `✅ Just 1 deal/year at $${consultationPrice.toLocaleString()} = ${roiMultiple}x your annual fees back. What's the risk?`;
-                          }
                           // Fallback if extraction fails
                           if (step5Match) {
                             return `💡 Potential: $${step5Match[1]}-$${step5Match[2]}/month`;
