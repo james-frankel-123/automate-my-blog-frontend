@@ -29,17 +29,47 @@ const { Option } = Select;
  */
 const ManualCTAInputModal = ({
   open,
+  visible, // Support both prop names
   organizationId,
   onClose,
-  onSuccess
+  onCancel, // Support both prop names
+  onSuccess,
+  onSubmit, // Support both prop names
+  onSkip,
+  existingCTAs = []
 }) => {
+  // Normalize prop names
+  const isOpen = open || visible;
+  const handleClose = onClose || onCancel || (() => {});
+  const handleSuccess = onSuccess || onSubmit || (() => {});
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [ctas, setCtas] = useState([
-    { text: '', href: '', type: 'contact', placement: 'end-of-post' },
-    { text: '', href: '', type: 'demo', placement: 'end-of-post' },
-    { text: '', href: '', type: 'signup', placement: 'end-of-post' }
-  ]);
+
+  // Initialize with existing CTAs if available, otherwise use empty defaults
+  const getInitialCTAs = () => {
+    if (existingCTAs && existingCTAs.length > 0) {
+      return existingCTAs.map(cta => ({
+        text: cta.text || '',
+        href: cta.href || '',
+        type: cta.type || 'contact',
+        placement: cta.placement || 'end-of-post'
+      }));
+    }
+    return [
+      { text: '', href: '', type: 'contact', placement: 'end-of-post' },
+      { text: '', href: '', type: 'demo', placement: 'end-of-post' },
+      { text: '', href: '', type: 'signup', placement: 'end-of-post' }
+    ];
+  };
+
+  const [ctas, setCtas] = useState(getInitialCTAs());
+
+  // Reset CTAs when modal opens or existingCTAs change
+  React.useEffect(() => {
+    if (isOpen) {
+      setCtas(getInitialCTAs());
+    }
+  }, [isOpen, existingCTAs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // CTA Type options
   const ctaTypeOptions = [
@@ -135,58 +165,60 @@ const ManualCTAInputModal = ({
       return;
     }
 
-    setLoading(true);
+    // Prepare CTA data
+    const ctaData = ctas.map(cta => ({
+      text: cta.text.trim(),
+      href: cta.href.trim(),
+      type: cta.type,
+      placement: cta.placement,
+      context: `Manually entered ${cta.type} CTA`
+    }));
 
-    try {
-      // Prepare CTA data
-      const ctaData = ctas.map(cta => ({
-        text: cta.text.trim(),
-        href: cta.href.trim(),
-        type: cta.type,
-        placement: cta.placement,
-        context: `Manually entered ${cta.type} CTA`
-      }));
-
-      // Call API to save CTAs
-      const response = await api.addManualCTAs(organizationId, ctaData);
-
-      message.success(`Successfully added ${response.ctas_added} CTAs!`);
-
-      // Call success callback
-      if (onSuccess) {
-        onSuccess(response);
+    // If there's a custom submit handler (from parent), use that
+    // Otherwise, handle the API call here
+    if (onSubmit && onSubmit !== onSuccess) {
+      // Parent will handle the API call
+      handleSuccess(ctaData);
+      handleClose();
+    } else {
+      // Handle API call here
+      setLoading(true);
+      try {
+        const response = await api.addManualCTAs(organizationId, ctaData);
+        message.success(`Successfully added ${response.ctas_added} CTAs!`);
+        handleSuccess(response);
+        handleClose();
+      } catch (error) {
+        console.error('Failed to add CTAs:', error);
+        message.error(error.message || 'Failed to add CTAs. Please try again.');
+      } finally {
+        setLoading(false);
       }
-
-      // Close modal
-      onClose();
-    } catch (error) {
-      console.error('Failed to add CTAs:', error);
-      message.error(error.message || 'Failed to add CTAs. Please try again.');
-    } finally {
-      setLoading(false);
     }
   };
 
   // Skip adding CTAs
-  const handleSkip = () => {
-    Modal.confirm({
-      title: 'Generate without CTAs?',
-      content: 'Content will be created without calls-to-action. You can add them later when editing.',
-      okText: 'Continue Without CTAs',
-      cancelText: 'Go Back',
-      onOk: () => {
-        if (onSuccess) {
-          onSuccess({ skipped: true });
+  const handleSkipCTAs = () => {
+    if (onSkip) {
+      onSkip();
+    } else {
+      Modal.confirm({
+        title: 'Generate without CTAs?',
+        content: 'Content will be created without calls-to-action. You can add them later when editing.',
+        okText: 'Continue Without CTAs',
+        cancelText: 'Go Back',
+        onOk: () => {
+          handleSuccess({ skipped: true });
+          handleClose();
         }
-        onClose();
-      }
-    });
+      });
+    }
   };
 
   return (
     <Modal
-      open={open}
-      onCancel={onClose}
+      open={isOpen}
+      onCancel={handleClose}
       width={700}
       footer={null}
       centered
@@ -196,11 +228,13 @@ const ManualCTAInputModal = ({
         <Space direction="vertical" size={4} style={{ width: '100%', marginBottom: 24 }}>
           <Title level={4} style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <LinkOutlined style={{ color: 'var(--color-primary)' }} />
-            Add Calls-to-Action
+            {existingCTAs && existingCTAs.length > 0 ? 'Edit Calls-to-Action' : 'Add Calls-to-Action'}
           </Title>
           <Paragraph style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '14px' }}>
-            We couldn't find enough CTAs on your website. Please add at least 3 CTAs to generate
-            effective content with working links.
+            {existingCTAs && existingCTAs.length > 0
+              ? 'Edit your CTAs below. At least 3 CTAs are recommended for effective content generation.'
+              : 'We couldn\'t find enough CTAs on your website. Please add at least 3 CTAs to generate effective content with working links.'
+            }
           </Paragraph>
         </Space>
 
@@ -323,11 +357,11 @@ const ManualCTAInputModal = ({
         <Divider style={{ margin: '24px 0 16px 0' }} />
 
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-          <Button onClick={handleSkip} disabled={loading}>
+          <Button onClick={handleSkipCTAs} disabled={loading}>
             Generate Without CTAs
           </Button>
           <Space>
-            <Button onClick={onClose} disabled={loading}>
+            <Button onClick={handleClose} disabled={loading}>
               Cancel
             </Button>
             <Button

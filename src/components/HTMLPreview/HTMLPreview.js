@@ -2,23 +2,111 @@ import React from 'react';
 import { colors, typography } from '../DesignSystem/tokens';
 
 /**
+ * Convert markdown to HTML
+ */
+const markdownToHTML = (markdown) => {
+  let html = markdown;
+
+  // Headers
+  html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
+  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
+
+  // Italic
+  html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
+
+  // Links
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+  // Code blocks
+  html = html.replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>');
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
+
+  // Lists (unordered)
+  html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+  // Paragraphs (split by double newline)
+  const lines = html.split('\n');
+  let inList = false;
+  let inCodeBlock = false;
+  let result = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    // Handle code blocks
+    if (line.includes('<pre><code>')) {
+      inCodeBlock = true;
+    }
+    if (line.includes('</code></pre>')) {
+      inCodeBlock = false;
+    }
+
+    // Handle lists
+    if (line.includes('<li>') && !inList) {
+      inList = true;
+    }
+    if (inList && !line.includes('<li>') && line.trim() !== '') {
+      result.push('</ul>');
+      inList = false;
+    }
+
+    // Wrap non-empty, non-special lines in paragraphs
+    if (
+      !inCodeBlock &&
+      !inList &&
+      line.trim() !== '' &&
+      !line.startsWith('<h') &&
+      !line.startsWith('<ul') &&
+      !line.startsWith('<li') &&
+      !line.startsWith('<pre') &&
+      !line.includes('</ul>') &&
+      !line.includes('</pre>')
+    ) {
+      line = '<p>' + line + '</p>';
+    }
+
+    result.push(line);
+  }
+
+  if (inList) {
+    result.push('</ul>');
+  }
+
+  return result.join('\n');
+};
+
+/**
  * HTML Preview Component
  * Renders HTML content with proper styling and typography settings
+ * Automatically converts markdown to HTML if markdown syntax is detected
  */
 const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
   if (!content || !content.trim()) {
     return (
-      <div style={{ 
-        color: 'var(--color-text-tertiary)', 
-        fontStyle: 'italic', 
+      <div style={{
+        color: 'var(--color-text-tertiary)',
+        fontStyle: 'italic',
         padding: '20px',
         textAlign: 'center',
-        ...style 
+        ...style
       }}>
         No content to preview
       </div>
     );
   }
+
+  // Check if content looks like markdown (has markdown syntax)
+  const isMarkdown = /^#{1,6}\s|^\*\*|^\*\s|^-\s|```|\[.*\]\(.*\)/.test(content);
+  const htmlContent = isMarkdown ? markdownToHTML(content) : content;
 
   // Extract typography settings with defaults
   const {
@@ -40,8 +128,8 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
 
   return (
     <div style={previewStyles}>
-      <div 
-        dangerouslySetInnerHTML={{ __html: content }}
+      <div
+        dangerouslySetInnerHTML={{ __html: htmlContent }}
         style={{
           // Override default styles for HTML elements
           '& h1': {
