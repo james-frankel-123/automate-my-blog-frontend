@@ -115,6 +115,8 @@ export const systemVoice = {
     generatingWithTime: "Writing your post… This can take a minute.",
     progressSteps: ["Structuring the post", "Matching your voice", "Polishing"],
     progressLabel: "What we're doing:",
+    imagesGenerating: "Adding images…",
+    imagesReady: "Images added.",
   },
 
   // ─── Toasts & messages (message.success / message.info / message.error) ───

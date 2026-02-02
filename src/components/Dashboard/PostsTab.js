@@ -314,6 +314,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Workflow content generation state
   const [contentGenerated, setContentGenerated] = useState(false);
   const [generatingContent, setGeneratingContent] = useState(false);
+  const [generatingImages, setGeneratingImages] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(null); // { progress, currentStep, status } from job polling
   const [availableTopics, setAvailableTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -395,8 +396,39 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   }, [userCredits, remainingPosts]);
   
 
+  // Load posts and credits in parallel when user is present
   useEffect(() => {
-    loadPosts();
+    if (!user) {
+      setPosts([]);
+      setUserCredits(null);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setLoadingCredits(true);
+    Promise.all([
+      api.getPosts(),
+      api.getUserCredits().catch(() => null)
+    ]).then(([postsResult, credits]) => {
+      if (cancelled) return;
+      if (postsResult?.success) {
+        setPosts(postsResult.posts || []);
+      } else {
+        setPosts([]);
+      }
+      if (credits) setUserCredits(credits);
+    }).catch((err) => {
+      if (!cancelled) {
+        console.error('Failed to load posts/credits:', err);
+        setPosts([]);
+      }
+    }).finally(() => {
+      if (!cancelled) {
+        setLoading(false);
+        setLoadingCredits(false);
+      }
+    });
+    return () => { cancelled = true; };
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Autosave timer - saves every 15 seconds when content is being edited
@@ -441,31 +473,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       };
     }
   }, [contentGenerated, currentDraft, editingContent]);
-
-  // Fetch user credits
-  useEffect(() => {
-    const fetchCredits = async () => {
-      if (!user) {
-        setUserCredits(null);
-        return;
-      }
-
-      setLoadingCredits(true);
-      try {
-        const credits = await api.getUserCredits();
-        setUserCredits(credits);
-        console.log('✅ Fetched user credits:', credits);
-      } catch (error) {
-        console.error('Failed to fetch credits:', error);
-        // Fallback to user.postsRemaining if API fails
-        setUserCredits(null);
-      } finally {
-        setLoadingCredits(false);
-      }
-    };
-
-    fetchCredits();
-  }, [user]);
 
   // Fetch CTAs when organization ID is available
   useEffect(() => {
@@ -639,11 +646,28 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         return;
       }
 
-      const result = await topicAPI.generateTrendingTopics(
+      // Run topic generation, credits fetch, and CTAs fetch in parallel for faster UX
+      const topicsPromise = topicAPI.generateTrendingTopics(
         analysisData,
         selectedStrategy,
         stepResults?.home?.webSearchInsights || {}
       );
+      const creditsPromise = user ? api.getUserCredits().catch(() => null) : Promise.resolve(null);
+      const ctasPromise = organizationId
+        ? api.getOrganizationCTAs(organizationId).catch(() => null)
+        : Promise.resolve(null);
+
+      const [result, credits, ctasResponse] = await Promise.all([
+        topicsPromise,
+        creditsPromise,
+        ctasPromise
+      ]);
+
+      if (credits) setUserCredits(credits);
+      if (ctasResponse) {
+        setOrganizationCTAs(ctasResponse.ctas || []);
+        setHasSufficientCTAs(ctasResponse.has_sufficient_ctas || false);
+      }
 
       if (result.success) {
         setAvailableTopics(result.topics);
@@ -666,56 +690,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       return requireSignUp('Create your blog post', 'Get your first post');
     }
 
-    // Check user quota before generation
-    try {
-      const credits = await api.getUserCredits();
-      const remainingPosts = credits.totalCredits - credits.usedCredits;
-
-      if (remainingPosts <= 0) {
-        Modal.warning({
-          title: 'Content Generation Limit Reached',
-          content: (
-            <div>
-              <p>You've used all {credits.totalCredits} of your available posts this period.</p>
-              <p style={{ fontWeight: 600, marginTop: '16px' }}>Options to continue:</p>
-              <ul style={{ marginTop: '8px' }}>
-                <li>Upgrade to Creator plan (4 posts/month) for $20/month</li>
-                <li>Upgrade to Professional plan (8 posts/month) for $50/month</li>
-                <li>Refer friends to earn bonus posts (1 post per referral)</li>
-              </ul>
-              <Button
-                type="primary"
-                onClick={() => {
-                  Modal.destroyAll();
-                  // Navigate to Settings → Subscriptions
-                  const settingsTab = document.querySelector('[data-node-key="settings"]');
-                  if (settingsTab) settingsTab.click();
-                }}
-                style={{ marginTop: '12px' }}
-              >
-                View Plans
-              </Button>
-            </div>
-          ),
-          okText: 'Got it',
-        });
-        return; // Stop generation
-      }
-
-      // Show warning when low on posts
-      if (remainingPosts <= 2) {
-        message.warning(
-          `You have ${remainingPosts} post${remainingPosts === 1 ? '' : 's'} remaining. Consider upgrading your plan.`,
-          6
-        );
-      }
-    } catch (error) {
-      console.warn('Could not check quota, proceeding with generation:', error);
-      // Allow generation to proceed if quota check fails (backend will enforce)
-    }
-
     const topic = availableTopics.find(t => t.id === topicId);
     if (!topic) return;
+
+    const websiteAnalysisData = stepResults?.home?.websiteAnalysis || {};
     
     setSelectedTopic(topic);
     setGeneratingContent(true);
@@ -730,11 +708,55 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     });
     
     try {
+      // Run credits check and tweet search in parallel for faster UX
+      const [creditsResult, tweetSearchResult] = await Promise.all([
+        api.getUserCredits().catch(() => ({ totalCredits: 1, usedCredits: 0 })),
+        api.searchTweetsForTopic(topic, websiteAnalysisData, 3)
+      ]);
+
+      const remainingPosts = creditsResult.totalCredits - creditsResult.usedCredits;
+      if (remainingPosts <= 0) {
+        setGeneratingContent(false);
+        Modal.warning({
+          title: 'Content Generation Limit Reached',
+          content: (
+            <div>
+              <p>You've used all {creditsResult.totalCredits} of your available posts this period.</p>
+              <p style={{ fontWeight: 600, marginTop: '16px' }}>Options to continue:</p>
+              <ul style={{ marginTop: '8px' }}>
+                <li>Upgrade to Creator plan (4 posts/month) for $20/month</li>
+                <li>Upgrade to Professional plan (8 posts/month) for $50/month</li>
+                <li>Refer friends to earn bonus posts (1 post per referral)</li>
+              </ul>
+              <Button
+                type="primary"
+                onClick={() => {
+                  Modal.destroyAll();
+                  const settingsTab = document.querySelector('[data-node-key="settings"]');
+                  if (settingsTab) settingsTab.click();
+                }}
+                style={{ marginTop: '12px' }}
+              >
+                View Plans
+              </Button>
+            </div>
+          ),
+          okText: 'Got it',
+        });
+        return;
+      }
+
+      if (remainingPosts <= 2) {
+        message.warning(
+          `You have ${remainingPosts} post${remainingPosts === 1 ? '' : 's'} remaining. Consider upgrading your plan.`,
+          6
+        );
+      }
+
+      const prefetchedTweets = tweetSearchResult?.tweets || [];
+
       // Determine if enhanced generation should be used based on available organization data
-      const websiteAnalysisData = stepResults?.home?.websiteAnalysis || {};
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
-      
-      // Enable enhanced generation if we have organization ID and analysis data
       const shouldUseEnhancement = !!(organizationId && hasWebsiteAnalysis);
       
       console.log('🔍 Enhancement decision:', {
@@ -749,6 +771,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       const enhancementOptions = {
         useEnhancedGeneration: shouldUseEnhancement,
+        prefetchedTweets,
         goal: contentStrategy.goal,
         voice: contentStrategy.voice,
         template: contentStrategy.template,
@@ -786,6 +809,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       
       if (result.success) {
         setEditingContent(result.content);
+        setContentGenerated(true);
+
+        // If images are generating in background, show indicator and update when ready
+        if (result.imageGenerationPromise) {
+          setGeneratingImages(true);
+          message.info(systemVoice.content.imagesGenerating, 2);
+          result.imageGenerationPromise.then((updatedContent) => {
+            setEditingContent(updatedContent);
+            setLastSavedContent(updatedContent);
+            setCurrentDraft((prev) => prev ? { ...prev, content: updatedContent } : prev);
+            setGeneratingImages(false);
+            message.success(systemVoice.content.imagesReady, 3);
+          });
+        }
         
         // Track content_generation_completed event
         trackEvent('content_generation_completed', {
@@ -800,7 +837,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           step: 'content_generation',
           topicId: topic.id
         }).catch(err => console.error('Failed to track workflow_step_completed:', err));
-        setContentGenerated(true);
 
         // Track content generated
         api.trackLeadConversion('content_generated', {
@@ -946,6 +982,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     topic,
                     blogPost: retryResult.blogPost
                   });
+                  if (retryResult.imageGenerationPromise) {
+                    setGeneratingImages(true);
+                    message.info(systemVoice.content.imagesGenerating, 2);
+                    retryResult.imageGenerationPromise.then((updatedContent) => {
+                      setEditingContent(updatedContent);
+                      setLastSavedContent(updatedContent);
+                      setCurrentDraft((prev) => prev ? { ...prev, content: updatedContent } : prev);
+                      setGeneratingImages(false);
+                      message.success(systemVoice.content.imagesReady, 3);
+                    });
+                  }
                   if (savedPost?.id && onQuotaUpdate) onQuotaUpdate();
                   loadPosts(); // Refresh posts list
                   message.success('Blog content generated and saved!');

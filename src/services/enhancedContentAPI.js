@@ -160,25 +160,27 @@ export class EnhancedContentAPI {
         selectedTopic
       );
 
-      // 3. Generate images if needed (same as before)
+      // 3. Generate images in background for progressive UX – return immediately with placeholders
       const imageGen = result.imageGeneration || result.data?.imageGeneration;
       if (imageGen?.needsImageGeneration && imageGen.blogPostId) {
-        console.log('🎨 Triggering image generation for blog post...');
-        try {
-          const imageResult = await autoBlogAPI.generateImagesForBlog(
+        console.log('🎨 Triggering image generation in background...');
+        response.imageGenerationPromise = autoBlogAPI
+          .generateImagesForBlog(
             imageGen.blogPostId,
             response.content,
             imageGen.topic,
             imageGen.organizationId
-          );
-          if (imageResult.success) {
-            response.content = imageResult.content;
-          } else {
-            console.warn('⚠️ Image generation failed, keeping placeholders:', imageResult.error);
-          }
-        } catch (imageError) {
-          console.error('❌ Image generation error:', imageError.message);
-        }
+          )
+          .then((imageResult) => {
+            if (imageResult.success) {
+              return imageResult.content;
+            }
+            return response.content;
+          })
+          .catch((imageError) => {
+            console.error('❌ Image generation error:', imageError.message);
+            return response.content;
+          });
       }
 
       return response;
@@ -229,15 +231,17 @@ export class EnhancedContentAPI {
       );
       const imageGen = result.imageGeneration || result.data?.imageGeneration;
       if (imageGen?.needsImageGeneration && imageGen.blogPostId) {
-        try {
-          const imageResult = await autoBlogAPI.generateImagesForBlog(
+        response.imageGenerationPromise = autoBlogAPI
+          .generateImagesForBlog(
             imageGen.blogPostId,
             response.content,
             imageGen.topic,
             imageGen.organizationId
-          );
-          if (imageResult.success) response.content = imageResult.content;
-        } catch (_) {}
+          )
+          .then((imageResult) =>
+            imageResult.success ? imageResult.content : response.content
+          )
+          .catch(() => response.content);
       }
       return response;
     } catch (error) {

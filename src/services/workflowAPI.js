@@ -341,16 +341,21 @@ export const contentAPI = {
    */
   async generateContent(selectedTopic, analysisData, selectedStrategy = null, webSearchInsights = {}, enhancementOptions = {}) {
     try {
-      // Step 1: Search for tweets for the selected topic
-      console.log('🐦 Searching for tweets for selected topic...');
-      const tweetSearchResult = await autoBlogAPI.searchTweetsForTopic(
-        selectedTopic,
-        analysisData,
-        3  // maxTweets
-      );
-
-      const tweets = tweetSearchResult.tweets || [];
-      console.log(`✅ Found ${tweets.length} tweets for topic`);
+      // Step 1: Get tweets (use prefetched if provided for parallel UX with credits check)
+      let tweets = [];
+      if (enhancementOptions.prefetchedTweets !== undefined) {
+        tweets = enhancementOptions.prefetchedTweets || [];
+        console.log(`✅ Using ${tweets.length} prefetched tweets for topic`);
+      } else {
+        console.log('🐦 Searching for tweets for selected topic...');
+        const tweetSearchResult = await autoBlogAPI.searchTweetsForTopic(
+          selectedTopic,
+          analysisData,
+          3  // maxTweets
+        );
+        tweets = tweetSearchResult.tweets || [];
+        console.log(`✅ Found ${tweets.length} tweets for topic`);
+      }
 
       // Check if enhanced content generation is requested
       if (enhancementOptions.useEnhancedGeneration) {
@@ -358,11 +363,12 @@ export const contentAPI = {
         console.log('🔍 Enhancement options:', enhancementOptions);
         console.log('🎯 Strategy provided:', !!selectedStrategy);
 
+        const { prefetchedTweets: _, ...restOptions } = enhancementOptions;
         const enhancedResult = await enhancedContentAPI.generateEnhancedContent(
           selectedTopic,
           analysisData,
           selectedStrategy,
-          { ...enhancementOptions, tweets }  // Pass tweets to enhanced generation
+          { ...restOptions, tweets }  // Pass tweets to enhanced generation (exclude prefetchedTweets)
         );
         
         if (enhancedResult.success) {
@@ -374,6 +380,7 @@ export const contentAPI = {
             content: enhancedResult.content,
             blogPost,
             savedPost: enhancedResult.blogPost?.id ? enhancedResult.blogPost : undefined,
+            imageGenerationPromise: enhancedResult.imageGenerationPromise,
             visualSuggestions: enhancedResult.visualSuggestions || [],
             enhancedMetadata: enhancedResult.enhancedMetadata,
             seoAnalysis: enhancedResult.seoAnalysis,
