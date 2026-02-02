@@ -1762,8 +1762,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       marginBottom: '12px'
                                     }}
                                   >
-                                    {isGenerating ? systemVoice.content.generating : 
-                                     user ? 'Create Post' : 'Get One Free Post'}
+                                    {isGenerating ? systemVoice.content.generating :
+                                     user ? (remainingPosts > 0 ? 'Create Post' : 'Buy More Posts') : 'Get One Free Post'}
                                   </Button>
                                   
                                   <Button

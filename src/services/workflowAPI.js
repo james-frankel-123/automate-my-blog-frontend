@@ -72,7 +72,12 @@ export const analysisAPI = {
             customerLanguage: response.analysis.customerLanguage || [],
             keywords: response.analysis.keywords || [],
             contentIdeas: response.analysis.contentIdeas || [],
-            organizationId: response.analysis.organizationId  // ← CRITICAL: Pass organizationId for CTA fetching
+            organizationId: response.analysis.organizationId,  // ← CRITICAL: Pass organizationId for CTA fetching
+            // Narrative analysis fields
+            narrative: response.analysis.narrative,
+            narrativeConfidence: response.analysis.narrativeConfidence,
+            keyInsights: response.analysis.keyInsights || [],
+            narrativeGenerating: response.analysis.narrativeGenerating  // ← Pass async narrative flag
           },
           webSearchInsights: {
             brandResearch: response.analysis.brandColors ? 'Found actual brand guidelines' : null,
