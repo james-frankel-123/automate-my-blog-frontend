@@ -52,6 +52,7 @@ const UnifiedWorkflowHeader = ({
   const [skipAnimation, setSkipAnimation] = useState(false);
   const [dimText, setDimText] = useState(false);
   const [dingPosition, setDingPosition] = useState(null);
+  const [delayedInputIsEditing, setDelayedInputIsEditing] = useState(true);
 
   // Trigger text transition animation when auth state changes
   useEffect(() => {
@@ -71,6 +72,11 @@ const UnifiedWorkflowHeader = ({
       setPreviousUser(user);
     }
   }, [user, previousUser]);
+
+  // Synchronize header with input (no delay for synchronized movement)
+  useEffect(() => {
+    setDelayedInputIsEditing(inputIsEditing);
+  }, [inputIsEditing]);
 
   // Typewriter animation effect
   useEffect(() => {
@@ -167,18 +173,6 @@ const UnifiedWorkflowHeader = ({
             setAnimationComplete(true);
             sessionStorage.setItem(animationKey, 'true');
             onSequenceComplete?.();
-
-            // Dim text after input appears (300ms delay for input fade-in)
-            const dimTimeout = setTimeout(() => {
-              setDimText(true);
-
-              // Auto un-dim after 5 seconds
-              const undimTimeout = setTimeout(() => {
-                setDimText(false);
-              }, 5000);
-              timeouts.push(undimTimeout);
-            }, 300);
-            timeouts.push(dimTimeout);
           }, 0);
           timeouts.push(completeTimeout);
         }
@@ -352,17 +346,16 @@ const UnifiedWorkflowHeader = ({
   return (
     <>
       <div style={{
-        marginBottom: !inputIsEditing ? '0' : '24px',
+        marginBottom: '24px',
         textAlign: 'center',
-        padding: !inputIsEditing ? '0' : '24px',
+        padding: '24px',
         position: 'relative',
         cursor: enableSequentialAnimation && !animationComplete ? 'pointer' : 'default',
-        transform: !inputIsEditing ? 'translateY(-100%)' : 'translateY(0)',
-        opacity: !inputIsEditing ? 0 : 1,
-        height: !inputIsEditing ? '0' : 'auto',
-        overflow: !inputIsEditing ? 'hidden' : 'visible',
-        transition: 'all 0.3s ease',
-        pointerEvents: !inputIsEditing ? 'none' : 'auto'
+        transform: !delayedInputIsEditing ? 'translateY(-200px)' : 'translateY(0)',
+        opacity: !delayedInputIsEditing ? 0 : 1,
+        overflow: 'visible',
+        transition: 'all 1s ease',
+        pointerEvents: !delayedInputIsEditing ? 'none' : 'auto'
       }}
       onClick={enableSequentialAnimation && !animationComplete ? handleSkipAnimation : undefined}
       >
@@ -370,8 +363,6 @@ const UnifiedWorkflowHeader = ({
           // Typewriter animation mode
           <div
             style={{
-              opacity: dimText ? 0.4 : 1,
-              transition: 'all 0.3s ease',
               pointerEvents: 'none',
               position: 'relative'
             }}
