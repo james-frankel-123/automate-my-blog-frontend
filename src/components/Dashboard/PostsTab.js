@@ -758,7 +758,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         onProgress: (status) => setGenerationProgress({
           progress: status.progress,
           currentStep: status.currentStep,
-          status: status.status
+          status: status.status,
+          estimatedTimeRemaining: status.estimatedTimeRemaining
         })
       };
 
@@ -915,7 +916,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   onProgress: (status) => setGenerationProgress({
                     progress: status.progress,
                     currentStep: status.currentStep,
-                    status: status.status
+                    status: status.status,
+                    estimatedTimeRemaining: status.estimatedTimeRemaining
                   })
                 });
                 if (retryResult.success) {
@@ -1694,6 +1696,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           `Based on your audience analysis, here are high-impact blog post ideas:`
                         }
                       </Paragraph>
+
+                      {/* Content generation progress — progress bar, step label, ETA */}
+                      {generatingContent && (
+                        <div data-testid="content-generation-progress" style={{
+                          marginBottom: '24px',
+                          padding: '20px',
+                          backgroundColor: 'var(--color-primary-50)',
+                          borderRadius: '8px',
+                          border: '1px solid var(--color-primary-100)'
+                        }}>
+                          <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
+                            {systemVoice.content.progressLabel} {generationProgress?.currentStep || systemVoice.content.generating}
+                          </div>
+                          <Progress
+                            percent={generationProgress?.progress ?? 0}
+                            showInfo
+                            strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
+                          />
+                          {generationProgress?.estimatedTimeRemaining != null && generationProgress.estimatedTimeRemaining > 0 && (
+                            <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                              ~{generationProgress.estimatedTimeRemaining} seconds remaining
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
                       {/* ENHANCED TOPIC CARDS — stagger reveal */}
                       <Row gutter={responsive.gutter}>
@@ -2564,6 +2591,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         `Based on your audience analysis, here are high-impact blog post ideas:`
                       }
                     </Paragraph>
+
+                    {/* Content generation progress — progress bar, step label, ETA */}
+                    {generatingContent && (
+                      <div data-testid="content-generation-progress" style={{
+                        marginBottom: '24px',
+                        padding: '20px',
+                        backgroundColor: 'var(--color-primary-50)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-primary-100)'
+                      }}>
+                        <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
+                          {systemVoice.content.progressLabel} {generationProgress?.currentStep || systemVoice.content.generating}
+                        </div>
+                        <Progress
+                          percent={generationProgress?.progress ?? 0}
+                          showInfo
+                          strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
+                        />
+                        {generationProgress?.estimatedTimeRemaining != null && generationProgress.estimatedTimeRemaining > 0 && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                            ~{generationProgress.estimatedTimeRemaining} seconds remaining
+                          </div>
+                        )}
+                      </div>
+                    )}
                     
                     {/* ENHANCED TOPIC CARDS — stagger reveal */}
                     <Row gutter={responsive.gutter}>

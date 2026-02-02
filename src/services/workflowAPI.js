@@ -88,10 +88,8 @@ export const analysisAPI = {
         const jobId = createResponse.jobId;
         const finalStatus = await jobsAPI.pollJobStatus(jobId, {
           onProgress: (status) => {
-            if (options.onProgress && status.currentStep) {
+            if (options.onProgress) {
               options.onProgress(status);
-            } else if (options.onProgress && status.progress !== undefined) {
-              options.onProgress(status.progress);
             }
           },
           pollIntervalMs: 2500,

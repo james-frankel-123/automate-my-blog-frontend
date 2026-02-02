@@ -148,8 +148,74 @@ const MOCK_CONTENT_GENERATION_RESULT = {
   imageGeneration: { needsImageGeneration: false },
 };
 
+/**
+ * Install mocks with optional behavior for worker queue tests.
+ * @param {import('@playwright/test').Page} page
+ * @param {{ progressiveJobStatus?: boolean, failFirstThenRetry?: boolean }} options
+ *   - progressiveJobStatus: job status returns "running" on first poll, "succeeded" on second (shows progress UI)
+ *   - failFirstThenRetry: job status returns "failed" on first poll, "succeeded" on subsequent (tests retry flow)
+ */
+async function installWorkflowMocksWithOptions(page, options = {}) {
+  const { progressiveJobStatus = false, failFirstThenRetry = false } = options;
+  const pollCounts = {};
+
+  await installWorkflowMocksBase(page, {
+    jobsStatusHandler: (jobId) => {
+      pollCounts[jobId] = (pollCounts[jobId] || 0) + 1;
+      const pollNum = pollCounts[jobId];
+      const isAnalysis = jobId === E2E_JOB_ANALYSIS;
+
+      if (failFirstThenRetry && pollNum === 1) {
+        return {
+          jobId,
+          status: 'failed',
+          progress: 0,
+          currentStep: 'Failed',
+          error: 'Simulated failure for e2e retry test',
+          errorCode: 'E2E_TEST_FAILURE',
+          result: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      if (progressiveJobStatus && pollNum === 1) {
+        return {
+          jobId,
+          status: 'running',
+          progress: 50,
+          currentStep: isAnalysis ? 'Analyzing website…' : 'Writing…',
+          estimatedTimeRemaining: 30,
+          error: null,
+          errorCode: null,
+          result: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      const result = isAnalysis ? { ...MOCK_ANALYSIS } : MOCK_CONTENT_GENERATION_RESULT;
+      return {
+        jobId,
+        status: 'succeeded',
+        progress: 100,
+        currentStep: 'Complete',
+        error: null,
+        errorCode: null,
+        result,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+    },
+  });
+}
+
 /** Install route mocks for all workflow + auth + user APIs */
 async function installWorkflowMocks(page) {
+  return installWorkflowMocksBase(page, {});
+}
+
+async function installWorkflowMocksBase(page, options = {}) {
+  const { jobsStatusHandler } = options;
   const patterns = [
     { path: '/api/analyze-website', method: 'POST', body: () => json(MOCK_ANALYSIS) },
     { path: '/api/generate-audiences', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
@@ -217,6 +283,10 @@ async function installWorkflowMocks(page) {
     const jobsStatusMatch = url.match(/\/api\/v1\/jobs\/([^/]+)\/status/);
     if (jobsStatusMatch && method === 'GET') {
       const jobId = jobsStatusMatch[1];
+      const custom = jobsStatusHandler && jobsStatusHandler(jobId);
+      if (custom) {
+        return route.fulfill(json(custom));
+      }
       const isAnalysis = jobId === E2E_JOB_ANALYSIS;
       const result = isAnalysis
         ? { ...MOCK_ANALYSIS }
@@ -254,6 +324,7 @@ async function injectLoggedInUser(page) {
 
 module.exports = {
   installWorkflowMocks,
+  installWorkflowMocksWithOptions,
   injectLoggedInUser,
   fakeJWT,
   MOCK_USER,
