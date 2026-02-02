@@ -8,7 +8,7 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { installWorkflowMocks, injectLoggedInUser, MOCK_TOPICS } = require('./mocks/workflow-api-mocks');
+const { installWorkflowMocks, installWorkflowMocksWithOptions, injectLoggedInUser, MOCK_TOPICS } = require('./mocks/workflow-api-mocks');
 
 async function clearStorage(page) {
   await page.evaluate(() => {
@@ -125,7 +125,7 @@ test.describe('E2E (mocked backend)', () => {
     test('should display workflow steps on homepage', async ({ page }) => {
       const indicators = [
         'text=Create New Post',
-        'text=Your next post starts here',
+        'text=The new era of marketing has started.',
         'text=Website Analysis',
         'text=Analyze',
         'input[placeholder*="website" i]',
@@ -206,7 +206,7 @@ test.describe('E2E (mocked backend)', () => {
         }
         await createBtn.click();
         await page.waitForTimeout(500);
-        const header = page.locator('text=Your next post starts here').first();
+        const header = page.locator('text=The new era of marketing has started.').first();
         await expect(header).toBeVisible({ timeout: 5000 });
       });
 
@@ -545,6 +545,196 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForTimeout(500);
       const exportModal = page.locator('.ant-modal').filter({ hasText: /Export|Markdown|HTML|Download/ });
       await expect(exportModal.first()).toBeVisible({ timeout: 8000 });
+    });
+  });
+
+  test.describe('Worker queue & progress', () => {
+    test('content generation shows progress bar and step label during generation', async ({ page }) => {
+      test.setTimeout(90000);
+      await installWorkflowMocksWithOptions(page, { progressiveJobStatus: true });
+      await page.goto('/');
+      await clearStorage(page);
+      await injectLoggedInUser(page);
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+
+      await page.locator('button:has-text("Create New Post")').first().click();
+      await page.waitForTimeout(800);
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      await removeOverlay(page);
+
+      await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+      await page.waitForTimeout(800);
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
+      await page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first().click();
+      await page.waitForTimeout(2000);
+
+      await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+      await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+      await page.waitForTimeout(800);
+
+      const generateTopicsBtn = page.locator('button:has-text("Generate post"), button:has-text("Buy more posts")').first();
+      await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
+      await generateTopicsBtn.click();
+      await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+
+      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      await expect(createPostBtn).toBeVisible({ timeout: 12000 });
+      await createPostBtn.click();
+
+      const progressPanel = page.locator('[data-testid="content-generation-progress"]');
+      await expect(progressPanel).toBeVisible({ timeout: 5000 });
+      await expect(progressPanel).toContainText(/What we're doing|Writing/i);
+      await expect(progressPanel.locator('.ant-progress')).toBeVisible({ timeout: 3000 });
+
+      await page.waitForSelector('[data-testid="content-generation-progress"]', { state: 'hidden', timeout: 25000 }).catch(() => {});
+      const editor = page.locator('.tiptap, [contenteditable="true"]').first();
+      await expect(editor).toBeVisible({ timeout: 15000 });
+    });
+
+    test('website analysis shows progress bar during analysis', async ({ page }) => {
+      test.setTimeout(60000);
+      await installWorkflowMocksWithOptions(page, { progressiveJobStatus: true });
+      await page.goto('/');
+      await clearStorage(page);
+      await injectLoggedInUser(page);
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+
+      await page.locator('button:has-text("Create New Post")').first().click();
+      await page.waitForTimeout(500);
+      const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(input).toBeVisible({ timeout: 10000 });
+      await input.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+
+      const progressPanel = page.locator('[data-testid="website-analysis-progress"]');
+      await expect(progressPanel).toBeVisible({ timeout: 5000 });
+      await expect(progressPanel).toContainText(/What we're doing|Analyzing|Reading/i);
+      await expect(progressPanel.locator('.ant-progress')).toBeVisible({ timeout: 3000 });
+
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await expect(page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience/i').first()).toBeVisible({ timeout: 8000 });
+    });
+
+    test('503 on job create shows queue unavailable message', async ({ page }) => {
+      test.setTimeout(90000);
+      await installWorkflowMocks(page);
+      await page.goto('/');
+      await clearStorage(page);
+      await injectLoggedInUser(page);
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+
+      await page.route('**/api/v1/jobs/content-generation', (route) => {
+        if (route.request().method() === 'POST') {
+          return route.fulfill({
+            status: 503,
+            contentType: 'application/json',
+            body: JSON.stringify({ error: 'Queue unavailable', message: 'Service temporarily unavailable' }),
+          });
+        }
+        return route.continue();
+      });
+
+      await page.locator('button:has-text("Create New Post")').first().click();
+      await page.waitForTimeout(800);
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      await removeOverlay(page);
+
+      await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+      await page.waitForTimeout(800);
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
+      await page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first().click();
+      await page.waitForTimeout(2000);
+
+      await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+      const generateTopicsBtn = page.locator('button:has-text("Generate post")').first();
+      await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
+      await generateTopicsBtn.click();
+      await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+
+      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      await expect(createPostBtn).toBeVisible({ timeout: 12000 });
+      await createPostBtn.click();
+
+      const errorMsg = page.locator('.ant-message-error, .ant-message').filter({ hasText: /unavailable|try again later|503/i });
+      await expect(errorMsg.first()).toBeVisible({ timeout: 8000 });
+    });
+
+    test('retry modal appears when content generation job fails and Retry button is clickable', async ({ page }) => {
+      test.setTimeout(90000);
+      await installWorkflowMocksWithOptions(page, { failFirstThenRetry: true });
+      await page.goto('/');
+      await clearStorage(page);
+      await injectLoggedInUser(page);
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+
+      await page.locator('button:has-text("Create New Post")').first().click();
+      await page.waitForTimeout(800);
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      await removeOverlay(page);
+
+      await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+      await page.waitForTimeout(800);
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(500);
+      await page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first().click();
+      await page.waitForTimeout(2000);
+
+      await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+      const generateTopicsBtn = page.locator('button:has-text("Generate post")').first();
+      await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
+      await generateTopicsBtn.click();
+      await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(2000);
+
+      await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+      await page.waitForTimeout(500);
+      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
+      await expect(createPostBtn).toBeVisible({ timeout: 12000 });
+      await createPostBtn.click({ force: true });
+
+      const retryModal = page.locator('.ant-modal').filter({ hasText: /Content generation failed|Retry|Something went wrong/i });
+      await expect(retryModal).toBeVisible({ timeout: 15000 });
+      const retryBtn = retryModal.locator('button:has-text("Retry")');
+      await expect(retryBtn).toBeVisible();
+      await expect(retryBtn).toBeEnabled();
+      await retryBtn.click();
+
+      await page.waitForSelector('.ant-modal', { state: 'hidden', timeout: 10000 }).catch(() => {});
     });
   });
 

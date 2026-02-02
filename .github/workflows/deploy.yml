@@ -25,6 +25,8 @@ on:
       - 'playwright.config.js'
       - 'vercel.json'
       - '.github/workflows/deploy.yml'
+  # Run required checks when a PR is in the merge queue
+  merge_group:
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

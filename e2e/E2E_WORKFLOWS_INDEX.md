@@ -9,6 +9,7 @@ All e2e tests live in **`e2e/e2e.spec.js`** and use a **mocked backend**.
 | **Auth (logged out)** | Auth (logged out) | Login form, sign up form. |
 | **Auth (logged in)** | Auth (logged in) | Persist login, logout. |
 | **Workflow** | Workflow | Homepage steps, start analysis, results, persistence, **smoke** (analyze → audience → strategy → posts), **full** (analyze → … → export). |
+| **Worker queue & progress** | Worker queue & progress | Content generation progress bar/step label, website analysis progress bar, 503 queue unavailable, retry modal on job failure. |
 | **Dashboard** | Dashboard | Layout, tab nav (Dashboard, Posts, Audience, Analytics, Settings), user menu, workflow indicators, sidebar toggle (mobile). |
 | **Content management** | Content management | Posts list, create, edit, toolbar, preview, export, filter/search. |
 | **Full scenarios** | Full workflow scenarios | Dashboard tabs flow, create → edit → preview → export. |
