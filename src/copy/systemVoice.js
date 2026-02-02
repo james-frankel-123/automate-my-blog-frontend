@@ -81,6 +81,7 @@ export const systemVoice = {
     ],
     defaultProgress: "Reading your site and building your profile. This usually takes 30–60 seconds.",
     loadingTitle: "Reading your site…",
+    progressLabel: "What we're doing:",
     // Toasts
     success: "We've got the full picture. Pick your audience next.",
     successLimited: "We've got a basic picture. You can continue or try a different URL.",

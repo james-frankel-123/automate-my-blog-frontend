@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message, Collapse } from 'antd';
+import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message, Collapse, Progress } from 'antd';
 import {
   GlobalOutlined,
   ScanOutlined,
@@ -102,6 +102,9 @@ const WebsiteAnalysisStepStandalone = ({
 
   // Input editing mode state (controls button/icon visibility)
   const [isEditing, setIsEditing] = useState(true);
+
+  // Analysis progress from job polling (progress, currentStep, estimatedTimeRemaining)
+  const [analysisProgress, setAnalysisProgress] = useState(null);
 
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
@@ -364,14 +367,27 @@ const WebsiteAnalysisStepStandalone = ({
         timestamp: new Date().toISOString()
       });
 
-      // Show step 1 message immediately; API will call onProgress(1–4) as each step runs
+      // Show step 1 message immediately; API will call onProgress(1–4) or status object as each step runs
       const steps = systemVoice.analysis.steps;
       updateScanningMessage(steps[0]);
+      setAnalysisProgress(null);
 
       const result = await analysisAPI.analyzeWebsite(validation.formattedUrl, {
-        onProgress: (step) => {
-          if (step >= 1 && step <= steps.length) {
-            updateScanningMessage(steps[step - 1]);
+        onProgress: (stepOrStatus) => {
+          if (typeof stepOrStatus === 'number') {
+            if (stepOrStatus >= 1 && stepOrStatus <= steps.length) {
+              updateScanningMessage(steps[stepOrStatus - 1]);
+              setAnalysisProgress({ stepNumber: stepOrStatus, totalSteps: steps.length, progress: (stepOrStatus / steps.length) * 100, currentStep: steps[stepOrStatus - 1] });
+            } else if (stepOrStatus >= 0 && stepOrStatus <= 100) {
+              setAnalysisProgress(prev => ({ ...prev, progress: stepOrStatus }));
+            }
+          } else if (typeof stepOrStatus === 'object' && stepOrStatus) {
+            updateScanningMessage(stepOrStatus.currentStep || steps[0]);
+            setAnalysisProgress({
+              progress: stepOrStatus.progress,
+              currentStep: stepOrStatus.currentStep,
+              estimatedTimeRemaining: stepOrStatus.estimatedTimeRemaining,
+            });
           }
         }
       });
@@ -472,6 +488,7 @@ const WebsiteAnalysisStepStandalone = ({
     } finally {
       const updateLoading = setIsLoading || setLocalLoading;
       updateLoading(false);
+      setAnalysisProgress(null);
     }
   };
   
@@ -761,11 +778,38 @@ const WebsiteAnalysisStepStandalone = ({
           </Title>
           <Paragraph style={{ 
             color: 'var(--color-text-secondary)', 
-            marginBottom: '0',
+            marginBottom: analysisProgress ? '16px' : '0',
             fontSize: responsive.fontSize.text 
           }}>
             {currentScanningMessage || systemVoice.analysis.defaultProgress}
           </Paragraph>
+          {/* Progress bar, step label, ETA when available */}
+          {analysisProgress && (
+            <div data-testid="website-analysis-progress" style={{
+              marginBottom: '24px',
+              padding: '16px',
+              backgroundColor: 'var(--color-primary-50)',
+              borderRadius: '8px',
+              border: '1px solid var(--color-primary-100)',
+              textAlign: 'left',
+              maxWidth: '400px',
+              margin: '0 auto 24px'
+            }}>
+              <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
+                {systemVoice.analysis.progressLabel} {analysisProgress.currentStep || currentScanningMessage}
+              </div>
+              <Progress
+                percent={analysisProgress.progress ?? 0}
+                showInfo
+                strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
+              />
+              {analysisProgress.estimatedTimeRemaining != null && analysisProgress.estimatedTimeRemaining > 0 && (
+                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  ~{analysisProgress.estimatedTimeRemaining} seconds remaining
+                </div>
+              )}
+            </div>
+          )}
         </div>
         {/* Skeleton hint so the result feels like a reveal */}
         <div style={{ marginTop: '24px', textAlign: 'left', maxWidth: '400px', margin: '24px auto 0' }}>

@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { WorkflowGuidance } from '../Workflow/ModeToggle';
 import api from '../../services/api';
 import { topicAPI, contentAPI } from '../../services/workflowAPI';
+import enhancedContentAPI from '../../services/enhancedContentAPI';
 import SchedulingModal from '../Modals/SchedulingModal';
 import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
@@ -313,6 +314,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Workflow content generation state
   const [contentGenerated, setContentGenerated] = useState(false);
   const [generatingContent, setGeneratingContent] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(null); // { progress, currentStep, status } from job polling
   const [availableTopics, setAvailableTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
   
@@ -751,7 +753,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           websiteAnalysis: websiteAnalysisData
         } : null,
         targetSEOScore: 95,
-        includeVisuals: shouldUseEnhancement
+        includeVisuals: shouldUseEnhancement,
+        // Progress callback for worker queue polling
+        onProgress: (status) => setGenerationProgress({
+          progress: status.progress,
+          currentStep: status.currentStep,
+          status: status.status,
+          estimatedTimeRemaining: status.estimatedTimeRemaining
+        })
       };
 
       const result = await contentAPI.generateContent(
@@ -820,69 +829,126 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         } else {
           console.log('⚠️ No enhanced metadata found in result');
         }
-        
-        // Create initial post in database immediately
-        const initialPost = {
-          title: topic.title,
-          content: result.content,
-          status: 'draft',
-          topic_data: topic,
-          generation_metadata: {
-            strategy: contentStrategy,
-            generatedAt: new Date().toISOString(),
-            wordCount: result.content.length
-          }
-        };
-        
-        // Save to database and get real post ID
-        const saveResult = await api.createPost(initialPost);
-        if (saveResult.success) {
+
+        // Use saved post from worker queue when available (job already saved it)
+        const savedPost = result.blogPost || result.savedPost;
+        if (savedPost?.id) {
           setCurrentDraft({
-            id: saveResult.post.id, // Use real database ID
+            id: savedPost.id,
             title: topic.title,
             content: result.content,
             status: 'draft',
-            createdAt: saveResult.post.created_at,
+            createdAt: savedPost.created_at ?? savedPost.createdAt ?? new Date().toISOString(),
             topic: topic,
             blogPost: result.blogPost
           });
-          
-          // Initialize autosave state for new content
-          setLastSavedContent(result.content); // Mark as saved since we just saved
+          setLastSavedContent(result.content);
           setLastSaved(new Date());
           setIsAutosaving(false);
           setAutosaveError(null);
-          
-          // Update posts list
-          setPosts(prevPosts => [saveResult.post, ...prevPosts]);
-
+          loadPosts();
+          if (onQuotaUpdate) onQuotaUpdate();
           message.success('Blog content generated and saved!');
-
-          // Refresh quota counter after successful post creation
-          if (onQuotaUpdate) {
-            onQuotaUpdate();
-          }
         } else {
-          // Fallback to old behavior if save fails
-          setCurrentDraft({
-            id: null, // No ID means this needs to be created on first save
+          // Fallback: create post via API (sync flow or when worker didn't save)
+          const initialPost = {
             title: topic.title,
             content: result.content,
             status: 'draft',
-            createdAt: new Date().toISOString(),
-            topic: topic,
-            blogPost: result.blogPost
-          });
-          
-          // Initialize autosave state for new content
-          setLastSavedContent(''); // Mark as unsaved initially
-          setLastSaved(null);
-          setIsAutosaving(false);
-          setAutosaveError(null);
-          
-          message.success('Blog content generated successfully!');
+            topic_data: topic,
+            generation_metadata: {
+              strategy: contentStrategy,
+              generatedAt: new Date().toISOString(),
+              wordCount: result.content.length
+            }
+          };
+          const saveResult = await api.createPost(initialPost);
+          if (saveResult.success && saveResult.post) {
+            setCurrentDraft({
+              id: saveResult.post.id,
+              title: topic.title,
+              content: result.content,
+              status: 'draft',
+              createdAt: saveResult.post.created_at ?? new Date().toISOString(),
+              topic: topic,
+              blogPost: result.blogPost
+            });
+            setLastSavedContent(result.content);
+            setLastSaved(new Date());
+            setIsAutosaving(false);
+            setAutosaveError(null);
+            setPosts(prevPosts => [saveResult.post, ...prevPosts]);
+            if (onQuotaUpdate) onQuotaUpdate();
+            message.success('Blog content generated and saved!');
+          } else {
+            setCurrentDraft({
+              id: null,
+              title: topic.title,
+              content: result.content,
+              status: 'draft',
+              createdAt: new Date().toISOString(),
+              topic: topic,
+              blogPost: result.blogPost
+            });
+            setLastSavedContent('');
+            setLastSaved(null);
+            setIsAutosaving(false);
+            setAutosaveError(null);
+            message.success('Blog content generated successfully!');
+          }
         }
       } else {
+        if (result.queueUnavailable) {
+          message.error(result.error || 'Service temporarily unavailable. Please try again later.', 8);
+          return;
+        }
+        if (result.retryable && result.jobId) {
+          Modal.confirm({
+            title: 'Content generation failed',
+            content: result.error || 'Something went wrong. Would you like to retry?',
+            okText: 'Retry',
+            cancelText: 'Cancel',
+            onOk: async () => {
+              setGeneratingContent(true);
+              setGenerationProgress(null);
+              try {
+                const retryResult = await enhancedContentAPI.retryContentGenerationJob(result.jobId, {
+                  onProgress: (status) => setGenerationProgress({
+                    progress: status.progress,
+                    currentStep: status.currentStep,
+                    status: status.status,
+                    estimatedTimeRemaining: status.estimatedTimeRemaining
+                  })
+                });
+                if (retryResult.success) {
+                  setEditingContent(retryResult.content);
+                  setContentGenerated(true);
+                  const savedPost = retryResult.blogPost;
+                  setCurrentDraft({
+                    id: savedPost?.id ?? null,
+                    title: topic.title,
+                    content: retryResult.content,
+                    status: 'draft',
+                    createdAt: savedPost?.created_at ?? new Date().toISOString(),
+                    topic,
+                    blogPost: retryResult.blogPost
+                  });
+                  if (savedPost?.id && onQuotaUpdate) onQuotaUpdate();
+                  loadPosts(); // Refresh posts list
+                  message.success('Blog content generated and saved!');
+                } else {
+                  message.error(retryResult.error || 'Retry failed');
+                }
+              } catch (err) {
+                message.error(`Retry failed: ${err.message}`);
+              } finally {
+                setGeneratingContent(false);
+                setGenerationProgress(null);
+              }
+            }
+          });
+          return;
+        }
         throw new Error(result.error || 'Content generation failed');
       }
     } catch (error) {
@@ -890,6 +956,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       message.error(`Failed to generate content: ${error.message}`);
     } finally {
       setGeneratingContent(false);
+      setGenerationProgress(null);
     }
   };
   
@@ -1629,6 +1696,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           `Based on your audience analysis, here are high-impact blog post ideas:`
                         }
                       </Paragraph>
+
+                      {/* Content generation progress — progress bar, step label, ETA */}
+                      {generatingContent && (
+                        <div data-testid="content-generation-progress" style={{
+                          marginBottom: '24px',
+                          padding: '20px',
+                          backgroundColor: 'var(--color-primary-50)',
+                          borderRadius: '8px',
+                          border: '1px solid var(--color-primary-100)'
+                        }}>
+                          <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
+                            {systemVoice.content.progressLabel} {generationProgress?.currentStep || systemVoice.content.generating}
+                          </div>
+                          <Progress
+                            percent={generationProgress?.progress ?? 0}
+                            showInfo
+                            strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
+                          />
+                          {generationProgress?.estimatedTimeRemaining != null && generationProgress.estimatedTimeRemaining > 0 && (
+                            <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                              ~{generationProgress.estimatedTimeRemaining} seconds remaining
+                            </div>
+                          )}
+                        </div>
+                      )}
                       
                       {/* ENHANCED TOPIC CARDS — stagger reveal */}
                       <Row gutter={responsive.gutter}>
@@ -1762,7 +1854,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       marginBottom: '12px'
                                     }}
                                   >
-                                    {isGenerating ? systemVoice.content.generating : 
+                                    {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
                                      user ? 'Create Post' : 'Get One Free Post'}
                                   </Button>
                                   
@@ -2499,6 +2591,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         `Based on your audience analysis, here are high-impact blog post ideas:`
                       }
                     </Paragraph>
+
+                    {/* Content generation progress — progress bar, step label, ETA */}
+                    {generatingContent && (
+                      <div data-testid="content-generation-progress" style={{
+                        marginBottom: '24px',
+                        padding: '20px',
+                        backgroundColor: 'var(--color-primary-50)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-primary-100)'
+                      }}>
+                        <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
+                          {systemVoice.content.progressLabel} {generationProgress?.currentStep || systemVoice.content.generating}
+                        </div>
+                        <Progress
+                          percent={generationProgress?.progress ?? 0}
+                          showInfo
+                          strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
+                        />
+                        {generationProgress?.estimatedTimeRemaining != null && generationProgress.estimatedTimeRemaining > 0 && (
+                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                            ~{generationProgress.estimatedTimeRemaining} seconds remaining
+                          </div>
+                        )}
+                      </div>
+                    )}
                     
                     {/* ENHANCED TOPIC CARDS — stagger reveal */}
                     <Row gutter={responsive.gutter}>
@@ -2641,7 +2758,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     marginBottom: '12px'
                                   }}
                                 >
-                                  {isGenerating ? systemVoice.content.generating :
+                                  {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
                                    user ?
                                      (remainingPosts > 0 ? 'Generate post' : 'Buy more posts') :
                                      'Register to claim free post'

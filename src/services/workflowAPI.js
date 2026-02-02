@@ -1,5 +1,6 @@
 import autoBlogAPI from './api';
 import enhancedContentAPI from './enhancedContentAPI';
+import jobsAPI from './jobsAPI';
 
 /**
  * Workflow API Service Layer
@@ -7,14 +8,68 @@ import enhancedContentAPI from './enhancedContentAPI';
  */
 
 /**
+ * Map job result to analysisAPI response shape
+ */
+function mapWebsiteAnalysisResult(result) {
+  const analysis = result.analysis || result;
+  const hasEnhancedData = analysis.brandColors &&
+    analysis.scenarios?.length > 0 &&
+    analysis.scenarios[0]?.businessValue &&
+    analysis.scenarios[0]?.targetSegment;
+  return {
+    success: true,
+    analysis: {
+      businessType: analysis.businessType || 'Business',
+      businessName: analysis.businessName || 'Your Business',
+      targetAudience: analysis.decisionMakers || analysis.targetAudience || 'General Audience',
+      contentFocus: analysis.contentFocus || 'Content Focus',
+      brandVoice: analysis.brandVoice || 'Professional',
+      brandColors: analysis.brandColors || {
+        primary: '#6B8CAE',
+        secondary: '#F4E5D3',
+        accent: '#8FBC8F'
+      },
+      description: analysis.description || 'Business description generated from website analysis.',
+      decisionMakers: analysis.decisionMakers || analysis.targetAudience || 'General Audience',
+      endUsers: analysis.endUsers || 'Product users',
+      searchBehavior: analysis.searchBehavior || '',
+      connectionMessage: analysis.connectionMessage || '',
+      businessModel: analysis.businessModel || '',
+      websiteGoals: analysis.websiteGoals || '',
+      blogStrategy: analysis.blogStrategy || '',
+      scenarios: analysis.scenarios || [],
+      webSearchStatus: analysis.webSearchStatus || {
+        businessResearchSuccess: false,
+        keywordResearchSuccess: false,
+        enhancementComplete: false
+      },
+      customerProblems: analysis.customerProblems || [],
+      customerLanguage: analysis.customerLanguage || [],
+      keywords: analysis.keywords || [],
+      contentIdeas: analysis.contentIdeas || [],
+      organizationId: analysis.organizationId
+    },
+    webSearchInsights: {
+      brandResearch: analysis.brandColors ? 'Found actual brand guidelines' : null,
+      keywordResearch: hasEnhancedData ? 'Current market keyword analysis completed' : null,
+      researchQuality: hasEnhancedData ? 'enhanced' : 'basic'
+    },
+    ctas: result.ctas || [],
+    ctaCount: result.ctaCount || 0,
+    hasSufficientCTAs: result.hasSufficientCTAs || false
+  };
+}
+
+/**
  * Website Analysis API
- * Handles the complex website analysis with multiple phases
+ * Handles the complex website analysis with multiple phases.
+ * Uses worker queue (POST /api/v1/jobs/website-analysis) when available.
  */
 export const analysisAPI = {
   /**
    * Analyze website with comprehensive business intelligence
    * @param {string} websiteUrl - The website URL to analyze
-   * @param {{ onProgress?: (step: number) => void }} options - Optional; onProgress(step) called with 1-4 for each API step
+   * @param {{ onProgress?: (step: number | object) => void }} options - Optional; onProgress called for each step or with job status
    * @returns {Promise<Object>} Analysis results with business data
    */
   async analyzeWebsite(websiteUrl, options = {}) {
@@ -25,6 +80,43 @@ export const analysisAPI = {
         formattedUrl = 'https://' + formattedUrl;
       }
 
+      const sessionId = autoBlogAPI.getOrCreateSessionId?.() || sessionStorage.getItem('audience_session_id');
+
+      // Try worker queue first
+      try {
+        const createResponse = await jobsAPI.createWebsiteAnalysisJob(formattedUrl, sessionId);
+        const jobId = createResponse.jobId;
+        const finalStatus = await jobsAPI.pollJobStatus(jobId, {
+          onProgress: (status) => {
+            if (options.onProgress) {
+              options.onProgress(status);
+            }
+          },
+          pollIntervalMs: 2500,
+          maxAttempts: 120
+        });
+        if (finalStatus.status === 'succeeded' && finalStatus.result) {
+          return mapWebsiteAnalysisResult(finalStatus.result);
+        }
+        if (finalStatus.status === 'failed') {
+          throw new Error(finalStatus.error || 'Website analysis failed');
+        }
+      } catch (jobsErr) {
+        if (jobsErr.status === 404 || jobsErr.status === 503) {
+          if (jobsErr.status === 503) {
+            return {
+              success: false,
+              error: 'Service temporarily unavailable. The analysis queue is not available. Please try again later.',
+              queueUnavailable: true
+            };
+          }
+          // 404 = jobs API not implemented yet, fall through to sync flow
+        } else {
+          throw jobsErr;
+        }
+      }
+
+      // Fallback: sync flow (when jobs API returns 404)
       const response = await autoBlogAPI.analyzeWebsite(formattedUrl, options);
       
       if (response.success && response.analysis) {
@@ -269,13 +361,14 @@ export const contentAPI = {
         );
         
         if (enhancedResult.success) {
+          const blogPost = enhancedResult.blogPost?.id
+            ? enhancedResult.blogPost
+            : { content: enhancedResult.content, ...enhancedResult.enhancedMetadata };
           return {
             success: true,
             content: enhancedResult.content,
-            blogPost: {
-              content: enhancedResult.content,
-              ...enhancedResult.enhancedMetadata
-            },
+            blogPost,
+            savedPost: enhancedResult.blogPost?.id ? enhancedResult.blogPost : undefined,
             visualSuggestions: enhancedResult.visualSuggestions || [],
             enhancedMetadata: enhancedResult.enhancedMetadata,
             seoAnalysis: enhancedResult.seoAnalysis,
@@ -287,7 +380,24 @@ export const contentAPI = {
             strategicCTAs: enhancedResult.strategicCTAs,
             selectedTopic: selectedTopic
           };
-        } else if (enhancedResult.fallbackAvailable) {
+        }
+        if (enhancedResult.queueUnavailable) {
+          return {
+            success: false,
+            error: enhancedResult.error,
+            queueUnavailable: true
+          };
+        }
+        if (enhancedResult.retryable && enhancedResult.jobId) {
+          return {
+            success: false,
+            error: enhancedResult.error,
+            errorCode: enhancedResult.errorCode,
+            jobId: enhancedResult.jobId,
+            retryable: true
+          };
+        }
+        if (enhancedResult.fallbackAvailable) {
           console.log('⚠️ Enhanced generation failed, falling back to standard generation');
           console.log('📝 Fallback reason:', enhancedResult.error);
         } else {
