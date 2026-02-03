@@ -9,6 +9,7 @@ import { useSystemHint } from '../../contexts/SystemHintContext';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 import autoBlogAPI from '../../services/api';
+import { extractStreamChunk, extractStreamCompleteContent } from '../../utils/streamingUtils';
 import { systemVoice } from '../../copy/systemVoice';
 import StreamingText from '../shared/StreamingText';
 
@@ -400,11 +401,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             setIsStreamingOverview(true);
             autoBlogAPI.connectToStream(streamResponse.connectionId, {
               onChunk: (data) => {
-                const chunk = data?.content ?? data?.text ?? '';
+                const chunk = extractStreamChunk(data);
                 if (chunk) setStreamingOverview(prev => prev + chunk);
               },
               onComplete: (data) => {
-                const finalOverview = data?.overview ?? data?.content ?? data?.text ?? '';
+                const finalOverview = extractStreamCompleteContent(data);
                 setBundleOverview(prev => ({ ...prev, overview: finalOverview }));
                 setStreamingOverview(finalOverview);
                 setIsStreamingOverview(false);
