@@ -34,6 +34,7 @@ import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
 import { extractStreamChunk, extractStreamCompleteContent } from '../../utils/streamingUtils';
+import ThinkingPanel from '../shared/ThinkingPanel';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
@@ -1884,32 +1885,18 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         }
                       </Paragraph>
 
-                      {/* Content generation progress — progress bar, step label, ETA */}
                       {generatingContent && (
-                        <div data-testid="content-generation-progress" style={{
-                          marginBottom: '24px',
-                          padding: '20px',
-                          backgroundColor: 'var(--color-primary-50)',
-                          borderRadius: '8px',
-                          border: '1px solid var(--color-primary-100)'
-                        }}>
-                          <div style={{ marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-secondary)' }}>
-                            {systemVoice.content.workingForYou}
-                          </div>
-                          <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
-                            {systemVoice.content.progressPreamble} {generationProgress?.currentStep || systemVoice.content.generating}
-                          </div>
-                          <Progress
-                            percent={generationProgress?.progress ?? 0}
-                            showInfo
-                            strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
-                          />
-                          {generationProgress?.estimatedTimeRemaining != null && generationProgress.estimatedTimeRemaining > 0 && (
-                            <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                              ~{generationProgress.estimatedTimeRemaining} seconds remaining
-                            </div>
-                          )}
-                        </div>
+                        <ThinkingPanel
+                          isActive={generatingContent}
+                          currentStep={generationProgress?.currentStep}
+                          progress={generationProgress?.progress}
+                          thoughts={[]}
+                          estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                          workingForYouLabel={systemVoice.content.workingForYou}
+                          progressPreamble={systemVoice.content.progressPreamble}
+                          fallbackStep={systemVoice.content.generating}
+                          dataTestId="content-generation-progress"
+                        />
                       )}
                       
                       {/* ENHANCED TOPIC CARDS — stagger reveal */}
@@ -2660,32 +2647,18 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       }
                     </Paragraph>
 
-                    {/* Content generation progress — progress bar, step label, ETA */}
                     {generatingContent && (
-                      <div data-testid="content-generation-progress" style={{
-                        marginBottom: '24px',
-                        padding: '20px',
-                        backgroundColor: 'var(--color-primary-50)',
-                        borderRadius: '8px',
-                        border: '1px solid var(--color-primary-100)'
-                      }}>
-                        <div style={{ marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-secondary)' }}>
-                          {systemVoice.content.workingForYou}
-                        </div>
-                        <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
-                          {systemVoice.content.progressPreamble} {generationProgress?.currentStep || systemVoice.content.generating}
-                        </div>
-                        <Progress
-                          percent={generationProgress?.progress ?? 0}
-                          showInfo
-                          strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
-                        />
-                        {generationProgress?.estimatedTimeRemaining != null && generationProgress.estimatedTimeRemaining > 0 && (
-                          <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                            ~{generationProgress.estimatedTimeRemaining} seconds remaining
-                          </div>
-                        )}
-                      </div>
+                      <ThinkingPanel
+                        isActive={generatingContent}
+                        currentStep={generationProgress?.currentStep}
+                        progress={generationProgress?.progress}
+                        thoughts={[]}
+                        estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                        workingForYouLabel={systemVoice.content.workingForYou}
+                        progressPreamble={systemVoice.content.progressPreamble}
+                        fallbackStep={systemVoice.content.generating}
+                        dataTestId="content-generation-progress"
+                      />
                     )}
                     
                     {/* ENHANCED TOPIC CARDS — stagger reveal */}

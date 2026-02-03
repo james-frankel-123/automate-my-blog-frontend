@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message, Collapse, Progress } from 'antd';
+import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message, Collapse } from 'antd';
 import {
   GlobalOutlined,
   ScanOutlined,
@@ -12,6 +12,7 @@ import autoBlogAPI from '../../../services/api';
 import { systemVoice } from '../../../copy/systemVoice';
 import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
+import ThinkingPanel from '../../shared/ThinkingPanel';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -793,45 +794,21 @@ const WebsiteAnalysisStepStandalone = ({
           }}>
             {currentScanningMessage || systemVoice.analysis.defaultProgress}
           </Paragraph>
-          {/* Progress bar, step label, ETA when available */}
           {analysisProgress && (
-            <div data-testid="website-analysis-progress" style={{
-              marginBottom: '24px',
-              padding: '16px',
-              backgroundColor: 'var(--color-primary-50)',
-              borderRadius: '8px',
-              border: '1px solid var(--color-primary-100)',
-              textAlign: 'left',
-              maxWidth: '400px',
-              margin: '0 auto 24px'
-            }}>
-              <div style={{ marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-secondary)' }}>
-                {systemVoice.analysis.workingForYou}
-              </div>
-              <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
-                {systemVoice.analysis.progressPreamble} {analysisProgress.currentStep || currentScanningMessage}
-                {analysisProgress.phase || analysisProgress.detail ? ` — ${analysisProgress.phase || analysisProgress.detail}` : ''}
-              </div>
-              <Progress
-                percent={analysisProgress.progress ?? 0}
-                showInfo
-                strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
+            <div style={{ margin: '0 auto 24px' }}>
+              <ThinkingPanel
+                currentStep={analysisProgress.currentStep || currentScanningMessage}
+                progress={analysisProgress.progress}
+                thoughts={analysisThoughts}
+                estimatedTimeRemaining={analysisProgress.estimatedTimeRemaining}
+                phase={analysisProgress.phase}
+                detail={analysisProgress.detail}
+                workingForYouLabel={systemVoice.analysis.workingForYou}
+                progressPreamble={systemVoice.analysis.progressPreamble}
+                progressLabel={systemVoice.analysis.progressLabel}
+                fallbackStep={currentScanningMessage}
+                dataTestId="website-analysis-progress"
               />
-              {analysisProgress.estimatedTimeRemaining != null && analysisProgress.estimatedTimeRemaining > 0 && (
-                <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                  ~{analysisProgress.estimatedTimeRemaining} seconds remaining
-                </div>
-              )}
-              {analysisThoughts.length > 0 && (
-                <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
-                  <div style={{ marginBottom: '4px', fontWeight: 600 }}>{systemVoice.analysis.progressLabel}</div>
-                  <ul style={{ margin: 0, paddingLeft: '18px' }}>
-                    {analysisThoughts.map((t, i) => (
-                      <li key={i}>{t.message}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
           )}
         </div>
