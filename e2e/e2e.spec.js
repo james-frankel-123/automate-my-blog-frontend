@@ -457,6 +457,28 @@ test.describe('E2E (mocked backend)', () => {
       });
     });
 
+    // PR 102 – Audience streaming: when /api/v1/audiences/generate-stream returns 404, app falls back to template strategies.
+    test.describe('PR 102 – Audience streaming', () => {
+      test('after analysis, audience strategy cards appear (stream or fallback)', async ({ page }) => {
+        test.setTimeout(60000);
+        await page.locator('button:has-text("Create New Post")').first().click();
+        await page.waitForTimeout(800);
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        await expect(websiteInput).toBeVisible({ timeout: 10000 });
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        await page.waitForTimeout(1500);
+        await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(500);
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|Primary target|Secondary/i }).first();
+        await expect(strategyCard).toBeVisible({ timeout: 12000 });
+      });
+    });
+
     test('smoke: analyze → audience → strategy → posts section with generate', async ({ page }) => {
       test.setTimeout(60000);
       const createBtn = page.locator('button:has-text("Create New Post")').first();
