@@ -654,7 +654,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         ? api.getOrganizationCTAs(organizationId).catch(() => null)
         : Promise.resolve(null);
 
-      // Try topic stream first; onTopicComplete updates UI as each topic arrives
+      // Try topic stream first; onTopicComplete updates UI as each topic arrives; onTopicImageComplete updates image
       const result = await topicAPI.generateTrendingTopics(
         analysisData,
         selectedStrategy,
@@ -662,6 +662,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         {
           onTopicComplete: (topic) => {
             setAvailableTopics((prev) => [...prev, topic]);
+          },
+          onTopicImageComplete: (topic, index) => {
+            setAvailableTopics((prev) => {
+              const next = [...prev];
+              if (next[index] != null && topic?.image) next[index] = { ...next[index], image: topic.image };
+              return next;
+            });
           },
         }
       );
