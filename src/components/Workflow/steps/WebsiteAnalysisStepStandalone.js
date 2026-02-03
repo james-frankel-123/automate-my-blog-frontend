@@ -1140,133 +1140,137 @@ const WebsiteAnalysisStepStandalone = ({
         )}
 
 
-        {/* Business Overview Cards */}
+        {/* Business Overview Cards — each card pops in only when it has data (or in edit mode) */}
         <Row gutter={responsive.gutter}>
-          <Col xs={24} md={12}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'var(--color-background-container)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-border-base)',
-              height: '100%'
-            }}>
-              <Text strong style={{
-                color: 'var(--color-text-primary)',
-                fontSize: responsive.fontSize.text,
-                marginBottom: '8px',
-                display: 'block'
+          {(editMode || (analysis.description && String(analysis.description).trim())) && (
+            <Col xs={24} md={12}>
+              <div style={{
+                padding: '16px',
+                backgroundColor: 'var(--color-background-container)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border-base)',
+                height: '100%'
               }}>
-                What They Do
-              </Text>
-              {editMode ? (
-                <Input.TextArea
-                  value={editableResults?.description || ''}
-                  onChange={(e) => setEditableResults({ ...editableResults, description: e.target.value })}
-                  rows={3}
-                  placeholder="Describe what the business does..."
-                  style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
-                />
-              ) : (
-                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                  {analysis.description || `${analysis.businessName || 'This business'} operates in the ${analysis.businessType.toLowerCase()} space, focusing on ${analysis.contentFocus?.toLowerCase() || 'delivering specialized services'}.`}
+                <Text strong style={{
+                  color: 'var(--color-text-primary)',
+                  fontSize: responsive.fontSize.text,
+                  marginBottom: '8px',
+                  display: 'block'
+                }}>
+                  What They Do
                 </Text>
-              )}
-            </div>
-          </Col>
-
-          <Col xs={24} md={12}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'var(--color-background-container)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-border-base)',
-              height: '100%'
-            }}>
-              <Text strong style={{
-                color: 'var(--color-text-primary)',
-                fontSize: responsive.fontSize.text,
-                marginBottom: '8px',
-                display: 'block'
+                {editMode ? (
+                  <Input.TextArea
+                    value={editableResults?.description || ''}
+                    onChange={(e) => setEditableResults({ ...editableResults, description: e.target.value })}
+                    rows={3}
+                    placeholder="Describe what the business does..."
+                    style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                  />
+                ) : (
+                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                    {analysis.description}
+                  </Text>
+                )}
+              </div>
+            </Col>
+          )}
+          {(editMode || (analysis.decisionMakers && String(analysis.decisionMakers).trim()) || (analysis.targetAudience && String(analysis.targetAudience).trim())) && (
+            <Col xs={24} md={12}>
+              <div style={{
+                padding: '16px',
+                backgroundColor: 'var(--color-background-container)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border-base)',
+                height: '100%'
               }}>
-                Target Audience
-              </Text>
-              {editMode ? (
-                <Input
-                  value={editableResults?.targetAudience || ''}
-                  onChange={(e) => setEditableResults({ ...editableResults, targetAudience: e.target.value })}
-                  placeholder="Who is your target audience?"
-                  style={{ fontSize: responsive.fontSize.small }}
-                />
-              ) : (
-                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                  {analysis.decisionMakers || analysis.targetAudience || 'General audience'}
+                <Text strong style={{
+                  color: 'var(--color-text-primary)',
+                  fontSize: responsive.fontSize.text,
+                  marginBottom: '8px',
+                  display: 'block'
+                }}>
+                  Target Audience
                 </Text>
-              )}
-            </div>
-          </Col>
-
-          <Col xs={24} md={12}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'var(--color-background-container)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-border-base)',
-              height: '100%'
-            }}>
-              <Text strong style={{
-                color: 'var(--color-text-primary)',
-                fontSize: responsive.fontSize.text,
-                marginBottom: '8px',
-                display: 'block'
+                {editMode ? (
+                  <Input
+                    value={editableResults?.targetAudience || ''}
+                    onChange={(e) => setEditableResults({ ...editableResults, targetAudience: e.target.value })}
+                    placeholder="Who is your target audience?"
+                    style={{ fontSize: responsive.fontSize.small }}
+                  />
+                ) : (
+                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                    {analysis.decisionMakers || analysis.targetAudience}
+                  </Text>
+                )}
+              </div>
+            </Col>
+          )}
+          {(editMode || (analysis.brandVoice && String(analysis.brandVoice).trim())) && (
+            <Col xs={24} md={12}>
+              <div style={{
+                padding: '16px',
+                backgroundColor: 'var(--color-background-container)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border-base)',
+                height: '100%'
               }}>
-                Brand Voice
-              </Text>
-              {editMode ? (
-                <Input
-                  value={editableResults?.brandVoice || ''}
-                  onChange={(e) => setEditableResults({ ...editableResults, brandVoice: e.target.value })}
-                  placeholder="What's your brand voice?"
-                  style={{ fontSize: responsive.fontSize.small }}
-                />
-              ) : (
-                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                  {analysis.brandVoice || 'Professional and engaging'}
+                <Text strong style={{
+                  color: 'var(--color-text-primary)',
+                  fontSize: responsive.fontSize.text,
+                  marginBottom: '8px',
+                  display: 'block'
+                }}>
+                  Brand Voice
                 </Text>
-              )}
-            </div>
-          </Col>
-
-          <Col xs={24} md={12}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'var(--color-background-container)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-border-base)',
-              height: '100%'
-            }}>
-              <Text strong style={{
-                color: 'var(--color-text-primary)',
-                fontSize: responsive.fontSize.text,
-                marginBottom: '8px',
-                display: 'block'
+                {editMode ? (
+                  <Input
+                    value={editableResults?.brandVoice || ''}
+                    onChange={(e) => setEditableResults({ ...editableResults, brandVoice: e.target.value })}
+                    placeholder="What's your brand voice?"
+                    style={{ fontSize: responsive.fontSize.small }}
+                  />
+                ) : (
+                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                    {analysis.brandVoice}
+                  </Text>
+                )}
+              </div>
+            </Col>
+          )}
+          {(editMode || (analysis.contentFocus && String(analysis.contentFocus).trim())) && (
+            <Col xs={24} md={12}>
+              <div style={{
+                padding: '16px',
+                backgroundColor: 'var(--color-background-container)',
+                borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border-base)',
+                height: '100%'
               }}>
-                Content Focus
-              </Text>
-              {editMode ? (
-                <Input
-                  value={editableResults?.contentFocus || ''}
-                  onChange={(e) => setEditableResults({ ...editableResults, contentFocus: e.target.value })}
-                  placeholder="What type of content do you focus on?"
-                  style={{ fontSize: responsive.fontSize.small }}
-                />
-              ) : (
-                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                  {analysis.contentFocus || `Educational content about ${analysis.businessType.toLowerCase()}`}
+                <Text strong style={{
+                  color: 'var(--color-text-primary)',
+                  fontSize: responsive.fontSize.text,
+                  marginBottom: '8px',
+                  display: 'block'
+                }}>
+                  Content Focus
                 </Text>
-              )}
-            </div>
-          </Col>
-
+                {editMode ? (
+                  <Input
+                    value={editableResults?.contentFocus || ''}
+                    onChange={(e) => setEditableResults({ ...editableResults, contentFocus: e.target.value })}
+                    placeholder="What type of content do you focus on?"
+                    style={{ fontSize: responsive.fontSize.small }}
+                  />
+                ) : (
+                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                    {analysis.contentFocus}
+                  </Text>
+                )}
+              </div>
+            </Col>
+          )}
         </Row>
 
         {/* CTAs Section - Show if CTAs were found */}
