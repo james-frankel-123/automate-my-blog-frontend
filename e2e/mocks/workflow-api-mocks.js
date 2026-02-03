@@ -334,6 +334,23 @@ async function installWorkflowMocksBase(page, options = {}) {
       return route.fulfill(json({ jobId }));
     }
 
+    // Issue #65 / PR 101–104: E2E mocks return 404 for stream endpoints so app uses fallback path.
+    if (pathMatch(url, '/api/v1/blog/generate-stream') && method === 'POST') {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
+    if (pathMatch(url, '/api/v1/audiences/generate-stream') && method === 'POST') {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
+    if (url.includes('stream=true') && pathMatch(url, '/api/v1/strategies/bundle/calculate')) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
+    if (pathPrefixMatch(url, '/api/v1/stream/') && method === 'GET') {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
+    if (url.match(/\/api\/v1\/jobs\/[^/]+\/stream/) && method === 'GET') {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
+
     return route.continue();
   });
 }
