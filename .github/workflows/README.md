@@ -19,18 +19,18 @@ Standalone E2E test workflow that can be triggered independently or as part of C
 - Uploads test artifacts (reports, videos, screenshots)
 
 ### `deploy.yml`
-Deployment workflow that **requires E2E tests to pass** before deploying.
+Deployment workflow that runs unit tests, build, and Vercel deploy. E2E is **not** run here; the standalone **E2E Tests** workflow runs once per push/PR. Require **"E2E Tests"** as a status check in branch protection so deployment only proceeds when E2E has passed.
 
 **Triggers:**
 - Push to main
 - Pull requests to main
 
 **What it does:**
-1. **Runs E2E tests first** (blocks deployment on failure)
-2. If tests pass, proceeds with Vercel deployment
+1. Runs unit tests and lint
+2. Verifies build
 3. Deploys to preview (PRs) or production (main branch)
 
-**Important:** Deployment will **fail** if E2E tests fail. This ensures only tested code is deployed.
+**Important:** In branch protection for `main`, require **"Run E2E Tests"** (from the E2E Tests workflow). If you still have **"E2E Tests (Required)"** listed, remove it—that was the old deploy job and no longer exists.
 
 ### `ci.yml`
 General CI workflow for running tests on all PRs and pushes.
@@ -69,22 +69,17 @@ General CI workflow for running tests on all PRs and pushes.
 
 ## Blocking Deployment
 
-The `deploy.yml` workflow uses the `needs` keyword to ensure E2E tests must pass:
+E2E is enforced by **branch protection**, not by a job inside `deploy.yml` (avoids running E2E twice).
 
-```yaml
-jobs:
-  e2e-tests:
-    # ... test steps ...
-    
-  deploy:
-    needs: e2e-tests  # ⚠️ Blocks deployment if tests fail
-    # ... deploy steps ...
-```
+1. **Settings → Branches** → Add or edit rule for `main`
+2. Enable **"Require status checks to pass before merging"**
+3. Add **"E2E Tests"** (the workflow name from `e2e-tests.yml`) and any other required checks (e.g. "Run Tests", "Verify Build")
+4. Save
 
 If E2E tests fail:
-- ❌ Deployment job will not run
-- ✅ Test artifacts will be uploaded for debugging
-- ✅ GitHub will show the failed status on the PR/commit
+- ❌ The "E2E Tests" check will be red; PRs cannot merge until it passes
+- ✅ Test artifacts are uploaded by the E2E Tests workflow for debugging
+- ✅ Deploy workflow still runs unit tests and build; merge/deploy is blocked until E2E passes
 
 ## Test Artifacts
 
