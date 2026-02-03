@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import autoBlogAPI from '../services/api';
 
@@ -1181,8 +1181,9 @@ export const WorkflowModeProvider = ({ children }) => {
     handleAuthenticationChange();
   }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded, pendingAction]);
   
-  // Context value with all unified state
-  const contextValue = {
+  // Memoize context value so consumers only re-render when actual state changes.
+  // Prevents infinite re-render loop when opening auth modal (React error #301).
+  const contextValue = useMemo(() => ({
     // =============================================================================
     // MODE STATE
     // =============================================================================
@@ -1383,7 +1384,81 @@ export const WorkflowModeProvider = ({ children }) => {
     // =============================================================================
     WORKFLOW_STEPS,
     TAB_ORDER
-  };
+  }), [
+    mode,
+    user,
+    isAuthenticated,
+    requireAuth,
+    requireSignUp,
+    currentWorkflowStep,
+    completedWorkflowSteps,
+    workflowData,
+    currentStep,
+    websiteUrl,
+    selectedTopic,
+    generatedContent,
+    isLoading,
+    scanningMessage,
+    blogGenerating,
+    analysisCompleted,
+    strategyCompleted,
+    editingStep,
+    previewMode,
+    expandedSteps,
+    showAuthModal,
+    showStrategyGate,
+    showExportWarning,
+    authContext,
+    selectedCustomerStrategy,
+    strategySelectionCompleted,
+    contentStrategy,
+    postState,
+    selectedCMS,
+    previousContent,
+    showChanges,
+    customFeedback,
+    webSearchInsights,
+    demoMode,
+    stepResults,
+    progressiveHeaders,
+    activeTab,
+    stickyWorkflowSteps,
+    sessionId,
+    audiences,
+    loadingAudiences,
+    sessionDataLoaded,
+    enterWorkflowMode,
+    exitWorkflowMode,
+    addStickyWorkflowStep,
+    updateStickyWorkflowStep,
+    navigateToNextStep,
+    navigateToPreviousStep,
+    navigateToTab,
+    autoScrollToTab,
+    completeWorkflow,
+    resetWorkflow,
+    resetUnifiedWorkflow,
+    advanceStep,
+    updateWebsiteAnalysis,
+    updateCTAData,
+    updateWebSearchInsights,
+    updateAnalysisCompleted,
+    updateTrendingTopics,
+    updateCustomerStrategy,
+    saveWorkflowState,
+    restoreWorkflowState,
+    clearSavedWorkflowState,
+    clearUserSpecificData,
+    hasSavedWorkflowState,
+    initializeSession,
+    loadUserAudiences,
+    saveAudience,
+    adoptAnonymousSession,
+    getCurrentStep,
+    getNextStep,
+    getPreviousStep,
+    isTabInWorkflowMode
+  ]);
   
   return (
     <WorkflowModeContext.Provider value={contextValue}>
