@@ -3602,27 +3602,61 @@ Please provide analysis in this JSON format:
       eventSource.close();
     };
 
+    const parseData = (event) => {
+      try {
+        return JSON.parse(event.data || '{}');
+      } catch (err) {
+        console.warn('[SSE] Parse error:', err);
+        return {};
+      }
+    };
+
+    // Backend may send named SSE events (event: content-chunk, event: complete, etc.) — only named listeners receive them
+    eventSource.addEventListener('connected', (event) => {
+      if (handlers.onConnected) handlers.onConnected(parseData(event));
+    });
+    eventSource.addEventListener('content-chunk', (event) => {
+      const data = parseData(event);
+      if (handlers.onChunk) handlers.onChunk(data);
+    });
+    eventSource.addEventListener('audience-complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
+    });
+    eventSource.addEventListener('complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onComplete) handlers.onComplete(data);
+      close();
+    });
+    eventSource.addEventListener('error', (event) => {
+      const data = parseData(event);
+      if (handlers.onError) handlers.onError(data?.message ? data : { message: 'Stream error' });
+      close();
+    });
+
+    // Fallback: generic 'message' events with payload { type, data } (e.g. single-event streams)
     eventSource.addEventListener('message', (event) => {
       try {
         const payload = JSON.parse(event.data || '{}');
         const { type, data } = payload;
+        const payloadData = data ?? payload;
         switch (type) {
           case 'connected':
-            if (handlers.onConnected) handlers.onConnected();
+            if (handlers.onConnected) handlers.onConnected(payloadData);
             break;
           case 'content-chunk':
-            if (handlers.onChunk) handlers.onChunk(data);
+            if (handlers.onChunk) handlers.onChunk(payloadData);
             break;
           case 'complete':
-            if (handlers.onComplete) handlers.onComplete(data);
+            if (handlers.onComplete) handlers.onComplete(payloadData);
             close();
             break;
           case 'error':
-            if (handlers.onError) handlers.onError(data);
+            if (handlers.onError) handlers.onError(payloadData?.message ? payloadData : { message: 'Stream error' });
             close();
             break;
           case 'audience-complete':
-            if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
+            if (handlers.onAudienceComplete) handlers.onAudienceComplete(payloadData);
             break;
           default:
             break;
