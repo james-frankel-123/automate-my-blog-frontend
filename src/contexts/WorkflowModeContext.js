@@ -79,6 +79,7 @@ export const WorkflowModeProvider = ({ children }) => {
   const [showStrategyGate, setShowStrategyGate] = useState(false);
   const [showExportWarning, setShowExportWarning] = useState(false);
   const [authContext, setAuthContext] = useState(null); // Auth context tracking
+  const [pendingAction, setPendingAction] = useState(null); // Action to run after login (Fixes #85)
   
   // =============================================================================
   // BUSINESS LOGIC STATE
@@ -492,10 +493,14 @@ export const WorkflowModeProvider = ({ children }) => {
   }, [user]);
   
   // Sign-up focused gate helper - defaults to register tab for conversion
-  const requireSignUp = useCallback((action = '', context = 'Create your account') => {
+  // Optional onSuccessCallback: run after successful login (Fixes #85 - save/post flow)
+  const requireSignUp = useCallback((action = '', context = 'Create your account', onSuccessCallback = null) => {
     if (!user) {
-      setAuthContext('register');  // Always set to register for sign-up flow
+      setAuthContext('register');
       setShowAuthModal(true);
+      if (onSuccessCallback && typeof onSuccessCallback === 'function') {
+        setPendingAction(onSuccessCallback);
+      }
       return false;
     }
     return true;
@@ -1139,6 +1144,16 @@ export const WorkflowModeProvider = ({ children }) => {
       if (authLoading) return; // Wait for auth to complete
       
       if (user && isAuthenticated) {
+        // Execute pending action after successful login (Fixes #85)
+        if (pendingAction) {
+          try {
+            await pendingAction();
+          } catch (error) {
+            console.error('Failed to execute pending action:', error);
+          }
+          setPendingAction(null);
+        }
+
         // User is authenticated - try to adopt any anonymous session
         if (sessionId && !sessionDataLoaded) {
           console.log('🔄 User authenticated, attempting to adopt session:', sessionId);
@@ -1164,7 +1179,7 @@ export const WorkflowModeProvider = ({ children }) => {
     };
     
     handleAuthenticationChange();
-  }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded]); // FIXED: Removed function dependencies
+  }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded, pendingAction]);
   
   // Context value with all unified state
   const contextValue = {
