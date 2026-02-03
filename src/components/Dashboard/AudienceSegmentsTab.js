@@ -1232,7 +1232,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             </div>
           )}
 
-          {/* Subscribe Buttons / Subscription Status (Phase 2 - Dynamic Pricing) */}
+          {/* Subscribe Buttons / Subscription Status - visible on all cards (Fixes #110) */}
           {hasPricing && (() => {
             if (isSubscribed) {
               // Show generate content button for subscribed strategies
