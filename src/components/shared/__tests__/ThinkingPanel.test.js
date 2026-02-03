@@ -27,8 +27,7 @@ describe('ThinkingPanel', () => {
       />
     );
     expect(screen.getByTestId('thinking-panel')).toBeInTheDocument();
-    expect(screen.getByText(/Right now:.*Drafting your post…/)).toBeInTheDocument();
-    expect(screen.getByText('Working for you')).toBeInTheDocument();
+    expect(screen.getByText(/Working for you · Drafting your post…/)).toBeInTheDocument();
   });
 
   it('renders current step, progress bar, and ETA', () => {
@@ -41,8 +40,8 @@ describe('ThinkingPanel', () => {
         estimatedTimeRemaining={30}
       />
     );
-    expect(screen.getByText(/Right now:.*Reading your pages…/)).toBeInTheDocument();
-    expect(screen.getByText(/~30 seconds remaining/)).toBeInTheDocument();
+    expect(screen.getByText(/Working for you · Reading your pages…/)).toBeInTheDocument();
+    expect(screen.getByText(/~30s left/)).toBeInTheDocument();
   });
 
   it('shows only latest thought as step line when thoughts provided', () => {
@@ -59,8 +58,7 @@ describe('ThinkingPanel', () => {
         thoughts={thoughts}
       />
     );
-    // currentStep takes precedence over thoughts
-    expect(screen.getByText(/Right now:.*Analyzing…/)).toBeInTheDocument();
+    expect(screen.getByText(/Working for you · Analyzing…/)).toBeInTheDocument();
   });
 
   it('shows latest thought as step when no currentStep', () => {
@@ -77,7 +75,7 @@ describe('ThinkingPanel', () => {
         fallbackStep="Working…"
       />
     );
-    expect(screen.getByText(/Right now:.*Parsing content/)).toBeInTheDocument();
+    expect(screen.getByText(/Working for you · Parsing content/)).toBeInTheDocument();
   });
 
   it('uses dataTestId when provided', () => {
@@ -101,6 +99,6 @@ describe('ThinkingPanel', () => {
         phase="scraping"
       />
     );
-    expect(screen.getByText(/— scraping/)).toBeInTheDocument();
+    expect(screen.getByText(/Working for you · Reading your pages… — scraping/)).toBeInTheDocument();
   });
 });

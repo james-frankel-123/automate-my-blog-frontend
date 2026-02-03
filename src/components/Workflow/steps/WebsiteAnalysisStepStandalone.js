@@ -859,27 +859,26 @@ const WebsiteAnalysisStepStandalone = ({
    */
   const renderAnalysisLoading = () => (
     <Card style={{ marginBottom: '20px' }}>
-      <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+      <div style={{ textAlign: 'center', padding: '24px 20px' }}>
         <Spin size="large" />
-        <div style={{ marginTop: '20px' }}>
-          <Title level={4} style={{ color: 'var(--color-text-primary)', marginBottom: '8px' }}>
+        <div style={{ marginTop: '16px' }}>
+          <Title level={4} style={{ color: 'var(--color-text-primary)', marginBottom: '4px' }}>
             <ScanOutlined style={{ marginRight: '8px' }} />
             {systemVoice.analysis.loadingTitle}
           </Title>
-          <Paragraph style={{ 
-            color: 'var(--color-text-secondary)', 
-            marginBottom: analysisProgress ? '16px' : '0',
-            fontSize: responsive.fontSize.text 
-          }}>
-            {currentScanningMessage || systemVoice.analysis.defaultProgress}
-          </Paragraph>
+          {/* Single status line: show paragraph only before progress exists; once panel is visible it carries the step */}
+          {!analysisProgress && (
+            <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '12px', fontSize: responsive.fontSize.text }}>
+              {systemVoice.analysis.defaultProgress}
+            </Paragraph>
+          )}
           {analysisResults?.scrapePreview?.title && (
-            <Paragraph style={{ color: 'var(--color-text-secondary)', fontSize: responsive.fontSize.small, marginBottom: '16px' }}>
+            <Paragraph style={{ color: 'var(--color-text-secondary)', fontSize: responsive.fontSize.small, marginBottom: analysisProgress ? '12px' : '16px' }}>
               We found: <Text strong>{analysisResults.scrapePreview.title}</Text>
             </Paragraph>
           )}
           {analysisProgress && (
-            <div style={{ margin: '0 auto 24px' }}>
+            <div style={{ margin: '0 auto 16px', maxWidth: '420px' }}>
               <ThinkingPanel
                 currentStep={analysisProgress.currentStep || currentScanningMessage}
                 progress={analysisProgress.progress}
@@ -896,11 +895,9 @@ const WebsiteAnalysisStepStandalone = ({
             </div>
           )}
         </div>
-        {/* Skeleton hint so the result feels like a reveal */}
-        <div style={{ marginTop: '24px', textAlign: 'left', maxWidth: '400px', margin: '24px auto 0' }}>
-          <div style={{ height: '14px', background: 'var(--color-gray-100)', borderRadius: '4px', marginBottom: '12px', width: '70%' }} />
-          <div style={{ height: '14px', background: 'var(--color-gray-100)', borderRadius: '4px', marginBottom: '12px', width: '90%' }} />
-          <div style={{ height: '14px', background: 'var(--color-gray-100)', borderRadius: '4px', width: '60%' }} />
+        <div style={{ marginTop: '16px', textAlign: 'left', maxWidth: '360px', marginLeft: 'auto', marginRight: 'auto' }}>
+          <div style={{ height: '12px', background: 'var(--color-gray-100)', borderRadius: '4px', marginBottom: '8px', width: '75%' }} />
+          <div style={{ height: '12px', background: 'var(--color-gray-100)', borderRadius: '4px', width: '55%' }} />
         </div>
       </div>
     </Card>
