@@ -69,7 +69,7 @@ export const analysisAPI = {
   /**
    * Analyze website with comprehensive business intelligence
    * @param {string} websiteUrl - The website URL to analyze
-   * @param {{ onProgress?, onScrapePhase?, onAnalysisResult?, onAudiencesResult?, onPitchesResult?, onScenariosResult?, onStreamTimeout? }} options - Optional; onProgress for progress-update; onScrapePhase for scrape-phase "thoughts"; onAnalysisResult/onAudiencesResult/onPitchesResult/onScenariosResult for partial results (show UI incrementally); onStreamTimeout for ~10 min warning
+   * @param {{ onProgress?, onScrapePhase?, onScrapeResult?, onAnalysisResult?, onAudienceComplete?, onAudiencesResult?, onPitchComplete?, onPitchesResult?, onScenarioImageComplete?, onScenariosResult?, onStreamTimeout? }} options - Optional; onProgress for progress-update; onScrapePhase for scrape-phase "thoughts"; onScrapeResult for page preview (title, metaDescription, headings); onAnalysisResult/onAudiencesResult/onPitchesResult/onScenariosResult for step-level results; onAudienceComplete/onPitchComplete/onScenarioImageComplete for per-item updates; onStreamTimeout for ~10 min warning
    * @returns {Promise<Object>} Analysis results with business data
    */
   async analyzeWebsite(websiteUrl, options = {}) {
@@ -97,14 +97,26 @@ export const analysisAPI = {
             onScrapePhase: (data) => {
               if (options.onScrapePhase) options.onScrapePhase(data);
             },
+            onScrapeResult: (data) => {
+              if (options.onScrapeResult) options.onScrapeResult(data);
+            },
             onAnalysisResult: (data) => {
               if (options.onAnalysisResult) options.onAnalysisResult(data);
+            },
+            onAudienceComplete: (data) => {
+              if (options.onAudienceComplete) options.onAudienceComplete(data);
             },
             onAudiencesResult: (data) => {
               if (options.onAudiencesResult) options.onAudiencesResult(data);
             },
+            onPitchComplete: (data) => {
+              if (options.onPitchComplete) options.onPitchComplete(data);
+            },
             onPitchesResult: (data) => {
               if (options.onPitchesResult) options.onPitchesResult(data);
+            },
+            onScenarioImageComplete: (data) => {
+              if (options.onScenarioImageComplete) options.onScenarioImageComplete(data);
             },
             onScenariosResult: (data) => {
               if (options.onScenariosResult) options.onScenariosResult(data);
