@@ -142,6 +142,19 @@ const autoBlogAPI = {
     success: true,
     content: 'Generated content for testing',
   }),
+
+  searchTweetsForTopic: jest.fn().mockResolvedValue({
+    tweets: [],
+    searchTermsUsed: [],
+    success: true,
+  }),
+
+  searchTweetsForTopicStream: jest.fn().mockResolvedValue({
+    connectionId: 'mock-connection-id',
+    streamUrl: 'https://api.example.com/api/v1/stream/mock-connection-id?token=mock',
+  }),
+
+  connectToStream: jest.fn().mockReturnValue({ close: jest.fn() }),
   
   // Lead tracking
   trackLeadConversion: jest.fn().mockResolvedValue({
