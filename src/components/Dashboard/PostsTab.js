@@ -320,6 +320,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [generatingImages, setGeneratingImages] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(null); // { progress, currentStep, status } from job polling
   const [availableTopics, setAvailableTopics] = useState([]);
+  const [topicImageGeneratingIndex, setTopicImageGeneratingIndex] = useState(null); // index when DALL·E started for a topic (for "Generating image for topic N…")
   const [selectedTopic, setSelectedTopic] = useState(null);
   
   // Content editing state
@@ -651,6 +652,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       // Clear existing topics so streaming can show incremental results
       setAvailableTopics([]);
+      setTopicImageGeneratingIndex(null);
       setHint(systemVoice.topics.generatingTopics, 'hint', 0);
 
       const creditsPromise = user ? api.getUserCredits().catch(() => null) : Promise.resolve(null);
@@ -658,7 +660,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         ? api.getOrganizationCTAs(organizationId).catch(() => null)
         : Promise.resolve(null);
 
-      // Try topic stream first; onTopicComplete updates UI as each topic arrives; onTopicImageComplete updates image
+      // Try topic stream first; onTopicComplete updates UI as each topic arrives; onTopicImageStart/Complete for image progress
       const result = await topicAPI.generateTrendingTopics(
         analysisData,
         selectedStrategy,
@@ -671,7 +673,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               return next;
             });
           },
+          onTopicImageStart: (data) => {
+            setTopicImageGeneratingIndex(data?.index != null ? data.index : null);
+          },
           onTopicImageComplete: (topic, index) => {
+            setTopicImageGeneratingIndex((prev) => (prev === index ? null : prev));
             setAvailableTopics((prev) => {
               const next = [...prev];
               if (next[index] != null && topic?.image) next[index] = { ...next[index], image: topic.image };
@@ -1899,8 +1905,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               <Card 
                                 hoverable={!isGenerating}
                                 cover={
-                                  topic.isImageLoading ? (
-                                    // Image loading skeleton
+                                  (topic.isImageLoading || (generatingContent && topicImageGeneratingIndex === index && !topic.image)) ? (
+                                    // Image loading skeleton (streaming: "Generating image for topic N…")
                                     <div style={{ 
                                       height: '200px', 
                                       backgroundColor: 'var(--color-background-alt)', 
@@ -1917,7 +1923,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                         color: 'var(--color-text-secondary)',
                                         fontWeight: 500
                                       }}>
-                                        🎨 Generating image...
+                                        🎨 {topicImageGeneratingIndex === index ? `Generating image for topic ${index + 1}…` : 'Generating image...'}
                                       </div>
                                       <div style={{ 
                                         fontSize: '12px', 
@@ -2651,8 +2657,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                             <Card 
                               hoverable={!isGenerating}
                               cover={
-                                topic.isImageLoading ? (
-                                  // Image loading skeleton
+                                (topic.isImageLoading || (generatingContent && topicImageGeneratingIndex === index && !topic.image)) ? (
+                                  // Image loading skeleton (streaming: "Generating image for topic N…")
                                   <div style={{ 
                                     height: '200px', 
                                     backgroundColor: 'var(--color-background-alt)', 
@@ -2669,7 +2675,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       color: 'var(--color-text-secondary)',
                                       fontWeight: 500
                                     }}>
-                                      🎨 Generating image...
+                                      🎨 {topicImageGeneratingIndex === index ? `Generating image for topic ${index + 1}…` : 'Generating image...'}
                                     </div>
                                     <div style={{ 
                                       fontSize: '12px', 

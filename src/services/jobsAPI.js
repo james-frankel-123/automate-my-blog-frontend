@@ -124,13 +124,18 @@ class JobsAPI {
   /**
    * Connect to job progress stream (SSE).
    * @param {string} jobId
-   * @param {Object} [handlers] - { onProgress?(data), onStepChange?(data), onComplete?(data) }
-   * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error? }
+   * @param {Object} [handlers] - { onProgress?(data), onStepChange?(data), onComplete?(data), onFailed?(data), onConnected?(data), onScrapePhase?(data) }
+   *   - onProgress(data) - progress-update: { progress, currentStep, phase?, detail?, estimatedTimeRemaining }
+   *   - onScrapePhase(data) - scrape-phase: { phase, message, url? } (thoughts / step log)
+   *   - onComplete(data) - complete: data.result is full job result
+   *   - onFailed(data) - failed: { error, errorCode? }
+   * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error?, errorCode? }
    */
   connectToJobStream(jobId, handlers = {}) {
     return new Promise((resolve, reject) => {
       const url = this.getJobStreamUrl(jobId);
       const eventSource = new EventSource(url);
+      let settled = false;
 
       const close = () => {
         eventSource.close();
@@ -145,7 +150,29 @@ class JobsAPI {
         }
       };
 
-      // Backend may send named SSE events (event: progress-update, data: {...}) — only named listeners receive them
+      const resolveFailed = (data) => {
+        if (settled) return;
+        settled = true;
+        const payload = data || {};
+        const error = payload.error ?? payload.message ?? 'Job failed';
+        const errorCode = payload.errorCode;
+        if (handlers.onFailed) handlers.onFailed({ error, errorCode });
+        close();
+        resolve({ status: 'failed', error, errorCode });
+      };
+
+      const resolveSucceeded = (result) => {
+        if (settled) return;
+        settled = true;
+        close();
+        resolve({ status: 'succeeded', result });
+      };
+
+      // Backend may send named SSE events — only named listeners receive them
+      eventSource.addEventListener('connected', (event) => {
+        const data = parseData(event);
+        if (handlers.onConnected) handlers.onConnected(data);
+      });
       eventSource.addEventListener('progress-update', (event) => {
         const data = parseData(event);
         if (handlers.onProgress) handlers.onProgress(data);
@@ -155,45 +182,51 @@ class JobsAPI {
         if (handlers.onStepChange) handlers.onStepChange(data);
         if (handlers.onProgress && (data.progress != null || data.currentStep != null)) handlers.onProgress(data);
       });
+      eventSource.addEventListener('scrape-phase', (event) => {
+        const data = parseData(event);
+        if (handlers.onScrapePhase) handlers.onScrapePhase(data);
+      });
       eventSource.addEventListener('complete', (event) => {
         const data = parseData(event);
         if (handlers.onComplete) handlers.onComplete(data);
-        close();
-        resolve({ status: 'succeeded', result: data?.result ?? data });
+        resolveSucceeded(data?.result ?? data);
       });
       eventSource.addEventListener('failed', (event) => {
         const data = parseData(event);
-        close();
-        resolve({ status: 'failed', error: data?.message ?? data?.error ?? 'Job failed' });
+        resolveFailed(data);
       });
       eventSource.addEventListener('error', (event) => {
         const data = parseData(event);
-        close();
-        resolve({ status: 'failed', error: data?.message ?? data?.error ?? 'Job failed' });
+        if (event.data != null) resolveFailed(data);
       });
 
-      // Fallback: generic 'message' events with payload { type, data } (e.g. single-event streams)
+      // Fallback: generic 'message' events with payload { type, data }
       eventSource.addEventListener('message', (event) => {
         try {
           const payload = JSON.parse(event.data || '{}');
           const { type, data } = payload;
+          const payloadData = data ?? payload;
           switch (type) {
+            case 'connected':
+              if (handlers.onConnected) handlers.onConnected(payloadData);
+              break;
             case 'progress-update':
-              if (handlers.onProgress) handlers.onProgress(data || payload);
+              if (handlers.onProgress) handlers.onProgress(payloadData);
               break;
             case 'step-change':
-              if (handlers.onStepChange) handlers.onStepChange(data || payload);
-              if (handlers.onProgress && (data?.progress != null || data?.currentStep != null)) handlers.onProgress(data || payload);
+              if (handlers.onStepChange) handlers.onStepChange(payloadData);
+              if (handlers.onProgress && (payloadData?.progress != null || payloadData?.currentStep != null)) handlers.onProgress(payloadData);
+              break;
+            case 'scrape-phase':
+              if (handlers.onScrapePhase) handlers.onScrapePhase(payloadData);
               break;
             case 'complete':
-              if (handlers.onComplete) handlers.onComplete(data || payload);
-              close();
-              resolve({ status: 'succeeded', result: (data || payload)?.result ?? data ?? payload });
+              if (handlers.onComplete) handlers.onComplete(payloadData);
+              resolveSucceeded(payloadData?.result ?? payloadData);
               break;
             case 'failed':
             case 'error':
-              close();
-              resolve({ status: 'failed', error: (data || payload)?.message ?? (data || payload)?.error ?? 'Job failed' });
+              resolveFailed(payloadData);
               break;
             default:
               break;
@@ -204,6 +237,8 @@ class JobsAPI {
       });
 
       eventSource.onerror = () => {
+        if (settled) return;
+        settled = true;
         close();
         reject(new Error('Job stream connection failed'));
       };

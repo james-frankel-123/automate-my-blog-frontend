@@ -3565,10 +3565,11 @@ Please provide analysis in this JSON format:
    *   - onTopicComplete(data) - topic-complete: { topic } (topic ideas stream)
    *   - onTopicImageStart(data) - topic-image-start: { index, total, topic }
    *   - onTopicImageComplete(data) - topic-image-complete: { index, topic } (topic has image URL)
+   * @param {{ streamUrl?: string }} [options] - If streamUrl is provided, use it for EventSource (auth in query).
    * @returns {{ close: function }} - Call close() to stop listening and close EventSource
    */
-  connectToStream(connectionId, handlers = {}) {
-    const url = this.getStreamUrl(connectionId);
+  connectToStream(connectionId, handlers = {}, options = {}) {
+    const url = options.streamUrl && typeof options.streamUrl === 'string' ? options.streamUrl : this.getStreamUrl(connectionId);
     const eventSource = new EventSource(url);
 
     const close = () => {

@@ -95,8 +95,10 @@ const WebsiteAnalysisStepStandalone = ({
   // Input editing mode state (controls button/icon visibility)
   const [isEditing, setIsEditing] = useState(true);
 
-  // Analysis progress from job polling (progress, currentStep, estimatedTimeRemaining)
+  // Analysis progress from job stream (progress, currentStep, phase?, detail?, estimatedTimeRemaining)
   const [analysisProgress, setAnalysisProgress] = useState(null);
+  // Scrape-phase "thoughts" from job stream (phase, message, url?) for step-by-step log
+  const [analysisThoughts, setAnalysisThoughts] = useState([]);
 
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
@@ -361,10 +363,11 @@ const WebsiteAnalysisStepStandalone = ({
         timestamp: new Date().toISOString()
       });
 
-      // Show step 1 message immediately; API will call onProgress(1–4) or status object as each step runs
+      // Show step 1 message immediately; API will call onProgress(1–4) or job stream object (progress, currentStep, phase?, detail?)
       const steps = systemVoice.analysis.steps;
       updateScanningMessage(steps[0]);
       setAnalysisProgress(null);
+      setAnalysisThoughts([]);
 
       const result = await analysisAPI.analyzeWebsite(validation.formattedUrl, {
         onProgress: (stepOrStatus) => {
@@ -379,13 +382,22 @@ const WebsiteAnalysisStepStandalone = ({
             }
           } else if (typeof stepOrStatus === 'object' && stepOrStatus) {
             const stepLabel = stepOrStatus.currentStep || steps[0];
-            updateScanningMessage(stepLabel);
+            const subLabel = stepOrStatus.phase || stepOrStatus.detail;
+            const displayLabel = subLabel ? `${stepLabel} — ${subLabel}` : stepLabel;
+            updateScanningMessage(displayLabel);
             setAnalysisProgress({
               progress: stepOrStatus.progress,
               currentStep: stepOrStatus.currentStep,
+              phase: stepOrStatus.phase,
+              detail: stepOrStatus.detail,
               estimatedTimeRemaining: stepOrStatus.estimatedTimeRemaining,
             });
-            setHint(stepLabel, 'hint', 0);
+            setHint(displayLabel, 'hint', 0);
+          }
+        },
+        onScrapePhase: (data) => {
+          if (data?.message) {
+            setAnalysisThoughts(prev => [...prev, { phase: data.phase, message: data.message, url: data.url }]);
           }
         }
       });
@@ -798,6 +810,7 @@ const WebsiteAnalysisStepStandalone = ({
               </div>
               <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
                 {systemVoice.analysis.progressPreamble} {analysisProgress.currentStep || currentScanningMessage}
+                {analysisProgress.phase || analysisProgress.detail ? ` — ${analysisProgress.phase || analysisProgress.detail}` : ''}
               </div>
               <Progress
                 percent={analysisProgress.progress ?? 0}
@@ -807,6 +820,16 @@ const WebsiteAnalysisStepStandalone = ({
               {analysisProgress.estimatedTimeRemaining != null && analysisProgress.estimatedTimeRemaining > 0 && (
                 <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                   ~{analysisProgress.estimatedTimeRemaining} seconds remaining
+                </div>
+              )}
+              {analysisThoughts.length > 0 && (
+                <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  <div style={{ marginBottom: '4px', fontWeight: 600 }}>{systemVoice.analysis.progressLabel}</div>
+                  <ul style={{ margin: 0, paddingLeft: '18px' }}>
+                    {analysisThoughts.map((t, i) => (
+                      <li key={i}>{t.message}</li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>
