@@ -1496,8 +1496,8 @@ const WebsiteAnalysisStepStandalone = ({
         {/* Show loading state when analyzing */}
         {loading && renderAnalysisLoading()}
 
-        {/* Show analysis results as soon as partial or full data is available (streaming or done) */}
-        {analysisResults && renderAnalysisResults()}
+        {/* Show analysis results only after user has run analysis (loading or completed), not initial placeholder state */}
+        {(analysisCompleted || loading) && analysisResults && renderAnalysisResults()}
       </Card>
     </div>
   );

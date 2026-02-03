@@ -146,15 +146,15 @@ export const WorkflowModeProvider = ({ children }) => {
   const [stepResults, setStepResults] = useState({
     home: {
       websiteAnalysis: {
-        businessType: 'Child Wellness & Parenting',
+        businessType: '',
         businessName: '',
-        targetAudience: 'Parents of children aged 2-12',
-        contentFocus: 'Emotional wellness, child development, mindful parenting',
-        brandVoice: 'Warm, expert, supportive',
+        targetAudience: '',
+        contentFocus: '',
+        brandVoice: '',
         description: '',
         keywords: [],
-        decisionMakers: 'Parents of children aged 2-12',
-        endUsers: 'Children experiencing anxiety or emotional challenges',
+        decisionMakers: '',
+        endUsers: '',
         customerProblems: [],
         searchBehavior: '',
         customerLanguage: [],
@@ -165,9 +165,9 @@ export const WorkflowModeProvider = ({ children }) => {
         blogStrategy: '',
         scenarios: [],
         brandColors: {
-          primary: '#6B8CAE',
-          secondary: '#F4E5D3',
-          accent: '#8FBC8F'
+          primary: '',
+          secondary: '',
+          accent: ''
         }
       },
       webSearchInsights: {
