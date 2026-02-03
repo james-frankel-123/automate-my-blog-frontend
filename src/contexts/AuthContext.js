@@ -364,6 +364,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('theme', theme);
     }
 
+    // Clear all sessionStorage (no need to preserve anything)
+    sessionStorage.clear();
+
     // Clear local state
     setUser(null);
     setCurrentOrganization(null);

@@ -79,6 +79,7 @@ export const WorkflowModeProvider = ({ children }) => {
   const [showStrategyGate, setShowStrategyGate] = useState(false);
   const [showExportWarning, setShowExportWarning] = useState(false);
   const [authContext, setAuthContext] = useState(null); // Auth context tracking
+  const [pendingAction, setPendingAction] = useState(null); // Store action to complete after login
   
   // =============================================================================
   // BUSINESS LOGIC STATE
@@ -492,10 +493,29 @@ export const WorkflowModeProvider = ({ children }) => {
   }, [user]);
   
   // Sign-up focused gate helper - defaults to register tab for conversion
-  const requireSignUp = useCallback((action = '', context = 'Create your account') => {
+  /**
+   * Require user sign-up before proceeding with an action
+   * @param {string} action - Description of the action being performed
+   * @param {string} context - Context message for the auth modal
+   * @param {function} onSuccessCallback - Optional callback to execute after successful login/signup
+   * @returns {boolean} - true if user is authenticated, false if auth modal was shown
+   *
+   * Example usage with callback:
+   * const handleSave = () => {
+   *   if (!requireSignUp('Save your post', 'Sign up to save', () => savePost())) {
+   *     return; // Auth modal shown, savePost() will execute after login
+   *   }
+   *   savePost(); // User already authenticated
+   * };
+   */
+  const requireSignUp = useCallback((action = '', context = 'Create your account', onSuccessCallback = null) => {
     if (!user) {
       setAuthContext('register');  // Always set to register for sign-up flow
       setShowAuthModal(true);
+      // Store the pending action to execute after successful login
+      if (onSuccessCallback && typeof onSuccessCallback === 'function') {
+        setPendingAction(onSuccessCallback);
+      }
       return false;
     }
     return true;
@@ -1139,6 +1159,17 @@ export const WorkflowModeProvider = ({ children }) => {
       if (authLoading) return; // Wait for auth to complete
       
       if (user && isAuthenticated) {
+        // Execute pending action after successful login
+        if (pendingAction) {
+          console.log('✅ User authenticated, executing pending action');
+          try {
+            await pendingAction();
+          } catch (error) {
+            console.error('Failed to execute pending action:', error);
+          }
+          setPendingAction(null); // Clear pending action after execution
+        }
+
         // User is authenticated - try to adopt any anonymous session
         if (sessionId && !sessionDataLoaded) {
           console.log('🔄 User authenticated, attempting to adopt session:', sessionId);
@@ -1149,7 +1180,7 @@ export const WorkflowModeProvider = ({ children }) => {
             console.error('Failed to adopt session:', error);
           }
         }
-        
+
         // Load user's audiences
         await loadUserAudiences();
         
@@ -1164,7 +1195,7 @@ export const WorkflowModeProvider = ({ children }) => {
     };
     
     handleAuthenticationChange();
-  }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded]); // FIXED: Removed function dependencies
+  }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded, pendingAction]); // FIXED: Removed function dependencies
   
   // Context value with all unified state
   const contextValue = {
