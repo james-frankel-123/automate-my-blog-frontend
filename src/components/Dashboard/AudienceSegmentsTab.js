@@ -27,6 +27,32 @@ export const clearAudienceStrategiesCache = () => {
   console.log('🧹 Cleared audience strategies generation cache');
 };
 
+// Issue #65: Transform a single streamed audience to strategy card format (progressive reveal)
+function transformAudienceToStrategy(audience, index) {
+  const scenario = audience?.target_segment ? { ...audience, targetSegment: audience.target_segment } : audience;
+  return {
+    id: audience?.id ? `stream-${audience.id}` : `openai-scenario-${index}`,
+    pitch: scenario?.pitch || audience?.pitch || '',
+    imageUrl: scenario?.imageUrl ?? scenario?.image_url ?? audience?.imageUrl ?? null,
+    targetSegment: scenario?.targetSegment || scenario?.target_segment || {
+      demographics: scenario?.customerProblem || scenario?.customer_problem || '',
+      psychographics: '',
+      searchBehavior: ''
+    },
+    customerProblem: scenario?.customerProblem || scenario?.customer_problem || '',
+    customerLanguage: scenario?.customerLanguage || scenario?.customer_language || scenario?.seoKeywords || [],
+    conversionPath: scenario?.conversionPath || scenario?.conversion_path || '',
+    businessValue: scenario?.businessValue || scenario?.business_value || {
+      searchVolume: '',
+      conversionPotential: '',
+      priority: index + 1,
+      competition: ''
+    },
+    contentIdeas: scenario?.contentIdeas || scenario?.content_ideas || [],
+    seoKeywords: scenario?.seoKeywords || scenario?.seo_keywords || []
+  };
+}
+
 const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('audience-segments');
@@ -556,9 +582,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         }, 800); // Shorter delay since we're not generating
         
       } else {
-        
-        // FALLBACK: Generate template strategies only if no OpenAI scenarios
-        const fallbackStrategies = [
+        // Issue #65: Try audience streaming first when no scenarios in analysis
+        const runFallback = () => {
+          const fallbackStrategies = [
           {
             id: 'primary-target',
             targetSegment: {
@@ -662,6 +688,33 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             message.info(`Generated ${fallbackStrategies.length} template strategies (AI scenarios not available)`);
           }
         }, 1200);
+        };
+
+        const tryStreaming = async () => {
+          try {
+            const { connectionId } = await autoBlogAPI.generateAudiencesStream(analysis, []);
+            setStrategies([]);
+            autoBlogAPI.connectToStream(connectionId, {
+              onAudienceComplete: (data) => {
+                const audience = data?.audience;
+                if (!audience) return;
+                setStrategies(prev => {
+                  const transformed = transformAudienceToStrategy(audience, prev.length);
+                  return [...prev, transformed];
+                });
+              },
+              onComplete: () => setGeneratingStrategies(false),
+              onError: () => {
+                setGeneratingStrategies(false);
+                runFallback();
+              }
+            });
+          } catch (e) {
+            console.warn('Audience stream not available, using template strategies:', e?.message);
+            runFallback();
+          }
+        };
+        tryStreaming();
       }
     }
   }, [tabMode.mode, stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis, strategies.length, generatingStrategies, forceWorkflowMode]);
