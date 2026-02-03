@@ -3537,11 +3537,20 @@ Please provide analysis in this JSON format:
 
   // Streaming (SSE): blog, audience, bundle streams; connect via connectToStream(connectionId, handlers)
 
+  /** Headers for stream-start requests: x-session-id when anonymous, none when JWT (makeRequest adds Authorization). */
+  _getStreamAuthHeaders() {
+    const token = localStorage.getItem('accessToken');
+    if (token) return {};
+    const sessionId = sessionStorage.getItem('audience_session_id');
+    return sessionId ? { 'x-session-id': sessionId } : {};
+  }
+
   /**
-   * Build SSE stream URL. EventSource does not send Authorization header;
-   * optional token in query for backends that require auth on SSE.
+   * Build SSE stream URL. EventSource does not send headers; auth via query.
+   * Supports both logged-in (token) and anonymous/session (sessionId).
+   * Prefer using streamUrl from POST response when available.
    * @param {string} connectionId - Stream connection ID from start-stream endpoint
-   * @returns {string} Full URL for EventSource
+   * @returns {string} Full URL for EventSource (includes ?token= or ?sessionId=)
    */
   getStreamUrl(connectionId) {
     const path = `/api/v1/stream/${encodeURIComponent(connectionId)}`;
@@ -3549,6 +3558,10 @@ Please provide analysis in this JSON format:
     const token = localStorage.getItem('accessToken');
     if (token) {
       return `${url}?token=${encodeURIComponent(token)}`;
+    }
+    const sessionId = sessionStorage.getItem('audience_session_id');
+    if (sessionId) {
+      return `${url}?sessionId=${encodeURIComponent(sessionId)}`;
     }
     return url;
   }
@@ -3681,6 +3694,7 @@ Please provide analysis in this JSON format:
   async generateTopicsStream(payload) {
     const response = await this.makeRequest('/api/v1/topics/generate-stream', {
       method: 'POST',
+      headers: this._getStreamAuthHeaders(),
       body: JSON.stringify({
         businessType: payload.businessType,
         targetAudience: payload.targetAudience,
@@ -3701,6 +3715,7 @@ Please provide analysis in this JSON format:
   async generateBlogStream(payload) {
     const response = await this.makeRequest('/api/v1/blog/generate-stream', {
       method: 'POST',
+      headers: this._getStreamAuthHeaders(),
       body: JSON.stringify({
         topic: payload.topic,
         businessInfo: payload.businessInfo ?? {},
@@ -3724,6 +3739,7 @@ Please provide analysis in this JSON format:
   async generateAudiencesStream(analysis, existingAudiences = []) {
     const response = await this.makeRequest('/api/v1/audiences/generate-stream', {
       method: 'POST',
+      headers: this._getStreamAuthHeaders(),
       body: JSON.stringify({ analysis, existingAudiences })
     });
     return { connectionId: response.connectionId };
@@ -3736,7 +3752,9 @@ Please provide analysis in this JSON format:
    * @returns {Promise<{ connectionId: string }>}
    */
   async calculateBundlePriceStream() {
-    const response = await this.makeRequest('/api/v1/strategies/bundle/calculate?stream=true');
+    const response = await this.makeRequest('/api/v1/strategies/bundle/calculate?stream=true', {
+      headers: this._getStreamAuthHeaders(),
+    });
     if (response.connectionId) {
       return {
         connectionId: response.connectionId,
