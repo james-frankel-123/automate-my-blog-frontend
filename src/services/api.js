@@ -3555,13 +3555,16 @@ Please provide analysis in this JSON format:
 
   /**
    * Connect to an SSE stream and dispatch events to handlers.
-   * @param {string} connectionId - From generateBlogStream / generateAudiencesStream / etc.
+   * @param {string} connectionId - From generateBlogStream / generateAudiencesStream / generateTopicsStream / etc.
    * @param {Object} handlers - { onChunk?, onComplete?, onError?, onConnected?, onAudienceComplete? }
    *   - onChunk(data) - content-chunk: { field?, content }
    *   - onComplete(data) - complete: final result
-   *   - onError(data) - error: { message, code? }
+   *   - onError(data) - error: { message, code? } (backend may send { error, errorCode })
    *   - onConnected() - connected
    *   - onAudienceComplete(data) - audience-complete: { audience } (audience scenarios stream)
+   *   - onTopicComplete(data) - topic-complete: { topic } (topic ideas stream)
+   *   - onTopicImageStart(data) - topic-image-start: { index, total, topic }
+   *   - onTopicImageComplete(data) - topic-image-complete: { index, topic } (topic has image URL)
    * @returns {{ close: function }} - Call close() to stop listening and close EventSource
    */
   connectToStream(connectionId, handlers = {}) {
@@ -3572,27 +3575,83 @@ Please provide analysis in this JSON format:
       eventSource.close();
     };
 
+    const parseData = (event) => {
+      try {
+        return JSON.parse(event.data || '{}');
+      } catch (err) {
+        console.warn('[SSE] Parse error:', err);
+        return {};
+      }
+    };
+
+    // Backend may send named SSE events (event: content-chunk, event: complete, etc.) — only named listeners receive them
+    eventSource.addEventListener('connected', (event) => {
+      if (handlers.onConnected) handlers.onConnected(parseData(event));
+    });
+    eventSource.addEventListener('content-chunk', (event) => {
+      const data = parseData(event);
+      if (handlers.onChunk) handlers.onChunk(data);
+    });
+    eventSource.addEventListener('audience-complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
+    });
+    eventSource.addEventListener('topic-complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onTopicComplete) handlers.onTopicComplete(data);
+    });
+    eventSource.addEventListener('topic-image-start', (event) => {
+      const data = parseData(event);
+      if (handlers.onTopicImageStart) handlers.onTopicImageStart(data);
+    });
+    eventSource.addEventListener('topic-image-complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onTopicImageComplete) handlers.onTopicImageComplete(data);
+    });
+    eventSource.addEventListener('complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onComplete) handlers.onComplete(data);
+      close();
+    });
+    eventSource.addEventListener('error', (event) => {
+      const data = parseData(event);
+      const errPayload = { message: data?.error ?? data?.message ?? 'Stream error', code: data?.errorCode };
+      if (handlers.onError) handlers.onError(errPayload);
+      close();
+    });
+
+    // Fallback: generic 'message' events with payload { type, data } (e.g. single-event streams)
     eventSource.addEventListener('message', (event) => {
       try {
         const payload = JSON.parse(event.data || '{}');
         const { type, data } = payload;
+        const payloadData = data ?? payload;
         switch (type) {
           case 'connected':
-            if (handlers.onConnected) handlers.onConnected();
+            if (handlers.onConnected) handlers.onConnected(payloadData);
             break;
           case 'content-chunk':
-            if (handlers.onChunk) handlers.onChunk(data);
+            if (handlers.onChunk) handlers.onChunk(payloadData);
             break;
           case 'complete':
-            if (handlers.onComplete) handlers.onComplete(data);
-            close();
-            break;
-          case 'error':
-            if (handlers.onError) handlers.onError(data);
+            if (handlers.onComplete) handlers.onComplete(payloadData);
             close();
             break;
           case 'audience-complete':
-            if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
+            if (handlers.onAudienceComplete) handlers.onAudienceComplete(payloadData);
+            break;
+          case 'topic-complete':
+            if (handlers.onTopicComplete) handlers.onTopicComplete(payloadData);
+            break;
+          case 'topic-image-start':
+            if (handlers.onTopicImageStart) handlers.onTopicImageStart(payloadData);
+            break;
+          case 'topic-image-complete':
+            if (handlers.onTopicImageComplete) handlers.onTopicImageComplete(payloadData);
+            break;
+          case 'error':
+            if (handlers.onError) handlers.onError({ message: payloadData?.error ?? payloadData?.message ?? 'Stream error', code: payloadData?.errorCode });
+            close();
             break;
           default:
             break;
@@ -3613,8 +3672,29 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Start topic ideas generation stream. Connect with connectToStream(connectionId, handlers).
+   * Backend sends topic-complete events with { topic }; onComplete may send { topics } array.
+   * @param {Object} payload - { businessType, targetAudience, contentFocus }
+   * @returns {Promise<{ connectionId: string }>}
+   */
+  async generateTopicsStream(payload) {
+    const response = await this.makeRequest('/api/v1/topics/generate-stream', {
+      method: 'POST',
+      body: JSON.stringify({
+        businessType: payload.businessType,
+        targetAudience: payload.targetAudience,
+        contentFocus: payload.contentFocus || 'Content',
+      }),
+    });
+    return {
+      connectionId: response.connectionId,
+      streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
+    };
+  }
+
+  /**
    * Start blog post generation stream. Connect with connectToStream(connectionId, handlers).
-   * @param {Object} payload - { topic, businessInfo, additionalInstructions?, tweets? }
+   * @param {Object} payload - { topic, businessInfo, organizationId, additionalInstructions?, tweets? }
    * @returns {Promise<{ connectionId: string, streamUrl?: string }>}
    */
   async generateBlogStream(payload) {
@@ -3622,7 +3702,8 @@ Please provide analysis in this JSON format:
       method: 'POST',
       body: JSON.stringify({
         topic: payload.topic,
-        businessInfo: payload.businessInfo,
+        businessInfo: payload.businessInfo ?? {},
+        organizationId: payload.organizationId,
         additionalInstructions: payload.additionalInstructions || '',
         ...(payload.tweets?.length ? { tweets: payload.tweets } : {})
       })

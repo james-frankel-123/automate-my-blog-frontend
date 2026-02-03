@@ -646,22 +646,34 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         return;
       }
 
-      // Run topic generation, credits fetch, and CTAs fetch in parallel for faster UX
-      const topicsPromise = topicAPI.generateTrendingTopics(
-        analysisData,
-        selectedStrategy,
-        stepResults?.home?.webSearchInsights || {}
-      );
+      // Clear existing topics so streaming can show incremental results
+      setAvailableTopics([]);
+
       const creditsPromise = user ? api.getUserCredits().catch(() => null) : Promise.resolve(null);
       const ctasPromise = organizationId
         ? api.getOrganizationCTAs(organizationId).catch(() => null)
         : Promise.resolve(null);
 
-      const [result, credits, ctasResponse] = await Promise.all([
-        topicsPromise,
-        creditsPromise,
-        ctasPromise
-      ]);
+      // Try topic stream first; onTopicComplete updates UI as each topic arrives; onTopicImageComplete updates image
+      const result = await topicAPI.generateTrendingTopics(
+        analysisData,
+        selectedStrategy,
+        stepResults?.home?.webSearchInsights || {},
+        {
+          onTopicComplete: (topic) => {
+            setAvailableTopics((prev) => [...prev, topic]);
+          },
+          onTopicImageComplete: (topic, index) => {
+            setAvailableTopics((prev) => {
+              const next = [...prev];
+              if (next[index] != null && topic?.image) next[index] = { ...next[index], image: topic.image };
+              return next;
+            });
+          },
+        }
+      );
+
+      const [credits, ctasResponse] = await Promise.all([creditsPromise, ctasPromise]);
 
       if (credits) setUserCredits(credits);
       if (ctasResponse) {
@@ -799,11 +811,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         })
       };
 
-      // Issue #65: Try streaming first for standard (non-enhanced) blog generation
+      // Issue #65: Try blog stream first for everyone; fall back to job (polling) or sync generate if stream unavailable
       let result = null;
-      if (!shouldUseEnhancement) {
-        try {
-          const { connectionId } = await contentAPI.startBlogStream(
+      try {
+        const { connectionId } = await contentAPI.startBlogStream(
             topic,
             stepResults?.home?.websiteAnalysis || {},
             tabMode.tabWorkflowData?.selectedCustomerStrategy,
@@ -865,10 +876,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             setGeneratingContent(false);
             return;
           }
-        } catch (streamErr) {
-          console.warn('Blog stream not available, falling back to standard generation:', streamErr?.message);
-          result = null;
-        }
+      } catch (streamErr) {
+        console.warn('Blog stream not available, falling back to job or sync generation:', streamErr?.message);
+        result = null;
       }
 
       if (result === null) {
@@ -2765,8 +2775,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           </div>
         )}
 
-        {/* ENHANCED CONTENT EDITING SECTION - Available in both modes when content is generated */}
-        {contentGenerated && (
+        {/* ENHANCED CONTENT EDITING SECTION - When content is generated, or during stream so user sees typing effect */}
+        {(contentGenerated || (generatingContent && selectedTopic && editingContent)) && (
           <div style={{ marginBottom: '24px' }}>
             {selectedTopic && (
               <div style={{

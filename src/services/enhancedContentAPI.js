@@ -86,7 +86,7 @@ export class EnhancedContentAPI {
 
   /**
    * Generate enhanced content via worker queue
-   * POST /api/v1/jobs/content-generation → poll until succeeded/failed
+   * POST /api/v1/jobs/content-generation → prefer job stream, fall back to poll until succeeded/failed
    */
   async generateEnhancedContent(selectedTopic, analysisData, strategy = null, enhancementOptions = {}) {
     const { onProgress, ...restOptions } = enhancementOptions;
@@ -127,12 +127,22 @@ export class EnhancedContentAPI {
 
       console.log('📋 Content generation job created:', jobId);
 
-      // 2. Poll until succeeded or failed
-      const finalStatus = await jobsAPI.pollJobStatus(jobId, {
-        onProgress,
-        pollIntervalMs: 2500,
-        maxAttempts: 120
-      });
+      // 2. Prefer job stream for real-time progress; fall back to polling if stream unavailable
+      let finalStatus = null;
+      try {
+        finalStatus = await jobsAPI.connectToJobStream(jobId, {
+          onProgress: (data) => {
+            if (onProgress) onProgress(data);
+          }
+        });
+      } catch (streamErr) {
+        console.warn('Content generation job stream not available, falling back to polling:', streamErr?.message);
+        finalStatus = await jobsAPI.pollJobStatus(jobId, {
+          onProgress,
+          pollIntervalMs: 2500,
+          maxAttempts: 120
+        });
+      }
 
       if (finalStatus.status === 'failed') {
         return {
@@ -196,7 +206,7 @@ export class EnhancedContentAPI {
 
   /**
    * Retry a failed content generation job
-   * POST /api/v1/jobs/:jobId/retry → poll until succeeded/failed
+   * POST /api/v1/jobs/:jobId/retry → prefer job stream, fall back to poll until succeeded/failed
    * @param {string} jobId - Job ID from failed response
    * @param {{ onProgress?: (status) => void }} options
    */
@@ -204,11 +214,21 @@ export class EnhancedContentAPI {
     const { onProgress } = options;
     try {
       await jobsAPI.retryJob(jobId);
-      const finalStatus = await jobsAPI.pollJobStatus(jobId, {
-        onProgress,
-        pollIntervalMs: 2500,
-        maxAttempts: 120
-      });
+      let finalStatus = null;
+      try {
+        finalStatus = await jobsAPI.connectToJobStream(jobId, {
+          onProgress: (data) => {
+            if (onProgress) onProgress(data);
+          }
+        });
+      } catch (streamErr) {
+        console.warn('Content generation job stream not available, falling back to polling:', streamErr?.message);
+        finalStatus = await jobsAPI.pollJobStatus(jobId, {
+          onProgress,
+          pollIntervalMs: 2500,
+          maxAttempts: 120
+        });
+      }
       if (finalStatus.status === 'failed') {
         return {
           success: false,

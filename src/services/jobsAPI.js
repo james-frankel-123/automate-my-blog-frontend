@@ -136,26 +136,64 @@ class JobsAPI {
         eventSource.close();
       };
 
+      const parseData = (event) => {
+        try {
+          return JSON.parse(event.data || '{}');
+        } catch (err) {
+          console.warn('[Job SSE] Parse error:', err);
+          return {};
+        }
+      };
+
+      // Backend may send named SSE events (event: progress-update, data: {...}) — only named listeners receive them
+      eventSource.addEventListener('progress-update', (event) => {
+        const data = parseData(event);
+        if (handlers.onProgress) handlers.onProgress(data);
+      });
+      eventSource.addEventListener('step-change', (event) => {
+        const data = parseData(event);
+        if (handlers.onStepChange) handlers.onStepChange(data);
+        if (handlers.onProgress && (data.progress != null || data.currentStep != null)) handlers.onProgress(data);
+      });
+      eventSource.addEventListener('complete', (event) => {
+        const data = parseData(event);
+        if (handlers.onComplete) handlers.onComplete(data);
+        close();
+        resolve({ status: 'succeeded', result: data?.result ?? data });
+      });
+      eventSource.addEventListener('failed', (event) => {
+        const data = parseData(event);
+        close();
+        resolve({ status: 'failed', error: data?.message ?? data?.error ?? 'Job failed' });
+      });
+      eventSource.addEventListener('error', (event) => {
+        const data = parseData(event);
+        close();
+        resolve({ status: 'failed', error: data?.message ?? data?.error ?? 'Job failed' });
+      });
+
+      // Fallback: generic 'message' events with payload { type, data } (e.g. single-event streams)
       eventSource.addEventListener('message', (event) => {
         try {
           const payload = JSON.parse(event.data || '{}');
           const { type, data } = payload;
           switch (type) {
             case 'progress-update':
-              if (handlers.onProgress) handlers.onProgress(data);
+              if (handlers.onProgress) handlers.onProgress(data || payload);
               break;
             case 'step-change':
-              if (handlers.onStepChange) handlers.onStepChange(data);
+              if (handlers.onStepChange) handlers.onStepChange(data || payload);
+              if (handlers.onProgress && (data?.progress != null || data?.currentStep != null)) handlers.onProgress(data || payload);
               break;
             case 'complete':
-              if (handlers.onComplete) handlers.onComplete(data);
+              if (handlers.onComplete) handlers.onComplete(data || payload);
               close();
-              resolve({ status: 'succeeded', result: data?.result ?? data });
+              resolve({ status: 'succeeded', result: (data || payload)?.result ?? data ?? payload });
               break;
             case 'failed':
             case 'error':
               close();
-              resolve({ status: 'failed', error: data?.message ?? data?.error ?? 'Job failed' });
+              resolve({ status: 'failed', error: (data || payload)?.message ?? (data || payload)?.error ?? 'Job failed' });
               break;
             default:
               break;
