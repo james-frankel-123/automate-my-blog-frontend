@@ -3592,6 +3592,7 @@ Please provide analysis in this JSON format:
    *   - onError(data) - error: { message, code? }
    *   - onConnected() - connected
    *   - onAudienceComplete(data) - audience-complete: { audience } (audience scenarios stream)
+   *   - onTopicComplete(data) - topic-complete: { topic } (topic ideas stream)
    * @returns {{ close: function }} - Call close() to stop listening and close EventSource
    */
   connectToStream(connectionId, handlers = {}) {
@@ -3622,6 +3623,10 @@ Please provide analysis in this JSON format:
     eventSource.addEventListener('audience-complete', (event) => {
       const data = parseData(event);
       if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
+    });
+    eventSource.addEventListener('topic-complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onTopicComplete) handlers.onTopicComplete(data);
     });
     eventSource.addEventListener('complete', (event) => {
       const data = parseData(event);
@@ -3658,6 +3663,9 @@ Please provide analysis in this JSON format:
           case 'audience-complete':
             if (handlers.onAudienceComplete) handlers.onAudienceComplete(payloadData);
             break;
+          case 'topic-complete':
+            if (handlers.onTopicComplete) handlers.onTopicComplete(payloadData);
+            break;
           default:
             break;
         }
@@ -3674,6 +3682,24 @@ Please provide analysis in this JSON format:
     };
 
     return { close };
+  }
+
+  /**
+   * Start topic ideas generation stream. Connect with connectToStream(connectionId, handlers).
+   * Backend sends topic-complete events with { topic }; onComplete may send { topics } array.
+   * @param {Object} payload - { businessType, targetAudience, contentFocus }
+   * @returns {Promise<{ connectionId: string }>}
+   */
+  async generateTopicsStream(payload) {
+    const response = await this.makeRequest('/api/v1/topics/generate-stream', {
+      method: 'POST',
+      body: JSON.stringify({
+        businessType: payload.businessType,
+        targetAudience: payload.targetAudience,
+        contentFocus: payload.contentFocus || 'Content',
+      }),
+    });
+    return { connectionId: response.connectionId };
   }
 
   /**
