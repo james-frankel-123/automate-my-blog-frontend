@@ -714,7 +714,13 @@ body {
     /* Semantic colors - lighter variants for dark mode readability */
     --color-success-dark: #34D399;         /* Brighter emerald on dark */
     --color-success-bg: rgba(5, 150, 105, 0.2);   /* Dark mode success background */
+    --color-success-border: rgba(52, 211, 153, 0.4);
     --color-error-bg: rgba(239, 68, 68, 0.2);     /* Dark mode error background */
+    --color-error-border: rgba(248, 113, 113, 0.4);
+    --color-warning-bg: rgba(245, 158, 11, 0.2);  /* Dark mode warning background */
+    --color-warning-border: rgba(251, 191, 36, 0.4);
+    --color-info-bg: rgba(99, 102, 241, 0.15);   /* Dark mode info background */
+    --color-info-border: rgba(129, 140, 248, 0.4);
 
     /* Text - Higher contrast for readability */
     --color-text-primary: #F5F5F7;         /* Off-white */
@@ -794,7 +800,13 @@ body {
   /* Semantic colors - lighter variants for dark mode readability */
   --color-success-dark: #34D399;         /* Brighter emerald on dark */
   --color-success-bg: rgba(5, 150, 105, 0.2);   /* Dark mode success background */
+  --color-success-border: rgba(52, 211, 153, 0.4);
   --color-error-bg: rgba(239, 68, 68, 0.2);     /* Dark mode error background */
+  --color-error-border: rgba(248, 113, 113, 0.4);
+  --color-warning-bg: rgba(245, 158, 11, 0.2);  /* Dark mode warning background */
+  --color-warning-border: rgba(251, 191, 36, 0.4);
+  --color-info-bg: rgba(99, 102, 241, 0.15);   /* Dark mode info background */
+  --color-info-border: rgba(129, 140, 248, 0.4);
 
   /* Primary scale for dark mode cards/accents */
   --color-primary-50: rgba(129, 140, 248, 0.15);
@@ -1154,11 +1166,123 @@ body {
 .dark-mode .ant-alert {
   background-color: var(--color-background-elevated);
   border-color: var(--color-border-base);
+  color: var(--color-text-primary);
 }
 
-/* Message */
+.dark-mode .ant-alert-message,
+.dark-mode .ant-alert-description {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-alert-success {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.dark-mode .ant-alert-success .ant-alert-message,
+.dark-mode .ant-alert-success .ant-alert-description,
+.dark-mode .ant-alert-success .ant-alert-icon {
+  color: var(--color-success-dark);
+}
+
+.dark-mode .ant-alert-error {
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+
+.dark-mode .ant-alert-error .ant-alert-message,
+.dark-mode .ant-alert-error .ant-alert-description,
+.dark-mode .ant-alert-error .ant-alert-icon {
+  color: var(--color-error);
+}
+
+.dark-mode .ant-alert-warning {
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+
+.dark-mode .ant-alert-warning .ant-alert-message,
+.dark-mode .ant-alert-warning .ant-alert-description,
+.dark-mode .ant-alert-warning .ant-alert-icon {
+  color: var(--color-warning);
+}
+
+.dark-mode .ant-alert-info {
+  background-color: var(--color-info-bg);
+  border-color: var(--color-info-border);
+}
+
+.dark-mode .ant-alert-info .ant-alert-message,
+.dark-mode .ant-alert-info .ant-alert-description,
+.dark-mode .ant-alert-info .ant-alert-icon {
+  color: var(--color-primary);
+}
+
+/* Message (toast) - portaled to body, so .dark-mode is on html */
 .dark-mode .ant-message-notice-content {
   background-color: var(--color-background-elevated);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-base);
+  box-shadow: var(--shadow-md);
+}
+
+/* Message type variants (type class can be on content or parent) */
+.dark-mode .ant-message-success .ant-message-notice-content,
+.dark-mode .ant-message-notice-content.ant-message-success {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.dark-mode .ant-message-success .ant-message-notice-content span,
+.dark-mode .ant-message-success .ant-message-notice-content .anticon,
+.dark-mode .ant-message-notice-content.ant-message-success span,
+.dark-mode .ant-message-notice-content.ant-message-success .anticon {
+  color: var(--color-success-dark);
+}
+
+.dark-mode .ant-message-error .ant-message-notice-content,
+.dark-mode .ant-message-notice-content.ant-message-error {
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error-border);
+}
+
+.dark-mode .ant-message-error .ant-message-notice-content span,
+.dark-mode .ant-message-error .ant-message-notice-content .anticon,
+.dark-mode .ant-message-notice-content.ant-message-error span,
+.dark-mode .ant-message-notice-content.ant-message-error .anticon {
+  color: var(--color-error);
+}
+
+.dark-mode .ant-message-warning .ant-message-notice-content,
+.dark-mode .ant-message-notice-content.ant-message-warning {
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+
+.dark-mode .ant-message-warning .ant-message-notice-content span,
+.dark-mode .ant-message-warning .ant-message-notice-content .anticon,
+.dark-mode .ant-message-notice-content.ant-message-warning span,
+.dark-mode .ant-message-notice-content.ant-message-warning .anticon {
+  color: var(--color-warning);
+}
+
+.dark-mode .ant-message-info .ant-message-notice-content,
+.dark-mode .ant-message-notice-content.ant-message-info {
+  background-color: var(--color-info-bg);
+  border-color: var(--color-info-border);
+}
+
+.dark-mode .ant-message-info .ant-message-notice-content span,
+.dark-mode .ant-message-info .ant-message-notice-content .anticon,
+.dark-mode .ant-message-notice-content.ant-message-info span,
+.dark-mode .ant-message-notice-content.ant-message-info .anticon {
+  color: var(--color-primary);
+}
+
+.dark-mode .ant-message-loading .ant-message-notice-content span,
+.dark-mode .ant-message-loading .ant-message-notice-content .anticon,
+.dark-mode .ant-message-notice-content.ant-message-loading span,
+.dark-mode .ant-message-notice-content.ant-message-loading .anticon {
   color: var(--color-text-primary);
 }
 
@@ -1166,6 +1290,32 @@ body {
 .dark-mode .ant-notification-notice {
   background-color: var(--color-background-elevated);
   color: var(--color-text-primary);
+  border: 1px solid var(--color-border-base);
+  box-shadow: var(--shadow-md);
+}
+
+.dark-mode .ant-notification-notice-message {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-notification-notice-description {
+  color: var(--color-text-secondary);
+}
+
+.dark-mode .ant-notification-notice-close {
+  color: var(--color-text-secondary);
+}
+
+.dark-mode .ant-notification-notice-close:hover {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-notification-notice-with-icon .ant-notification-notice-message {
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-notification-notice-with-icon .ant-notification-notice-description {
+  color: var(--color-text-secondary);
 }
 
 /* Tag */
