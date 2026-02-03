@@ -16,7 +16,7 @@ const panelStyles = {
     top: 0,
     zIndex: 10,
     marginBottom: '12px',
-    padding: '10px 16px 12px',
+    padding: '8px 14px 10px',
     backgroundColor: 'var(--color-primary-50)',
     borderRadius: '8px',
     border: '1px solid var(--color-primary-100)',
@@ -25,16 +25,15 @@ const panelStyles = {
     maxWidth: '100%',
     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
   },
-  workingLabel: {
-    marginBottom: '2px',
-    fontSize: '10px',
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    color: 'var(--color-text-secondary)',
-    fontWeight: 600,
+  statusLine: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: '8px',
+    marginBottom: '8px',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--color-primary-700)',
+    lineHeight: 1.35,
   },
   pulseDot: {
     width: '6px',
@@ -43,17 +42,19 @@ const panelStyles = {
     backgroundColor: 'var(--color-primary-500)',
     flexShrink: 0,
   },
-  stepLine: {
-    marginBottom: '6px',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: 'var(--color-primary-700)',
-    lineHeight: 1.35,
+  progressRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  progressBar: {
+    flex: 1,
+    minWidth: 0,
   },
   eta: {
-    marginTop: '4px',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
+    flexShrink: 0,
   },
 };
 
@@ -66,8 +67,8 @@ const panelStyles = {
  * @param {number} [props.estimatedTimeRemaining] - Seconds remaining (optional).
  * @param {string} [props.phase] - Optional sub-phase (appended to currentStep).
  * @param {string} [props.detail] - Optional detail (appended to currentStep).
- * @param {string} props.workingForYouLabel - e.g. "Working for you".
- * @param {string} props.progressPreamble - e.g. "Right now:".
+ * @param {string} props.workingForYouLabel - e.g. "Working for you" (shown as "Working for you · [step]").
+ * @param {string} [props.progressPreamble] - Optional; kept for API compatibility, not shown in UI.
  * @param {string} [props.fallbackStep] - Shown when currentStep is missing (e.g. "Drafting your post…").
  * @param {string} [props.dataTestId] - For tests (e.g. "website-analysis-progress", "content-generation-progress").
  */
@@ -87,37 +88,39 @@ function ThinkingPanel({
   const hasProgress = progress != null || currentStep || (thoughts && thoughts.length > 0);
   if (!isActive && !hasProgress) return null;
 
-  // Single line: show only the latest step (currentStep, or last thought, or fallback)
   const lastThought = thoughts?.length ? thoughts[thoughts.length - 1] : null;
   const stepDisplay = currentStep || (lastThought?.message ?? '') || fallbackStep || '';
   const stepSuffix = phase || detail ? ` — ${phase || detail}` : '';
+  const statusText = stepDisplay ? `${workingForYouLabel} · ${stepDisplay}${stepSuffix}` : workingForYouLabel;
+  const showEta = estimatedTimeRemaining != null && estimatedTimeRemaining > 0;
 
   return (
     <div
       data-testid={dataTestId}
       role="status"
       aria-live="polite"
-      aria-label={`${workingForYouLabel}. ${progressPreamble} ${stepDisplay}`}
+      aria-label={statusText}
       style={panelStyles.panel}
       className="thinking-panel"
     >
-      <div style={panelStyles.workingLabel}>
+      <div style={panelStyles.statusLine}>
         <span className="thinking-panel-pulse" style={panelStyles.pulseDot} aria-hidden />
-        {workingForYouLabel}
+        <span>{statusText}</span>
       </div>
-      <div style={panelStyles.stepLine}>
-        {progressPreamble} {stepDisplay}{stepSuffix}
+      <div style={panelStyles.progressRow}>
+        <div style={panelStyles.progressBar}>
+          <Progress
+            percent={progress ?? 0}
+            showInfo
+            size="small"
+            strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
+            trailColor="var(--color-primary-100)"
+          />
+        </div>
+        {showEta && (
+          <span style={panelStyles.eta}>~{estimatedTimeRemaining}s left</span>
+        )}
       </div>
-      <Progress
-        percent={progress ?? 0}
-        showInfo
-        size="small"
-        strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
-        trailColor="var(--color-primary-100)"
-      />
-      {estimatedTimeRemaining != null && estimatedTimeRemaining > 0 && (
-        <div style={panelStyles.eta}>~{estimatedTimeRemaining} seconds remaining</div>
-      )}
     </div>
   );
 }
