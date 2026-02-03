@@ -126,7 +126,8 @@ class JobsAPI {
    * @param {string} jobId
    * @param {Object} [handlers] - { onProgress?, onStepChange?, onComplete?, onFailed?, onConnected?, onScrapePhase?,
    *   onScrapeResult?, onAnalysisResult?, onAudienceComplete?, onAudiencesResult?, onPitchComplete?, onPitchesResult?,
-   *   onScenarioImageComplete?, onScenariosResult?, onStreamTimeout? }
+   *   onScenarioImageComplete?, onScenariosResult?, onStreamTimeout?,
+   *   onContextResult?, onBlogResult?, onVisualsResult?, onSeoResult? (content-generation partial results) }
    *   - onProgress(data) - progress-update: { progress, currentStep, phase?, detail?, estimatedTimeRemaining }
    *   - onScrapePhase(data) - scrape-phase: { phase, message, url? } (thoughts / step log)
    *   - onScrapeResult(data) - scrape-result: { url, title, metaDescription, headings, scrapedAt } (page preview)
@@ -138,6 +139,10 @@ class JobsAPI {
    *   - onScenarioImageComplete(data) - scenario-image-complete (per-item): { index, scenario } (includes imageUrl)
    *   - onScenariosResult(data) - scenarios-result: { scenarios } (with imageUrl)
    *   - onStreamTimeout(data) - stream-timeout: ~10 min warning
+   *   - onContextResult(data) - context-result (content-generation): { completenessScore?, availability? }
+   *   - onBlogResult(data) - blog-result (content-generation): { title, content, metaDescription?, tags?, ... }
+   *   - onVisualsResult(data) - visuals-result (content-generation): { visualContentSuggestions? }
+   *   - onSeoResult(data) - seo-result (content-generation): { seoAnalysis? }
    *   - onComplete(data) - complete: data.result is full job result
    *   - onFailed(data) - failed: { error, errorCode? }
    * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error?, errorCode? }
@@ -233,6 +238,22 @@ class JobsAPI {
         const data = parseData(event);
         if (handlers.onStreamTimeout) handlers.onStreamTimeout(data);
       });
+      eventSource.addEventListener('context-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onContextResult) handlers.onContextResult(data);
+      });
+      eventSource.addEventListener('blog-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onBlogResult) handlers.onBlogResult(data);
+      });
+      eventSource.addEventListener('visuals-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onVisualsResult) handlers.onVisualsResult(data);
+      });
+      eventSource.addEventListener('seo-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onSeoResult) handlers.onSeoResult(data);
+      });
       eventSource.addEventListener('complete', (event) => {
         const data = parseData(event);
         if (handlers.onComplete) handlers.onComplete(data);
@@ -293,6 +314,18 @@ class JobsAPI {
               break;
             case 'stream-timeout':
               if (handlers.onStreamTimeout) handlers.onStreamTimeout(payloadData);
+              break;
+            case 'context-result':
+              if (handlers.onContextResult) handlers.onContextResult(payloadData);
+              break;
+            case 'blog-result':
+              if (handlers.onBlogResult) handlers.onBlogResult(payloadData);
+              break;
+            case 'visuals-result':
+              if (handlers.onVisualsResult) handlers.onVisualsResult(payloadData);
+              break;
+            case 'seo-result':
+              if (handlers.onSeoResult) handlers.onSeoResult(payloadData);
               break;
             case 'complete':
               if (handlers.onComplete) handlers.onComplete(payloadData);

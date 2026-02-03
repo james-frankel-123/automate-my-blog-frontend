@@ -89,7 +89,14 @@ export class EnhancedContentAPI {
    * POST /api/v1/jobs/content-generation → prefer job stream, fall back to poll until succeeded/failed
    */
   async generateEnhancedContent(selectedTopic, analysisData, strategy = null, enhancementOptions = {}) {
-    const { onProgress, ...restOptions } = enhancementOptions;
+    const {
+      onProgress,
+      onContextResult,
+      onBlogResult,
+      onVisualsResult,
+      onSeoResult,
+      ...restOptions
+    } = enhancementOptions;
     let comprehensivePrompt;
     let strategicCTAs;
 
@@ -133,6 +140,18 @@ export class EnhancedContentAPI {
         finalStatus = await jobsAPI.connectToJobStream(jobId, {
           onProgress: (data) => {
             if (onProgress) onProgress(data);
+          },
+          onContextResult: (data) => {
+            if (onContextResult) onContextResult(data);
+          },
+          onBlogResult: (data) => {
+            if (onBlogResult) onBlogResult(data);
+          },
+          onVisualsResult: (data) => {
+            if (onVisualsResult) onVisualsResult(data);
+          },
+          onSeoResult: (data) => {
+            if (onSeoResult) onSeoResult(data);
           }
         });
       } catch (streamErr) {
@@ -211,7 +230,7 @@ export class EnhancedContentAPI {
    * @param {{ onProgress?: (status) => void }} options
    */
   async retryContentGenerationJob(jobId, options = {}) {
-    const { onProgress } = options;
+    const { onProgress, onContextResult, onBlogResult, onVisualsResult, onSeoResult } = options;
     try {
       await jobsAPI.retryJob(jobId);
       let finalStatus = null;
@@ -219,6 +238,18 @@ export class EnhancedContentAPI {
         finalStatus = await jobsAPI.connectToJobStream(jobId, {
           onProgress: (data) => {
             if (onProgress) onProgress(data);
+          },
+          onContextResult: (data) => {
+            if (onContextResult) onContextResult(data);
+          },
+          onBlogResult: (data) => {
+            if (onBlogResult) onBlogResult(data);
+          },
+          onVisualsResult: (data) => {
+            if (onVisualsResult) onVisualsResult(data);
+          },
+          onSeoResult: (data) => {
+            if (onSeoResult) onSeoResult(data);
           }
         });
       } catch (streamErr) {
