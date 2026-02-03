@@ -154,6 +154,10 @@ const autoBlogAPI = {
     streamUrl: 'https://api.example.com/api/v1/stream/mock-connection-id?token=mock',
   }),
 
+  getTrendingTopics: jest.fn().mockResolvedValue([]),
+  generateTrendingTopicsStream: jest.fn().mockRejectedValue(new Error('Not available')),
+  generateTopicsStream: jest.fn().mockRejectedValue(new Error('Not available')),
+
   connectToStream: jest.fn().mockReturnValue({ close: jest.fn() }),
   
   // Lead tracking
