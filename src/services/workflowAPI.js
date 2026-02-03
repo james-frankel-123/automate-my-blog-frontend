@@ -69,7 +69,7 @@ export const analysisAPI = {
   /**
    * Analyze website with comprehensive business intelligence
    * @param {string} websiteUrl - The website URL to analyze
-   * @param {{ onProgress?: (step: number | object) => void }} options - Optional; onProgress called for each step or with job status
+   * @param {{ onProgress?: (data: Object) => void, onScrapePhase?: (data: { phase, message, url? }) => void }} options - Optional; onProgress for progress-update/step-change (progress, currentStep, phase?, detail?, estimatedTimeRemaining); onScrapePhase for scrape-phase "thoughts" (phase, message, url?)
    * @returns {Promise<Object>} Analysis results with business data
    */
   async analyzeWebsite(websiteUrl, options = {}) {
@@ -87,12 +87,15 @@ export const analysisAPI = {
         const createResponse = await jobsAPI.createWebsiteAnalysisJob(formattedUrl, sessionId);
         const jobId = createResponse.jobId;
 
-        // Prefer SSE job stream for real-time progress; fall back to polling if stream unavailable
+        // Prefer SSE job stream for real-time progress and scrape-phase thoughts; fall back to polling if stream unavailable
         let finalStatus = null;
         try {
           finalStatus = await jobsAPI.connectToJobStream(jobId, {
             onProgress: (data) => {
               if (options.onProgress) options.onProgress(data);
+            },
+            onScrapePhase: (data) => {
+              if (options.onScrapePhase) options.onScrapePhase(data);
             }
           });
         } catch (streamErr) {
@@ -279,7 +282,7 @@ export const topicAPI = {
     try {
       // Try stream first (same pattern as blog/audience)
       try {
-        const { connectionId } = await autoBlogAPI.generateTopicsStream({
+        const { connectionId, streamUrl } = await autoBlogAPI.generateTopicsStream({
           businessType,
           targetAudience,
           contentFocus: contentFocus || 'Content',
@@ -313,7 +316,7 @@ export const topicAPI = {
             onError: (err) => {
               reject(new Error(err?.message ?? 'Topic stream failed'));
             },
-          });
+          }, { streamUrl });
         });
 
         const finalTopics = Array.isArray(streamResult) ? streamResult : accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i));
