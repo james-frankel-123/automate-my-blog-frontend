@@ -79,7 +79,8 @@ export const WorkflowModeProvider = ({ children }) => {
   const [showStrategyGate, setShowStrategyGate] = useState(false);
   const [showExportWarning, setShowExportWarning] = useState(false);
   const [authContext, setAuthContext] = useState(null); // Auth context tracking
-  const [pendingAction, setPendingAction] = useState(null); // Action to run after login (Fixes #85)
+  // Store post-login callback in ref to avoid re-renders/context churn (React #301 when login required before blog generation)
+  const pendingActionRef = useRef(null);
   
   // =============================================================================
   // BUSINESS LOGIC STATE
@@ -494,12 +495,13 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Sign-up focused gate helper - defaults to register tab for conversion
   // Optional onSuccessCallback: run after successful login (Fixes #85 - save/post flow)
+  // Callback stored in ref to avoid state-driven re-renders that trigger React #301.
   const requireSignUp = useCallback((action = '', context = 'Create your account', onSuccessCallback = null) => {
     if (!user) {
       setAuthContext('register');
       setShowAuthModal(true);
       if (onSuccessCallback && typeof onSuccessCallback === 'function') {
-        setPendingAction(onSuccessCallback);
+        pendingActionRef.current = onSuccessCallback;
       }
       return false;
     }
@@ -1145,13 +1147,14 @@ export const WorkflowModeProvider = ({ children }) => {
       
       if (user && isAuthenticated) {
         // Execute pending action after successful login (Fixes #85)
-        if (pendingAction) {
+        const pendingFn = pendingActionRef.current;
+        if (pendingFn) {
+          pendingActionRef.current = null;
           try {
-            await pendingAction();
+            await pendingFn();
           } catch (error) {
             console.error('Failed to execute pending action:', error);
           }
-          setPendingAction(null);
         }
 
         // User is authenticated - try to adopt any anonymous session
@@ -1179,7 +1182,7 @@ export const WorkflowModeProvider = ({ children }) => {
     };
     
     handleAuthenticationChange();
-  }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded, pendingAction]);
+  }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded]);
   
   // Memoize context value so consumers only re-render when actual state changes.
   // Prevents infinite re-render loop when opening auth modal (React error #301).
