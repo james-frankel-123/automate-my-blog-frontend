@@ -1329,6 +1329,46 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               </div>
             );
           })()}
+
+          {/* Generate Post Button - Shows when card is selected in workflow mode */}
+          {isSelected && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
+            <Button
+              type="primary"
+              block
+              size="large"
+              style={{
+                marginTop: '20px',
+                height: '48px',
+                fontWeight: 600,
+                fontSize: '15px',
+                backgroundColor: 'var(--color-success)',
+                borderColor: 'var(--color-success)'
+              }}
+              icon={<BulbOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedCustomerStrategy(strategy);
+                if (onNextStep) {
+                  onNextStep();
+                } else {
+                  if (onEnterProjectMode) {
+                    onEnterProjectMode();
+                  } else {
+                    tabMode.enterWorkflowMode();
+                  }
+                  setTimeout(() => {
+                    const postsSection = document.getElementById('posts');
+                    if (postsSection) {
+                      postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                  }, 100);
+                  message.success('Moving to content creation...');
+                }
+              }}
+            >
+              Generate Post
+            </Button>
+          )}
         </Card>
       </motion.div>
     );
@@ -1708,70 +1748,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       >
                         {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
                       </Carousel>
-                    </div>
-                  )}
-                  
-                  {selectedStrategy && (
-                    <div style={{ marginTop: '24px', textAlign: 'center', padding: '16px', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: '6px' }}>
-                      <Text strong style={{ color: 'var(--color-success)' }}>
-                        ✅ Selected: {selectedStrategy.targetSegment?.demographics.split(' ').slice(0, 4).join(' ')}...
-                      </Text>
-                      <div style={{ marginTop: '16px' }}>
-                        {onNextStep ? (
-                          <Button
-                            type="primary"
-                            size="large"
-                            onClick={onNextStep}
-                            style={{
-                              minWidth: '200px',
-                              backgroundColor: 'var(--color-success)',
-                              borderColor: 'var(--color-success)'
-                            }}
-                            icon={<BulbOutlined />}
-                          >
-                            Next Step: Generate Content
-                          </Button>
-                        ) : user && (
-                          <Button
-                            type="primary"
-                            size="large"
-                            onClick={() => {
-                              // Set the selected customer strategy in workflow context
-                              if (selectedStrategy) {
-                                setSelectedCustomerStrategy(selectedStrategy);
-                                console.log('🎯 Setting selected customer strategy for content generation:', selectedStrategy);
-                              }
-                              
-                              if (onEnterProjectMode) {
-                                onEnterProjectMode();
-                              } else {
-                                tabMode.enterWorkflowMode();
-                              }
-                              
-                              // Navigate to Posts section for content generation
-                              setTimeout(() => {
-                                const postsSection = document.getElementById('posts');
-                                if (postsSection) {
-                                  postsSection.scrollIntoView({ 
-                                    behavior: 'smooth', 
-                                    block: 'start' 
-                                  });
-                                }
-                              }, 100);
-                              
-                              message.success('Moving to content creation...');
-                            }}
-                            style={{
-                              minWidth: '200px',
-                              backgroundColor: 'var(--color-success)',
-                              borderColor: 'var(--color-success)'
-                            }}
-                            icon={<BulbOutlined />}
-                          >
-                            Continue to Content
-                          </Button>
-                        )}
-                      </div>
                     </div>
                   )}
                 </Card>
