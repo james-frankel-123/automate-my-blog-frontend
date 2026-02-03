@@ -1,6 +1,7 @@
 /* Mobile-first responsive styles */
 
-/* Base responsive layout fixes */
+/* ===== GLOBAL MOBILE FOUNDATIONS ===== */
+/* Touch-friendly: min 44x44px tap targets (WCAG 2.5.5) */
 @media (max-width: 767px) {
   /* Ensure full width usage on mobile */
   * {
@@ -16,11 +17,12 @@
     display: flex !important;
   }
 
-  /* Ensure proper viewport width */
+  /* Ensure proper viewport width and no horizontal scroll */
   html, body {
     overflow-x: hidden;
     width: 100%;
     max-width: 100%;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Main container responsive fixes */
@@ -35,6 +37,83 @@
     max-width: 100vw !important;
     margin: 0 !important;
     padding: var(--space-2) !important;
+  }
+
+  /* Touch targets: minimum 44px for interactive elements */
+  .ant-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    padding: 10px 16px !important;
+  }
+
+  .ant-btn.ant-btn-sm {
+    min-height: 40px !important;
+    min-width: 40px !important;
+  }
+
+  /* Links and clickable areas */
+  a[role="button"],
+  button.ant-btn-text {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* Modal: full width on small screens, safe area padding */
+  .ant-modal {
+    max-width: 100vw !important;
+    margin: 8px !important;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .ant-modal-content {
+    border-radius: 12px 12px 0 0 !important;
+  }
+
+  .ant-modal-body {
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Tables: horizontal scroll instead of squashing */
+  .ant-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .ant-table {
+    min-width: 280px;
+  }
+
+  /* Thinking panel: slightly larger text on mobile */
+  .thinking-panel {
+    font-size: 14px;
+  }
+
+  .thinking-panel .ant-progress-text {
+    font-size: 12px;
+  }
+
+  /* Main workflow sections: reduce padding on small screens */
+  section#home,
+  section#audience-segments,
+  section#posts {
+    padding: var(--space-4) var(--space-3) !important;
+    margin-bottom: var(--space-4) !important;
+  }
+
+  /* Logged-out header: compact on mobile */
+  .logged-out-progress-header {
+    padding: 10px 12px !important;
+    padding-top: max(10px, env(safe-area-inset-top)) !important;
+    min-height: 56px !important;
+  }
+
+  .logged-out-header-left {
+    min-width: 0 !important;
   }
 }
 
@@ -130,9 +209,9 @@
     padding: 4px !important;
   }
 
-  /* Mobile Ant Design optimizations */
+  /* Mobile Ant Design optimizations (touch targets kept from above) */
   .ant-btn {
-    padding: 8px 12px !important;
+    padding: 10px 16px !important;
     font-size: 14px !important;
   }
 
@@ -195,5 +274,21 @@
   
   .feature-text {
     font-size: 14px !important;
+  }
+}
+
+/* ===== SAFE AREA INSETS (notched devices) ===== */
+@supports (padding: env(safe-area-inset-bottom)) {
+  @media (max-width: 767px) {
+    /* Bottom nav / fixed bottom bars: add safe area padding */
+    [data-mobile-bottom-nav],
+    .mobile-bottom-nav {
+      padding-bottom: calc(var(--space-2, 8px) + env(safe-area-inset-bottom)) !important;
+    }
+
+    /* Content above bottom nav: prevent content hidden behind home indicator */
+    body {
+      padding-bottom: env(safe-area-inset-bottom);
+    }
   }
 }
