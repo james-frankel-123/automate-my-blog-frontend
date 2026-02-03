@@ -255,7 +255,7 @@ export const topicAPI = {
    * @param {Object} analysisData - Website analysis results
    * @param {Object} selectedStrategy - Customer strategy (optional)
    * @param {Object} webSearchInsights - Research insights
-   * @param {{ onTopicComplete?: (topic: Object) => void }} options - Optional; onTopicComplete called for each topic as it streams
+   * @param {{ onTopicComplete?: (topic: Object) => void, onTopicImageStart?: (data: { index, total, topic }) => void, onTopicImageComplete?: (topic: Object, index: number) => void }} options - Optional stream callbacks
    * @returns {Promise<Object>} Generated topics
    */
   async generateTrendingTopics(analysisData, selectedStrategy = null, webSearchInsights = {}, options = {}) {
@@ -302,12 +302,23 @@ export const topicAPI = {
               accumulated.push(mapped);
               if (options.onTopicComplete) options.onTopicComplete(mapped);
             },
+            onTopicImageStart: (data) => {
+              if (options.onTopicImageStart) options.onTopicImageStart(data);
+            },
+            onTopicImageComplete: (data) => {
+              const idx = data.index;
+              const topicWithImage = data.topic != null ? data.topic : data;
+              if (accumulated[idx] != null && topicWithImage?.image) {
+                accumulated[idx] = { ...accumulated[idx], image: topicWithImage.image };
+                if (options.onTopicImageComplete) options.onTopicImageComplete(accumulated[idx], idx);
+              }
+            },
             onComplete: (data) => {
               const list = data?.topics?.length ? data.topics : accumulated;
               resolve(list.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
             },
-            onError: () => {
-              reject(new Error('Topic stream failed'));
+            onError: (err) => {
+              reject(new Error(err?.message ?? 'Topic stream failed'));
             },
           });
         });
