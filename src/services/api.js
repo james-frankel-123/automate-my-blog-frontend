@@ -3686,7 +3686,11 @@ Please provide analysis in this JSON format:
   async calculateBundlePriceStream() {
     const response = await this.makeRequest('/api/v1/strategies/bundle/calculate?stream=true');
     if (response.connectionId) {
-      return { connectionId: response.connectionId };
+      return {
+        connectionId: response.connectionId,
+        bundlePricing: response.bundlePricing,
+        bundleOverview: response.bundleOverview
+      };
     }
     throw new Error('Streaming not supported for bundle calculate');
   }
