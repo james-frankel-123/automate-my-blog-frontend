@@ -778,16 +778,25 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         );
       }
 
-      // Start stream immediately so content populates right away. Fetch tweets in background
+      // Start stream immediately so content populates right away. Fetch tweets via SSE in background
       // and attach when ready (for display / draft; generation runs without tweet context).
       const prefetchedTweets = [];
-      api.searchTweetsForTopic(topic, websiteAnalysisData, 3)
-        .then((r) => {
-          const tweets = r?.tweets || [];
-          if (tweets.length) {
-            setRelatedTweets(tweets);
-            setCurrentDraft((prev) => (prev ? { ...prev, relatedTweets: tweets } : prev));
-          }
+      api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
+        .then(({ connectionId, streamUrl }) => {
+          api.connectToStream(connectionId, {
+            onQueriesExtracted: (data) => {
+              const term = data?.searchTermsUsed?.[0];
+              if (term) setHint(`Searching for: ${term}…`, 'hint', 0);
+            },
+            onComplete: (data) => {
+              const tweets = data?.tweets || [];
+              if (tweets.length) {
+                setRelatedTweets(tweets);
+                setCurrentDraft((prev) => (prev ? { ...prev, relatedTweets: tweets } : prev));
+              }
+            },
+            onError: () => {},
+          }, { streamUrl });
         })
         .catch(() => {});
 
