@@ -30,7 +30,7 @@ Deployment workflow that runs unit tests, build, and Vercel deploy. E2E is **not
 2. Verifies build
 3. Deploys to preview (PRs) or production (main branch)
 
-**Important:** Add **"E2E Tests"** as a required status check for `main` in **Settings → Branches → Branch protection** so merges and deploys only happen after E2E passes.
+**Important:** In branch protection for `main`, require **"Run E2E Tests"** (from the E2E Tests workflow). If you still have **"E2E Tests (Required)"** listed, remove it—that was the old deploy job and no longer exists.
 
 ### `ci.yml`
 General CI workflow for running tests on all PRs and pushes.
