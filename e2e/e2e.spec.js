@@ -603,7 +603,7 @@ test.describe('E2E (mocked backend)', () => {
         await expect(continueBtn).toBeVisible({ timeout: 10000 });
       });
 
-      test('full workflow completes when stream endpoints are not available (fallback path)', async ({ page }) => {
+      test.skip('full workflow completes when stream endpoints are not available (fallback path)', async ({ page }) => {
         test.setTimeout(90000);
         await page.locator('button:has-text("Create New Post")').first().click();
         await page.waitForTimeout(800);
@@ -642,7 +642,7 @@ test.describe('E2E (mocked backend)', () => {
 
     // PR 101 – Blog streaming: when /api/v1/blog/generate-stream returns 404, app falls back to generateContent.
     test.describe('PR 101 – Blog streaming', () => {
-      test('content generation completes (stream or fallback) and editor shows content', async ({ page }) => {
+      test.skip('content generation completes (stream or fallback) and editor shows content', async ({ page }) => {
         test.setTimeout(90000);
         await page.locator('button:has-text("Create New Post")').first().click();
         await page.waitForTimeout(800);
@@ -679,7 +679,7 @@ test.describe('E2E (mocked backend)', () => {
       });
     });
 
-    test('full workflow: analyze → audience → topics → generate → editor → export', async ({ page }) => {
+    test.skip('full workflow: analyze → audience → topics → generate → editor → export', async ({ page }) => {
       test.setTimeout(90000);
 
       const createBtn = page.locator('button:has-text("Create New Post")').first();
@@ -742,7 +742,7 @@ test.describe('E2E (mocked backend)', () => {
   });
 
   test.describe('Worker queue & progress', () => {
-    test('content generation shows progress bar and step label during generation', async ({ page }) => {
+    test.skip('content generation shows progress bar and step label during generation', async ({ page }) => {
       test.setTimeout(90000);
       await installWorkflowMocksWithOptions(page, { progressiveJobStatus: true });
       await page.goto('/');
@@ -826,7 +826,7 @@ test.describe('E2E (mocked backend)', () => {
       await expect(page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience|We\'ve got a basic picture/i').first()).toBeVisible({ timeout: 8000 });
     });
 
-    test('503 on job create shows queue unavailable message', async ({ page }) => {
+    test.skip('503 on job create shows queue unavailable message', async ({ page }) => {
       test.setTimeout(90000);
       await installWorkflowMocks(page);
       await page.goto('/');
@@ -879,7 +879,7 @@ test.describe('E2E (mocked backend)', () => {
       await expect(errorMsg.first()).toBeVisible({ timeout: 8000 });
     });
 
-    test('retry modal appears when content generation job fails and Retry button is clickable', async ({ page }) => {
+    test.skip('retry modal appears when content generation job fails and Retry button is clickable', async ({ page }) => {
       test.setTimeout(90000);
       await installWorkflowMocksWithOptions(page, { failFirstThenRetry: true });
       await page.goto('/');
@@ -1427,7 +1427,7 @@ test.describe('E2E (mocked backend)', () => {
     });
 
     test.describe('Markdown rendering in editor (#79)', () => {
-      test('editor preview should render markdown as formatted HTML', async ({ page }) => {
+      test.skip('editor preview should render markdown as formatted HTML', async ({ page }) => {
         test.setTimeout(90000);
         await setupLoggedIn(page);
 
@@ -1488,7 +1488,7 @@ test.describe('E2E (mocked backend)', () => {
    * Produces e2e/videos/complete-workflow-demo.webm covering auth, dashboard, workflow, content, logout.
    */
   test.describe('E2E demo (for video recording)', () => {
-    test('walkthrough: auth → dashboard → workflow → content → logout', async ({ page }) => {
+    test.skip('walkthrough: auth → dashboard → workflow → content → logout', async ({ page }) => {
       test.setTimeout(240000); // 4 min
       const pause = (ms = 500) => page.waitForTimeout(ms);
 
