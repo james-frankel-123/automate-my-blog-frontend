@@ -24,6 +24,15 @@ function removeOverlay(page) {
   });
 }
 
+/** Dismiss any open ant-modal so it does not intercept clicks (e.g. on Create Post button). */
+async function dismissOpenModalIfPresent(page) {
+  const modalWrap = page.locator('.ant-modal-wrap').first();
+  if (await modalWrap.isVisible({ timeout: 500 }).catch(() => false)) {
+    await page.locator('.ant-modal-close').first().click({ timeout: 2000 }).catch(() => {});
+    await page.waitForTimeout(300);
+  }
+}
+
 async function setupLoggedIn(page) {
   await installWorkflowMocks(page);
   await page.goto('/');
@@ -580,6 +589,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        await dismissOpenModalIfPresent(page);
         const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
         if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await createPostBtn.click();
@@ -622,6 +632,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        await dismissOpenModalIfPresent(page);
         const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
         if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await createPostBtn.click();
@@ -679,6 +690,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForTimeout(2000);
 
       await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+      await dismissOpenModalIfPresent(page);
       const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
       if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await createPostBtn.click();
@@ -741,6 +753,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(1500);
 
+      await dismissOpenModalIfPresent(page);
       const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
       await expect(createPostBtn).toBeVisible({ timeout: 12000 });
       await createPostBtn.click();
@@ -835,6 +848,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(2000);
 
+      await dismissOpenModalIfPresent(page);
       const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
       await expect(createPostBtn).toBeVisible({ timeout: 12000 });
       await createPostBtn.click();
@@ -1425,6 +1439,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(2000);
 
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        await dismissOpenModalIfPresent(page);
         const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
         if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await createPostBtn.click();
@@ -1552,6 +1567,7 @@ test.describe('E2E (mocked backend)', () => {
 
       await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
       await pause(500);
+      await dismissOpenModalIfPresent(page);
       const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
       if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await createPostBtn.click();
