@@ -44,6 +44,17 @@
   --color-error-bg: #FEF2F2;          /* Light red background */
   --color-error-border: #FECACA;      /* Light red border */
 
+  /* System hint tokens */
+  --system-hint-hint-bg: var(--color-primary-50);
+  --system-hint-hint-border: var(--color-primary-200);
+  --system-hint-hint-color: var(--color-primary-700);
+  --system-hint-success-bg: var(--color-success-bg);
+  --system-hint-success-border: var(--color-success-border);
+  --system-hint-success-color: var(--color-success-dark);
+  --system-hint-error-bg: var(--color-error-bg);
+  --system-hint-error-border: var(--color-error-border);
+  --system-hint-error-color: var(--color-error);
+
   /* Gradients for premium features - Royal luxury */
   --gradient-primary: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
   --gradient-accent: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
@@ -703,7 +714,7 @@ body {
 /* Principle: Dark mode isn't just inverted colors - warmer backgrounds, glows instead of shadows, more vibrant colors */
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not(.light-mode) {
     /* Backgrounds - Warmer dark (not pure black) */
     --color-background-body: #0F1419;      /* Dark slate */
     --color-background-container: #1A1F29; /* Slightly lighter */
@@ -721,6 +732,15 @@ body {
     --color-warning-border: rgba(251, 191, 36, 0.4);
     --color-info-bg: rgba(99, 102, 241, 0.15);   /* Dark mode info background */
     --color-info-border: rgba(129, 140, 248, 0.4);
+    --system-hint-hint-bg: rgba(99, 102, 241, 0.25);
+    --system-hint-hint-border: rgba(129, 140, 248, 0.45);
+    --system-hint-hint-color: #E0E7FF;
+    --system-hint-success-bg: rgba(34, 197, 94, 0.22);
+    --system-hint-success-border: rgba(52, 211, 153, 0.45);
+    --system-hint-success-color: #D1FAE5;
+    --system-hint-error-bg: rgba(248, 113, 113, 0.22);
+    --system-hint-error-border: rgba(248, 113, 113, 0.45);
+    --system-hint-error-color: #FCA5A5;
 
     /* Text - Higher contrast for readability */
     --color-text-primary: #F5F5F7;         /* Off-white */
@@ -807,6 +827,16 @@ body {
   --color-warning-border: rgba(251, 191, 36, 0.4);
   --color-info-bg: rgba(99, 102, 241, 0.15);   /* Dark mode info background */
   --color-info-border: rgba(129, 140, 248, 0.4);
+
+  --system-hint-hint-bg: rgba(99, 102, 241, 0.25);
+  --system-hint-hint-border: rgba(129, 140, 248, 0.45);
+  --system-hint-hint-color: #E0E7FF;
+  --system-hint-success-bg: rgba(34, 197, 94, 0.22);
+  --system-hint-success-border: rgba(52, 211, 153, 0.45);
+  --system-hint-success-color: #D1FAE5;
+  --system-hint-error-bg: rgba(248, 113, 113, 0.22);
+  --system-hint-error-border: rgba(248, 113, 113, 0.45);
+  --system-hint-error-color: #FCA5A5;
 
   /* Primary scale for dark mode cards/accents */
   --color-primary-50: rgba(129, 140, 248, 0.15);

@@ -9,21 +9,21 @@ import { InfoCircleOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@a
 
 const variantStyles = {
   hint: {
-    background: 'var(--color-primary-50)',
-    borderColor: 'var(--color-primary-200)',
-    color: 'var(--color-primary-700)',
+    background: 'var(--system-hint-hint-bg)',
+    borderColor: 'var(--system-hint-hint-border)',
+    color: 'var(--system-hint-hint-color)',
     icon: <InfoCircleOutlined />,
   },
   success: {
-    background: 'var(--color-success-bg)',
-    borderColor: 'var(--color-success-border)',
-    color: 'var(--color-success-dark)',
+    background: 'var(--system-hint-success-bg)',
+    borderColor: 'var(--system-hint-success-border)',
+    color: 'var(--system-hint-success-color)',
     icon: <CheckCircleOutlined />,
   },
   error: {
-    background: 'var(--color-error-bg)',
-    borderColor: 'var(--color-error-border)',
-    color: 'var(--color-error)',
+    background: 'var(--system-hint-error-bg)',
+    borderColor: 'var(--system-hint-error-border)',
+    color: 'var(--system-hint-error-color)',
     icon: <CloseCircleOutlined />,
   },
 };
