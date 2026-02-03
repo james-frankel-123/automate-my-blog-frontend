@@ -925,21 +925,27 @@ const DashboardLayout = ({
         </div>
       )}
 
-      {/* Mobile Navigation - only shows on mobile */}
+      {/* Mobile Navigation - only shows on mobile; touch-friendly 44px targets */}
       {user && isMobile && (
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'var(--color-background-body)',
-          borderTop: '1px solid var(--color-border-base)',
-          padding: 'var(--space-2)',
-          zIndex: 20,
-          display: 'flex',
-          justifyContent: 'space-around',
-          boxShadow: 'var(--shadow-sm)'
-        }}>
+        <div
+          data-mobile-bottom-nav
+          className="mobile-bottom-nav"
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'var(--color-background-body)',
+            borderTop: '1px solid var(--color-border-base)',
+            padding: '12px 8px max(12px, env(safe-area-inset-bottom))',
+            zIndex: 20,
+            display: 'flex',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            boxShadow: 'var(--shadow-sm)',
+            minHeight: '56px'
+          }}
+        >
           {menuItems.slice(0, 6).map((item) => (
             <Button
               key={item.key}
@@ -951,18 +957,16 @@ const DashboardLayout = ({
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
                 height: 'auto',
-                padding: '8px 4px',
-                fontSize: '10px',
-                minWidth: '60px'
+                padding: '10px 6px',
+                fontSize: '11px',
+                minWidth: '56px',
+                minHeight: '44px',
+                gap: 4
               }}
             >
-              <div style={{ fontSize: '16px', marginBottom: '2px' }}>
-                {item.icon}
-              </div>
-              <div style={{ fontSize: '10px', textAlign: 'center' }}>
-                {item.label}
-              </div>
+              {item.label}
             </Button>
           ))}
           
@@ -979,23 +983,25 @@ const DashboardLayout = ({
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
+                justifyContent: 'center',
                 height: 'auto',
-                padding: '8px 4px',
-                fontSize: '10px',
-                minWidth: '60px'
+                padding: '10px 6px',
+                fontSize: '11px',
+                minWidth: '56px',
+                minHeight: '44px'
               }}
             >
               <Avatar 
                 icon={<UserOutlined />} 
                 style={{ 
                   backgroundColor: 'var(--color-primary)',
-                  width: '20px',
-                  height: '20px',
+                  width: '24px',
+                  height: '24px',
                   fontSize: '12px',
-                  marginBottom: '2px'
+                  marginBottom: '4px'
                 }}
               />
-              <div style={{ fontSize: '10px' }}>Profile</div>
+              <span style={{ fontSize: '11px' }}>Profile</span>
             </Button>
           </Dropdown>
         </div>
@@ -1005,7 +1011,7 @@ const DashboardLayout = ({
       {/* Content area - always show */}
         <div
           style={{
-            padding: isMobile ? 'var(--space-4) var(--space-4) 80px var(--space-4)' : 'var(--space-6)',
+            padding: isMobile ? 'var(--space-4) var(--space-4) calc(80px + env(safe-area-inset-bottom, 0px)) var(--space-4)' : 'var(--space-6)',
             background: 'var(--color-gray-50)',
             overflow: 'auto',
             paddingTop: (() => {
@@ -1016,16 +1022,19 @@ const DashboardLayout = ({
             '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
           }}
         >
-          {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90) */}
+          {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90); compact on mobile */}
           {user && (
           <div style={{
             position: 'fixed',
-            top: '29px',
-            right: '29px',
+            top: isMobile ? '16px' : '29px',
+            right: isMobile ? '12px' : '29px',
+            left: isMobile ? '12px' : undefined,
             zIndex: 999,
             display: 'flex',
+            flexWrap: isMobile ? 'wrap' : 'nowrap',
             alignItems: 'center',
-            gap: '12px'
+            justifyContent: isMobile ? 'flex-end' : undefined,
+            gap: isMobile ? 8 : 12
           }}>
             {/* Theme Toggle */}
             <div style={{

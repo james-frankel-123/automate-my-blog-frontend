@@ -28,39 +28,37 @@ const LoggedOutProgressHeader = ({
   // Steps moved to main content area as requested
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 1000,
-      backgroundColor: 'var(--color-background-body)',
-      borderBottom: '1px solid var(--color-border-base)',
-      boxShadow: 'var(--shadow-sm)',
-      padding: '16px 24px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      minHeight: '80px'
-    }}>
-      {/* Left: Empty space for balance */}
-      <div style={{ minWidth: '200px' }}>
-        {/* Removed branding as requested */}
-      </div>
+    <header
+      className="logged-out-progress-header"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        backgroundColor: 'var(--color-background-body)',
+        borderBottom: '1px solid var(--color-border-base)',
+        boxShadow: 'var(--shadow-sm)',
+        padding: '12px 16px',
+        paddingTop: 'max(12px, env(safe-area-inset-top))',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: '64px',
+        gap: '12px',
+        flexWrap: 'wrap',
+      }}
+    >
+      {/* Left: spacer for balance (shrinks on mobile via CSS) */}
+      <div className="logged-out-header-left" style={{ minWidth: '80px', flex: '0 0 auto' }} aria-hidden />
 
-      {/* Center: Empty space (steps moved to main content) */}
-      <div style={{ 
-        flex: 1,
-        margin: '0 32px'
-      }}>
-        {/* Steps removed from header as requested */}
-      </div>
+      {/* Center: flexible space */}
+      <div style={{ flex: '1 1 0', minWidth: 0 }} />
 
-      {/* Right: Conditional Buttons */}
-      <div style={{ minWidth: '200px', textAlign: 'right' }}>
+      {/* Right: auth / save buttons — touch-friendly on mobile */}
+      <div className="logged-out-header-right" style={{ minWidth: 0, flex: '0 0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '8px' }}>
         {!user ? (
-          // Logged-out users: Show auth buttons
-          <Space size="middle">
+          <Space size="small" wrap>
             <Button
               type="text"
               icon={<LoginOutlined />}
@@ -68,6 +66,7 @@ const LoggedOutProgressHeader = ({
                 setAuthContext('login');
                 setShowAuthModal(true);
               }}
+              style={{ minHeight: 44, borderRadius: 6 }}
             >
               Log In
             </Button>
@@ -78,30 +77,22 @@ const LoggedOutProgressHeader = ({
                 setAuthContext('register');
                 setShowAuthModal(true);
               }}
-              style={{
-                borderRadius: '6px'
-              }}
+              style={{ borderRadius: 6, minHeight: 44 }}
             >
               Sign Up Free
             </Button>
           </Space>
         ) : isNewRegistration && showSaveProjectButton ? (
-          // New registrations: Show Save Project button
           <Button
             type="primary"
             onClick={onSaveProject}
-            style={{
-              fontWeight: 600,
-              borderRadius: '6px'
-            }}
+            style={{ fontWeight: 600, borderRadius: 6, minHeight: 44 }}
           >
             💾 Save Project
           </Button>
         ) : null}
       </div>
-
-      {/* Mobile progress removed - steps now in main content */}
-    </div>
+    </header>
   );
 };
 
