@@ -315,7 +315,7 @@ class AutoBlogAPI {
   }
 
   /**
-   * Search for tweets related to a selected topic
+   * Search for tweets related to a selected topic (non-streaming).
    */
   async searchTweetsForTopic(topic, businessInfo, maxTweets = 3) {
     try {
@@ -347,6 +347,30 @@ class AutoBlogAPI {
         error: error.message
       };
     }
+  }
+
+  /**
+   * Start tweet search stream. Connect with connectToStream(connectionId, handlers, { streamUrl }).
+   * Events: connected, queries-extracted ({ searchTermsUsed }), complete ({ tweets, searchTermsUsed }), error.
+   * @param {Object} topic - { title, subheader, trend, seoBenefit, category }
+   * @param {Object} businessInfo - { businessType, targetAudience }
+   * @param {number} [maxTweets=3]
+   * @returns {Promise<{ connectionId: string, streamUrl: string }>}
+   */
+  async searchTweetsForTopicStream(topic, businessInfo, maxTweets = 3) {
+    const response = await this.makeRequest('/api/v1/tweets/search-for-topic-stream', {
+      method: 'POST',
+      headers: this._getStreamAuthHeaders(),
+      body: JSON.stringify({
+        topic,
+        businessInfo: businessInfo ?? {},
+        maxTweets,
+      }),
+    });
+    return {
+      connectionId: response.connectionId,
+      streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
+    };
   }
 
   /**
@@ -3622,6 +3646,10 @@ Please provide analysis in this JSON format:
       const data = parseData(event);
       if (handlers.onTopicImageComplete) handlers.onTopicImageComplete(data);
     });
+    eventSource.addEventListener('queries-extracted', (event) => {
+      const data = parseData(event);
+      if (handlers.onQueriesExtracted) handlers.onQueriesExtracted(data);
+    });
     eventSource.addEventListener('complete', (event) => {
       const data = parseData(event);
       if (handlers.onComplete) handlers.onComplete(data);
@@ -3662,6 +3690,9 @@ Please provide analysis in this JSON format:
             break;
           case 'topic-image-complete':
             if (handlers.onTopicImageComplete) handlers.onTopicImageComplete(payloadData);
+            break;
+          case 'queries-extracted':
+            if (handlers.onQueriesExtracted) handlers.onQueriesExtracted(payloadData);
             break;
           case 'error':
             if (handlers.onError) handlers.onError({ message: payloadData?.error ?? payloadData?.message ?? 'Stream error', code: payloadData?.errorCode });
