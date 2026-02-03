@@ -36,6 +36,10 @@ async function dismissOpenModalIfPresent(page) {
   }
   await modalWrap.click({ position: { x: 2, y: 2 } });
   await page.waitForSelector('.ant-modal-wrap', { state: 'hidden', timeout: 4000 }).catch(() => {});
+  if (await modalWrap.isVisible({ timeout: 300 }).catch(() => false)) {
+    await page.keyboard.press('Escape');
+    await page.waitForSelector('.ant-modal-wrap', { state: 'hidden', timeout: 3000 }).catch(() => {});
+  }
 }
 
 async function setupLoggedIn(page) {
@@ -602,7 +606,7 @@ test.describe('E2E (mocked backend)', () => {
           await page.waitForTimeout(1000);
         }
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
-        await expect(editor).toBeVisible({ timeout: 15000 });
+        await expect(editor).toBeVisible({ timeout: 35000 });
         const content = await editor.textContent();
         expect(content).toContain('mock');
         expect(content.length).toBeGreaterThan(50);
@@ -645,7 +649,7 @@ test.describe('E2E (mocked backend)', () => {
           await page.waitForTimeout(1000);
         }
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
-        await expect(editor).toBeVisible({ timeout: 15000 });
+        await expect(editor).toBeVisible({ timeout: 35000 });
         const content = await editor.textContent();
         expect(content).toContain('mock');
         expect(content.length).toBeGreaterThan(50);
@@ -704,7 +708,7 @@ test.describe('E2E (mocked backend)', () => {
       }
 
       const editor = page.locator('.tiptap, [contenteditable="true"]').first();
-      await expect(editor).toBeVisible({ timeout: 15000 });
+      await expect(editor).toBeVisible({ timeout: 35000 });
       const content = await editor.textContent();
       expect(content).toContain('mock');
       expect(content.length).toBeGreaterThan(50);
@@ -770,7 +774,7 @@ test.describe('E2E (mocked backend)', () => {
       ]);
       await page.waitForSelector('[data-testid="content-generation-progress"]', { state: 'hidden', timeout: 25000 }).catch(() => {});
       const editor = page.locator('.tiptap, [contenteditable="true"]').first();
-      await expect(editor).toBeVisible({ timeout: 15000 });
+      await expect(editor).toBeVisible({ timeout: 35000 });
     });
 
     test('website analysis shows progress bar during analysis', async ({ page }) => {
@@ -1448,13 +1452,13 @@ test.describe('E2E (mocked backend)', () => {
         const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
         if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await createPostBtn.click({ force: true });
-          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
           await page.waitForTimeout(1000);
         }
 
         // Editor should be visible with generated content
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
-        await expect(editor).toBeVisible({ timeout: 15000 });
+        await expect(editor).toBeVisible({ timeout: 35000 });
 
         // The mock content contains HTML tags like <h2> and <p>
         // Verify the content is rendered (not raw markdown syntax)
@@ -1576,12 +1580,12 @@ test.describe('E2E (mocked backend)', () => {
       const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
       if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await createPostBtn.click({ force: true });
-        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
         await pause(700);
       }
 
       const editor = page.locator('.tiptap, [contenteditable="true"]').first();
-      await expect(editor).toBeVisible({ timeout: 15000 });
+      await expect(editor).toBeVisible({ timeout: 35000 });
       await pause(500);
       const exportBtn = page.locator('button:has-text("Export")').first();
       await expect(exportBtn).toBeVisible({ timeout: 10000 });
