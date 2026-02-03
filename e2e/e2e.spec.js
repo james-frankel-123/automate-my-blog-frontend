@@ -599,10 +599,10 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
         await dismissOpenModalIfPresent(page);
-        const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+        const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
         if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await createPostBtn.click({ force: true });
-          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
           await page.waitForTimeout(1000);
         }
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
@@ -642,10 +642,10 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
         await dismissOpenModalIfPresent(page);
-        const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+        const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
         if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await createPostBtn.click({ force: true });
-          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
           await page.waitForTimeout(1000);
         }
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
@@ -700,10 +700,10 @@ test.describe('E2E (mocked backend)', () => {
 
       await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
       await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
       if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await createPostBtn.click({ force: true });
-        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
         await page.waitForTimeout(1000);
       }
 
@@ -763,7 +763,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForTimeout(1500);
 
       await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
       await expect(createPostBtn).toBeVisible({ timeout: 12000 });
       await createPostBtn.click({ force: true });
 
@@ -858,7 +858,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForTimeout(2000);
 
       await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
       await expect(createPostBtn).toBeVisible({ timeout: 12000 });
       await createPostBtn.click({ force: true });
 
@@ -1449,7 +1449,7 @@ test.describe('E2E (mocked backend)', () => {
 
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
         await dismissOpenModalIfPresent(page);
-        const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+        const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
         if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
           await createPostBtn.click({ force: true });
           await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
@@ -1577,7 +1577,7 @@ test.describe('E2E (mocked backend)', () => {
       await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
       await pause(500);
       await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
       if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
         await createPostBtn.click({ force: true });
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
