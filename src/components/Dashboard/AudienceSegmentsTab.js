@@ -110,26 +110,61 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       });
 
       if (hasFreshAnalysisWithScenarios) {
-        console.log('🚫 Skipping persistence load - fresh analysis with scenarios available');
-        // If we already loaded old strategies, clear them so main generator can run
-        if (strategies.length > 0) {
-          console.log('🧹 Clearing old persisted strategies to make room for fresh analysis');
-          setStrategies([]);
-        }
-
-        // Clear both sessionStorage and module cache to allow main generator to process fresh analysis
         const analysis = stepResults?.home?.websiteAnalysis;
-        if (analysis) {
-          const generationKey = `${analysis.businessName || 'unknown'}_${analysis.targetAudience || 'unknown'}_${analysis.contentFocus || 'unknown'}`;
-          const sessionStorageKey = `audienceStrategiesGenerated_${generationKey}`;
-          console.log('🧹 Clearing sessionStorage and module cache for fresh analysis:', {
-            sessionStorageKey,
-            generationKey
-          });
-          sessionStorage.removeItem(sessionStorageKey);
-          generatedStrategiesCache.delete(generationKey);
+        const generationKey = analysis
+          ? `${analysis.businessName || 'unknown'}_${analysis.targetAudience || 'unknown'}_${analysis.contentFocus || 'unknown'}`
+          : null;
+        const sessionStorageKey = generationKey ? `audienceStrategiesGenerated_${generationKey}` : null;
+        const alreadyGenerated = sessionStorageKey && sessionStorage.getItem(sessionStorageKey) === 'true';
+        const alreadyGeneratedInModule = generationKey && generatedStrategiesCache.has(generationKey);
+
+        // If strategies already in state for this analysis, keep them (no clear)
+        if (strategies.length > 0 && (alreadyGenerated || alreadyGeneratedInModule)) {
+          console.log('🚫 Skipping persistence - strategies already shown for this analysis');
+          return;
         }
 
+        // Populate strategies from scenarios immediately so UI shows without waiting for main generator or refresh
+        const scenarios = analysis?.scenarios || [];
+        if (scenarios.length > 0) {
+          const openAIStrategies = scenarios.map((scenario, index) => {
+            const seg = scenario.targetSegment || scenario.target_segment;
+            const demographics = seg?.demographics ?? scenario.customerProblem ?? scenario.customer_problem ?? '';
+            return {
+              id: `openai-scenario-${index}`,
+              pitch: scenario.pitch || '',
+              imageUrl: scenario.imageUrl ?? scenario.image_url ?? null,
+              targetSegment: seg ? { demographics: seg.demographics ?? demographics, psychographics: seg.psychographics ?? '', searchBehavior: seg.searchBehavior ?? seg.search_behavior ?? '' } : { demographics, psychographics: '', searchBehavior: '' },
+              customerProblem: scenario.customerProblem || scenario.customer_problem || '',
+              customerLanguage: scenario.customerLanguage || scenario.customer_language || scenario.seoKeywords || scenario.seo_keywords || [],
+              conversionPath: scenario.conversionPath || scenario.conversion_path || '',
+              businessValue: scenario.businessValue || scenario.business_value || {
+                searchVolume: '',
+                conversionPotential: '',
+                priority: index + 1,
+                competition: ''
+              },
+              contentIdeas: scenario.contentIdeas || scenario.content_ideas || [],
+              seoKeywords: scenario.seoKeywords || scenario.seo_keywords || []
+            };
+          });
+          openAIStrategies.sort((a, b) => (a.businessValue.priority || 999) - (b.businessValue.priority || 999));
+          setStrategies(openAIStrategies);
+          if (generationKey) {
+            generatedStrategiesCache.add(generationKey);
+            if (sessionStorageKey) sessionStorage.setItem(sessionStorageKey, 'true');
+          }
+          console.log('✅ Populated strategies from analysis scenarios (no refresh needed):', openAIStrategies.length);
+        } else {
+          // No scenarios: clear so main generator or API load can run
+          if (strategies.length > 0) {
+            setStrategies([]);
+            if (generationKey) {
+              generatedStrategiesCache.delete(generationKey);
+              if (sessionStorageKey) sessionStorage.removeItem(sessionStorageKey);
+            }
+          }
+        }
         return;
       }
 
@@ -975,7 +1010,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               : isSelected
                 ? '0 8px 24px rgba(0, 0, 0, 0.18)'
                 : 'var(--shadow-card)',
-            backgroundColor: isSubscribed ? 'var(--color-success-bg)' : 'white'
+            backgroundColor: isSubscribed ? 'var(--color-success-bg)' : 'var(--color-background-elevated)'
           }}
           onMouseEnter={(e) => {
             if (isSubscribed) {
@@ -1457,7 +1492,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             {/* Strategy Selection Cards - Core workflow step */}
             <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col span={24}>
-                <Card>
+                <Card style={{ backgroundColor: 'var(--color-background-container)' }}>
                   <div style={{ textAlign: 'center', marginBottom: '32px' }}>
                     <Title level={3} style={{ marginBottom: '8px' }}>Choose Your SEO Strategy</Title>
                     <Text style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-base)' }}>
@@ -1796,7 +1831,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           <>
 
       {/* Main Content */}
-      <Card style={{ marginBottom: '20px' }}>
+      <Card style={{ marginBottom: '20px', backgroundColor: 'var(--color-background-container)' }}>
         <Title level={3} style={{ 
           textAlign: 'center', 
           marginBottom: '20px',
