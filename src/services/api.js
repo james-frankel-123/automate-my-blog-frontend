@@ -3585,14 +3585,16 @@ Please provide analysis in this JSON format:
 
   /**
    * Connect to an SSE stream and dispatch events to handlers.
-   * @param {string} connectionId - From generateBlogStream / generateAudiencesStream / etc.
+   * @param {string} connectionId - From generateBlogStream / generateAudiencesStream / generateTopicsStream / etc.
    * @param {Object} handlers - { onChunk?, onComplete?, onError?, onConnected?, onAudienceComplete? }
    *   - onChunk(data) - content-chunk: { field?, content }
    *   - onComplete(data) - complete: final result
-   *   - onError(data) - error: { message, code? }
+   *   - onError(data) - error: { message, code? } (backend may send { error, errorCode })
    *   - onConnected() - connected
    *   - onAudienceComplete(data) - audience-complete: { audience } (audience scenarios stream)
    *   - onTopicComplete(data) - topic-complete: { topic } (topic ideas stream)
+   *   - onTopicImageStart(data) - topic-image-start: { index, total, topic }
+   *   - onTopicImageComplete(data) - topic-image-complete: { index, topic } (topic has image URL)
    * @returns {{ close: function }} - Call close() to stop listening and close EventSource
    */
   connectToStream(connectionId, handlers = {}) {
@@ -3628,6 +3630,14 @@ Please provide analysis in this JSON format:
       const data = parseData(event);
       if (handlers.onTopicComplete) handlers.onTopicComplete(data);
     });
+    eventSource.addEventListener('topic-image-start', (event) => {
+      const data = parseData(event);
+      if (handlers.onTopicImageStart) handlers.onTopicImageStart(data);
+    });
+    eventSource.addEventListener('topic-image-complete', (event) => {
+      const data = parseData(event);
+      if (handlers.onTopicImageComplete) handlers.onTopicImageComplete(data);
+    });
     eventSource.addEventListener('complete', (event) => {
       const data = parseData(event);
       if (handlers.onComplete) handlers.onComplete(data);
@@ -3635,7 +3645,8 @@ Please provide analysis in this JSON format:
     });
     eventSource.addEventListener('error', (event) => {
       const data = parseData(event);
-      if (handlers.onError) handlers.onError(data?.message ? data : { message: 'Stream error' });
+      const errPayload = { message: data?.error ?? data?.message ?? 'Stream error', code: data?.errorCode };
+      if (handlers.onError) handlers.onError(errPayload);
       close();
     });
 
@@ -3656,15 +3667,21 @@ Please provide analysis in this JSON format:
             if (handlers.onComplete) handlers.onComplete(payloadData);
             close();
             break;
-          case 'error':
-            if (handlers.onError) handlers.onError(payloadData?.message ? payloadData : { message: 'Stream error' });
-            close();
-            break;
           case 'audience-complete':
             if (handlers.onAudienceComplete) handlers.onAudienceComplete(payloadData);
             break;
           case 'topic-complete':
             if (handlers.onTopicComplete) handlers.onTopicComplete(payloadData);
+            break;
+          case 'topic-image-start':
+            if (handlers.onTopicImageStart) handlers.onTopicImageStart(payloadData);
+            break;
+          case 'topic-image-complete':
+            if (handlers.onTopicImageComplete) handlers.onTopicImageComplete(payloadData);
+            break;
+          case 'error':
+            if (handlers.onError) handlers.onError({ message: payloadData?.error ?? payloadData?.message ?? 'Stream error', code: payloadData?.errorCode });
+            close();
             break;
           default:
             break;
@@ -3699,7 +3716,10 @@ Please provide analysis in this JSON format:
         contentFocus: payload.contentFocus || 'Content',
       }),
     });
-    return { connectionId: response.connectionId };
+    return {
+      connectionId: response.connectionId,
+      streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
+    };
   }
 
   /**
