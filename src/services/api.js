@@ -1,3 +1,5 @@
+import { message } from 'antd';
+
 // Module-level cache for request deduplication (shared across all instances)
 const activeRequests = new Map();
 
@@ -3723,6 +3725,15 @@ Please provide analysis in this JSON format:
    * @param {Object} payload - { businessType, targetAudience, contentFocus } (all required)
    * @returns {Promise<{ connectionId: string, streamUrl: string }>}
    */
+  _handleGenerateStreamResponse(response) {
+    if (response && response.success === false) {
+      const text = response.message || response.error || 'Request failed';
+      message.error(text);
+      throw new Error(text);
+    }
+    return response;
+  }
+
   async generateTrendingTopicsStream(payload) {
     const response = await this.makeRequest('/api/v1/trending-topics/stream', {
       method: 'POST',
@@ -3733,6 +3744,7 @@ Please provide analysis in this JSON format:
         contentFocus: payload.contentFocus || 'Content',
       }),
     });
+    this._handleGenerateStreamResponse(response);
     return {
       connectionId: response.connectionId,
       streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
@@ -3755,6 +3767,7 @@ Please provide analysis in this JSON format:
         contentFocus: payload.contentFocus || 'Content',
       }),
     });
+    this._handleGenerateStreamResponse(response);
     return {
       connectionId: response.connectionId,
       streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
@@ -3778,6 +3791,7 @@ Please provide analysis in this JSON format:
         ...(payload.tweets?.length ? { tweets: payload.tweets } : {})
       })
     });
+    this._handleGenerateStreamResponse(response);
     return {
       connectionId: response.connectionId,
       streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId)
@@ -3796,6 +3810,7 @@ Please provide analysis in this JSON format:
       headers: this._getStreamAuthHeaders(),
       body: JSON.stringify({ analysis, existingAudiences })
     });
+    this._handleGenerateStreamResponse(response);
     return { connectionId: response.connectionId };
   }
 
