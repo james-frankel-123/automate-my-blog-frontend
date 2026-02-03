@@ -42,11 +42,6 @@ describe('AuthModal', () => {
       expect(screen.queryByTestId('modal')).not.toBeInTheDocument();
     });
 
-    it('displays premium features header', () => {
-      renderAuthModal();
-      expect(screen.getByText(/Unlock Premium Features/i)).toBeInTheDocument();
-    });
-
     it('displays login tab by default', () => {
       renderAuthModal();
       // Tab buttons should be present
@@ -89,11 +84,4 @@ describe('AuthModal', () => {
     });
   });
 
-  describe('Feature List', () => {
-    it('displays premium feature highlights', () => {
-      renderAuthModal();
-      // At least some premium feature text should be visible
-      expect(screen.getByText(/Unlock Premium Features/i)).toBeInTheDocument();
-    });
-  });
 });

@@ -10,7 +10,6 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
   const [success, setSuccess] = useState(false);
   const [referralInfo, setReferralInfo] = useState(null);
   const [form] = Form.useForm();
-  const [detectedData, setDetectedData] = useState(null);
   const { register } = useAuth();
   const { trackFormSubmit, trackFunnelStep, trackEvent } = useAnalytics();
 
@@ -61,8 +60,6 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
           console.log('📝 Prepopulating registration with website:', detectedInfo.websiteUrl);
 
           if (detectedInfo.websiteUrl) {
-            setDetectedData(detectedInfo);
-
             // Prepopulate form fields
             form.setFieldsValue({
               websiteUrl: detectedInfo.websiteUrl
@@ -167,28 +164,6 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
     <div style={{ padding: '20px 0' }}>
       <div style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h2>Create Your Free Account</h2>
-        <p style={{ color: 'var(--color-text-secondary)', margin: '0 0 16px 0' }}>
-          Unlock all premium features instantly
-        </p>
-        
-        <div style={{
-          backgroundColor: 'var(--color-success-bg)',
-          padding: '12px',
-          borderRadius: '6px',
-          border: '1px solid var(--color-success-border)',
-          textAlign: 'left'
-        }}>
-          <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', color: 'var(--color-success)', fontSize: '14px' }}>
-            ✨ What you get with your account:
-          </p>
-          <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-            <li>Access to all customer targeting strategies</li>
-            <li>Unlimited content generation and regeneration</li>
-            <li>Advanced content editing and customization</li>
-            <li>Multiple export formats (HTML, Markdown, etc.)</li>
-            <li>Save and manage all your blog posts</li>
-          </ul>
-        </div>
       </div>
 
       {error && (
@@ -196,16 +171,6 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
           message={error}
           type="error"
           style={{ marginBottom: '20px' }}
-        />
-      )}
-
-      {detectedData && (
-        <Alert
-          message="Website Detected"
-          description={`We detected your website from the analysis. You can modify this information below.`}
-          type="info"
-          style={{ marginBottom: '20px' }}
-          showIcon
         />
       )}
 
