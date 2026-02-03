@@ -1,8 +1,8 @@
 /**
  * ThinkingPanel — shared "thinking" UX for analysis and content generation.
- * Shows current step, progress bar, optional ETA, and optional thought log.
+ * Shows a single latest step line, progress bar, optional ETA, and a pulse indicator.
  * Use where the action is (analysis step, create-post section) so the user sees
- * "what we're doing" right next to the task.
+ * "what we're doing" without a tall list of steps.
  *
  * Issue #65 / Option B: one design, one component; contextual placement.
  */
@@ -32,6 +32,16 @@ const panelStyles = {
     letterSpacing: '0.06em',
     color: 'var(--color-text-secondary)',
     fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  pulseDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    backgroundColor: 'var(--color-primary-500)',
+    flexShrink: 0,
   },
   stepLine: {
     marginBottom: '6px',
@@ -44,27 +54,6 @@ const panelStyles = {
     marginTop: '4px',
     fontSize: '11px',
     color: 'var(--color-text-secondary)',
-  },
-  thoughtsSection: {
-    marginTop: '10px',
-    paddingTop: '8px',
-    borderTop: '1px solid var(--color-primary-100)',
-    fontSize: '12px',
-    color: 'var(--color-text-secondary)',
-  },
-  thoughtsTitle: {
-    marginBottom: '4px',
-    fontWeight: 600,
-    fontSize: '12px',
-    color: 'var(--color-text-primary)',
-  },
-  thoughtList: {
-    margin: 0,
-    paddingLeft: '18px',
-    lineHeight: 1.45,
-  },
-  thoughtItem: {
-    marginBottom: '2px',
   },
 };
 
@@ -79,7 +68,6 @@ const panelStyles = {
  * @param {string} [props.detail] - Optional detail (appended to currentStep).
  * @param {string} props.workingForYouLabel - e.g. "Working for you".
  * @param {string} props.progressPreamble - e.g. "Right now:".
- * @param {string} [props.progressLabel] - e.g. "What we're doing:" (for thought list heading).
  * @param {string} [props.fallbackStep] - Shown when currentStep is missing (e.g. "Drafting your post…").
  * @param {string} [props.dataTestId] - For tests (e.g. "website-analysis-progress", "content-generation-progress").
  */
@@ -93,14 +81,15 @@ function ThinkingPanel({
   detail,
   workingForYouLabel,
   progressPreamble,
-  progressLabel,
   fallbackStep,
   dataTestId = 'thinking-panel',
 }) {
   const hasProgress = progress != null || currentStep || (thoughts && thoughts.length > 0);
   if (!isActive && !hasProgress) return null;
 
-  const stepDisplay = currentStep || fallbackStep || '';
+  // Single line: show only the latest step (currentStep, or last thought, or fallback)
+  const lastThought = thoughts?.length ? thoughts[thoughts.length - 1] : null;
+  const stepDisplay = currentStep || (lastThought?.message ?? '') || fallbackStep || '';
   const stepSuffix = phase || detail ? ` — ${phase || detail}` : '';
 
   return (
@@ -110,8 +99,12 @@ function ThinkingPanel({
       aria-live="polite"
       aria-label={`${workingForYouLabel}. ${progressPreamble} ${stepDisplay}`}
       style={panelStyles.panel}
+      className="thinking-panel"
     >
-      <div style={panelStyles.workingLabel}>{workingForYouLabel}</div>
+      <div style={panelStyles.workingLabel}>
+        <span className="thinking-panel-pulse" style={panelStyles.pulseDot} aria-hidden />
+        {workingForYouLabel}
+      </div>
       <div style={panelStyles.stepLine}>
         {progressPreamble} {stepDisplay}{stepSuffix}
       </div>
@@ -124,18 +117,6 @@ function ThinkingPanel({
       />
       {estimatedTimeRemaining != null && estimatedTimeRemaining > 0 && (
         <div style={panelStyles.eta}>~{estimatedTimeRemaining} seconds remaining</div>
-      )}
-      {thoughts && thoughts.length > 0 && progressLabel && (
-        <div style={panelStyles.thoughtsSection}>
-          <div style={panelStyles.thoughtsTitle}>{progressLabel}</div>
-          <ul style={panelStyles.thoughtList}>
-            {thoughts.map((t, i) => (
-              <li key={i} style={panelStyles.thoughtItem}>
-                {t.message}
-              </li>
-            ))}
-          </ul>
-        </div>
       )}
     </div>
   );

@@ -45,7 +45,7 @@ describe('ThinkingPanel', () => {
     expect(screen.getByText(/~30 seconds remaining/)).toBeInTheDocument();
   });
 
-  it('renders thought list when thoughts and progressLabel provided', () => {
+  it('shows only latest thought as step line when thoughts provided', () => {
     const thoughts = [
       { message: 'Fetching homepage' },
       { message: 'Parsing content' },
@@ -59,9 +59,25 @@ describe('ThinkingPanel', () => {
         thoughts={thoughts}
       />
     );
-    expect(screen.getByText("What we're doing:")).toBeInTheDocument();
-    expect(screen.getByText('Fetching homepage')).toBeInTheDocument();
-    expect(screen.getByText('Parsing content')).toBeInTheDocument();
+    // currentStep takes precedence over thoughts
+    expect(screen.getByText(/Right now:.*Analyzing…/)).toBeInTheDocument();
+  });
+
+  it('shows latest thought as step when no currentStep', () => {
+    const thoughts = [
+      { message: 'Fetching homepage' },
+      { message: 'Parsing content' },
+    ];
+    render(
+      <ThinkingPanel
+        {...defaultLabels}
+        isActive
+        progress={50}
+        thoughts={thoughts}
+        fallbackStep="Working…"
+      />
+    );
+    expect(screen.getByText(/Right now:.*Parsing content/)).toBeInTheDocument();
   });
 
   it('uses dataTestId when provided', () => {
