@@ -9,6 +9,7 @@ import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 import autoBlogAPI from '../../services/api';
 import { systemVoice } from '../../copy/systemVoice';
+import StreamingText from '../shared/StreamingText';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -79,6 +80,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const [bundleOverview, setBundleOverview] = useState(null);
   const [loadingBundlePricing, setLoadingBundlePricing] = useState(false);
   const [hasBundleSubscription, setHasBundleSubscription] = useState(false);
+  // Issue #65: Bundle overview streaming (typing effect)
+  const [streamingOverview, setStreamingOverview] = useState('');
+  const [isStreamingOverview, setIsStreamingOverview] = useState(false);
 
   // Carousel navigation ref
   const carouselRef = React.useRef(null);
@@ -372,31 +376,68 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
     const fetchBundlePricing = async () => {
       setLoadingBundlePricing(true);
+      setStreamingOverview('');
+      setIsStreamingOverview(false);
       try {
         console.log('🎁 Fetching bundle pricing...');
-        const response = await autoBlogAPI.calculateBundlePrice();
-        console.log('🎁 Bundle pricing response:', response);
-        console.log('🎁 Bundle overview received:', {
-          hasBundleOverview: !!response.bundleOverview,
-          hasOverviewText: !!response.bundleOverview?.overview,
-          isAIGenerated: response.bundleOverview?.isAIGenerated,
-          hasMetrics: {
-            searches: !!response.bundleOverview?.totalMonthlySearches,
-            profit: !!response.bundleOverview?.projectedMonthlyProfit,
-            audienceCount: response.bundleOverview?.audienceCount
+        // Issue #65: Try streaming bundle overview first
+        try {
+          const streamResponse = await autoBlogAPI.calculateBundlePriceStream();
+          if (streamResponse?.connectionId) {
+            if (streamResponse.bundlePricing) setBundlePricing(streamResponse.bundlePricing);
+            if (streamResponse.bundleOverview) {
+              setBundleOverview(prev => ({ ...prev, ...streamResponse.bundleOverview }));
+            }
+            // If backend didn't send metrics with stream response, fetch once for metrics (display immediately)
+            if (!streamResponse.bundlePricing) {
+              const metricsResponse = await autoBlogAPI.calculateBundlePrice();
+              setBundlePricing(metricsResponse.bundlePricing);
+              setBundleOverview(prev => ({ ...prev, ...metricsResponse.bundleOverview, overview: undefined }));
+            }
+            setStreamingOverview('');
+            setIsStreamingOverview(true);
+            autoBlogAPI.connectToStream(streamResponse.connectionId, {
+              onChunk: (data) => {
+                const chunk = data?.content ?? data?.text ?? '';
+                if (chunk) setStreamingOverview(prev => prev + chunk);
+              },
+              onComplete: (data) => {
+                const finalOverview = data?.overview ?? data?.content ?? data?.text ?? '';
+                setBundleOverview(prev => ({ ...prev, overview: finalOverview }));
+                setStreamingOverview(finalOverview);
+                setIsStreamingOverview(false);
+              },
+              onError: () => {
+                setIsStreamingOverview(false);
+                setStreamingOverview('');
+              }
+            });
+            // Subscription check and loading done below
+          } else {
+            throw new Error('No connectionId');
           }
+        } catch (streamErr) {
+          console.warn('🎁 Bundle stream not available, using non-streaming:', streamErr?.message);
+          const response = await autoBlogAPI.calculateBundlePrice();
+          setBundlePricing(response.bundlePricing);
+          setBundleOverview(response.bundleOverview);
+        }
+
+        console.log('🎁 Bundle overview state:', {
+          hasBundleOverview: !!bundleOverview,
+          hasOverviewText: !!bundleOverview?.overview,
+          isStreamingOverview
         });
-        setBundlePricing(response.bundlePricing);
-        setBundleOverview(response.bundleOverview);
 
         // Check if user has a bundle subscription
         const subscriptionsResponse = await autoBlogAPI.getBundleSubscription();
-        console.log('🎁 Bundle subscription response:', subscriptionsResponse);
         setHasBundleSubscription(!!subscriptionsResponse.bundleSubscription);
       } catch (error) {
         console.error('❌ Failed to fetch bundle pricing:', error);
         setBundlePricing(null);
         setBundleOverview(null);
+        setStreamingOverview('');
+        setIsStreamingOverview(false);
       } finally {
         setLoadingBundlePricing(false);
       }
@@ -1376,8 +1417,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                   {bundleOverview?.title || 'Multi-Audience Content Strategy'}
                                 </Title>
 
-                                {/* AI-Generated Outcome-Focused Overview */}
-                                {bundleOverview && bundleOverview.overview ? (
+                                {/* AI-Generated Outcome-Focused Overview (Issue #65: typing effect when streaming) */}
+                                {(isStreamingOverview && streamingOverview !== undefined) || (bundleOverview && bundleOverview.overview) ? (
                                   <>
                                     <div style={{
                                       color: 'rgba(255,255,255,0.95)',
@@ -1386,8 +1427,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                       lineHeight: '1.7',
                                       whiteSpace: 'pre-line'
                                     }}>
-                                      {bundleOverview.overview.split(/\*\*(.*?)\*\*/g).map((part, idx) =>
-                                        idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
+                                      {isStreamingOverview ? (
+                                        <StreamingText content={streamingOverview} isStreaming={true} />
+                                      ) : (
+                                        bundleOverview?.overview?.split(/\*\*(.*?)\*\*/g).map((part, idx) =>
+                                          idx % 2 === 1 ? <strong key={idx}>{part}</strong> : part
+                                        )
                                       )}
                                     </div>
 
