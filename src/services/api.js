@@ -3554,13 +3554,141 @@ Please provide analysis in this JSON format:
    * @param {string} strategyId - Strategy ID
    * @returns {Promise<object>} Access status and quota information
    */
-  async checkStrategyAccess(strategyId) {
+  async   checkStrategyAccess(strategyId) {
     try {
       const response = await this.makeRequest(`/api/v1/strategies/${strategyId}/access`);
       return response;
     } catch (error) {
       throw new Error(`Failed to check strategy access: ${error.message}`);
     }
+  }
+
+  // =============================================================================
+  // LLM STREAMING (SSE) - Issue #65
+  // =============================================================================
+
+  /**
+   * Build SSE stream URL. EventSource does not send Authorization header;
+   * optional token in query for backends that require auth on SSE.
+   * @param {string} connectionId - Stream connection ID from start-stream endpoint
+   * @returns {string} Full URL for EventSource
+   */
+  getStreamUrl(connectionId) {
+    const path = `/api/v1/stream/${encodeURIComponent(connectionId)}`;
+    const url = `${this.baseURL}${path}`;
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      return `${url}?token=${encodeURIComponent(token)}`;
+    }
+    return url;
+  }
+
+  /**
+   * Connect to an SSE stream and dispatch events to handlers.
+   * @param {string} connectionId - From generateBlogStream / generateAudiencesStream / etc.
+   * @param {Object} handlers - { onChunk?, onComplete?, onError?, onConnected?, onAudienceComplete? }
+   *   - onChunk(data) - content-chunk: { field?, content }
+   *   - onComplete(data) - complete: final result
+   *   - onError(data) - error: { message, code? }
+   *   - onConnected() - connected
+   *   - onAudienceComplete(data) - audience-complete: { audience } (audience scenarios stream)
+   * @returns {{ close: function }} - Call close() to stop listening and close EventSource
+   */
+  connectToStream(connectionId, handlers = {}) {
+    const url = this.getStreamUrl(connectionId);
+    const eventSource = new EventSource(url);
+
+    const close = () => {
+      eventSource.close();
+    };
+
+    eventSource.addEventListener('message', (event) => {
+      try {
+        const payload = JSON.parse(event.data || '{}');
+        const { type, data } = payload;
+        switch (type) {
+          case 'connected':
+            if (handlers.onConnected) handlers.onConnected();
+            break;
+          case 'content-chunk':
+            if (handlers.onChunk) handlers.onChunk(data);
+            break;
+          case 'complete':
+            if (handlers.onComplete) handlers.onComplete(data);
+            close();
+            break;
+          case 'error':
+            if (handlers.onError) handlers.onError(data);
+            close();
+            break;
+          case 'audience-complete':
+            if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
+            break;
+          default:
+            break;
+        }
+      } catch (err) {
+        console.warn('[SSE] Parse error:', err);
+      }
+    });
+
+    eventSource.onerror = () => {
+      if (handlers.onError) {
+        handlers.onError({ message: 'Stream connection failed or closed' });
+      }
+      close();
+    };
+
+    return { close };
+  }
+
+  /**
+   * Start blog post generation stream. Connect with connectToStream(connectionId, handlers).
+   * @param {Object} payload - { topic, businessInfo, additionalInstructions?, tweets? }
+   * @returns {Promise<{ connectionId: string, streamUrl?: string }>}
+   */
+  async generateBlogStream(payload) {
+    const response = await this.makeRequest('/api/v1/blog/generate-stream', {
+      method: 'POST',
+      body: JSON.stringify({
+        topic: payload.topic,
+        businessInfo: payload.businessInfo,
+        additionalInstructions: payload.additionalInstructions || '',
+        ...(payload.tweets?.length ? { tweets: payload.tweets } : {})
+      })
+    });
+    return {
+      connectionId: response.connectionId,
+      streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId)
+    };
+  }
+
+  /**
+   * Start audience scenarios generation stream.
+   * @param {Object} analysis - Website analysis object
+   * @param {Array} [existingAudiences] - Existing audiences to avoid duplicates
+   * @returns {Promise<{ connectionId: string }>}
+   */
+  async generateAudiencesStream(analysis, existingAudiences = []) {
+    const response = await this.makeRequest('/api/v1/audiences/generate-stream', {
+      method: 'POST',
+      body: JSON.stringify({ analysis, existingAudiences })
+    });
+    return { connectionId: response.connectionId };
+  }
+
+  /**
+   * Start bundle overview stream. Returns connectionId; connect with connectToStream
+   * for overview text chunks. Caller should still use calculateBundlePrice() for non-streaming
+   * metrics or use complete event for full bundle payload.
+   * @returns {Promise<{ connectionId: string }>}
+   */
+  async calculateBundlePriceStream() {
+    const response = await this.makeRequest('/api/v1/strategies/bundle/calculate?stream=true');
+    if (response.connectionId) {
+      return { connectionId: response.connectionId };
+    }
+    throw new Error('Streaming not supported for bundle calculate');
   }
 }
 
