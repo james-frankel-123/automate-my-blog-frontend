@@ -24,13 +24,18 @@ function removeOverlay(page) {
   });
 }
 
-/** Dismiss any open ant-modal so it does not intercept clicks (e.g. on Create Post button). */
+/** Dismiss any open Ant Design modal so it does not intercept clicks (e.g. on Create Post button). */
 async function dismissOpenModalIfPresent(page) {
   const modalWrap = page.locator('.ant-modal-wrap').first();
-  if (await modalWrap.isVisible({ timeout: 500 }).catch(() => false)) {
-    await page.locator('.ant-modal-close').first().click({ timeout: 2000 }).catch(() => {});
-    await page.waitForTimeout(300);
+  if (!(await modalWrap.isVisible({ timeout: 500 }).catch(() => false))) return;
+  const closeBtn = page.locator('.ant-modal-close').first();
+  if (await closeBtn.isVisible({ timeout: 500 }).catch(() => false)) {
+    await closeBtn.click();
+    await page.waitForSelector('.ant-modal-wrap', { state: 'hidden', timeout: 4000 }).catch(() => {});
+    return;
   }
+  await modalWrap.click({ position: { x: 2, y: 2 } });
+  await page.waitForSelector('.ant-modal-wrap', { state: 'hidden', timeout: 4000 }).catch(() => {});
 }
 
 async function setupLoggedIn(page) {
