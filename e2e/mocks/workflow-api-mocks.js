@@ -349,6 +349,9 @@ async function installWorkflowMocksBase(page, options = {}) {
     if (pathMatch(url, '/api/v1/audiences/generate-stream') && method === 'POST') {
       return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
     }
+    if (pathMatch(url, '/api/v1/trending-topics/stream') && method === 'POST') {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
     if (pathMatch(url, '/api/v1/topics/generate-stream') && method === 'POST') {
       return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
     }

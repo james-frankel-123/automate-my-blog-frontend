@@ -3717,6 +3717,29 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Start trending topics generation stream (same event contract as topics stream).
+   * Use when generating topics from website analysis. Connect with connectToStream(connectionId, handlers).
+   * Events: topic-complete, topic-image-start, topic-image-complete, complete, error.
+   * @param {Object} payload - { businessType, targetAudience, contentFocus } (all required)
+   * @returns {Promise<{ connectionId: string, streamUrl: string }>}
+   */
+  async generateTrendingTopicsStream(payload) {
+    const response = await this.makeRequest('/api/v1/trending-topics/stream', {
+      method: 'POST',
+      headers: this._getStreamAuthHeaders(),
+      body: JSON.stringify({
+        businessType: payload.businessType,
+        targetAudience: payload.targetAudience,
+        contentFocus: payload.contentFocus || 'Content',
+      }),
+    });
+    return {
+      connectionId: response.connectionId,
+      streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
+    };
+  }
+
+  /**
    * Start topic ideas generation stream. Connect with connectToStream(connectionId, handlers).
    * Backend sends topic-complete events with { topic }; onComplete may send { topics } array.
    * @param {Object} payload - { businessType, targetAudience, contentFocus }

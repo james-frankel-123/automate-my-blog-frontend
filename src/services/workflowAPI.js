@@ -279,47 +279,59 @@ export const topicAPI = {
 
     const maxTopics = 2;
 
+    const streamPayload = { businessType, targetAudience, contentFocus: contentFocus || 'Content' };
+    const runTopicStream = async (startStream) => {
+      const { connectionId, streamUrl } = await startStream(streamPayload);
+      const accumulated = [];
+      const streamResult = await new Promise((resolve, reject) => {
+        autoBlogAPI.connectToStream(connectionId, {
+          onTopicComplete: (data) => {
+            const raw = data.topic != null ? data.topic : data;
+            if (accumulated.length >= maxTopics) return;
+            const mapped = mapTopic(raw, accumulated.length);
+            accumulated.push(mapped);
+            if (options.onTopicComplete) options.onTopicComplete(mapped);
+          },
+          onTopicImageStart: (data) => {
+            if (options.onTopicImageStart) options.onTopicImageStart(data);
+          },
+          onTopicImageComplete: (data) => {
+            const idx = data.index;
+            const topicWithImage = data.topic != null ? data.topic : data;
+            if (accumulated[idx] != null && topicWithImage?.image) {
+              accumulated[idx] = { ...accumulated[idx], image: topicWithImage.image };
+              if (options.onTopicImageComplete) options.onTopicImageComplete(accumulated[idx], idx);
+            }
+          },
+          onComplete: (data) => {
+            const list = data?.topics?.length ? data.topics : accumulated;
+            resolve(list.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
+          },
+          onError: (err) => {
+            reject(new Error(err?.message ?? 'Topic stream failed'));
+          },
+        }, { streamUrl });
+      });
+      return Array.isArray(streamResult) ? streamResult : accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i));
+    };
+
     try {
-      // Try stream first (same pattern as blog/audience)
+      // Try trending-topics stream first, then topics stream, then one-shot
       try {
-        const { connectionId, streamUrl } = await autoBlogAPI.generateTopicsStream({
-          businessType,
-          targetAudience,
-          contentFocus: contentFocus || 'Content',
-        });
+        const finalTopics = await runTopicStream((p) => autoBlogAPI.generateTrendingTopicsStream(p));
+        if (finalTopics.length > 0) {
+          return {
+            success: true,
+            topics: finalTopics,
+            message: `Generated ${finalTopics.length} targeted content ideas!`,
+          };
+        }
+      } catch (trendingErr) {
+        console.warn('Trending topics stream not available, trying topics stream:', trendingErr?.message);
+      }
 
-        const accumulated = [];
-        const streamResult = await new Promise((resolve, reject) => {
-          autoBlogAPI.connectToStream(connectionId, {
-            onTopicComplete: (data) => {
-              const raw = data.topic != null ? data.topic : data;
-              if (accumulated.length >= maxTopics) return;
-              const mapped = mapTopic(raw, accumulated.length);
-              accumulated.push(mapped);
-              if (options.onTopicComplete) options.onTopicComplete(mapped);
-            },
-            onTopicImageStart: (data) => {
-              if (options.onTopicImageStart) options.onTopicImageStart(data);
-            },
-            onTopicImageComplete: (data) => {
-              const idx = data.index;
-              const topicWithImage = data.topic != null ? data.topic : data;
-              if (accumulated[idx] != null && topicWithImage?.image) {
-                accumulated[idx] = { ...accumulated[idx], image: topicWithImage.image };
-                if (options.onTopicImageComplete) options.onTopicImageComplete(accumulated[idx], idx);
-              }
-            },
-            onComplete: (data) => {
-              const list = data?.topics?.length ? data.topics : accumulated;
-              resolve(list.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
-            },
-            onError: (err) => {
-              reject(new Error(err?.message ?? 'Topic stream failed'));
-            },
-          }, { streamUrl });
-        });
-
-        const finalTopics = Array.isArray(streamResult) ? streamResult : accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i));
+      try {
+        const finalTopics = await runTopicStream((p) => autoBlogAPI.generateTopicsStream(p));
         if (finalTopics.length > 0) {
           return {
             success: true,
