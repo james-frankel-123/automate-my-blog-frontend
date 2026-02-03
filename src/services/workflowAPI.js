@@ -557,9 +557,11 @@ export const contentAPI = {
       ? `Focus on ${selectedStrategy.customerProblem}. Target customers who search for: ${selectedStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}`
       : `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
 
+    const organizationId = enhancementOptions?.organizationId ?? null;
     const { connectionId } = await autoBlogAPI.generateBlogStream({
       topic: selectedTopic,
-      businessInfo: analysisData,
+      businessInfo: analysisData ?? {},
+      organizationId,
       additionalInstructions: contextPrompt,
       tweets: tweets.length ? tweets : undefined
     });
