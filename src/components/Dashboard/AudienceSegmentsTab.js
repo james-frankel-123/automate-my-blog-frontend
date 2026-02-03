@@ -961,9 +961,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           style={{
             border: isSubscribed
               ? '2px solid var(--color-success)'
-              : isSelected
-                ? `2px solid ${defaultColors.primary}`
-                : '1px solid var(--color-border-base)',
+              : '1px solid var(--color-border-base)',
             borderRadius: 'var(--radius-lg)',
             minHeight: '400px',
             cursor: 'pointer',
@@ -972,11 +970,31 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             margin: '0 auto',
             maxWidth: '480px',
             position: 'relative',
-            boxShadow: isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)',
+            boxShadow: isSubscribed
+              ? '0 4px 12px rgba(16, 185, 129, 0.15)'
+              : isSelected
+                ? '0 8px 24px rgba(0, 0, 0, 0.18)'
+                : 'var(--shadow-card)',
             backgroundColor: isSubscribed ? 'var(--color-success-bg)' : 'white'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 6px 16px rgba(16, 185, 129, 0.2)' : 'var(--shadow-elevated)'}
-          onMouseLeave={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)'}
+          onMouseEnter={(e) => {
+            if (isSubscribed) {
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.2)';
+            } else if (isSelected) {
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.22)';
+            } else {
+              e.currentTarget.style.boxShadow = 'var(--shadow-elevated)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (isSubscribed) {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.15)';
+            } else if (isSelected) {
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.18)';
+            } else {
+              e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+            }
+          }}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
           {/* Subscribed Badge or Pricing Badge (Top-Right Corner) */}
