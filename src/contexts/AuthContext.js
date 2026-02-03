@@ -342,7 +342,28 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout API call failed:', error);
       // Continue with local cleanup even if server call fails
     }
-    
+
+    // Clear all user-specific localStorage data (preserve theme preference)
+    const theme = localStorage.getItem('theme');
+    const keysToRemove = [];
+
+    // Find all user-specific keys
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      // Keep theme, remove everything else
+      if (key && key !== 'theme') {
+        keysToRemove.push(key);
+      }
+    }
+
+    // Remove all user-specific keys
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+
+    // Restore theme if it existed
+    if (theme) {
+      localStorage.setItem('theme', theme);
+    }
+
     // Clear local state
     setUser(null);
     setCurrentOrganization(null);

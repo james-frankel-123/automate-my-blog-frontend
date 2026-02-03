@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse, Space } from 'antd';
-import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -857,9 +857,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           style={{
             border: isSubscribed
               ? '2px solid var(--color-success)'
-              : isSelected
-                ? `2px solid ${defaultColors.primary}`
-                : '1px solid var(--color-border-base)',
+              : '1px solid var(--color-border-base)',
             borderRadius: 'var(--radius-lg)',
             minHeight: '400px',
             cursor: 'pointer',
@@ -868,11 +866,31 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             margin: '0 auto',
             maxWidth: '480px',
             position: 'relative',
-            boxShadow: isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)',
+            boxShadow: isSubscribed
+              ? '0 4px 12px rgba(16, 185, 129, 0.15)'
+              : isSelected
+                ? '0 8px 24px rgba(0, 0, 0, 0.18)'
+                : 'var(--shadow-card)',
             backgroundColor: isSubscribed ? 'var(--color-success-bg)' : 'white'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 6px 16px rgba(16, 185, 129, 0.2)' : 'var(--shadow-elevated)'}
-          onMouseLeave={(e) => e.currentTarget.style.boxShadow = isSubscribed ? '0 4px 12px rgba(16, 185, 129, 0.15)' : 'var(--shadow-card)'}
+          onMouseEnter={(e) => {
+            if (isSubscribed) {
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.2)';
+            } else if (isSelected) {
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.22)';
+            } else {
+              e.currentTarget.style.boxShadow = 'var(--shadow-elevated)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (isSubscribed) {
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.15)';
+            } else if (isSelected) {
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.18)';
+            } else {
+              e.currentTarget.style.boxShadow = 'var(--shadow-card)';
+            }
+          }}
           onClick={() => handleSelectStrategy(strategy, index)}
         >
           {/* Subscribed Badge or Pricing Badge (Top-Right Corner) */}
@@ -924,19 +942,20 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           <div style={{ marginBottom: '16px' }}>
 
             {/* Audience Image */}
-            {strategy.imageUrl && (
-              <div style={{
-                marginBottom: '12px',
-                width: '60%',
-                aspectRatio: '1 / 1',
-                backgroundColor: 'var(--color-background-alt)',
-                borderRadius: 'var(--radius-md)',
-                overflow: 'hidden',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                margin: '0 auto 12px auto'
-              }}>
+            <div style={{
+              marginBottom: '12px',
+              width: '60%',
+              aspectRatio: '1 / 1',
+              backgroundColor: 'var(--color-background-alt)',
+              borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              margin: '0 auto 12px auto',
+              position: 'relative'
+            }}>
+              {strategy.imageUrl ? (
                 <img
                   src={strategy.imageUrl}
                   alt={strategy.targetSegment?.demographics || 'Audience'}
@@ -947,16 +966,33 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   }}
                   onError={(e) => {
                     console.error('Image failed to load:', strategy.imageUrl);
-                    // Fallback if image fails to load
+                    // Show placeholder on error
                     e.target.style.display = 'none';
+                    const placeholder = e.target.nextSibling;
+                    if (placeholder) placeholder.style.display = 'flex';
                   }}
                   onLoad={() => {
                     console.log('Image loaded successfully:', strategy.imageUrl);
                   }}
                 />
+              ) : null}
+              {/* Placeholder shown when no image or image fails to load */}
+              <div style={{
+                display: strategy.imageUrl ? 'none' : 'flex',
+                width: '100%',
+                height: '100%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'var(--color-primary-light)',
+                color: 'var(--color-primary)'
+              }}>
+                <TeamOutlined style={{ fontSize: '48px', marginBottom: '8px' }} />
+                <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  Audience
+                </Text>
               </div>
-            )}
-            {!strategy.imageUrl && console.log('No imageUrl for strategy:', strategy.id)}
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
               <div style={{ flex: 1 }}>
@@ -1128,8 +1164,57 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             </div>
           )}
 
+          {/* Generate Post Button - Shows when card is selected in workflow mode */}
+          {isSelected && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
+            <Button
+              type="primary"
+              block
+              size="large"
+              style={{
+                marginTop: '20px',
+                height: '48px',
+                fontWeight: 600,
+                fontSize: '15px',
+                backgroundColor: 'var(--color-success)',
+                borderColor: 'var(--color-success)'
+              }}
+              icon={<BulbOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                // Set the selected customer strategy in workflow context
+                setSelectedCustomerStrategy(strategy);
+                console.log('🎯 Setting selected customer strategy for content generation:', strategy);
+
+                if (onNextStep) {
+                  onNextStep();
+                } else {
+                  if (onEnterProjectMode) {
+                    onEnterProjectMode();
+                  } else {
+                    tabMode.enterWorkflowMode();
+                  }
+
+                  // Navigate to Posts section for content generation
+                  setTimeout(() => {
+                    const postsSection = document.getElementById('posts');
+                    if (postsSection) {
+                      postsSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                      });
+                    }
+                  }, 100);
+
+                  message.success('Moving to content creation...');
+                }
+              }}
+            >
+              Generate Post
+            </Button>
+          )}
+
           {/* Subscribe Buttons / Subscription Status (Phase 2 - Dynamic Pricing) */}
-          {hasPricing && (() => {
+          {!isSelected && hasPricing && (() => {
             if (isSubscribed) {
               // Show generate content button for subscribed strategies
               return (
@@ -1600,70 +1685,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       >
                         {strategies.map((strategy, index) => renderStrategyCard(strategy, index))}
                       </Carousel>
-                    </div>
-                  )}
-                  
-                  {selectedStrategy && (
-                    <div style={{ marginTop: '24px', textAlign: 'center', padding: '16px', background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: '6px' }}>
-                      <Text strong style={{ color: 'var(--color-success)' }}>
-                        ✅ Selected: {selectedStrategy.targetSegment?.demographics.split(' ').slice(0, 4).join(' ')}...
-                      </Text>
-                      <div style={{ marginTop: '16px' }}>
-                        {onNextStep ? (
-                          <Button
-                            type="primary"
-                            size="large"
-                            onClick={onNextStep}
-                            style={{
-                              minWidth: '200px',
-                              backgroundColor: 'var(--color-success)',
-                              borderColor: 'var(--color-success)'
-                            }}
-                            icon={<BulbOutlined />}
-                          >
-                            Next Step: Generate Content
-                          </Button>
-                        ) : user && (
-                          <Button
-                            type="primary"
-                            size="large"
-                            onClick={() => {
-                              // Set the selected customer strategy in workflow context
-                              if (selectedStrategy) {
-                                setSelectedCustomerStrategy(selectedStrategy);
-                                console.log('🎯 Setting selected customer strategy for content generation:', selectedStrategy);
-                              }
-                              
-                              if (onEnterProjectMode) {
-                                onEnterProjectMode();
-                              } else {
-                                tabMode.enterWorkflowMode();
-                              }
-                              
-                              // Navigate to Posts section for content generation
-                              setTimeout(() => {
-                                const postsSection = document.getElementById('posts');
-                                if (postsSection) {
-                                  postsSection.scrollIntoView({ 
-                                    behavior: 'smooth', 
-                                    block: 'start' 
-                                  });
-                                }
-                              }, 100);
-                              
-                              message.success('Moving to content creation...');
-                            }}
-                            style={{
-                              minWidth: '200px',
-                              backgroundColor: 'var(--color-success)',
-                              borderColor: 'var(--color-success)'
-                            }}
-                            icon={<BulbOutlined />}
-                          >
-                            Continue to Content
-                          </Button>
-                        )}
-                      </div>
                     </div>
                   )}
                 </Card>

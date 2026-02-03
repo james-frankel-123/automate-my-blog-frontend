@@ -1012,18 +1012,18 @@ const DashboardLayout = ({
             return `${baseHeaderHeight}px`;
           })()
         }}>
-          {/* Floating Action Buttons - Fixed within content area */}
-          <div style={{
-            position: 'fixed',
-            top: '29px',
-            right: '29px',
-            zIndex: 999,
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px'
-          }}>
-            {/* Theme Toggle - Only visible for logged-in users */}
-            {user && (
+          {/* Floating Action Buttons - Fixed within content area - Only visible for logged-in users */}
+          {user && (
+            <div style={{
+              position: 'fixed',
+              top: '29px',
+              right: '29px',
+              zIndex: 999,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px'
+            }}>
+              {/* Theme Toggle */}
               <div style={{
                 background: 'var(--color-background-body)',
                 padding: 'var(--space-2)',
@@ -1035,10 +1035,8 @@ const DashboardLayout = ({
               }}>
                 <ThemeToggle />
               </div>
-            )}
 
-            {/* Quota Counter - Only visible for logged-in users */}
-            {user && (
+              {/* Quota Counter */}
               <>
                 <div
                   onClick={() => {
@@ -1228,8 +1226,8 @@ const DashboardLayout = ({
                 )
               )}
               </>
-            )}
-          </div>
+            </div>
+          )}
 
           <div style={{
             background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
@@ -1313,7 +1311,7 @@ const DashboardLayout = ({
       )}
       
       {/* Authentication Modal for Logged-Out Users */}
-      {!user && (
+      {!user && showAuthModal && authContext && (
         <AuthModal
           open={showAuthModal}
           onClose={() => {
