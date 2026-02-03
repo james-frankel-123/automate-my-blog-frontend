@@ -1313,7 +1313,7 @@ const DashboardLayout = ({
       )}
       
       {/* Authentication Modal for Logged-Out Users */}
-      {!user && (
+      {!user && showAuthModal && authContext && (
         <AuthModal
           open={showAuthModal}
           onClose={() => {
