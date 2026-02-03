@@ -36,6 +36,7 @@ This file tells Claude (and other AI coding agents) how to behave when working i
 
 ### Issues and References
 
+- **Claim an issue before starting work** by commenting on it (e.g. “I’ll take this”, “Working on this”, or “Starting work in branch `fix/xyz`”). This avoids duplicate work and lets others know the issue is in progress.
 - **Reference issues in branches and commits** when relevant (e.g. `fix/foo` for “Fixes #42”, or “Issue #65 Phase 5” in a comment).
 - **When proposing fixes,** say “Fixes #N” or “Closes #N” in the PR description so GitHub auto-closes the issue.
 - **Don’t open duplicate issues.** Search existing issues and PRs before creating a new one.
@@ -61,8 +62,9 @@ This file tells Claude (and other AI coding agents) how to behave when working i
 ## Summary for Agents
 
 1. **Branch:** `feat/...` or `fix/...` from `main`; one clear purpose per branch.
-2. **Commit:** Clear, atomic messages; optional conventional style.
-3. **PR:** Target `main`, describe changes, reference issues, keep CI green and diffs reviewable.
-4. **Repo:** Lint and test before pushing; follow existing structure and docs; keep secrets out of the repo.
+2. **Claim issues:** Comment on the issue (e.g. “I’ll take this”) before starting work.
+3. **Commit:** Clear, atomic messages; optional conventional style.
+4. **PR:** Target `main`, describe changes, reference issues, keep CI green and diffs reviewable.
+5. **Repo:** Lint and test before pushing; follow existing structure and docs; keep secrets out of the repo.
 
 Following this keeps the repo consistent and makes it easier for humans and other agents to collaborate.
