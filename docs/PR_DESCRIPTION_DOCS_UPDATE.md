@@ -16,6 +16,15 @@ When the app is analyzing your website or generating a blog post, you now see cl
 
 For website analysis, results now stream in piece by piece. As each audience scenario, pitch, or image is ready, it appears on the screen instead of waiting for the whole job to finish. Same for content generation: the blog text, visuals suggestions, and SEO analysis can show up incrementally so you get usable output sooner.
 
+### Speed Improvements (Concrete Numbers)
+
+| Metric | Before (polling / sync) | After (streaming) |
+|--------|-------------------------|-------------------|
+| **Progress update latency** | Up to 2.5s between updates (poll interval) | Near-instant (SSE pushes as soon as the server produces events) |
+| **Time to first visible content** | Often 30–60+ seconds (wait for full job) | First partial result can appear in seconds as soon as the backend produces it |
+| **Blog generation** | Sequential: wait for tweets, then content (or vice versa) | Parallel: blog stream starts immediately; tweets fetch in the background |
+| **Website analysis** | One batch at the end | Per-item: each scrape, audience, pitch, and scenario image appears as it completes |
+
 ### Fewer Crashes and Glitches
 
 Several stability fixes went in:
