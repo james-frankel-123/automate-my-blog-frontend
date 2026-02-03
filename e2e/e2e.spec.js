@@ -533,6 +533,63 @@ test.describe('E2E (mocked backend)', () => {
       expect(await genBtn.textContent()).not.toContain('Buy more');
     });
 
+    // PR 104 – Job stream: when GET /api/v1/jobs/:id/stream returns 404, app falls back to pollJobStatus.
+    test.describe('PR 104 – Job stream', () => {
+      test('website analysis completes (job stream or polling) and Continue to Audience appears', async ({ page }) => {
+        test.setTimeout(60000);
+        await page.locator('button:has-text("Create New Post")').first().click();
+        await page.waitForTimeout(800);
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        await expect(websiteInput).toBeVisible({ timeout: 10000 });
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+        const continueBtn = page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first();
+        await expect(continueBtn).toBeVisible({ timeout: 10000 });
+      });
+
+      test('full workflow completes when stream endpoints are not available (fallback path)', async ({ page }) => {
+        test.setTimeout(90000);
+        await page.locator('button:has-text("Create New Post")').first().click();
+        await page.waitForTimeout(800);
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        await expect(websiteInput).toBeVisible({ timeout: 10000 });
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        await page.waitForTimeout(800);
+        await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(500);
+        await page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first().click();
+        await page.waitForTimeout(2000);
+        await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+        await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+        await page.waitForTimeout(800);
+        const generateTopicsBtn = page.locator('button:has-text("Generate post"), button:has-text("Buy more posts")').first();
+        await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
+        await generateTopicsBtn.click();
+        await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(2000);
+        await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        const createPostBtn = page.getByRole('button', { name: /Create Post|Generate post/i }).first();
+        if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+          await createPostBtn.click();
+          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 25000 }).catch(() => {});
+          await page.waitForTimeout(1000);
+        }
+        const editor = page.locator('.tiptap, [contenteditable="true"]').first();
+        await expect(editor).toBeVisible({ timeout: 15000 });
+        const content = await editor.textContent();
+        expect(content).toContain('mock');
+        expect(content.length).toBeGreaterThan(50);
+      });
+    });
+
     // PR 101 – Blog streaming: when /api/v1/blog/generate-stream returns 404, app falls back to generateContent.
     test.describe('PR 101 – Blog streaming', () => {
       test('content generation completes (stream or fallback) and editor shows content', async ({ page }) => {

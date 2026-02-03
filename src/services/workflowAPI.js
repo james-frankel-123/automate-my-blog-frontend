@@ -82,23 +82,34 @@ export const analysisAPI = {
 
       const sessionId = autoBlogAPI.getOrCreateSessionId?.() || sessionStorage.getItem('audience_session_id');
 
-      // Try worker queue first
+      // Try worker queue first (Issue #65: prefer job stream over polling)
       try {
         const createResponse = await jobsAPI.createWebsiteAnalysisJob(formattedUrl, sessionId);
         const jobId = createResponse.jobId;
-        const finalStatus = await jobsAPI.pollJobStatus(jobId, {
-          onProgress: (status) => {
-            if (options.onProgress) {
-              options.onProgress(status);
+
+        // Prefer SSE job stream for real-time progress; fall back to polling if stream unavailable
+        let finalStatus = null;
+        try {
+          finalStatus = await jobsAPI.connectToJobStream(jobId, {
+            onProgress: (data) => {
+              if (options.onProgress) options.onProgress(data);
             }
-          },
-          pollIntervalMs: 2500,
-          maxAttempts: 120
-        });
-        if (finalStatus.status === 'succeeded' && finalStatus.result) {
+          });
+        } catch (streamErr) {
+          console.warn('Job stream not available, falling back to polling:', streamErr?.message);
+          finalStatus = await jobsAPI.pollJobStatus(jobId, {
+            onProgress: (status) => {
+              if (options.onProgress) options.onProgress(status);
+            },
+            pollIntervalMs: 2500,
+            maxAttempts: 120
+          });
+        }
+
+        if (finalStatus?.status === 'succeeded' && finalStatus.result) {
           return mapWebsiteAnalysisResult(finalStatus.result);
         }
-        if (finalStatus.status === 'failed') {
+        if (finalStatus?.status === 'failed') {
           throw new Error(finalStatus.error || 'Website analysis failed');
         }
       } catch (jobsErr) {

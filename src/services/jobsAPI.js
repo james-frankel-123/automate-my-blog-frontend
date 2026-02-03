@@ -103,6 +103,76 @@ class JobsAPI {
   }
 
   /**
+   * Build SSE stream URL for job (Issue #65). EventSource does not send headers; token in query.
+   * @param {string} jobId
+   * @returns {string}
+   */
+  getJobStreamUrl(jobId) {
+    const path = `/api/v1/jobs/${encodeURIComponent(jobId)}/stream`;
+    const url = `${this.baseURL}${path}`;
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      return `${url}?token=${encodeURIComponent(token)}`;
+    }
+    const sessionId = sessionStorage.getItem('audience_session_id');
+    if (sessionId) {
+      return `${url}?sessionId=${encodeURIComponent(sessionId)}`;
+    }
+    return url;
+  }
+
+  /**
+   * Connect to job progress stream (SSE). Issue #65 Phase 5.
+   * @param {string} jobId
+   * @param {Object} [handlers] - { onProgress?(data), onStepChange?(data), onComplete?(data) }
+   * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error? }
+   */
+  connectToJobStream(jobId, handlers = {}) {
+    return new Promise((resolve, reject) => {
+      const url = this.getJobStreamUrl(jobId);
+      const eventSource = new EventSource(url);
+
+      const close = () => {
+        eventSource.close();
+      };
+
+      eventSource.addEventListener('message', (event) => {
+        try {
+          const payload = JSON.parse(event.data || '{}');
+          const { type, data } = payload;
+          switch (type) {
+            case 'progress-update':
+              if (handlers.onProgress) handlers.onProgress(data);
+              break;
+            case 'step-change':
+              if (handlers.onStepChange) handlers.onStepChange(data);
+              break;
+            case 'complete':
+              if (handlers.onComplete) handlers.onComplete(data);
+              close();
+              resolve({ status: 'succeeded', result: data?.result ?? data });
+              break;
+            case 'failed':
+            case 'error':
+              close();
+              resolve({ status: 'failed', error: data?.message ?? data?.error ?? 'Job failed' });
+              break;
+            default:
+              break;
+          }
+        } catch (err) {
+          console.warn('[Job SSE] Parse error:', err);
+        }
+      });
+
+      eventSource.onerror = () => {
+        close();
+        reject(new Error('Job stream connection failed'));
+      };
+    });
+  }
+
+  /**
    * Poll job status until succeeded or failed
    * @param {string} jobId
    * @param {Object} [options]
