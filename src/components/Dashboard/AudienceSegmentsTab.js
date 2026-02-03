@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
+import { useSystemHint } from '../../contexts/SystemHintContext';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 import autoBlogAPI from '../../services/api';
@@ -63,6 +64,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     stepResults,
     addStickyWorkflowStep 
   } = useWorkflowMode();
+  const { setHint } = useSystemHint();
   const [selectedStrategy, setSelectedStrategy] = useState(null);
   const [strategies, setStrategies] = useState([]);
   const [generatingStrategies, setGeneratingStrategies] = useState(false);
@@ -498,7 +500,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
       // Only mark as "already generated" after we've actually set strategies (see end of each branch)
       setGeneratingStrategies(true);
-      
+      setHint(systemVoice.audience.generatingStrategies, 'hint', 0);
+
       // PRIMARY: Use OpenAI-generated scenarios if available
       if (analysis.scenarios && analysis.scenarios.length > 0) {
         
@@ -617,6 +620,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           
           // Only show success message if strategies were actually loaded (not on remounts)
           if (openAIStrategies.length > 0) {
+            setHint(systemVoice.audience.audienceReady, 'success', 5000);
             message.success(`Generated ${openAIStrategies.length} AI-powered audience strategies with real business intelligence`);
           }
         }, 800); // Shorter delay since we're not generating
@@ -678,7 +682,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           generatedStrategiesCache.add(generationKey);
           sessionStorage.setItem(sessionStorageKey, 'true');
           setGeneratingStrategies(false);
-          
+          setHint(systemVoice.audience.audienceReady, 'success', 5000);
+
           // Save fallback strategies to database for persistence
           try {
             const savedStrategies = await Promise.all(
@@ -745,7 +750,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   return [...prev, transformed];
                 });
               },
-              onComplete: () => setGeneratingStrategies(false),
+              onComplete: () => {
+                setGeneratingStrategies(false);
+                setHint(systemVoice.audience.audienceReady, 'success', 5000);
+              },
               onError: () => {
                 setGeneratingStrategies(false);
                 runFallback();

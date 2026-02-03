@@ -376,18 +376,22 @@ const WebsiteAnalysisStepStandalone = ({
         onProgress: (stepOrStatus) => {
           if (typeof stepOrStatus === 'number') {
             if (stepOrStatus >= 1 && stepOrStatus <= steps.length) {
-              updateScanningMessage(steps[stepOrStatus - 1]);
-              setAnalysisProgress({ stepNumber: stepOrStatus, totalSteps: steps.length, progress: (stepOrStatus / steps.length) * 100, currentStep: steps[stepOrStatus - 1] });
+              const stepLabel = steps[stepOrStatus - 1];
+              updateScanningMessage(stepLabel);
+              setAnalysisProgress({ stepNumber: stepOrStatus, totalSteps: steps.length, progress: (stepOrStatus / steps.length) * 100, currentStep: stepLabel });
+              setHint(stepLabel, 'hint', 0);
             } else if (stepOrStatus >= 0 && stepOrStatus <= 100) {
               setAnalysisProgress(prev => ({ ...prev, progress: stepOrStatus }));
             }
           } else if (typeof stepOrStatus === 'object' && stepOrStatus) {
-            updateScanningMessage(stepOrStatus.currentStep || steps[0]);
+            const stepLabel = stepOrStatus.currentStep || steps[0];
+            updateScanningMessage(stepLabel);
             setAnalysisProgress({
               progress: stepOrStatus.progress,
               currentStep: stepOrStatus.currentStep,
               estimatedTimeRemaining: stepOrStatus.estimatedTimeRemaining,
             });
+            setHint(stepLabel, 'hint', 0);
           }
         }
       });
@@ -795,8 +799,11 @@ const WebsiteAnalysisStepStandalone = ({
               maxWidth: '400px',
               margin: '0 auto 24px'
             }}>
+              <div style={{ marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-secondary)' }}>
+                {systemVoice.analysis.workingForYou}
+              </div>
               <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
-                {systemVoice.analysis.progressLabel} {analysisProgress.currentStep || currentScanningMessage}
+                {systemVoice.analysis.progressPreamble} {analysisProgress.currentStep || currentScanningMessage}
               </div>
               <Progress
                 percent={analysisProgress.progress ?? 0}
