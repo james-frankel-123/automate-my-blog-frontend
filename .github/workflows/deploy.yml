@@ -34,7 +34,7 @@ env:
   CI: true
 
 jobs:
-  # Unit tests and lint (E2E runs in e2e-tests.yml; require "E2E Tests" via branch protection)
+  # Unit tests and lint (E2E runs in e2e-tests.yml; require "Run E2E Tests" via branch protection)
   test:
     name: Run Tests
     runs-on: ubuntu-latest
