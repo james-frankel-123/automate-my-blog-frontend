@@ -32,6 +32,7 @@ import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
+import { extractStreamChunk, extractStreamCompleteContent } from '../../utils/streamingUtils';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
@@ -825,11 +826,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           const streamDone = new Promise((resolve, reject) => {
             api.connectToStream(connectionId, {
               onChunk: (data) => {
-                const chunk = data?.content ?? data?.text ?? '';
+                const chunk = extractStreamChunk(data);
                 if (chunk) setEditingContent((prev) => prev + chunk);
               },
               onComplete: (data) => {
-                const finalContent = data?.content ?? data?.blogPost?.content ?? '';
+                const finalContent = extractStreamCompleteContent(data);
                 if (finalContent) setEditingContent(finalContent);
                 setContentGenerated(true);
                 resolve({ success: true, content: finalContent, blogPost: data?.blogPost });

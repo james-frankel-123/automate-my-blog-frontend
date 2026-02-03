@@ -1,10 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import autoBlogAPI from '../services/api';
+import { extractStreamChunk, extractStreamCompleteContent } from '../utils/streamingUtils';
 
 /**
  * Hook for consuming SSE streaming content (blog, bundle overview, etc.).
  * Accumulates content from content-chunk events and exposes final result on complete.
  * Issue #65: LLM Streaming for Blog Posts, Audiences, and Bundle Overview.
+ * Uses streamingUtils to prevent raw JSON from being appended to the editor.
  *
  * @param {Object} options - { onComplete?, onError? }
  * @returns {Object} { content, setContent, isStreaming, error, connect, disconnect }
@@ -32,14 +34,14 @@ export function useStreamingContent(options = {}) {
 
       closeRef.current = autoBlogAPI.connectToStream(connectionId, {
         onChunk: (data) => {
-          const chunk = data?.content ?? data?.text ?? '';
+          const chunk = extractStreamChunk(data);
           if (chunk) {
             setContent((prev) => prev + chunk);
           }
         },
         onComplete: (data) => {
-          if (data?.content !== undefined) setContent(String(data.content));
-          if (data?.text !== undefined) setContent(String(data.text));
+          const finalContent = extractStreamCompleteContent(data);
+          if (finalContent) setContent(finalContent);
           setIsStreaming(false);
           closeRef.current = null;
           if (options.onComplete) options.onComplete(data);
