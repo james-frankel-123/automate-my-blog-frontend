@@ -400,6 +400,35 @@ const WebsiteAnalysisStepStandalone = ({
           if (data?.message) {
             setAnalysisThoughts(prev => [...prev, { phase: data.phase, message: data.message, url: data.url }]);
           }
+        },
+        onAnalysisResult: (data) => {
+          if (!data || !setAnalysisResults) return;
+          setAnalysisResults({
+            ...(data.analysis || {}),
+            metadata: data.metadata,
+            ctas: data.ctas,
+            ctaCount: data.ctaCount,
+            hasSufficientCTAs: data.hasSufficientCTAs,
+            organizationId: data.organizationId ?? data.analysis?.organizationId,
+            url: data.url,
+            scrapedAt: data.scrapedAt,
+            scenarios: []
+          });
+        },
+        onAudiencesResult: (data) => {
+          if (data?.scenarios && setAnalysisResults) {
+            setAnalysisResults({ scenarios: data.scenarios });
+          }
+        },
+        onPitchesResult: (data) => {
+          if (data?.scenarios && setAnalysisResults) {
+            setAnalysisResults({ scenarios: data.scenarios });
+          }
+        },
+        onScenariosResult: (data) => {
+          if (data?.scenarios && setAnalysisResults) {
+            setAnalysisResults({ scenarios: data.scenarios });
+          }
         }
       });
 
@@ -1412,8 +1441,8 @@ const WebsiteAnalysisStepStandalone = ({
         {/* Show loading state when analyzing */}
         {loading && renderAnalysisLoading()}
 
-        {/* Show analysis results when available AND not currently loading */}
-        {analysisCompleted && !loading && renderAnalysisResults()}
+        {/* Show analysis results as soon as partial or full data is available (streaming or done) */}
+        {analysisResults && renderAnalysisResults()}
       </Card>
     </div>
   );

@@ -124,9 +124,15 @@ class JobsAPI {
   /**
    * Connect to job progress stream (SSE).
    * @param {string} jobId
-   * @param {Object} [handlers] - { onProgress?(data), onStepChange?(data), onComplete?(data), onFailed?(data), onConnected?(data), onScrapePhase?(data) }
+   * @param {Object} [handlers] - { onProgress?, onStepChange?, onComplete?, onFailed?, onConnected?, onScrapePhase?,
+   *   onAnalysisResult?, onAudiencesResult?, onPitchesResult?, onScenariosResult?, onStreamTimeout? }
    *   - onProgress(data) - progress-update: { progress, currentStep, phase?, detail?, estimatedTimeRemaining }
    *   - onScrapePhase(data) - scrape-phase: { phase, message, url? } (thoughts / step log)
+   *   - onAnalysisResult(data) - analysis-result: org summary, ctas, metadata (partial; no scenarios yet)
+   *   - onAudiencesResult(data) - audiences-result: { scenarios } (no pitch/imageUrl)
+   *   - onPitchesResult(data) - pitches-result: { scenarios } (with pitch; no imageUrl)
+   *   - onScenariosResult(data) - scenarios-result: { scenarios } (with imageUrl)
+   *   - onStreamTimeout(data) - stream-timeout: ~10 min warning
    *   - onComplete(data) - complete: data.result is full job result
    *   - onFailed(data) - failed: { error, errorCode? }
    * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error?, errorCode? }
@@ -186,6 +192,26 @@ class JobsAPI {
         const data = parseData(event);
         if (handlers.onScrapePhase) handlers.onScrapePhase(data);
       });
+      eventSource.addEventListener('analysis-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onAnalysisResult) handlers.onAnalysisResult(data);
+      });
+      eventSource.addEventListener('audiences-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onAudiencesResult) handlers.onAudiencesResult(data);
+      });
+      eventSource.addEventListener('pitches-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onPitchesResult) handlers.onPitchesResult(data);
+      });
+      eventSource.addEventListener('scenarios-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onScenariosResult) handlers.onScenariosResult(data);
+      });
+      eventSource.addEventListener('stream-timeout', (event) => {
+        const data = parseData(event);
+        if (handlers.onStreamTimeout) handlers.onStreamTimeout(data);
+      });
       eventSource.addEventListener('complete', (event) => {
         const data = parseData(event);
         if (handlers.onComplete) handlers.onComplete(data);
@@ -219,6 +245,21 @@ class JobsAPI {
               break;
             case 'scrape-phase':
               if (handlers.onScrapePhase) handlers.onScrapePhase(payloadData);
+              break;
+            case 'analysis-result':
+              if (handlers.onAnalysisResult) handlers.onAnalysisResult(payloadData);
+              break;
+            case 'audiences-result':
+              if (handlers.onAudiencesResult) handlers.onAudiencesResult(payloadData);
+              break;
+            case 'pitches-result':
+              if (handlers.onPitchesResult) handlers.onPitchesResult(payloadData);
+              break;
+            case 'scenarios-result':
+              if (handlers.onScenariosResult) handlers.onScenariosResult(payloadData);
+              break;
+            case 'stream-timeout':
+              if (handlers.onStreamTimeout) handlers.onStreamTimeout(payloadData);
               break;
             case 'complete':
               if (handlers.onComplete) handlers.onComplete(payloadData);

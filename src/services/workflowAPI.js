@@ -69,7 +69,7 @@ export const analysisAPI = {
   /**
    * Analyze website with comprehensive business intelligence
    * @param {string} websiteUrl - The website URL to analyze
-   * @param {{ onProgress?: (data: Object) => void, onScrapePhase?: (data: { phase, message, url? }) => void }} options - Optional; onProgress for progress-update/step-change (progress, currentStep, phase?, detail?, estimatedTimeRemaining); onScrapePhase for scrape-phase "thoughts" (phase, message, url?)
+   * @param {{ onProgress?, onScrapePhase?, onAnalysisResult?, onAudiencesResult?, onPitchesResult?, onScenariosResult?, onStreamTimeout? }} options - Optional; onProgress for progress-update; onScrapePhase for scrape-phase "thoughts"; onAnalysisResult/onAudiencesResult/onPitchesResult/onScenariosResult for partial results (show UI incrementally); onStreamTimeout for ~10 min warning
    * @returns {Promise<Object>} Analysis results with business data
    */
   async analyzeWebsite(websiteUrl, options = {}) {
@@ -96,6 +96,21 @@ export const analysisAPI = {
             },
             onScrapePhase: (data) => {
               if (options.onScrapePhase) options.onScrapePhase(data);
+            },
+            onAnalysisResult: (data) => {
+              if (options.onAnalysisResult) options.onAnalysisResult(data);
+            },
+            onAudiencesResult: (data) => {
+              if (options.onAudiencesResult) options.onAudiencesResult(data);
+            },
+            onPitchesResult: (data) => {
+              if (options.onPitchesResult) options.onPitchesResult(data);
+            },
+            onScenariosResult: (data) => {
+              if (options.onScenariosResult) options.onScenariosResult(data);
+            },
+            onStreamTimeout: (data) => {
+              if (options.onStreamTimeout) options.onStreamTimeout(data);
             }
           });
         } catch (streamErr) {
