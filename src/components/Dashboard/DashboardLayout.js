@@ -1003,15 +1003,22 @@ const DashboardLayout = ({
 
 
       {/* Content area - always show */}
-        <div style={{
-          padding: isMobile ? 'var(--space-4) var(--space-4) 80px var(--space-4)' : 'var(--space-6)',
-          background: 'var(--color-gray-50)',
-          overflow: 'auto',
-          paddingTop: (() => {
-            const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
-            return `${baseHeaderHeight}px`;
-          })()
-        }}>
+        <div
+          style={{
+            padding: isMobile ? 'var(--space-4) var(--space-4) 80px var(--space-4)' : 'var(--space-6)',
+            background: 'var(--color-gray-50)',
+            overflow: 'auto',
+            paddingTop: (() => {
+              const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
+              return `${baseHeaderHeight}px`;
+            })(),
+            // So ThinkingPanel can stick below the login/signup bar when present
+            '--thinking-panel-sticky-top': (() => {
+              const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
+              return `${baseHeaderHeight}px`;
+            })(),
+          }}
+        >
           {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90) */}
           {user && (
           <div style={{
