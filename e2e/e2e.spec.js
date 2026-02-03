@@ -42,6 +42,37 @@ async function dismissOpenModalIfPresent(page) {
   }
 }
 
+/** Wait until no modal overlay is visible (so clicks can reach underlying buttons). */
+async function waitForNoModal(page, timeoutMs = 6000) {
+  await page.waitForFunction(
+    () => {
+      const wrap = document.querySelector('.ant-modal-wrap');
+      return !wrap || wrap.offsetParent === null || getComputedStyle(wrap).display === 'none';
+    },
+    { timeout: timeoutMs }
+  ).catch(() => {});
+}
+
+/** Click the Create Post / Generate post button via DOM so overlays cannot intercept. */
+async function clickCreatePostButton(page, options = {}) {
+  const { waitForContentResponse = true } = options;
+  await dismissOpenModalIfPresent(page);
+  await waitForNoModal(page, 6000);
+  const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
+  await createPostBtn.waitFor({ state: 'attached', timeout: 15000 });
+  if (waitForContentResponse) {
+    await Promise.all([
+      page.waitForResponse(
+        (res) => (res.url().includes('/api/generate-content') || (res.url().includes('/jobs/') && res.url().includes('/status'))) && res.status() === 200,
+        { timeout: 45000 }
+      ).catch(() => null),
+      createPostBtn.evaluate((el) => el.click()),
+    ]);
+  } else {
+    await createPostBtn.evaluate((el) => el.click());
+  }
+}
+
 async function setupLoggedIn(page) {
   await installWorkflowMocks(page);
   await page.goto('/');
@@ -598,16 +629,9 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-        await dismissOpenModalIfPresent(page);
-        const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-        if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await Promise.all([
-            page.waitForResponse((res) => (res.url().includes('/api/generate-content') || res.url().includes('/jobs/') && res.url().includes('/status')) && res.status() === 200, { timeout: 45000 }).catch(() => null),
-            createPostBtn.click({ force: true }),
-          ]);
-          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
-          await page.waitForTimeout(1000);
-        }
+        await clickCreatePostButton(page);
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+        await page.waitForTimeout(1000);
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
         await expect(editor).toBeVisible({ timeout: 35000 });
         const content = await editor.textContent();
@@ -644,16 +668,9 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-        await dismissOpenModalIfPresent(page);
-        const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-        if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await Promise.all([
-            page.waitForResponse((res) => (res.url().includes('/api/generate-content') || (res.url().includes('/jobs/') && res.url().includes('/status'))) && res.status() === 200, { timeout: 45000 }).catch(() => null),
-            createPostBtn.click({ force: true }),
-          ]);
-          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
-          await page.waitForTimeout(1000);
-        }
+        await clickCreatePostButton(page);
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+        await page.waitForTimeout(1000);
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
         await expect(editor).toBeVisible({ timeout: 35000 });
         const content = await editor.textContent();
@@ -705,16 +722,9 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForTimeout(2000);
 
       await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-      await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-      if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await Promise.all([
-          page.waitForResponse((res) => (res.url().includes('/api/generate-content') || (res.url().includes('/jobs/') && res.url().includes('/status'))) && res.status() === 200, { timeout: 45000 }).catch(() => null),
-          createPostBtn.click({ force: true }),
-        ]);
-        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
-        await page.waitForTimeout(1000);
-      }
+      await clickCreatePostButton(page);
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+      await page.waitForTimeout(1000);
 
       const editor = page.locator('.tiptap, [contenteditable="true"]').first();
       await expect(editor).toBeVisible({ timeout: 35000 });
@@ -771,13 +781,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(1500);
 
-      await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-      await expect(createPostBtn).toBeVisible({ timeout: 12000 });
-      await Promise.all([
-        page.waitForResponse((res) => (res.url().includes('/api/generate-content') || (res.url().includes('/jobs/') && res.url().includes('/status'))) && res.status() === 200, { timeout: 45000 }).catch(() => null),
-        createPostBtn.click({ force: true }),
-      ]);
+      await clickCreatePostButton(page);
 
       // Progress panel may appear briefly; wait for content to complete (progress hidden or editor visible)
       await Promise.race([
@@ -869,10 +873,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(2000);
 
-      await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-      await expect(createPostBtn).toBeVisible({ timeout: 12000 });
-      await createPostBtn.click({ force: true });
+      await clickCreatePostButton(page, { waitForContentResponse: false });
 
       const errorMsg = page.locator('.ant-message-error, .ant-message').filter({ hasText: /unavailable|try again later|503/i });
       await expect(errorMsg.first()).toBeVisible({ timeout: 8000 });
@@ -916,9 +917,7 @@ test.describe('E2E (mocked backend)', () => {
 
       await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
       await page.waitForTimeout(500);
-      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-      await expect(createPostBtn).toBeVisible({ timeout: 12000 });
-      await createPostBtn.click({ force: true });
+      await clickCreatePostButton(page, { waitForContentResponse: false });
 
       const retryModal = page.locator('.ant-modal').filter({ hasText: /Content generation failed|Retry|Something went wrong/i });
       await expect(retryModal).toBeVisible({ timeout: 15000 });
@@ -1460,16 +1459,9 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(2000);
 
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-        await dismissOpenModalIfPresent(page);
-        const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-        if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await Promise.all([
-            page.waitForResponse((res) => (res.url().includes('/api/generate-content') || (res.url().includes('/jobs/') && res.url().includes('/status'))) && res.status() === 200, { timeout: 45000 }).catch(() => null),
-            createPostBtn.click({ force: true }),
-          ]);
-          await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
-          await page.waitForTimeout(1000);
-        }
+        await clickCreatePostButton(page);
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+        await page.waitForTimeout(1000);
 
         // Editor should be visible with generated content
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
@@ -1591,16 +1583,9 @@ test.describe('E2E (mocked backend)', () => {
 
       await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
       await pause(500);
-      await dismissOpenModalIfPresent(page);
-      const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-      if (await createPostBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await Promise.all([
-          page.waitForResponse((res) => (res.url().includes('/api/generate-content') || (res.url().includes('/jobs/') && res.url().includes('/status'))) && res.status() === 200, { timeout: 45000 }).catch(() => null),
-          createPostBtn.click({ force: true }),
-        ]);
-        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
-        await pause(700);
-      }
+      await clickCreatePostButton(page);
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+      await pause(700);
 
       const editor = page.locator('.tiptap, [contenteditable="true"]').first();
       await expect(editor).toBeVisible({ timeout: 35000 });
