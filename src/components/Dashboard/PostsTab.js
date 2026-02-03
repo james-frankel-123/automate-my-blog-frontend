@@ -621,9 +621,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           return;
         }
       } else if (!user) {
-        // For logged-out users not in workflow mode, trigger sign-up
+        // For logged-out users not in workflow mode, trigger sign-up (Fixes #85: run after login)
         setGeneratingContent(false);
-        return requireSignUp('Generate AI content topics', 'Start creating content');
+        return requireSignUp('Generate AI content topics', 'Start creating content', () => handleGenerateTopics());
       }
 
       // Debug the analysis data being passed
@@ -712,9 +712,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   
   // Handle topic selection and content generation
   const handleTopicSelection = async (topicId) => {
-    // Check authentication first
+    // Check authentication first (Fixes #85: run after login)
     if (!user) {
-      return requireSignUp('Create your blog post', 'Get your first post');
+      return requireSignUp('Create your blog post', 'Get your first post', () => handleTopicSelection(topicId));
     }
 
     const topic = availableTopics.find(t => t.id === topicId);
