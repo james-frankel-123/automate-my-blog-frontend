@@ -341,6 +341,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     length: 'standard' // 'quick', 'standard', 'deep'
   });
   const [currentDraft, setCurrentDraft] = useState(null);
+  const [relatedTweets, setRelatedTweets] = useState([]); // Fetched in background after stream starts; shown alongside post
   const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
   // Editor state for TipTap integration
@@ -724,7 +725,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     
     setSelectedTopic(topic);
     setGeneratingContent(true);
-    
+    setRelatedTweets([]);
+
     // Add to progressive sticky header
     addStickyWorkflowStep('topicSelection', {
       title: topic.title,
@@ -735,12 +737,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     });
     
     try {
-      // Run credits check and tweet search in parallel for faster UX
-      const [creditsResult, tweetSearchResult] = await Promise.all([
-        api.getUserCredits().catch(() => ({ totalCredits: 1, usedCredits: 0 })),
-        api.searchTweetsForTopic(topic, websiteAnalysisData, 3)
-      ]);
-
+      // Credits check first so we can fail fast and show limit modal
+      const creditsResult = await api.getUserCredits().catch(() => ({ totalCredits: 1, usedCredits: 0 }));
       const remainingPosts = creditsResult.totalCredits - creditsResult.usedCredits;
       if (remainingPosts <= 0) {
         setGeneratingContent(false);
@@ -780,12 +778,23 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         );
       }
 
-      const prefetchedTweets = tweetSearchResult?.tweets || [];
+      // Start stream immediately so content populates right away. Fetch tweets in background
+      // and attach when ready (for display / draft; generation runs without tweet context).
+      const prefetchedTweets = [];
+      api.searchTweetsForTopic(topic, websiteAnalysisData, 3)
+        .then((r) => {
+          const tweets = r?.tweets || [];
+          if (tweets.length) {
+            setRelatedTweets(tweets);
+            setCurrentDraft((prev) => (prev ? { ...prev, relatedTweets: tweets } : prev));
+          }
+        })
+        .catch(() => {});
 
       // Determine if enhanced generation should be used based on available organization data
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
       const shouldUseEnhancement = !!(organizationId && hasWebsiteAnalysis);
-      
+
       console.log('🔍 Enhancement decision:', {
         organizationId,
         organizationName,
@@ -2060,6 +2069,29 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       <Text style={{ color: 'var(--color-success)' }}>{selectedTopic.title}</Text>
                     </div>
                   )}
+
+                  {/* Related tweets (fetched in background after stream starts) */}
+                  {(relatedTweets?.length > 0 || currentDraft?.relatedTweets?.length > 0) && (
+                    <div style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: 'var(--color-primary-50)',
+                      border: '1px solid var(--color-primary-100)',
+                      borderRadius: '6px'
+                    }}>
+                      <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
+                        Related tweets
+                      </Text>
+                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                        {(relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []).slice(0, 5).map((t, i) => (
+                          <li key={i} style={{ marginBottom: '4px' }}>
+                            {typeof t === 'string' ? t : (t?.text || t?.content || JSON.stringify(t)).slice(0, 120)}
+                            {(typeof t !== 'string' && (t?.text?.length > 120 || t?.content?.length > 120)) ? '…' : ''}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   
                   {/* Enhanced Generation Toggle - Standalone Panel */}
                   {console.log('🔧 DEBUG: Rendering Enhanced Generation Toggle', { useEnhancedGeneration, selectedTopic: !!selectedTopic }) && null}
@@ -2275,6 +2307,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               setEditingContent('');
                               setSelectedTopic(null);
                               setCurrentDraft(null);
+                              setRelatedTweets([]);
                             }}
                           >
                             Start Over
@@ -3058,6 +3091,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     setEditingContent('');
                     setSelectedTopic(null);
                     setCurrentDraft(null);
+                    setRelatedTweets([]);
                   }}
                 >
                   Start Over
@@ -3130,6 +3164,29 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 }}>
                   <Text strong style={{ color: 'var(--color-success)' }}>Selected Topic: </Text>
                   <Text style={{ color: 'var(--color-success)' }}>{selectedTopic.title}</Text>
+                </div>
+              )}
+
+              {/* Related tweets (fetched in background after stream starts) */}
+              {(relatedTweets?.length > 0 || currentDraft?.relatedTweets?.length > 0) && (
+                <div style={{
+                  marginBottom: '16px',
+                  padding: '12px',
+                  backgroundColor: 'var(--color-primary-50)',
+                  border: '1px solid var(--color-primary-100)',
+                  borderRadius: '6px'
+                }}>
+                  <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
+                    Related tweets
+                  </Text>
+                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+                    {(relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []).slice(0, 5).map((t, i) => (
+                      <li key={i} style={{ marginBottom: '4px' }}>
+                        {typeof t === 'string' ? t : (t?.text || t?.content || JSON.stringify(t)).slice(0, 120)}
+                        {(typeof t !== 'string' && (t?.text?.length > 120 || t?.content?.length > 120)) ? '…' : ''}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
               
