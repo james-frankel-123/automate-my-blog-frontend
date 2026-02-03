@@ -3190,6 +3190,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   }}>
                     <HTMLPreview
                       content={editingContent || 'Enter your blog content...'}
+                      typographySettings={typography}
                       style={{
                         minHeight: '400px',
                         padding: '20px',
