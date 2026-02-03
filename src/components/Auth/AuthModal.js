@@ -11,6 +11,13 @@ const AuthModal = ({ open, onClose, defaultTab = 'login', context = null, onSucc
   const [activeTab, setActiveTab] = useState(defaultTab);
   const { trackPageView, trackClick } = useAnalytics();
 
+  // Update activeTab when defaultTab changes or modal opens (Fixes #95)
+  useEffect(() => {
+    if (open) {
+      setActiveTab(defaultTab);
+    }
+  }, [open, defaultTab]);
+
   // Track when auth modal is opened
   useEffect(() => {
     if (open) {
