@@ -707,7 +707,7 @@ const WebsiteAnalysisStepStandalone = ({
               borderRadius: isEditing ? '8px 0 0 8px' : '8px',
               borderRight: isEditing ? 'none' : undefined,
               fontSize: responsive.fontSize.text,
-              backgroundColor: hasAnalysisRestriction ? 'var(--color-background-container)' : '#ffffff',
+              backgroundColor: hasAnalysisRestriction ? 'var(--color-background-container)' : 'var(--color-background-elevated)',
               color: hasAnalysisRestriction ? 'var(--color-text-tertiary)' : undefined,
               textAlign: isEditing ? 'left' : 'center',
               transition: 'all 1s ease'
@@ -858,37 +858,37 @@ const WebsiteAnalysisStepStandalone = ({
           return {
             message: 'Your analysis is queued for processing...',
             icon: '⏳',
-            color: '#1890ff'
+            color: 'var(--color-primary)'
           };
         case 'processing':
           return {
             message: `Generating your narrative analysis${attempts > 1 ? ` (attempt ${attempts})` : ''}...`,
             icon: '🤖',
-            color: '#52c41a'
+            color: 'var(--color-success)'
           };
         case 'completed':
           return {
             message: 'Analysis complete!',
             icon: '✅',
-            color: '#52c41a'
+            color: 'var(--color-success)'
           };
         case 'failed':
           return {
             message: 'Analysis generation failed. Please try again.',
             icon: '❌',
-            color: '#ff4d4f'
+            color: 'var(--color-error)'
           };
         case 'timeout':
           return {
             message: 'Analysis is taking longer than expected. Please refresh to check status.',
             icon: '⏱️',
-            color: '#faad14'
+            color: 'var(--color-accent)'
           };
         default:
           return {
             message: 'Processing...',
             icon: '⏳',
-            color: '#1890ff'
+            color: 'var(--color-primary)'
           };
       }
     };

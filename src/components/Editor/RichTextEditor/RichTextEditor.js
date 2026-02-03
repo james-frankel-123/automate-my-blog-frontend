@@ -502,10 +502,10 @@ const RichTextEditor = ({
                       // Default styles
                       const defaultStyles = {
                         statistic: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '📊' },
-                        pullquote: { backgroundColor: '#f6ffed', borderColor: '#52c41a', color: '#389e0d', defaultIcon: '💬' },
+                        pullquote: { backgroundColor: 'var(--color-success-bg)', borderColor: 'var(--color-success)', color: 'var(--color-success-dark)', defaultIcon: '💬' },
                         takeaway: { backgroundColor: 'var(--color-accent-50)', borderColor: 'var(--color-accent)', color: 'var(--color-accent-700)', defaultIcon: '💡' },
                         process: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '🔄' },
-                        warning: { backgroundColor: '#fff1f0', borderColor: '#ff4d4f', color: '#cf1322', defaultIcon: '⚠️' },
+                        warning: { backgroundColor: 'var(--color-error-bg)', borderColor: 'var(--color-error)', color: 'var(--color-error)', defaultIcon: '⚠️' },
                         tip: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '💡' },
                         definition: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '📖' },
                         comparison: { backgroundColor: 'var(--color-primary-50)', borderColor: 'var(--color-primary)', color: 'var(--color-primary-700)', defaultIcon: '⚖️' },

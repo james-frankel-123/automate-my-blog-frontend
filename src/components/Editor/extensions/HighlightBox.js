@@ -109,9 +109,9 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       defaultIcon: '📊',
     },
     pullquote: {
-      backgroundColor: '#f6ffed',
-      borderColor: '#52c41a',
-      color: '#389e0d',
+      backgroundColor: 'var(--color-success-bg)',
+      borderColor: 'var(--color-success)',
+      color: 'var(--color-success-dark)',
       defaultIcon: '💬',
     },
     takeaway: {
@@ -127,9 +127,9 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
       defaultIcon: '🔄',
     },
     warning: {
-      backgroundColor: '#fff1f0',
-      borderColor: '#ff4d4f',
-      color: '#cf1322',
+      backgroundColor: 'var(--color-error-bg)',
+      borderColor: 'var(--color-error)',
+      color: 'var(--color-error)',
       defaultIcon: '⚠️',
     },
     tip: {
@@ -242,8 +242,8 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
             <button
               onClick={handleToggleFloat}
               style={{
-                background: '#fff',
-                border: '1px solid #ddd',
+                background: 'var(--color-background-elevated)',
+                border: '1px solid var(--color-border-base)',
                 borderRadius: '4px',
                 padding: '4px 8px',
                 cursor: 'pointer',
@@ -259,8 +259,8 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
           <button
             onClick={deleteNode}
             style={{
-              background: '#fff',
-              border: '1px solid #ddd',
+              background: 'var(--color-background-elevated)',
+              border: '1px solid var(--color-border-base)',
               borderRadius: '4px',
               padding: '4px 8px',
               cursor: 'pointer',
@@ -289,10 +289,10 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
             />
             {citation && (
               <div
-                style={{
-                  fontSize: '12px',
-                  marginTop: '8px',
-                  color: '#8c8c8c',
+              style={{
+                fontSize: '12px',
+                marginTop: '8px',
+                color: 'var(--color-text-tertiary)',
                   fontStyle: 'italic',
                 }}
                 dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(citation) }}

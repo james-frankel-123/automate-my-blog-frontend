@@ -65,7 +65,7 @@ const ProgressiveStickyHeader = ({
         top: '80px', // Position below existing headers
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
+        backgroundColor: 'var(--color-background-elevated)',
         borderBottom: '1px solid #f0f0f0',
         boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
         zIndex: 999,

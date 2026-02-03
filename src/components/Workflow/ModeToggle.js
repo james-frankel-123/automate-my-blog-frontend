@@ -171,8 +171,8 @@ export const WorkflowGuidance = ({
       className={className}
       style={{
         padding: '16px',
-        backgroundColor: '#f6ffed',
-        border: '1px solid #b7eb8f',
+        backgroundColor: 'var(--color-success-bg)',
+        border: '1px solid var(--color-success-border)',
         borderRadius: '6px',
         marginBottom: '16px',
         ...style
@@ -180,8 +180,8 @@ export const WorkflowGuidance = ({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
         <div style={{
-          backgroundColor: '#52c41a',
-          color: 'white',
+          backgroundColor: 'var(--color-success)',
+          color: '#ffffff',
           borderRadius: '12px',
           padding: '2px 8px',
           fontSize: '12px',
@@ -189,7 +189,7 @@ export const WorkflowGuidance = ({
         }}>
           Step {step} of {totalSteps}
         </div>
-        <Text strong style={{ color: '#389e0d' }}>{stepTitle}</Text>
+        <Text strong style={{ color: 'var(--color-success-dark)' }}>{stepTitle}</Text>
       </div>
       {stepDescription && (
         <Text style={{ color: 'var(--color-success)', fontSize: '14px' }}>

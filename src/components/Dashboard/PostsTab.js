@@ -84,22 +84,22 @@ const SEOAnalysisDisplay = ({ post }) => {
           format={percent => (
             <div>
               <div style={{ fontSize: '32px', fontWeight: 'bold' }}>{percent}</div>
-              <div style={{ fontSize: '14px', color: '#999' }}>out of 100</div>
+              <div style={{ fontSize: '14px', color: 'var(--color-text-tertiary)' }}>out of 100</div>
             </div>
           )}
         />
         {overallScore >= 95 && (
-          <div style={{ marginTop: '16px', color: '#52c41a', fontSize: '16px', fontWeight: '500' }}>
+          <div style={{ marginTop: '16px', color: 'var(--color-success)', fontSize: '16px', fontWeight: '500' }}>
             ✅ Excellent! This post meets our quality standards.
           </div>
         )}
         {overallScore >= 90 && overallScore < 95 && (
-          <div style={{ marginTop: '16px', color: '#1890ff', fontSize: '16px', fontWeight: '500' }}>
+          <div style={{ marginTop: '16px', color: 'var(--color-primary)', fontSize: '16px', fontWeight: '500' }}>
             ✓ Great! Just a few tweaks needed to reach 95+.
           </div>
         )}
         {overallScore < 90 && (
-          <div style={{ marginTop: '16px', color: '#fa8c16', fontSize: '16px', fontWeight: '500' }}>
+          <div style={{ marginTop: '16px', color: 'var(--color-accent)', fontSize: '16px', fontWeight: '500' }}>
             ⚠️ This post needs improvement to reach our 95+ target.
           </div>
         )}
@@ -119,7 +119,7 @@ const SEOAnalysisDisplay = ({ post }) => {
         >
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             {qualityPrediction.topStrengths.map((strength, index) => (
-              <li key={index} style={{ marginBottom: '8px', color: '#52c41a' }}>
+              <li key={index} style={{ marginBottom: '8px', color: 'var(--color-success)' }}>
                 <Text>{strength}</Text>
               </li>
             ))}
@@ -141,7 +141,7 @@ const SEOAnalysisDisplay = ({ post }) => {
         >
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
             {qualityPrediction.topImprovements.map((improvement, index) => (
-              <li key={index} style={{ marginBottom: '8px', color: '#fa8c16' }}>
+              <li key={index} style={{ marginBottom: '8px', color: 'var(--color-accent)' }}>
                 <Text>{improvement}</Text>
               </li>
             ))}
