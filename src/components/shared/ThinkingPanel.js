@@ -12,54 +12,59 @@ import { Progress } from 'antd';
 
 const panelStyles = {
   panel: {
-    marginBottom: '24px',
-    padding: '20px',
+    position: 'sticky',
+    top: 0,
+    zIndex: 10,
+    marginBottom: '12px',
+    padding: '10px 16px 12px',
     backgroundColor: 'var(--color-primary-50)',
-    borderRadius: '12px',
+    borderRadius: '8px',
     border: '1px solid var(--color-primary-100)',
     textAlign: 'left',
-    maxWidth: '420px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+    width: '100%',
+    maxWidth: '100%',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
   },
   workingLabel: {
-    marginBottom: '6px',
-    fontSize: '11px',
+    marginBottom: '2px',
+    fontSize: '10px',
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
     color: 'var(--color-text-secondary)',
     fontWeight: 600,
   },
   stepLine: {
-    marginBottom: '12px',
-    fontSize: '14px',
+    marginBottom: '6px',
+    fontSize: '13px',
     fontWeight: 600,
     color: 'var(--color-primary-700)',
-    lineHeight: 1.4,
+    lineHeight: 1.35,
   },
   eta: {
-    marginTop: '10px',
-    fontSize: '12px',
+    marginTop: '4px',
+    fontSize: '11px',
     color: 'var(--color-text-secondary)',
   },
   thoughtsSection: {
-    marginTop: '16px',
-    paddingTop: '14px',
+    marginTop: '10px',
+    paddingTop: '8px',
     borderTop: '1px solid var(--color-primary-100)',
-    fontSize: '13px',
+    fontSize: '12px',
     color: 'var(--color-text-secondary)',
   },
   thoughtsTitle: {
-    marginBottom: '8px',
+    marginBottom: '4px',
     fontWeight: 600,
+    fontSize: '12px',
     color: 'var(--color-text-primary)',
   },
   thoughtList: {
     margin: 0,
-    paddingLeft: '20px',
-    lineHeight: 1.6,
+    paddingLeft: '18px',
+    lineHeight: 1.45,
   },
   thoughtItem: {
-    marginBottom: '4px',
+    marginBottom: '2px',
   },
 };
 
@@ -113,6 +118,7 @@ function ThinkingPanel({
       <Progress
         percent={progress ?? 0}
         showInfo
+        size="small"
         strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
         trailColor="var(--color-primary-100)"
       />
