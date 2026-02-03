@@ -73,8 +73,12 @@ E2E is enforced by **branch protection**, not by a job inside `deploy.yml` (avoi
 
 1. **Settings → Branches** → Add or edit rule for `main`
 2. Enable **"Require status checks to pass before merging"**
-3. Add **"E2E Tests"** (the workflow name from `e2e-tests.yml`) and any other required checks (e.g. "Run Tests", "Verify Build")
-4. Save
+3. Add **only** these required checks:
+   - **Run Tests** (from deploy.yml)
+   - **Run E2E Tests** (from e2e-tests.yml or CI)
+   - **Verify Build** (from deploy.yml)
+4. **Do not** require **"Deploy to Vercel"** or **"Deploy Preview"** — they are skipped on PRs and on the merge queue, so requiring them will block the merge queue forever ("Some required checks haven't completed yet").
+5. Save
 
 If E2E tests fail:
 - ❌ The "E2E Tests" check will be red; PRs cannot merge until it passes
@@ -100,6 +104,19 @@ To manually trigger E2E tests:
 2. Select "E2E Tests" workflow
 3. Click "Run workflow"
 4. Select branch and click "Run workflow"
+
+## Merge queue
+
+When using **merge queue**, only require status checks that run on `merge_group`:
+
+- **Run Tests** ✓  
+- **Run E2E Tests** ✓  
+- **Verify Build** ✓  
+
+Do **not** require **Deploy to Vercel** or **Deploy Preview**. Those jobs are skipped in the merge queue (they run only on `push` to main and `pull_request`). If they are required, the merge queue will never complete because it waits for checks that never run.
+
+**Fix "Some required checks haven't completed yet":**  
+Repo **Settings → Branches** → rule for `main` → **Require status checks** → remove "Deploy to Vercel" and "Deploy Preview" from the list; keep only Run Tests, Run E2E Tests, Verify Build.
 
 ## Troubleshooting
 
