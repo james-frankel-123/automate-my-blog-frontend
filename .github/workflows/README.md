@@ -19,7 +19,7 @@ Standalone E2E test workflow that can be triggered independently or as part of C
 - Uploads test artifacts (reports, videos, screenshots)
 
 ### `deploy.yml`
-Deployment workflow that runs unit tests, build, and Vercel deploy. E2E is **not** run here; the standalone **E2E Tests** workflow runs once per push/PR. Require **"E2E Tests"** as a status check in branch protection so deployment only proceeds when E2E has passed.
+Deployment workflow that runs unit tests, build, and Vercel deploy. E2E is **not** run here; the standalone **E2E Tests** workflow runs once per push/PR. Require **"Run E2E Tests"** as a status check in branch protection so deployment only proceeds when E2E has passed.
 
 **Triggers:**
 - Push to main
@@ -73,11 +73,11 @@ E2E is enforced by **branch protection**, not by a job inside `deploy.yml` (avoi
 
 1. **Settings → Branches** → Add or edit rule for `main`
 2. Enable **"Require status checks to pass before merging"**
-3. Add **"E2E Tests"** (the workflow name from `e2e-tests.yml`) and any other required checks (e.g. "Run Tests", "Verify Build")
+3. Add **"Run E2E Tests"** (the job name from `e2e-tests.yml`) and any other required checks (e.g. "Run Tests", "Verify Build")
 4. Save
 
 If E2E tests fail:
-- ❌ The "E2E Tests" check will be red; PRs cannot merge until it passes
+- ❌ The "Run E2E Tests" check will be red; PRs cannot merge until it passes
 - ✅ Test artifacts are uploaded by the E2E Tests workflow for debugging
 - ✅ Deploy workflow still runs unit tests and build; merge/deploy is blocked until E2E passes
 
