@@ -32,6 +32,7 @@ on:
   # Run when a PR is in the merge queue so required E2E check can pass
   merge_group:
   workflow_dispatch: # Allow manual triggering
+  workflow_call: {} # Allow ci.yml to call this workflow
 
 jobs:
   e2e-tests:
