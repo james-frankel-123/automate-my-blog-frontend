@@ -125,12 +125,17 @@ class JobsAPI {
    * Connect to job progress stream (SSE).
    * @param {string} jobId
    * @param {Object} [handlers] - { onProgress?, onStepChange?, onComplete?, onFailed?, onConnected?, onScrapePhase?,
-   *   onAnalysisResult?, onAudiencesResult?, onPitchesResult?, onScenariosResult?, onStreamTimeout? }
+   *   onScrapeResult?, onAnalysisResult?, onAudienceComplete?, onAudiencesResult?, onPitchComplete?, onPitchesResult?,
+   *   onScenarioImageComplete?, onScenariosResult?, onStreamTimeout? }
    *   - onProgress(data) - progress-update: { progress, currentStep, phase?, detail?, estimatedTimeRemaining }
    *   - onScrapePhase(data) - scrape-phase: { phase, message, url? } (thoughts / step log)
+   *   - onScrapeResult(data) - scrape-result: { url, title, metaDescription, headings, scrapedAt } (page preview)
    *   - onAnalysisResult(data) - analysis-result: org summary, ctas, metadata (partial; no scenarios yet)
+   *   - onAudienceComplete(data) - audience-complete (per-item): { audience } (one scenario, no pitch/image)
    *   - onAudiencesResult(data) - audiences-result: { scenarios } (no pitch/imageUrl)
+   *   - onPitchComplete(data) - pitch-complete (per-item): { index, scenario } (includes pitch)
    *   - onPitchesResult(data) - pitches-result: { scenarios } (with pitch; no imageUrl)
+   *   - onScenarioImageComplete(data) - scenario-image-complete (per-item): { index, scenario } (includes imageUrl)
    *   - onScenariosResult(data) - scenarios-result: { scenarios } (with imageUrl)
    *   - onStreamTimeout(data) - stream-timeout: ~10 min warning
    *   - onComplete(data) - complete: data.result is full job result
@@ -192,17 +197,33 @@ class JobsAPI {
         const data = parseData(event);
         if (handlers.onScrapePhase) handlers.onScrapePhase(data);
       });
+      eventSource.addEventListener('scrape-result', (event) => {
+        const data = parseData(event);
+        if (handlers.onScrapeResult) handlers.onScrapeResult(data);
+      });
       eventSource.addEventListener('analysis-result', (event) => {
         const data = parseData(event);
         if (handlers.onAnalysisResult) handlers.onAnalysisResult(data);
+      });
+      eventSource.addEventListener('audience-complete', (event) => {
+        const data = parseData(event);
+        if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
       });
       eventSource.addEventListener('audiences-result', (event) => {
         const data = parseData(event);
         if (handlers.onAudiencesResult) handlers.onAudiencesResult(data);
       });
+      eventSource.addEventListener('pitch-complete', (event) => {
+        const data = parseData(event);
+        if (handlers.onPitchComplete) handlers.onPitchComplete(data);
+      });
       eventSource.addEventListener('pitches-result', (event) => {
         const data = parseData(event);
         if (handlers.onPitchesResult) handlers.onPitchesResult(data);
+      });
+      eventSource.addEventListener('scenario-image-complete', (event) => {
+        const data = parseData(event);
+        if (handlers.onScenarioImageComplete) handlers.onScenarioImageComplete(data);
       });
       eventSource.addEventListener('scenarios-result', (event) => {
         const data = parseData(event);
@@ -246,14 +267,26 @@ class JobsAPI {
             case 'scrape-phase':
               if (handlers.onScrapePhase) handlers.onScrapePhase(payloadData);
               break;
+            case 'scrape-result':
+              if (handlers.onScrapeResult) handlers.onScrapeResult(payloadData);
+              break;
             case 'analysis-result':
               if (handlers.onAnalysisResult) handlers.onAnalysisResult(payloadData);
+              break;
+            case 'audience-complete':
+              if (handlers.onAudienceComplete) handlers.onAudienceComplete(payloadData);
               break;
             case 'audiences-result':
               if (handlers.onAudiencesResult) handlers.onAudiencesResult(payloadData);
               break;
+            case 'pitch-complete':
+              if (handlers.onPitchComplete) handlers.onPitchComplete(payloadData);
+              break;
             case 'pitches-result':
               if (handlers.onPitchesResult) handlers.onPitchesResult(payloadData);
+              break;
+            case 'scenario-image-complete':
+              if (handlers.onScenarioImageComplete) handlers.onScenarioImageComplete(payloadData);
               break;
             case 'scenarios-result':
               if (handlers.onScenariosResult) handlers.onScenariosResult(payloadData);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, message, Collapse } from 'antd';
 import {
   GlobalOutlined,
@@ -100,12 +100,19 @@ const WebsiteAnalysisStepStandalone = ({
   const [analysisProgress, setAnalysisProgress] = useState(null);
   // Scrape-phase "thoughts" from job stream (phase, message, url?) for step-by-step log
   const [analysisThoughts, setAnalysisThoughts] = useState([]);
+  // Ref to latest analysis results for per-item stream updates (audience-complete, pitch-complete, scenario-image-complete)
+  const latestAnalysisRef = useRef(analysisResults);
 
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
   const currentScanningMessage = scanningMessage !== undefined ? scanningMessage : localScanningMessage;
   const { setHint } = useSystemHint();
-  
+
+  // Keep ref in sync with analysisResults so per-item callbacks read latest scenarios
+  useEffect(() => {
+    latestAnalysisRef.current = analysisResults;
+  }, [analysisResults]);
+
   // Auto-populate websiteUrl on component mount if user has organization website and no URL is set
   useEffect(() => {
     if (userOrganizationWebsite && !websiteUrl && !urlOverrideMode) {
@@ -401,9 +408,20 @@ const WebsiteAnalysisStepStandalone = ({
             setAnalysisThoughts(prev => [...prev, { phase: data.phase, message: data.message, url: data.url }]);
           }
         },
-        onAnalysisResult: (data) => {
+        onScrapeResult: (data) => {
           if (!data || !setAnalysisResults) return;
           setAnalysisResults({
+            scrapePreview: {
+              title: data.title,
+              metaDescription: data.metaDescription,
+              headings: data.headings || [],
+              scrapedAt: data.scrapedAt
+            }
+          });
+        },
+        onAnalysisResult: (data) => {
+          if (!data || !setAnalysisResults) return;
+          const next = {
             ...(data.analysis || {}),
             metadata: data.metadata,
             ctas: data.ctas,
@@ -413,20 +431,52 @@ const WebsiteAnalysisStepStandalone = ({
             url: data.url,
             scrapedAt: data.scrapedAt,
             scenarios: []
-          });
+          };
+          latestAnalysisRef.current = next;
+          setAnalysisResults(next);
+        },
+        onAudienceComplete: (data) => {
+          if (!data?.audience || !setAnalysisResults) return;
+          const prev = latestAnalysisRef.current?.scenarios ?? [];
+          const next = [...prev, data.audience];
+          latestAnalysisRef.current = { ...latestAnalysisRef.current, scenarios: next };
+          setAnalysisResults({ scenarios: next });
         },
         onAudiencesResult: (data) => {
           if (data?.scenarios && setAnalysisResults) {
+            latestAnalysisRef.current = { ...latestAnalysisRef.current, scenarios: data.scenarios };
             setAnalysisResults({ scenarios: data.scenarios });
+          }
+        },
+        onPitchComplete: (data) => {
+          if (data?.scenario == null || !setAnalysisResults || typeof data.index !== 'number') return;
+          const prev = latestAnalysisRef.current?.scenarios ?? [];
+          const next = [...prev];
+          if (data.index >= 0 && data.index < next.length) {
+            next[data.index] = { ...next[data.index], ...data.scenario };
+            latestAnalysisRef.current = { ...latestAnalysisRef.current, scenarios: next };
+            setAnalysisResults({ scenarios: next });
           }
         },
         onPitchesResult: (data) => {
           if (data?.scenarios && setAnalysisResults) {
+            latestAnalysisRef.current = { ...latestAnalysisRef.current, scenarios: data.scenarios };
             setAnalysisResults({ scenarios: data.scenarios });
+          }
+        },
+        onScenarioImageComplete: (data) => {
+          if (data?.scenario == null || !setAnalysisResults || typeof data.index !== 'number') return;
+          const prev = latestAnalysisRef.current?.scenarios ?? [];
+          const next = [...prev];
+          if (data.index >= 0 && data.index < next.length) {
+            next[data.index] = { ...next[data.index], ...data.scenario };
+            latestAnalysisRef.current = { ...latestAnalysisRef.current, scenarios: next };
+            setAnalysisResults({ scenarios: next });
           }
         },
         onScenariosResult: (data) => {
           if (data?.scenarios && setAnalysisResults) {
+            latestAnalysisRef.current = { ...latestAnalysisRef.current, scenarios: data.scenarios };
             setAnalysisResults({ scenarios: data.scenarios });
           }
         }
@@ -823,6 +873,11 @@ const WebsiteAnalysisStepStandalone = ({
           }}>
             {currentScanningMessage || systemVoice.analysis.defaultProgress}
           </Paragraph>
+          {analysisResults?.scrapePreview?.title && (
+            <Paragraph style={{ color: 'var(--color-text-secondary)', fontSize: responsive.fontSize.small, marginBottom: '16px' }}>
+              We found: <Text strong>{analysisResults.scrapePreview.title}</Text>
+            </Paragraph>
+          )}
           {analysisProgress && (
             <div style={{ margin: '0 auto 24px' }}>
               <ThinkingPanel
