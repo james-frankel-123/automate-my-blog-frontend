@@ -496,37 +496,34 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         return;
       }
 
-      // Mark this analysis as being processed to prevent duplicate generation
-      generatedStrategiesCache.add(generationKey);
-      sessionStorage.setItem(sessionStorageKey, 'true');
-      
+      // Only mark as "already generated" after we've actually set strategies (see end of each branch)
       setGeneratingStrategies(true);
       
       // PRIMARY: Use OpenAI-generated scenarios if available
       if (analysis.scenarios && analysis.scenarios.length > 0) {
         
-        // Transform OpenAI scenarios to component format
-        const openAIStrategies = analysis.scenarios.map((scenario, index) => ({
-          id: `openai-scenario-${index}`,
-          pitch: scenario.pitch || '', // OpenAI-generated agency pitch
-          imageUrl: scenario.imageUrl || null, // DALL-E generated image URL
-          targetSegment: scenario.targetSegment || {
-            demographics: scenario.customerProblem || '',
-            psychographics: '',
-            searchBehavior: ''
-          },
-          customerProblem: scenario.customerProblem || '',
-          customerLanguage: scenario.customerLanguage || scenario.seoKeywords || [],
-          conversionPath: scenario.conversionPath || '',
-          businessValue: scenario.businessValue || {
-            searchVolume: '',
-            conversionPotential: '',
-            priority: index + 1,
-            competition: ''
-          },
-          contentIdeas: scenario.contentIdeas || [],
-          seoKeywords: scenario.seoKeywords || []
-        }));
+        // Transform OpenAI scenarios to component format (accept camelCase or snake_case from backend)
+        const openAIStrategies = analysis.scenarios.map((scenario, index) => {
+          const seg = scenario.targetSegment || scenario.target_segment;
+          const demographics = seg?.demographics ?? scenario.customerProblem ?? scenario.customer_problem ?? '';
+          return {
+            id: `openai-scenario-${index}`,
+            pitch: scenario.pitch || '',
+            imageUrl: scenario.imageUrl ?? scenario.image_url ?? null,
+            targetSegment: seg ? { demographics: seg.demographics ?? demographics, psychographics: seg.psychographics ?? '', searchBehavior: seg.searchBehavior ?? seg.search_behavior ?? '' } : { demographics, psychographics: '', searchBehavior: '' },
+            customerProblem: scenario.customerProblem || scenario.customer_problem || '',
+            customerLanguage: scenario.customerLanguage || scenario.customer_language || scenario.seoKeywords || scenario.seo_keywords || [],
+            conversionPath: scenario.conversionPath || scenario.conversion_path || '',
+            businessValue: scenario.businessValue || scenario.business_value || {
+              searchVolume: '',
+              conversionPotential: '',
+              priority: index + 1,
+              competition: ''
+            },
+            contentIdeas: scenario.contentIdeas || scenario.content_ideas || [],
+            seoKeywords: scenario.seoKeywords || scenario.seo_keywords || []
+          };
+        });
 
         console.log('🎨 Transformed strategies with images:', openAIStrategies.map(s => ({
           id: s.id,
@@ -543,6 +540,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         setTimeout(async () => {
           console.log('✅ Setting strategies in state:', openAIStrategies.length);
           setStrategies(openAIStrategies);
+          generatedStrategiesCache.add(generationKey);
+          sessionStorage.setItem(sessionStorageKey, 'true');
           setGeneratingStrategies(false);
           console.log('✅ Strategies set in state');
 
@@ -676,6 +675,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
         setTimeout(async () => {
           setStrategies(fallbackStrategies);
+          generatedStrategiesCache.add(generationKey);
+          sessionStorage.setItem(sessionStorageKey, 'true');
           setGeneratingStrategies(false);
           
           // Save fallback strategies to database for persistence
