@@ -1012,7 +1012,8 @@ const DashboardLayout = ({
             return `${baseHeaderHeight}px`;
           })()
         }}>
-          {/* Floating Action Buttons - Fixed within content area */}
+          {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90) */}
+          {user && (
           <div style={{
             position: 'fixed',
             top: '29px',
@@ -1022,23 +1023,21 @@ const DashboardLayout = ({
             alignItems: 'center',
             gap: '12px'
           }}>
-            {/* Theme Toggle - Only visible for logged-in users */}
-            {user && (
-              <div style={{
-                background: 'var(--color-background-body)',
-                padding: 'var(--space-2)',
-                borderRadius: 'var(--radius-lg)',
-                boxShadow: 'var(--shadow-md)',
-                display: 'flex',
-                alignItems: 'center',
-                border: '2px solid var(--color-border-base)'
-              }}>
-                <ThemeToggle />
-              </div>
-            )}
+            {/* Theme Toggle */}
+            <div style={{
+              background: 'var(--color-background-body)',
+              padding: 'var(--space-2)',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--shadow-md)',
+              display: 'flex',
+              alignItems: 'center',
+              border: '2px solid var(--color-border-base)'
+            }}>
+              <ThemeToggle />
+            </div>
 
-            {/* Quota Counter - Only visible for logged-in users */}
-            {user && (
+            {/* Quota Counter */}
+            (
               <>
                 <div
                   onClick={() => {
@@ -1228,8 +1227,9 @@ const DashboardLayout = ({
                 )
               )}
               </>
-            )}
+            )
           </div>
+          )}
 
           <div style={{
             background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
