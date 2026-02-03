@@ -3,7 +3,7 @@
 **Date:** January 26, 2026  
 **Prepared by:** Sam Hill  
 **Status:** Ready for Review  
-**Last updated:** January 2026 (work completed since audit reflected below)
+**Last updated:** February 2026 (work completed since audit reflected below)
 
 ---
 
@@ -29,7 +29,7 @@ The following work addresses audit findings and the usability proposal (PR #47 /
 | **Progressive headers** | ✅ Done | Stacking headers with systemVoice labels (“We know your site”, “Audience locked in”, “Topic chosen”, “Content ready”). |
 | **Motion & transitions** | ✅ Done | Design tokens in `design-system.css` (`--transition-step`, `--transition-reveal`, `--stagger-delay`); staggered topic card reveal; step enter animations. |
 | **Tab structure & terminology** | ✅ Done | Dashboard → Audience Segments → Posts → Analytics → Settings; automation settings in Settings → Content Discovery; “Create New Post” standardized. |
-| **Job progress tracking** | ❌ Not done | Still outstanding; depends on backend job queue. |
+| **Job progress tracking** | ✅ Done | Job stream SSE (preferred) + polling fallback. Shared ThinkingPanel for analysis and content generation. Per-item streaming for website analysis and content partial results. See [STREAMING_STATUS_AND_THINKING_UX.md](learnings/STREAMING_STATUS_AND_THINKING_UX.md). |
 | **Analytics instrumentation** | 🔶 Largely done | Most core events are instrumented (auth, tab/page, payments, analysis, content, export). Remaining: `project_created`/`source_connected` (when Save Project calls API), `seo_strategy_selected` in AudienceSegmentsTab. See [ANALYTICS_INSTRUMENTATION_STATUS.md](ANALYTICS_INSTRUMENTATION_STATUS.md). |
 | **Recommendation board** | ❌ Not done | Still outstanding. |
 | **URL state / React Router** | ❌ Not done | Still outstanding. |

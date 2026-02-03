@@ -18,6 +18,12 @@ Short summary of the streaming + E2E cleanup work (PRs 101–105) for future con
 | 104  | Job stream – website analysis (and jobs) try stream first, fallback to poll status |
 | 105  | CI: remove duplicate E2E from deploy workflow; require "Run E2E Tests" in branch protection |
 
+## Recent additions (Feb 2026)
+
+- **Shared ThinkingPanel** – Slim, sticky "Working for you" panel for analysis and content generation (`src/components/shared/ThinkingPanel.js`).
+- **Job stream SSE** – Full event contract documented in `docs/backend-queue-system-specification.md`. Per-item events for website analysis and content partial results.
+- **Streaming status** – See `docs/learnings/STREAMING_STATUS_AND_THINKING_UX.md` for current state and "thinking GPT" goal.
+
 ## Where to look
 
 - **Stream fallbacks**: `src/services/api.js`, `src/services/workflowAPI.js`, `src/services/jobsAPI.js`

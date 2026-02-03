@@ -127,10 +127,52 @@ Unchanged from current behavior. When the worker returns `result.imageGeneration
 
 ---
 
-## 6. Frontend checklist
+## 6. Job stream (SSE) – optional, preferred over polling
+
+When available, the frontend prefers **Server-Sent Events (SSE)** over polling for real-time progress and partial results.
+
+### 6.1 Stream endpoint
+
+- **Method/URL:** `GET /api/v1/jobs/:jobId/stream`
+- **Auth:** Via query params (EventSource does not send headers):
+  - `?token=<Bearer>` for authenticated users
+  - `?sessionId=<sessionId>` for anonymous/session users
+
+### 6.2 SSE events
+
+| Event | Description | Payload |
+|-------|-------------|---------|
+| `connected` | Stream opened | `{}` |
+| `progress-update` | Progress tick | `{ progress, currentStep, phase?, detail?, estimatedTimeRemaining }` |
+| `step-change` | Step changed | Same as progress-update |
+| `scrape-phase` | Website analysis thought log | `{ phase, message, url? }` |
+| `scrape-result` | Single page scraped | `{ url, title, metaDescription, headings, scrapedAt }` |
+| `analysis-result` | Org summary, CTAs (partial) | Org metadata; no scenarios yet |
+| `audience-complete` | One audience scenario ready | `{ audience }` |
+| `audiences-result` | All audiences | `{ scenarios }` (no pitch/imageUrl) |
+| `pitch-complete` | One pitch ready | `{ index, scenario }` (includes pitch) |
+| `pitches-result` | All pitches | `{ scenarios }` (with pitch; no imageUrl) |
+| `scenario-image-complete` | One scenario image ready | `{ index, scenario }` (includes imageUrl) |
+| `scenarios-result` | All scenarios | `{ scenarios }` (with imageUrl) |
+| `context-result` | Content gen: context ready | `{ completenessScore?, availability? }` |
+| `blog-result` | Content gen: blog ready | `{ title, content, metaDescription?, tags?, ... }` |
+| `visuals-result` | Content gen: visuals ready | `{ visualContentSuggestions? }` |
+| `seo-result` | Content gen: SEO ready | `{ seoAnalysis? }` |
+| `stream-timeout` | ~10 min warning | `{}` |
+| `complete` | Job finished | `{ result }` (full job result) |
+| `failed` | Job failed | `{ error, errorCode? }` |
+
+### 6.3 Fallback
+
+If the stream endpoint returns 404 or the connection fails, the frontend falls back to polling `GET /api/v1/jobs/:jobId/status`.
+
+---
+
+## 7. Frontend checklist
 
 - [x] Replace direct `POST /api/v1/enhanced-blog-generation/generate` with `POST /api/v1/jobs/content-generation`
 - [x] Implement polling of `GET /api/v1/jobs/:jobId/status` with progress/step UI
+- [x] Prefer job stream SSE when available (`GET /api/v1/jobs/:jobId/stream`)
 - [x] On success, map `result.data` and `result.savedPost` to existing UI
 - [x] After success, if `result.imageGeneration.needsImageGeneration`, call `POST /api/images/generate-for-blog`
 - [x] Handle `failed` status: show `error`/`errorCode`, offer retry
@@ -140,4 +182,4 @@ Unchanged from current behavior. When the worker returns `result.imageGeneration
 
 ---
 
-*Document version: 2026-02-02. Backend branch: `frontend-worker-queue-handoff`.*
+*Document version: 2026-02-03. Backend branch: `frontend-worker-queue-handoff`.*
