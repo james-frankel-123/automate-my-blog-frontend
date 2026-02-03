@@ -799,13 +799,87 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         })
       };
 
-      const result = await contentAPI.generateContent(
-        topic, // selectedTopic
-        stepResults?.home?.websiteAnalysis || {}, // analysisData
-        tabMode.tabWorkflowData?.selectedCustomerStrategy, // selectedStrategy
-        stepResults?.home?.webSearchInsights || {}, // webSearchInsights
-        enhancementOptions // Enhanced generation options
-      );
+      // Issue #65: Try streaming first for standard (non-enhanced) blog generation
+      let result = null;
+      if (!shouldUseEnhancement) {
+        try {
+          const { connectionId } = await contentAPI.startBlogStream(
+            topic,
+            stepResults?.home?.websiteAnalysis || {},
+            tabMode.tabWorkflowData?.selectedCustomerStrategy,
+            stepResults?.home?.webSearchInsights || {},
+            enhancementOptions
+          );
+          setEditingContent('');
+          const streamDone = new Promise((resolve, reject) => {
+            api.connectToStream(connectionId, {
+              onChunk: (data) => {
+                const chunk = data?.content ?? data?.text ?? '';
+                if (chunk) setEditingContent((prev) => prev + chunk);
+              },
+              onComplete: (data) => {
+                const finalContent = data?.content ?? data?.blogPost?.content ?? '';
+                if (finalContent) setEditingContent(finalContent);
+                setContentGenerated(true);
+                resolve({ success: true, content: finalContent, blogPost: data?.blogPost });
+              },
+              onError: (errData) => {
+                reject(new Error(errData?.message || 'Stream error'));
+              }
+            });
+          });
+          result = await streamDone;
+          if (result?.success && (result.content !== undefined && result.content !== '')) {
+            // Save post after stream complete (same as non-streaming path below)
+            const initialPost = {
+              title: topic.title,
+              content: result.content,
+              status: 'draft',
+              topic_data: topic,
+              generation_metadata: {
+                strategy: contentStrategy,
+                generatedAt: new Date().toISOString(),
+                wordCount: (result.content || '').length
+              }
+            };
+            const saveResult = await api.createPost(initialPost);
+            if (saveResult.success && saveResult.post) {
+              setCurrentDraft({
+                id: saveResult.post.id,
+                title: topic.title,
+                content: result.content,
+                status: 'draft',
+                createdAt: saveResult.post.created_at ?? new Date().toISOString(),
+                topic: topic,
+                blogPost: result.blogPost
+              });
+              setLastSavedContent(result.content);
+              setLastSaved(new Date());
+              setIsAutosaving(false);
+              setAutosaveError(null);
+              setPosts(prevPosts => [saveResult.post, ...prevPosts]);
+              loadPosts();
+              if (onQuotaUpdate) onQuotaUpdate();
+              message.success('Blog content generated and saved!');
+            }
+            setGeneratingContent(false);
+            return;
+          }
+        } catch (streamErr) {
+          console.warn('Blog stream not available, falling back to standard generation:', streamErr?.message);
+          result = null;
+        }
+      }
+
+      if (result === null) {
+        result = await contentAPI.generateContent(
+          topic, // selectedTopic
+          stepResults?.home?.websiteAnalysis || {}, // analysisData
+          tabMode.tabWorkflowData?.selectedCustomerStrategy, // selectedStrategy
+          stepResults?.home?.webSearchInsights || {}, // webSearchInsights
+          enhancementOptions // Enhanced generation options
+        );
+      }
       
       if (result.success) {
         setEditingContent(result.content);
