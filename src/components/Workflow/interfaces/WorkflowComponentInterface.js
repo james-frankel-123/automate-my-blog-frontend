@@ -409,9 +409,11 @@ export const withStepValidation = (WrappedComponent, stepNumber) => {
   };
 };
 
-export default {
+const WorkflowComponentInterface = {
   StepComponentProps,
   StepComponentRequirements,
   ComponentHelpers,
   withStepValidation
 };
+
+export default WorkflowComponentInterface;

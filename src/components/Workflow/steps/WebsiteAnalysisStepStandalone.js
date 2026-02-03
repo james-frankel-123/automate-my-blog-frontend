@@ -3,12 +3,6 @@ import { Card, Button, Row, Col, Typography, Input, Form, Space, Tag, Spin, mess
 import {
   GlobalOutlined,
   ScanOutlined,
-  SearchOutlined,
-  DatabaseOutlined,
-  SettingOutlined,
-  LoginOutlined,
-  UserAddOutlined,
-  CheckCircleOutlined,
   LinkOutlined
 } from '@ant-design/icons';
 import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
@@ -20,7 +14,6 @@ import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 
 const { Title, Text, Paragraph } = Typography;
-const { Panel } = Collapse;
 
 /**
  * Standalone Website Analysis Step Component
@@ -77,8 +70,7 @@ const WebsiteAnalysisStepStandalone = ({
   // =============================================================================
   
   const responsive = ComponentHelpers.getResponsiveStyles();
-  const defaultColors = getDefaultColors();
-  
+
   // URL prepopulation logic for logged-in users
   const userOrganizationWebsite = user?.organizationWebsite;
   const [urlOverrideMode, setUrlOverrideMode] = useState(false);
@@ -123,6 +115,7 @@ const WebsiteAnalysisStepStandalone = ({
     if (autoAnalyze && websiteUrl && !analysisCompleted && !loading) {
       handleWebsiteSubmit();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run only when mount/url/state allow; handleWebsiteSubmit identity is not needed
   }, [autoAnalyze, websiteUrl, analysisCompleted, loading]);
 
   // Trigger success highlight when analysis result appears
@@ -198,6 +191,7 @@ const WebsiteAnalysisStepStandalone = ({
     }, 1000); // Poll every second
 
     return () => clearInterval(pollInterval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- poll keyed by narrative flags only; adding analysisResults/setAnalysisResults would restart poll on every update
   }, [analysisResults?.narrativeGenerating, analysisResults?.organizationId]);
 
   // Handle delayed reveal animation

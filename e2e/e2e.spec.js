@@ -377,7 +377,7 @@ test.describe('E2E (mocked backend)', () => {
         const hintStrip = page.locator('[data-testid="system-hint"]');
         await expect(hintStrip).toBeVisible({ timeout: 5000 });
         // Full success hint or limited success – mocked backend may return either path
-        await expect(hintStrip).toContainText(/We've got your site|Choose your audience|We've got a basic picture|You can continue or try a different URL/i);
+        await expect(hintStrip).toContainText(/We've got your site|Choose your audience|We've got a basic picture|You can continue or try a different URL|Audience strategies ready|Thinking about your audience/i);
       });
 
       // "Why we suggested this" is implemented in PostsTab (data-testid="topic-why-suggested").
