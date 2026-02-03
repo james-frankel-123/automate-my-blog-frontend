@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse, Space } from 'antd';
-import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -1028,19 +1028,20 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           <div style={{ marginBottom: '16px' }}>
 
             {/* Audience Image */}
-            {strategy.imageUrl && (
-              <div style={{
-                marginBottom: '12px',
-                width: '60%',
-                aspectRatio: '1 / 1',
-                backgroundColor: 'var(--color-background-alt)',
-                borderRadius: 'var(--radius-md)',
-                overflow: 'hidden',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                margin: '0 auto 12px auto'
-              }}>
+            <div style={{
+              marginBottom: '12px',
+              width: '60%',
+              aspectRatio: '1 / 1',
+              backgroundColor: 'var(--color-background-alt)',
+              borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              margin: '0 auto 12px auto',
+              position: 'relative'
+            }}>
+              {strategy.imageUrl ? (
                 <img
                   src={strategy.imageUrl}
                   alt={strategy.targetSegment?.demographics || 'Audience'}
@@ -1051,16 +1052,32 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   }}
                   onError={(e) => {
                     console.error('Image failed to load:', strategy.imageUrl);
-                    // Fallback if image fails to load
                     e.target.style.display = 'none';
+                    const placeholder = e.target.nextSibling;
+                    if (placeholder) placeholder.style.display = 'flex';
                   }}
                   onLoad={() => {
                     console.log('Image loaded successfully:', strategy.imageUrl);
                   }}
                 />
+              ) : null}
+              {/* Placeholder when no image or image fails to load */}
+              <div style={{
+                display: strategy.imageUrl ? 'none' : 'flex',
+                width: '100%',
+                height: '100%',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                backgroundColor: 'var(--color-primary-light)',
+                color: 'var(--color-primary)'
+              }}>
+                <TeamOutlined style={{ fontSize: '48px', marginBottom: '8px' }} />
+                <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+                  Audience
+                </Text>
               </div>
-            )}
-            {!strategy.imageUrl && console.log('No imageUrl for strategy:', strategy.id)}
+            </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
               <div style={{ flex: 1 }}>
