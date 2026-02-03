@@ -483,6 +483,37 @@ export const contentAPI = {
         error: error.message
       };
     }
+  },
+
+  /**
+   * Start blog post generation stream (Issue #65). Use for standard (non-enhanced) path only.
+   * Returns connectionId; caller should connect via autoBlogAPI.connectToStream(connectionId, handlers).
+   * @param {Object} selectedTopic - The chosen topic data
+   * @param {Object} analysisData - Website analysis results
+   * @param {Object} selectedStrategy - Customer strategy (optional)
+   * @param {Object} webSearchInsights - Research insights
+   * @param {Object} enhancementOptions - Must include prefetchedTweets or tweets will be fetched
+   * @returns {Promise<{ connectionId: string }>} Stream connection ID
+   */
+  async startBlogStream(selectedTopic, analysisData, selectedStrategy = null, webSearchInsights = {}, enhancementOptions = {}) {
+    let tweets = [];
+    if (enhancementOptions.prefetchedTweets !== undefined) {
+      tweets = enhancementOptions.prefetchedTweets || [];
+    } else {
+      const tweetSearchResult = await autoBlogAPI.searchTweetsForTopic(selectedTopic, analysisData, 3);
+      tweets = tweetSearchResult.tweets || [];
+    }
+    const contextPrompt = selectedStrategy
+      ? `Focus on ${selectedStrategy.customerProblem}. Target customers who search for: ${selectedStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}`
+      : `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
+
+    const { connectionId } = await autoBlogAPI.generateBlogStream({
+      topic: selectedTopic,
+      businessInfo: analysisData,
+      additionalInstructions: contextPrompt,
+      tweets: tweets.length ? tweets : undefined
+    });
+    return { connectionId };
   }
 };
 
