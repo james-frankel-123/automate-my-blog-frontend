@@ -228,6 +228,39 @@ describe('AuthContext', () => {
       });
     });
 
+    it('clears user-specific localStorage and sessionStorage on logout', async () => {
+      localStorage.setItem('accessToken', 'token');
+      localStorage.setItem('otherKey', 'value');
+      sessionStorage.setItem('sessionKey', 'sessionValue');
+
+      autoBlogAPI.login.mockResolvedValueOnce({
+        success: true,
+        user: createMockUser(),
+      });
+      autoBlogAPI.logout.mockResolvedValueOnce({ success: true });
+
+      renderWithAuthProvider(<TestAuthConsumer />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading-status')).toHaveTextContent('Ready');
+      });
+
+      fireEvent.click(screen.getByTestId('login-btn'));
+      await waitFor(() => {
+        expect(screen.getByTestId('user-status')).toHaveTextContent(/Logged in/);
+      });
+
+      fireEvent.click(screen.getByTestId('logout-btn'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
+      });
+
+      expect(localStorage.getItem('accessToken')).toBeFalsy();
+      expect(localStorage.getItem('otherKey')).toBeFalsy();
+      expect(sessionStorage.getItem('sessionKey')).toBeFalsy();
+    });
+
     it('clears state even if API call fails', async () => {
       const mockUser = createMockUser();
       
