@@ -3704,7 +3704,7 @@ Please provide analysis in this JSON format:
 
   /**
    * Start blog post generation stream. Connect with connectToStream(connectionId, handlers).
-   * @param {Object} payload - { topic, businessInfo, additionalInstructions?, tweets? }
+   * @param {Object} payload - { topic, businessInfo, organizationId, additionalInstructions?, tweets? }
    * @returns {Promise<{ connectionId: string, streamUrl?: string }>}
    */
   async generateBlogStream(payload) {
@@ -3712,7 +3712,8 @@ Please provide analysis in this JSON format:
       method: 'POST',
       body: JSON.stringify({
         topic: payload.topic,
-        businessInfo: payload.businessInfo,
+        businessInfo: payload.businessInfo ?? {},
+        organizationId: payload.organizationId,
         additionalInstructions: payload.additionalInstructions || '',
         ...(payload.tweets?.length ? { tweets: payload.tweets } : {})
       })
