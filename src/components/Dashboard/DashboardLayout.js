@@ -1012,11 +1012,8 @@ const DashboardLayout = ({
               const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
               return `${baseHeaderHeight}px`;
             })(),
-            // So ThinkingPanel can stick below the login/signup bar when present
-            '--thinking-panel-sticky-top': (() => {
-              const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
-              return `${baseHeaderHeight}px`;
-            })(),
+            // So ThinkingPanel sticks above mobile bottom nav when present
+            '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
           }}
         >
           {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90) */}
