@@ -838,20 +838,6 @@ const WebsiteAnalysisStepStandalone = ({
     // Show narrative as primary display if available
     const hasNarrative = analysis.narrative && analysis.narrative.trim().length > 0;
 
-    console.log('🎨 [FRONTEND NARRATIVE] Rendering analysis:', {
-      hasAnalysis: !!analysis,
-      hasNarrativeField: 'narrative' in analysis,
-      narrativeValue: analysis.narrative,
-      narrativeType: typeof analysis.narrative,
-      narrativeLength: analysis.narrative?.length || 0,
-      hasNarrative: hasNarrative,
-      hasConfidence: !!analysis.narrativeConfidence,
-      confidence: analysis.narrativeConfidence,
-      hasKeyInsights: !!analysis.keyInsights,
-      keyInsightsCount: analysis.keyInsights?.length || 0,
-      allAnalysisKeys: Object.keys(analysis)
-    });
-
     // Helper function to get status message
     const getStatusMessage = (status, attempts) => {
       switch (status) {
