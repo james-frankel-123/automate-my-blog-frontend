@@ -646,22 +646,27 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         return;
       }
 
-      // Run topic generation, credits fetch, and CTAs fetch in parallel for faster UX
-      const topicsPromise = topicAPI.generateTrendingTopics(
-        analysisData,
-        selectedStrategy,
-        stepResults?.home?.webSearchInsights || {}
-      );
+      // Clear existing topics so streaming can show incremental results
+      setAvailableTopics([]);
+
       const creditsPromise = user ? api.getUserCredits().catch(() => null) : Promise.resolve(null);
       const ctasPromise = organizationId
         ? api.getOrganizationCTAs(organizationId).catch(() => null)
         : Promise.resolve(null);
 
-      const [result, credits, ctasResponse] = await Promise.all([
-        topicsPromise,
-        creditsPromise,
-        ctasPromise
-      ]);
+      // Try topic stream first; onTopicComplete updates UI as each topic arrives
+      const result = await topicAPI.generateTrendingTopics(
+        analysisData,
+        selectedStrategy,
+        stepResults?.home?.webSearchInsights || {},
+        {
+          onTopicComplete: (topic) => {
+            setAvailableTopics((prev) => [...prev, topic]);
+          },
+        }
+      );
+
+      const [credits, ctasResponse] = await Promise.all([creditsPromise, ctasPromise]);
 
       if (credits) setUserCredits(credits);
       if (ctasResponse) {
@@ -2763,8 +2768,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           </div>
         )}
 
-        {/* ENHANCED CONTENT EDITING SECTION - Available in both modes when content is generated */}
-        {contentGenerated && (
+        {/* ENHANCED CONTENT EDITING SECTION - When content is generated, or during stream so user sees typing effect */}
+        {(contentGenerated || (generatingContent && selectedTopic && editingContent)) && (
           <div style={{ marginBottom: '24px' }}>
             {selectedTopic && (
               <div style={{

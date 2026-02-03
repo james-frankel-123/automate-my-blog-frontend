@@ -251,89 +251,128 @@ export const analysisAPI = {
  */
 export const topicAPI = {
   /**
-   * Generate trending topics for business
+   * Generate trending topics for business. Tries streaming first; falls back to one-shot API.
    * @param {Object} analysisData - Website analysis results
    * @param {Object} selectedStrategy - Customer strategy (optional)
    * @param {Object} webSearchInsights - Research insights
+   * @param {{ onTopicComplete?: (topic: Object) => void }} options - Optional; onTopicComplete called for each topic as it streams
    * @returns {Promise<Object>} Generated topics
    */
-  async generateTrendingTopics(analysisData, selectedStrategy = null, webSearchInsights = {}) {
+  async generateTrendingTopics(analysisData, selectedStrategy = null, webSearchInsights = {}, options = {}) {
+    const audienceLabel = analysisData.decisionMakers || analysisData.targetAudience || 'General Audience';
+    const targetAudience = selectedStrategy
+      ? `${audienceLabel} struggling with: ${selectedStrategy.customerProblem}`
+      : audienceLabel;
+
+    const contentFocus = selectedStrategy
+      ? `Content addressing: ${selectedStrategy.customerProblem}. Target keywords: ${selectedStrategy.seoKeywords?.join(', ') || 'relevant terms'}`
+      : (analysisData.contentFocus || 'Content');
+
+    const businessType = analysisData.businessType || analysisData.businessName || 'Business';
+
+    console.log('Generating topics for:', targetAudience);
+    console.log('Content focus:', contentFocus);
+
+    const mapTopic = (topic, index) => ({
+      ...topic,
+      scenario: selectedStrategy || (analysisData.scenarios && analysisData.scenarios[index] ? analysisData.scenarios[index] : null),
+      isLoading: false,
+      isContentLoading: false,
+      isImageLoading: false
+    });
+
+    const maxTopics = 2;
+
     try {
-      // Use selected strategy context or fallback to general analysis (accept various API shapes)
-      const audienceLabel = analysisData.decisionMakers || analysisData.targetAudience || 'General Audience';
-      const targetAudience = selectedStrategy
-        ? `${audienceLabel} struggling with: ${selectedStrategy.customerProblem}`
-        : audienceLabel;
+      // Try stream first (same pattern as blog/audience)
+      try {
+        const { connectionId } = await autoBlogAPI.generateTopicsStream({
+          businessType,
+          targetAudience,
+          contentFocus: contentFocus || 'Content',
+        });
 
-      const contentFocus = selectedStrategy
-        ? `Content addressing: ${selectedStrategy.customerProblem}. Target keywords: ${selectedStrategy.seoKeywords?.join(', ') || 'relevant terms'}`
-        : (analysisData.contentFocus || 'Content');
+        const accumulated = [];
+        const streamResult = await new Promise((resolve, reject) => {
+          autoBlogAPI.connectToStream(connectionId, {
+            onTopicComplete: (data) => {
+              const raw = data.topic != null ? data.topic : data;
+              if (accumulated.length >= maxTopics) return;
+              const mapped = mapTopic(raw, accumulated.length);
+              accumulated.push(mapped);
+              if (options.onTopicComplete) options.onTopicComplete(mapped);
+            },
+            onComplete: (data) => {
+              const list = data?.topics?.length ? data.topics : accumulated;
+              resolve(list.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
+            },
+            onError: () => {
+              reject(new Error('Topic stream failed'));
+            },
+          });
+        });
 
-      console.log('Generating topics for:', targetAudience);
-      console.log('Content focus:', contentFocus);
+        const finalTopics = Array.isArray(streamResult) ? streamResult : accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i));
+        if (finalTopics.length > 0) {
+          return {
+            success: true,
+            topics: finalTopics,
+            message: `Generated ${finalTopics.length} targeted content ideas!`,
+          };
+        }
+      } catch (streamErr) {
+        console.warn('Topic stream not available, falling back to one-shot:', streamErr?.message);
+      }
 
-      // Call real backend API (accept various analysis shapes: businessType, businessName, etc.)
-      const businessType = analysisData.businessType || analysisData.businessName || 'Business';
+      // Fallback: one-shot API
       const topics = await autoBlogAPI.getTrendingTopics(businessType, targetAudience, contentFocus || 'Content');
-      
-      if (topics && topics.length > 0) {
-        // Ensure we only use first 2 topics and map them with strategy data
-        const limitedTopics = topics.slice(0, 2);
-        
-        // Display final topics immediately without artificial delays
-        const finalTopics = limitedTopics.map((topic, index) => ({
-          ...topic,
-          scenario: selectedStrategy || (analysisData.scenarios && analysisData.scenarios[index] ? analysisData.scenarios[index] : null),
-          isLoading: false,
-          isContentLoading: false,
-          isImageLoading: false
-        }));
 
+      if (topics && topics.length > 0) {
+        const limitedTopics = topics.slice(0, maxTopics);
+        const finalTopics = limitedTopics.map((topic, index) => mapTopic(topic, index));
         return {
           success: true,
           topics: finalTopics,
-          message: `Generated ${finalTopics.length} targeted content ideas!`
-        };
-      } else {
-        return {
-          success: false,
-          error: 'No trending topics generated by AI',
-          topics: []
+          message: `Generated ${finalTopics.length} targeted content ideas!`,
         };
       }
+      return {
+        success: false,
+        error: 'No trending topics generated by AI',
+        topics: [],
+      };
     } catch (error) {
       console.error('Topic generation error:', error);
-      
-      // Fallback: create topics from strategy content ideas if available
+
       if (analysisData.contentIdeas && analysisData.contentIdeas.length > 0) {
         const fallbackBizType = analysisData.businessType || analysisData.businessName || 'Business';
-        const fallbackTopics = analysisData.contentIdeas.slice(0, 2).map((idea, index) => ({
-          id: index + 1,
-          title: idea,
-          subheader: `Content idea based on ${fallbackBizType} analysis`,
-          category: fallbackBizType,
-          image: '',
-          scenario: selectedStrategy || (analysisData.scenarios && analysisData.scenarios[index] ? analysisData.scenarios[index] : null),
-          isLoading: false,
-          isContentLoading: false,
-          isImageLoading: false
-        }));
-        
+        const fallbackTopics = analysisData.contentIdeas.slice(0, 2).map((idea, index) =>
+          mapTopic(
+            {
+              id: index + 1,
+              title: idea,
+              subheader: `Content idea based on ${fallbackBizType} analysis`,
+              category: fallbackBizType,
+              image: '',
+            },
+            index
+          )
+        );
         return {
           success: true,
           topics: fallbackTopics,
           isFallback: true,
-          message: 'Using fallback content ideas from website analysis.'
+          message: 'Using fallback content ideas from website analysis.',
         };
       }
 
       return {
         success: false,
         error: error.message,
-        topics: []
+        topics: [],
       };
     }
-  }
+  },
 };
 
 /**
