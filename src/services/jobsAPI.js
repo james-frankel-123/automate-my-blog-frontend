@@ -103,7 +103,7 @@ class JobsAPI {
   }
 
   /**
-   * Build SSE stream URL for job (Issue #65). EventSource does not send headers; token in query.
+   * Build SSE stream URL for job. EventSource does not send headers; token in query.
    * @param {string} jobId
    * @returns {string}
    */
@@ -122,7 +122,7 @@ class JobsAPI {
   }
 
   /**
-   * Connect to job progress stream (SSE). Issue #65 Phase 5.
+   * Connect to job progress stream (SSE).
    * @param {string} jobId
    * @param {Object} [handlers] - { onProgress?(data), onStepChange?(data), onComplete?(data) }
    * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error? }

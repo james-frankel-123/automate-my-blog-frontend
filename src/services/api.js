@@ -110,13 +110,6 @@ class AutoBlogAPI {
           throw new Error('Invalid JSON response from server');
         }
         
-        // Add debugging for adoption endpoint specifically
-        if (normalizedEndpoint.includes('adopt-session')) {
-          console.log('🔍 DEBUG: makeRequest JSON response for adopt-session:', jsonResponse);
-          console.log('🔍 DEBUG: JSON response type:', typeof jsonResponse);
-          console.log('🔍 DEBUG: JSON response keys:', jsonResponse ? Object.keys(jsonResponse) : 'No keys');
-        }
-        
         return jsonResponse;
       } else {
         // For file downloads, return the response directly
@@ -2644,33 +2637,12 @@ Please provide analysis in this JSON format:
    */
   async adoptSession(sessionId) {
     try {
-      console.log('🔍 DEBUG: Starting session adoption for sessionId:', sessionId);
-      
       const response = await this.makeRequest('/api/v1/users/adopt-session', {
         method: 'POST',
         body: JSON.stringify({ session_id: sessionId }),
       });
-      
-      console.log('🔍 DEBUG: Raw adoption response from backend:', response);
-      console.log('🔍 DEBUG: Response type:', typeof response);
-      console.log('🔍 DEBUG: Response keys:', response ? Object.keys(response) : 'No keys - response is null/undefined');
-      console.log('🔍 DEBUG: Response.adopted:', response?.adopted);
-      console.log('🔍 DEBUG: Response.transferred:', response?.transferred);
-      console.log('🔍 DEBUG: Response.success:', response?.success);
-      console.log('🔍 DEBUG: Response.data:', response?.data);
-      
-      // The backend returns 'adopted' not 'transferred' - fix the property access
-      const adoptedCount = response?.adopted || response?.transferred;
-      console.log('🔄 Session adopted:', adoptedCount);
-      
       return response;
     } catch (error) {
-      console.error('🔍 DEBUG: Session adoption error:', error);
-      console.error('🔍 DEBUG: Error details:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
       throw new Error(`Failed to adopt session: ${error.message}`);
     }
   }
@@ -3563,9 +3535,7 @@ Please provide analysis in this JSON format:
     }
   }
 
-  // =============================================================================
-  // LLM STREAMING (SSE) - Issue #65
-  // =============================================================================
+  // Streaming (SSE): blog, audience, bundle streams; connect via connectToStream(connectionId, handlers)
 
   /**
    * Build SSE stream URL. EventSource does not send Authorization header;

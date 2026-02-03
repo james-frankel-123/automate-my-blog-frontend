@@ -457,7 +457,8 @@ test.describe('E2E (mocked backend)', () => {
       });
     });
 
-    // PR 102 – Audience streaming: when /api/v1/audiences/generate-stream returns 404, app falls back to template strategies.
+    // Streaming fallbacks: mocks return 404 for stream endpoints; these tests assert stream or fallback paths.
+    // PR 102 – Audience streaming
     test.describe('PR 102 – Audience streaming', () => {
       test('after analysis, audience strategy cards appear (stream or fallback)', async ({ page }) => {
         test.setTimeout(60000);
