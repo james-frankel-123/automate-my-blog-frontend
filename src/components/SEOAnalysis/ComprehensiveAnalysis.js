@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Alert, Spin, Button, Progress, Collapse, Tag, Typography, Space, Divider } from 'antd';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, Alert, Spin, Button, Progress, Collapse, Tag, Typography, Space } from 'antd';
 import { 
   TrophyOutlined, 
   BulbOutlined, 
   RocketOutlined, 
   CheckCircleOutlined,
-  ExclamationCircleOutlined,
   LoadingOutlined,
   ReloadOutlined,
   HistoryOutlined
@@ -134,7 +133,7 @@ const ComprehensiveAnalysis = ({
   };
 
   // Run comprehensive analysis
-  const runAnalysis = async () => {
+  const runAnalysis = useCallback(async () => {
     if (!content || content.trim().length < 200) {
       setError('Content must be at least 200 characters long for meaningful analysis');
       return;
@@ -172,7 +171,7 @@ const ComprehensiveAnalysis = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [content, context, postId, onAnalysisComplete]);
 
   // Auto-run analysis when content changes (debounced)
   useEffect(() => {
@@ -183,7 +182,7 @@ const ComprehensiveAnalysis = ({
 
       return () => clearTimeout(timer);
     }
-  }, [content, context]);
+  }, [content, context, runAnalysis]);
 
   // Calculate average score for sections
   const calculateSectionScore = (sectionData) => {

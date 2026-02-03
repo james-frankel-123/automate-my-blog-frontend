@@ -5,8 +5,7 @@ import {
   PlayCircleOutlined, 
   ArrowLeftOutlined, 
   ArrowRightOutlined,
-  SettingOutlined,
-  EditOutlined
+  SettingOutlined
 } from '@ant-design/icons';
 
 const { Text } = Typography;

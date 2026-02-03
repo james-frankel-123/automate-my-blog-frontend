@@ -10,11 +10,7 @@ import {
   Badge,
   message
 } from 'antd';
-import { 
-  PictureOutlined, 
-  BarChartOutlined,
-  DollarOutlined
-} from '@ant-design/icons';
+import { PictureOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -66,46 +62,6 @@ const VisualContentSuggestions = ({
     }
   };
 
-
-  const getContentTypeIcon = (type) => {
-    switch (type) {
-      case 'hero_image':
-        return <PictureOutlined style={{ color: 'var(--color-success)' }} />;
-      case 'infographic':
-        return <BarChartOutlined style={{ color: 'var(--color-primary)' }} />;
-      case 'chart':
-        return <BarChartOutlined style={{ color: 'var(--color-primary)' }} />;
-      case 'diagram':
-        return <PictureOutlined style={{ color: 'var(--color-warning)' }} />;
-      default:
-        return <PictureOutlined style={{ color: 'var(--color-text-secondary)' }} />;
-    }
-  };
-
-  const getServiceBadge = (service, cost) => {
-    const serviceColors = {
-      'stable_diffusion': { color: 'green', name: 'Replicate' },
-      'quickchart': { color: 'blue', name: 'QuickChart' },
-      'dalle': { color: 'purple', name: 'DALL-E' },
-      'canva': { color: 'orange', name: 'Canva' }
-    };
-
-    const config = serviceColors[service] || { color: 'default', name: service };
-    
-    return (
-      <Space>
-        <Badge color={config.color} text={config.name} />
-        {cost === 0 ? (
-          <Tag color="green" size="small">FREE</Tag>
-        ) : (
-          <Tag size="small">
-            <DollarOutlined style={{ fontSize: 10 }} />
-            {cost.toFixed(3)}
-          </Tag>
-        )}
-      </Space>
-    );
-  };
 
   return (
     <>

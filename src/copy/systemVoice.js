@@ -2,6 +2,7 @@
  * System voice – one consistent voice across the app
  * For users who are not marketers: builders, small businesses, solopreneurs.
  * Plain language, no buzzwords or acronyms. Helpful, confident, a bit warm.
+ * UX goal: feel like a live agent working for you, thinking at every step and surfacing those thoughts.
  *
  * See: docs/GITHUB_ISSUES_FROM_USABILITY_PROPOSAL.md (usability proposal, PR #47).
  */
@@ -79,9 +80,11 @@ export const systemVoice = {
       "Shaping conversion angles…",
       "Adding audience visuals…",
     ],
-    defaultProgress: "Reading your site and building your profile. This usually takes 30–60 seconds.",
+    defaultProgress: "Reading your site and building your profile. I'll have this ready in about a minute.",
     loadingTitle: "Reading your site…",
+    progressPreamble: "Right now:",
     progressLabel: "What we're doing:",
+    workingForYou: "Working for you",
     // Toasts
     success: "We've got the full picture. Pick your audience next.",
     successLimited: "We've got a basic picture. You can continue or try a different URL.",
@@ -94,8 +97,9 @@ export const systemVoice = {
 
   // ─── Audience strategies (AudienceSegmentsTab) ───
   audience: {
-    generatingStrategies: "Building audience strategies…",
-    generatingStrategiesWithTime: "Using your site to create targeted customer strategies. This usually takes a few seconds.",
+    generatingStrategies: "Thinking about your audience…",
+    generatingStrategiesWithTime: "Using your site to find who you're for. A few seconds.",
+    audienceReady: "Audience strategies ready. Pick one to shape your post.",
   },
 
   // ─── Topic selection (PostsTab, etc.) ───
@@ -103,18 +107,22 @@ export const systemVoice = {
     ideasHeadline: (businessType) =>
       `Here's what we think will resonate with your audience right now${businessType ? ` (${businessType})` : ''}`,
     generateTopics: "Generate topic ideas",
-    generatingTopics: "Generating Topics…",
-    generatingTopicsWithTime: "Creating topic ideas… This usually takes a few seconds.",
+    generatingTopics: "Thinking of topic ideas…",
+    generatingTopicsWithTime: "Picking ideas that fit your audience. A few seconds.",
+    topicsStreamingIn: (count) => count === 1 ? "One idea ready, thinking of more…" : `${count} ideas so far, adding more…`,
+    topicsReady: "Topic ideas ready. Pick one and we'll draft it.",
   },
 
   // ─── Content generation ───
   content: {
     readyToGenerate: "Ready to create your post",
     generate: "Generate content",
-    generating: "Writing your post…",
-    generatingWithTime: "Writing your post… This can take a minute.",
-    progressSteps: ["Structuring the post", "Matching your voice", "Polishing"],
+    generating: "Drafting your post…",
+    generatingWithTime: "Drafting your post. About a minute.",
+    progressSteps: ["Outlining…", "Writing in your voice…", "Polishing…"],
+    progressPreamble: "Right now:",
     progressLabel: "What we're doing:",
+    workingForYou: "Working for you",
     imagesGenerating: "Adding images…",
     imagesReady: "Images added.",
   },
@@ -124,8 +132,8 @@ export const systemVoice = {
     analysisComplete: "We've got your site. Choose your audience next.",
     analysisFailed: "We couldn't read your site. Check the URL and try again?",
     strategySelected: "Audience locked in. Picking topics next.",
-    topicSelected: "Topic chosen. Writing your post…",
-    contentGenerated: "Post ready. You can edit or export.",
+    topicSelected: "Topic chosen. Drafting your post…",
+    contentGenerated: "Your draft is ready. Edit or export when you're set.",
     contentSaved: "Saved. Ready to export when you are.",
     contentExported: "Exported. You're all set.",
     signUpPrompt: "Sign up to save posts and manage everything in one place.",

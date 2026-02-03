@@ -17,6 +17,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
+import { useSystemHint } from '../../contexts/SystemHintContext';
 import { format } from 'date-fns';
 import { WorkflowGuidance } from '../Workflow/ModeToggle';
 import api from '../../services/api';
@@ -303,6 +304,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     selectedCustomerStrategy
   } = useWorkflowMode();
   const { trackEvent } = useAnalytics();
+  const { setHint } = useSystemHint();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSchedulingModal, setShowSchedulingModal] = useState(false);
@@ -648,6 +650,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       // Clear existing topics so streaming can show incremental results
       setAvailableTopics([]);
+      setHint(systemVoice.topics.generatingTopics, 'hint', 0);
 
       const creditsPromise = user ? api.getUserCredits().catch(() => null) : Promise.resolve(null);
       const ctasPromise = organizationId
@@ -661,7 +664,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         stepResults?.home?.webSearchInsights || {},
         {
           onTopicComplete: (topic) => {
-            setAvailableTopics((prev) => [...prev, topic]);
+            setAvailableTopics((prev) => {
+              const next = [...prev, topic];
+              setHint(systemVoice.topics.topicsStreamingIn(next.length), 'hint', 0);
+              return next;
+            });
           },
           onTopicImageComplete: (topic, index) => {
             setAvailableTopics((prev) => {
@@ -683,6 +690,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       if (result.success) {
         setAvailableTopics(result.topics);
+        setHint(systemVoice.topics.topicsReady, 'success', 5000);
         message.success(`Generated ${result.topics.length} content topics!`);
       } else {
         throw new Error(result.error || 'Topic generation failed');
@@ -802,14 +810,19 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         } : null,
         targetSEOScore: 95,
         includeVisuals: shouldUseEnhancement,
-        // Progress callback for worker queue polling
-        onProgress: (status) => setGenerationProgress({
-          progress: status.progress,
-          currentStep: status.currentStep,
-          status: status.status,
-          estimatedTimeRemaining: status.estimatedTimeRemaining
-        })
+        // Progress callback for worker queue polling / job stream
+        onProgress: (status) => {
+          setGenerationProgress({
+            progress: status.progress,
+            currentStep: status.currentStep,
+            status: status.status,
+            estimatedTimeRemaining: status.estimatedTimeRemaining
+          });
+          setHint(status.currentStep || systemVoice.content.generating, 'hint', 0);
+        }
       };
+
+      setHint(systemVoice.content.generating, 'hint', 0);
 
       // Issue #65: Try blog stream first for everyone; fall back to job (polling) or sync generate if stream unavailable
       let result = null;
@@ -871,6 +884,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               setPosts(prevPosts => [saveResult.post, ...prevPosts]);
               loadPosts();
               if (onQuotaUpdate) onQuotaUpdate();
+              setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
               message.success('Blog content generated and saved!');
             }
             setGeneratingContent(false);
@@ -981,6 +995,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           setAutosaveError(null);
           loadPosts();
           if (onQuotaUpdate) onQuotaUpdate();
+          setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
           message.success('Blog content generated and saved!');
         } else {
           // Fallback: create post via API (sync flow or when worker didn't save)
@@ -1012,6 +1027,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             setAutosaveError(null);
             setPosts(prevPosts => [saveResult.post, ...prevPosts]);
             if (onQuotaUpdate) onQuotaUpdate();
+            setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
             message.success('Blog content generated and saved!');
           } else {
             setCurrentDraft({
@@ -1027,6 +1043,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             setLastSaved(null);
             setIsAutosaving(false);
             setAutosaveError(null);
+            setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
             message.success('Blog content generated successfully!');
           }
         }
@@ -1079,6 +1096,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   }
                   if (savedPost?.id && onQuotaUpdate) onQuotaUpdate();
                   loadPosts(); // Refresh posts list
+                  setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
                   message.success('Blog content generated and saved!');
                 } else {
                   message.error(retryResult.error || 'Retry failed');
@@ -1850,8 +1868,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           borderRadius: '8px',
                           border: '1px solid var(--color-primary-100)'
                         }}>
+                          <div style={{ marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-secondary)' }}>
+                            {systemVoice.content.workingForYou}
+                          </div>
                           <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
-                            {systemVoice.content.progressLabel} {generationProgress?.currentStep || systemVoice.content.generating}
+                            {systemVoice.content.progressPreamble} {generationProgress?.currentStep || systemVoice.content.generating}
                           </div>
                           <Progress
                             percent={generationProgress?.progress ?? 0}
@@ -2599,8 +2620,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         borderRadius: '8px',
                         border: '1px solid var(--color-primary-100)'
                       }}>
+                        <div style={{ marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--color-text-secondary)' }}>
+                          {systemVoice.content.workingForYou}
+                        </div>
                         <div style={{ marginBottom: '8px', fontSize: '13px', fontWeight: 600, color: 'var(--color-primary)' }}>
-                          {systemVoice.content.progressLabel} {generationProgress?.currentStep || systemVoice.content.generating}
+                          {systemVoice.content.progressPreamble} {generationProgress?.currentStep || systemVoice.content.generating}
                         </div>
                         <Progress
                           percent={generationProgress?.progress ?? 0}

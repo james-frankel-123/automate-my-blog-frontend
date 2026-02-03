@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Collapse, Progress, Tag, Divider, Row, Col, Typography, Alert, List, Tooltip, Button, Space } from 'antd';
+import { Card, Collapse, Progress, Tag, Row, Col, Typography, Alert, List, Button, Space } from 'antd';
 import { 
   CheckOutlined, 
   WarningOutlined, 
@@ -13,7 +13,7 @@ import {
 } from '@ant-design/icons';
 import ComprehensiveAnalysis from './ComprehensiveAnalysis';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const { Panel } = Collapse;
 
 /**
