@@ -845,6 +845,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             estimatedTimeRemaining: status.estimatedTimeRemaining
           });
           setHint(status.currentStep || systemVoice.content.generating, 'hint', 0);
+        },
+        // Content-generation job stream partial results: show post as soon as blog-result arrives
+        onBlogResult: (data) => {
+          if (data?.content) setEditingContent(data.content);
         }
       };
 
@@ -1094,7 +1098,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     currentStep: status.currentStep,
                     status: status.status,
                     estimatedTimeRemaining: status.estimatedTimeRemaining
-                  })
+                  }),
+                  onBlogResult: (data) => {
+                    if (data?.content) setEditingContent(data.content);
+                  }
                 });
                 if (retryResult.success) {
                   setEditingContent(retryResult.content);
