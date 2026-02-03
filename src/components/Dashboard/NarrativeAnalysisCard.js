@@ -103,19 +103,19 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
         >
           <Card
             style={{
-              background: 'white',
-              border: '1px solid #e8e8e8',
+              background: 'var(--color-background-elevated)',
+              border: '1px solid var(--color-border-base)',
               borderRadius: '8px',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+              boxShadow: 'var(--shadow-sm)'
             }}
           >
-            <Title level={5} style={{ marginTop: 0, marginBottom: '12px', color: '#262626' }}>
+            <Title level={5} style={{ marginTop: 0, marginBottom: '12px', color: 'var(--color-text-primary)' }}>
               {section.title}
             </Title>
 
             {section.content && (
               <Text style={{
-                color: '#595959',
+                color: 'var(--color-text-secondary)',
                 fontSize: '15px',
                 lineHeight: '1.7',
                 display: 'block',
@@ -133,14 +133,14 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
                     <Card
                       size="small"
                       style={{
-                        background: '#fafafa',
-                        border: '1px solid #e8e8e8',
+                        background: 'var(--color-background-alt)',
+                        border: '1px solid var(--color-border-base)',
                         borderRadius: '6px'
                       }}
                       bodyStyle={{ padding: '10px 14px' }}
                     >
                       <Text style={{
-                        color: '#595959',
+                        color: 'var(--color-text-secondary)',
                         fontSize: '14px',
                         lineHeight: '1.5'
                       }}>
@@ -164,7 +164,7 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
             transition: 'all 0.5s ease-out'
           }}
         >
-          <Title level={5} style={{ marginBottom: '12px', color: '#262626' }}>
+          <Title level={5} style={{ marginBottom: '12px', color: 'var(--color-text-primary)' }}>
             Key Insights
           </Title>
           <Row gutter={[12, 12]}>
@@ -173,15 +173,15 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
                 <Card
                   size="small"
                   style={{
-                    background: '#f0f5ff',
-                    border: '1px solid #d6e4ff',
+                    background: 'var(--color-primary-50)',
+                    border: '1px solid var(--color-primary-200)',
                     borderRadius: '6px',
                     height: '100%'
                   }}
                   bodyStyle={{ padding: '12px 16px' }}
                 >
                   <Text style={{
-                    color: '#1d39c4',
+                    color: 'var(--color-primary-700)',
                     fontSize: '14px',
                     fontWeight: 500,
                     lineHeight: '1.5'

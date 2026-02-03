@@ -17,9 +17,11 @@ const ThemeToggle = ({ style }) => {
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark-mode');
+      document.documentElement.classList.remove('light-mode');
       localStorage.setItem('theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark-mode');
+      document.documentElement.classList.add('light-mode');
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);

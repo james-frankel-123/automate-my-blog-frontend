@@ -37,7 +37,7 @@ const ProgressiveHeaders = ({
       }
     },
     strategy: {
-      icon: <UserOutlined style={{ color: '#52c41a' }} />,
+      icon: <UserOutlined style={{ color: 'var(--color-success)' }} />,
       title: systemVoice.progressiveSteps.strategy,
       getDescription: () => {
         const strategy = stepResults?.selectedStrategy;
@@ -45,7 +45,7 @@ const ProgressiveHeaders = ({
       }
     },
     topic: {
-      icon: <BulbOutlined style={{ color: '#fa8c16' }} />,
+      icon: <BulbOutlined style={{ color: 'var(--color-accent)' }} />,
       title: systemVoice.progressiveSteps.topic,
       getDescription: () => {
         const topic = stepResults?.selectedTopic;
@@ -53,7 +53,7 @@ const ProgressiveHeaders = ({
       }
     },
     content: {
-      icon: <FileTextOutlined style={{ color: '#722ed1' }} />,
+      icon: <FileTextOutlined style={{ color: 'var(--color-primary)' }} />,
       title: systemVoice.progressiveSteps.content,
       getDescription: () => {
         const content = stepResults?.finalContent || stepResults?.generatedContent;
@@ -75,8 +75,8 @@ const ProgressiveHeaders = ({
         position: 'sticky',
         top: 0,
         zIndex: 100,
-        backgroundColor: '#f5f5f5',
-        borderBottom: '1px solid #e8e8e8',
+        backgroundColor: 'var(--color-background-alt)',
+        borderBottom: '1px solid var(--color-border-base)',
         padding: '8px 0'
       }}
     >
@@ -101,8 +101,8 @@ const ProgressiveHeaders = ({
               size="small"
               style={{
                 marginBottom: 0,
-                backgroundColor: isLast ? '#fff' : '#fafafa',
-                border: isLast ? '1px solid #d9d9d9' : '1px solid #f0f0f0',
+                backgroundColor: isLast ? 'var(--color-background-elevated)' : 'var(--color-background-alt)',
+                border: isLast ? '1px solid var(--color-border-base)' : '1px solid var(--color-border-light)',
                 borderRadius: '6px',
                 cursor: onEditStep ? 'pointer' : 'default',
                 transition: 'all 0.2s ease',

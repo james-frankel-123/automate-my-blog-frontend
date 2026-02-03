@@ -1393,7 +1393,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
                             <Col xs={24} md={12}>
                               <div style={{
-                                background: 'white',
+                                background: 'var(--color-background-elevated)',
                                 padding: '24px',
                                 borderRadius: 'var(--radius-md)',
                                 textAlign: 'center'
@@ -1530,7 +1530,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               top: '50%',
                               transform: 'translateY(-50%)',
                               zIndex: 10,
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--color-background-elevated)',
                               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                               border: '1px solid var(--color-border-light)',
                               width: '40px',
@@ -1559,7 +1559,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               top: '50%',
                               transform: 'translateY(-50%)',
                               zIndex: 10,
-                              backgroundColor: 'white',
+                              backgroundColor: 'var(--color-background-elevated)',
                               boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                               border: '1px solid var(--color-border-light)',
                               width: '40px',
@@ -1816,7 +1816,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
                   <Col xs={24} md={12}>
                     <div style={{
-                      background: 'white',
+                      background: 'var(--color-background-elevated)',
                       padding: '24px',
                       borderRadius: 'var(--radius-md)',
                       textAlign: 'center'
@@ -1955,7 +1955,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       top: '50%',
                       transform: 'translateY(-50%)',
                       zIndex: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--color-background-elevated)',
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                       border: '1px solid var(--color-border-light)',
                       width: '40px',
@@ -1984,7 +1984,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       top: '50%',
                       transform: 'translateY(-50%)',
                       zIndex: 10,
-                      backgroundColor: 'white',
+                      backgroundColor: 'var(--color-background-elevated)',
                       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                       border: '1px solid var(--color-border-light)',
                       width: '40px',

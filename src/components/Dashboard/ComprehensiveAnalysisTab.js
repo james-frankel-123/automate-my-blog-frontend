@@ -197,7 +197,7 @@ const ComprehensiveAnalysisTab = () => {
               {postCTAs.length > 0 ? (
                 <div style={{ maxHeight: '200px', overflow: 'auto' }}>
                   {postCTAs.map((cta, index) => (
-                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #f0f0f0' }}>
+                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '4px', border: '1px solid #f0f0f0' }}>
                       <Tag color="blue" size="small" style={{ marginBottom: '4px' }}>
                         {cta.cta_text || 'Unknown CTA'}
                       </Tag>
@@ -226,7 +226,7 @@ const ComprehensiveAnalysisTab = () => {
               {postLinks.length > 0 ? (
                 <div style={{ maxHeight: '200px', overflow: 'auto' }}>
                   {postLinks.slice(0, 5).map((link, index) => (
-                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'white', borderRadius: '4px', border: '1px solid #f0f0f0' }}>
+                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '4px', border: '1px solid #f0f0f0' }}>
                       <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>
                         {link.anchor_text || 'Link'}
                       </div>
@@ -792,7 +792,7 @@ const ComprehensiveAnalysisTab = () => {
                   {visualDesignData?.designPatterns?.typography && visualDesignData.designPatterns.typography.length > 0 ? (
                     <div>
                       {visualDesignData.designPatterns.typography.slice(0, 5).map((font, index) => (
-                        <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
+                        <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'var(--color-background-alt)', borderRadius: '4px' }}>
                           <Text style={{ fontFamily: font }} strong>{font}</Text>
                           <br />
                           <Text style={{ fontSize: '12px', color: 'var(--color-text-secondary)' }}>Sample text in {font}</Text>
@@ -963,7 +963,7 @@ const ComprehensiveAnalysisTab = () => {
                               <Card size="small" title="Text Elements" style={{ height: '250px' }}>
                                 <div style={{ maxHeight: '200px', overflow: 'auto' }}>
                                   {Object.entries(elementPatterns.text).map(([elementType, data]) => (
-                                    <div key={elementType} style={{ marginBottom: '8px', padding: '6px', backgroundColor: '#fff9f0', borderRadius: '4px' }}>
+                                    <div key={elementType} style={{ marginBottom: '8px', padding: '6px', backgroundColor: 'var(--color-accent-50)', borderRadius: '4px' }}>
                                       <Text strong style={{ fontSize: '12px' }}>
                                         {elementType.toUpperCase()} ({data.count})
                                       </Text>
@@ -980,7 +980,7 @@ const ComprehensiveAnalysisTab = () => {
                           {/* Design Pattern Preview */}
                           <Col span={12}>
                             <Card size="small" title="Pattern Preview" style={{ height: '250px' }}>
-                              <div style={{ padding: '12px', backgroundColor: '#f5f5f5', borderRadius: '4px', height: '200px', overflow: 'auto' }}>
+                              <div style={{ padding: '12px', backgroundColor: 'var(--color-background-alt)', borderRadius: '4px', height: '200px', overflow: 'auto' }}>
                                 <div style={{ marginBottom: '12px' }}>
                                   <Text strong style={{ fontSize: '14px' }}>Design Replication Guide</Text>
                                 </div>
@@ -989,9 +989,9 @@ const ComprehensiveAnalysisTab = () => {
                                   <div style={{ 
                                     marginBottom: '8px', 
                                     padding: '8px', 
-                                    backgroundColor: 'white', 
+                                    backgroundColor: 'var(--color-background-elevated)', 
                                     borderRadius: '4px',
-                                    color: elementPatterns.headings.h1.patterns.colors?.textColor?.[0] || '#333',
+                                    color: elementPatterns.headings.h1.patterns.colors?.textColor?.[0] || 'var(--color-text-primary)',
                                     fontSize: elementPatterns.headings.h1.patterns.typography?.fontSize?.[0] || '24px',
                                     fontFamily: elementPatterns.headings.h1.patterns.typography?.fontFamily?.[0] || 'inherit'
                                   }}>

@@ -295,7 +295,7 @@ const ProfileSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={6}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#fff7e6' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-accent-50)' }}>
               <Statistic
                 title="Last Login"
                 value={user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'N/A'}
@@ -720,7 +720,7 @@ const BillingSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={8}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#fff7e6' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-accent-50)' }}>
               <Statistic
                 title="Next Bill Date"
                 value={user?.nextBillDate ? new Date(user.nextBillDate).toLocaleDateString() : 'N/A'}

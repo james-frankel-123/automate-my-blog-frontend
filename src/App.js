@@ -62,13 +62,14 @@ const getAntdTheme = (isDark) => ({
     colorWarning: '#F59E0B',        // Refined gold
     colorError: '#EF4444',          // Warm red
     colorInfo: '#6366F1',           // Match primary (purple)
-    colorTextBase: '#0A2540',       // Navy (dark text)
-    colorTextSecondary: '#425466',  // Medium gray
-    colorTextTertiary: '#6B7C8E',   // Light gray
-    colorBgBase: '#ffffff',         // White background
-    colorBgContainer: '#FAFBFC',    // Subtle gray container
-    colorBorder: '#E3E8EF',         // Subtle border
-    colorBorderSecondary: '#F6F9FC', // Very subtle border
+    // Light mode: dark text; Dark mode: light text for readability
+    colorTextBase: isDark ? '#F5F5F7' : '#0A2540',
+    colorTextSecondary: isDark ? '#A0A0AB' : '#425466',
+    colorTextTertiary: isDark ? '#6E6E78' : '#6B7C8E',
+    colorBgBase: isDark ? '#0F1419' : '#ffffff',
+    colorBgContainer: isDark ? '#1A1F29' : '#FAFBFC',
+    colorBorder: isDark ? '#2D3139' : '#E3E8EF',
+    colorBorderSecondary: isDark ? '#242933' : '#F6F9FC',
 
     // Hover colors - Important for dark mode compatibility
     colorPrimaryHover: '#4F46E5',   // Deeper purple on hover
@@ -164,9 +165,9 @@ const getAntdTheme = (isDark) => ({
     },
     Modal: {
       borderRadius: 8,              // --radius-lg (larger for modals)
-      boxShadow: '0 4px 8px rgba(10, 37, 64, 0.08)', // --shadow-lg
+      boxShadow: isDark ? '0 4px 8px rgba(0, 0, 0, 0.4)' : '0 4px 8px rgba(10, 37, 64, 0.08)',
       headerBg: 'transparent',
-      contentBg: '#ffffff',
+      contentBg: isDark ? '#1A1F29' : '#ffffff',
     },
     Drawer: {
       borderRadius: 0,              // No radius for drawers
@@ -185,9 +186,9 @@ const getAntdTheme = (isDark) => ({
       titleMarginTop: 0,
     },
     Tabs: {
-      itemActiveColor: '#0A2540',   // Navy for active
-      itemHoverColor: '#425466',    // Medium gray for hover
-      itemSelectedColor: '#0A2540',
+      itemActiveColor: isDark ? '#F5F5F7' : '#0A2540',
+      itemHoverColor: isDark ? '#A0A0AB' : '#425466',
+      itemSelectedColor: isDark ? '#F5F5F7' : '#0A2540',
       inkBarColor: '#6366F1',       // Purple brand color for indicator
     },
     Tag: {

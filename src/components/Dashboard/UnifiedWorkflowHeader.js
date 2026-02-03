@@ -499,7 +499,7 @@ const UnifiedWorkflowHeader = ({
               textAlign: 'center',
               marginTop: '24px',
               padding: '20px',
-              backgroundColor: '#f6ffed',
+              backgroundColor: 'var(--color-success-bg)',
               borderRadius: '8px',
               border: '1px solid #b7eb8f'
             }}

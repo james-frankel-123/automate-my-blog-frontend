@@ -711,6 +711,11 @@ body {
     --color-white: #0F1419;                /* Override white for dark mode */
     --color-secondary: #1A1F29;
 
+    /* Semantic colors - lighter variants for dark mode readability */
+    --color-success-dark: #34D399;         /* Brighter emerald on dark */
+    --color-success-bg: rgba(5, 150, 105, 0.2);   /* Dark mode success background */
+    --color-error-bg: rgba(239, 68, 68, 0.2);     /* Dark mode error background */
+
     /* Text - Higher contrast for readability */
     --color-text-primary: #F5F5F7;         /* Off-white */
     --color-text-secondary: #A0A0AB;       /* Medium gray */
@@ -737,11 +742,15 @@ body {
     --color-primary: #818CF8;              /* Brighter purple */
     --color-primary-hover: #A5B4FC;        /* Even brighter on hover */
     --color-primary-500: #818CF8;
+    --color-primary-50: rgba(129, 140, 248, 0.15);   /* Dark mode primary tint */
+    --color-primary-200: rgba(167, 139, 250, 0.4);   /* Dark mode primary border */
+    --color-primary-700: #A5B4FC;          /* Lighter for dark bg readability */
 
     /* Accent - More vibrant in dark mode */
     --color-accent: #FBBF24;               /* Brighter gold */
     --color-accent-hover: #FCD34D;         /* Even brighter on hover */
     --color-accent-500: #FBBF24;
+    --color-accent-50: rgba(251, 191, 36, 0.15);    /* Dark mode accent tint */
 
     /* Shadows - Use glows instead of shadows */
     --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -781,6 +790,41 @@ body {
   --color-background-elevated: #242933;  /* Cards/modals */
   --color-white: #0F1419;                /* Override white for dark mode */
   --color-secondary: #1A1F29;
+
+  /* Semantic colors - lighter variants for dark mode readability */
+  --color-success-dark: #34D399;         /* Brighter emerald on dark */
+  --color-success-bg: rgba(5, 150, 105, 0.2);   /* Dark mode success background */
+  --color-error-bg: rgba(239, 68, 68, 0.2);     /* Dark mode error background */
+
+  /* Primary scale for dark mode cards/accents */
+  --color-primary-50: rgba(129, 140, 248, 0.15);
+  --color-primary-200: rgba(167, 139, 250, 0.4);
+  --color-primary-700: #A5B4FC;
+  --color-accent-50: rgba(251, 191, 36, 0.15);
+}
+
+/* Light mode override - when user explicitly chose light (overrides prefers-color-scheme: dark) */
+html.light-mode {
+  --color-background-body: #FFFFFF;
+  --color-background-container: #FFFFFF;
+  --color-background-elevated: #FFFFFF;
+  --color-background-alt: #FAFBFC;
+  --color-white: #ffffff;
+  --color-secondary: #F6F9FC;
+  --color-text-primary: #0A2540;
+  --color-text-secondary: #425466;
+  --color-text-tertiary: #6B7C8E;
+  --color-border-base: #E3E8EF;
+  --color-border-light: #F6F9FC;
+  --color-border-dark: #CDD7E6;
+  --color-success-dark: #047857;
+}
+
+html.light-mode,
+html.light-mode body,
+html.light-mode #root {
+  background-color: #FFFFFF !important;
+  color: #0A2540 !important;
 }
 
 /* Apply background to body and root elements */
@@ -1242,13 +1286,24 @@ body {
 .dark-mode [style*="color: #333"],
 .dark-mode [style*="color: #425466"],
 .dark-mode [style*="color: #666"],
+.dark-mode [style*="color: #999"],
+.dark-mode [style*="color: #262626"],
+.dark-mode [style*="color: #595959"],
+.dark-mode [style*="color: #8c8c8c"],
 .dark-mode [style*="color: black"],
 .dark-mode [style*="color:#000"],
 .dark-mode [style*="color:#333"],
 .dark-mode [style*="color:#425466"],
 .dark-mode [style*="color:#666"],
+.dark-mode [style*="color:#999"],
+.dark-mode [style*="color:#262626"],
+.dark-mode [style*="color:#595959"],
+.dark-mode [style*="color:#8c8c8c"],
 .dark-mode [style*="color: rgb(0, 0, 0)"],
-.dark-mode [style*="color: rgb(66, 84, 102)"] {
+.dark-mode [style*="color: rgb(38, 38, 38)"],
+.dark-mode [style*="color: rgb(66, 84, 102)"],
+.dark-mode [style*="color: rgb(89, 89, 89)"],
+.dark-mode [style*="color: rgb(107, 124, 142)"] {
   color: var(--color-text-primary) !important;
 }
 
@@ -1297,6 +1352,19 @@ body {
 .dark-mode section[style*="background"],
 .dark-mode article[style*="background"] {
   background-color: var(--color-background-elevated) !important;
+}
+
+/* Specific light gray backgrounds - ensure visibility */
+.dark-mode [style*="background: #fafafa"],
+.dark-mode [style*="background: #f5f5f5"],
+.dark-mode [style*="background: #f0f5ff"],
+.dark-mode [style*="background:#fafafa"],
+.dark-mode [style*="background:#f5f5f5"],
+.dark-mode [style*="background:#f0f5ff"],
+.dark-mode [style*="background-color: #fafafa"],
+.dark-mode [style*="background-color: #f5f5f5"],
+.dark-mode [style*="background-color: #f0f5ff"] {
+  background-color: var(--color-background-container) !important;
 }
 
 /* Gray backgrounds (like #FAFBFC) */
