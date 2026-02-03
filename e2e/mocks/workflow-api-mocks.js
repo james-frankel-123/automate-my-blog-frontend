@@ -334,7 +334,7 @@ async function installWorkflowMocksBase(page, options = {}) {
       return route.fulfill(json({ jobId }));
     }
 
-    // PR 103 – Bundle: non-stream calculate returns pricing so bundle card shows when 2+ strategies
+    // Bundle: non-stream calculate (2+ strategies) returns pricing for E2E
     if (pathMatch(url, '/api/v1/strategies/bundle/calculate') && method === 'GET' && !url.includes('stream=true')) {
       return route.fulfill(json({
         bundlePricing: { strategyCount: 2, bundleMonthly: 25, savings: { monthlyDiscount: 5 }, postsPerStrategy: { recommended: 4, maximum: 8 } },
@@ -342,7 +342,7 @@ async function installWorkflowMocksBase(page, options = {}) {
       }));
     }
 
-    // Issue #65 / PR 101–104: E2E mocks return 404 for stream endpoints so app uses fallback path.
+    // Stream endpoints return 404 so E2E exercises fallback paths (polling / non-stream).
     if (pathMatch(url, '/api/v1/blog/generate-stream') && method === 'POST') {
       return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
     }

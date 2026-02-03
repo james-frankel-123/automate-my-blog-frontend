@@ -82,7 +82,7 @@ export const analysisAPI = {
 
       const sessionId = autoBlogAPI.getOrCreateSessionId?.() || sessionStorage.getItem('audience_session_id');
 
-      // Try worker queue first (Issue #65: prefer job stream over polling)
+      // Prefer job stream, then polling, then sync analyze
       try {
         const createResponse = await jobsAPI.createWebsiteAnalysisJob(formattedUrl, sessionId);
         const jobId = createResponse.jobId;
@@ -138,12 +138,6 @@ export const analysisAPI = {
                                response.analysis.scenarios[0].businessValue &&
                                response.analysis.scenarios[0].targetSegment;
 
-        console.log('🎯 [CTA DEBUG] Frontend: Received API response with CTAs:', {
-          hasCTAs: !!response.ctas,
-          ctaCount: response.ctaCount || 0,
-          hasOrganizationId: !!response.analysis.organizationId
-        });
-
         return {
           success: true,
           analysis: {
@@ -175,19 +169,18 @@ export const analysisAPI = {
             customerLanguage: response.analysis.customerLanguage || [],
             keywords: response.analysis.keywords || [],
             contentIdeas: response.analysis.contentIdeas || [],
-            organizationId: response.analysis.organizationId,  // ← CRITICAL: Pass organizationId for CTA fetching
+            organizationId: response.analysis.organizationId,
             // Narrative analysis fields
             narrative: response.analysis.narrative,
             narrativeConfidence: response.analysis.narrativeConfidence,
             keyInsights: response.analysis.keyInsights || [],
-            narrativeGenerating: response.analysis.narrativeGenerating  // ← Pass async narrative flag
+            narrativeGenerating: response.analysis.narrativeGenerating
           },
           webSearchInsights: {
             brandResearch: response.analysis.brandColors ? 'Found actual brand guidelines' : null,
             keywordResearch: hasEnhancedData ? 'Current market keyword analysis completed' : null,
             researchQuality: hasEnhancedData ? 'enhanced' : 'basic'
           },
-          // ← CRITICAL: Pass CTAs from backend response
           ctas: response.ctas || [],
           ctaCount: response.ctaCount || 0,
           hasSufficientCTAs: response.hasSufficientCTAs || false
@@ -493,15 +486,7 @@ export const contentAPI = {
       // Step 2: Generate images if needed (after blog is saved)
       let content = response.blogPost?.content || response.content;
 
-      console.log('🔍 [IMAGE DEBUG] Checking image generation needs:', {
-        hasImageGeneration: !!response.imageGeneration,
-        needsImageGeneration: response.imageGeneration?.needsImageGeneration,
-        hasBlogPostId: !!response.imageGeneration?.blogPostId,
-        blogPostId: response.imageGeneration?.blogPostId
-      });
-
       if (response.imageGeneration?.needsImageGeneration && response.imageGeneration.blogPostId) {
-        console.log('🎨 Standard generation: Triggering image generation for blog post...');
 
         try {
           const imageResult = await autoBlogAPI.generateImagesForBlog(
@@ -512,14 +497,9 @@ export const contentAPI = {
           );
 
           if (imageResult.success) {
-            console.log('✅ Images generated successfully, updating content');
-            content = imageResult.content; // Update with content containing actual images
-          } else {
-            console.warn('⚠️ Image generation failed, keeping placeholders:', imageResult.error);
-            // Continue with placeholder content
+            content = imageResult.content;
           }
-        } catch (imageError) {
-          console.error('❌ Image generation error:', imageError.message);
+        } catch (_imageError) {
           // Continue with placeholder content
         }
       }
@@ -547,8 +527,8 @@ export const contentAPI = {
   },
 
   /**
-   * Start blog post generation stream (Issue #65). Use for standard (non-enhanced) path only.
-   * Returns connectionId; caller should connect via autoBlogAPI.connectToStream(connectionId, handlers).
+   * Start blog post generation stream. Use for standard (non-enhanced) path only.
+   * Returns connectionId; caller connects via autoBlogAPI.connectToStream(connectionId, handlers).
    * @param {Object} selectedTopic - The chosen topic data
    * @param {Object} analysisData - Website analysis results
    * @param {Object} selectedStrategy - Customer strategy (optional)
