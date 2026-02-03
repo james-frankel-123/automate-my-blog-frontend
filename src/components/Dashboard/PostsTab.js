@@ -799,11 +799,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         })
       };
 
-      // Issue #65: Try streaming first for standard (non-enhanced) blog generation
+      // Issue #65: Try blog stream first for everyone; fall back to job (polling) or sync generate if stream unavailable
       let result = null;
-      if (!shouldUseEnhancement) {
-        try {
-          const { connectionId } = await contentAPI.startBlogStream(
+      try {
+        const { connectionId } = await contentAPI.startBlogStream(
             topic,
             stepResults?.home?.websiteAnalysis || {},
             tabMode.tabWorkflowData?.selectedCustomerStrategy,
@@ -865,10 +864,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             setGeneratingContent(false);
             return;
           }
-        } catch (streamErr) {
-          console.warn('Blog stream not available, falling back to standard generation:', streamErr?.message);
-          result = null;
-        }
+      } catch (streamErr) {
+        console.warn('Blog stream not available, falling back to job or sync generation:', streamErr?.message);
+        result = null;
       }
 
       if (result === null) {
