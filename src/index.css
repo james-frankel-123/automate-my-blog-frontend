@@ -34,3 +34,8 @@ code {
     transform: translateX(100%);
   }
 }
+
+/* ThinkingPanel: subtle pulse so user knows it's working */
+.thinking-panel-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
