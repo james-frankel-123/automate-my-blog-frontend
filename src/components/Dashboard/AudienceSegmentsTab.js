@@ -1564,12 +1564,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                       borderRadius: 'var(--radius-md)',
                                       marginBottom: '16px'
                                     }}>
-                                      {bundleOverview.totalMonthlySearches && (
+                                      {bundleOverview && bundleOverview.totalMonthlySearches != null && (
                                         <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                           📊 <strong>{bundleOverview.totalMonthlySearches.toLocaleString()}</strong> monthly searches targeted
                                         </Text>
                                       )}
-                                      {bundleOverview.projectedMonthlyProfit && (
+                                      {bundleOverview?.projectedMonthlyProfit && (
                                         <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                           💰 <strong>${bundleOverview.projectedMonthlyProfit.low?.toLocaleString() || 'N/A'}-${bundleOverview.projectedMonthlyProfit.high?.toLocaleString() || 'N/A'}</strong> projected monthly profit
                                         </Text>
@@ -1923,12 +1923,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                             borderRadius: 'var(--radius-md)',
                             marginBottom: '16px'
                           }}>
-                            {bundleOverview.totalMonthlySearches && (
+                            {bundleOverview && bundleOverview.totalMonthlySearches != null && (
                               <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                 📊 <strong>{bundleOverview.totalMonthlySearches.toLocaleString()}</strong> monthly searches targeted
                               </Text>
                             )}
-                            {bundleOverview.projectedMonthlyProfit && (
+                            {bundleOverview?.projectedMonthlyProfit && (
                               <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                 💰 <strong>${bundleOverview.projectedMonthlyProfit.low?.toLocaleString() || 'N/A'}-${bundleOverview.projectedMonthlyProfit.high?.toLocaleString() || 'N/A'}</strong> projected monthly profit
                               </Text>
