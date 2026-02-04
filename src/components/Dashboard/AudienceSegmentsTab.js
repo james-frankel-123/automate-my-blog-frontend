@@ -2142,23 +2142,24 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               </Carousel>
             </div>
             
-            {/* Continue Button */}
-            {selectedStrategy && tabMode.mode === 'workflow' && (
+            {/* Continue Button - show whenever strategy section is visible (workflow or forceWorkflowMode) */}
+            {selectedStrategy && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
               <div style={{ textAlign: 'center', marginTop: '30px' }}>
                 <Button
                   type="primary"
                   size="large"
                   onClick={() => {
-                    // Save the selected customer strategy to workflow context
                     setSelectedCustomerStrategy(selectedStrategy);
                     updateCustomerStrategy(selectedStrategy);
-                    
-                    // Update workflow data for content tab
+
+                    if (forceWorkflowMode && tabMode.mode !== 'workflow') {
+                      tabMode.enterWorkflowMode();
+                    }
+
                     tabMode.continueToNextStep({
                       selectedCustomerStrategy: selectedStrategy,
                       selectedAudience: selectedStrategy.targetSegment?.demographics || 'Target Audience'
                     });
-                    
                     message.success('Moving to content creation...');
                   }}
                   style={{
