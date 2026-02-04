@@ -89,7 +89,7 @@ function ThinkingPanel({
   if (!isActive && !hasProgress) return null;
 
   const lastThought = thoughts?.length ? thoughts[thoughts.length - 1] : null;
-  const stepDisplay = currentStep || (lastThought?.message ?? '') || fallbackStep || '';
+  const stepDisplay = currentStep || (lastThought?.message ?? '') || fallbackStep || 'Generating…';
   const stepSuffix = phase || detail ? ` — ${phase || detail}` : '';
   const statusText = stepDisplay ? `${workingForYouLabel} · ${stepDisplay}${stepSuffix}` : workingForYouLabel;
   const showEta = estimatedTimeRemaining != null && estimatedTimeRemaining > 0;

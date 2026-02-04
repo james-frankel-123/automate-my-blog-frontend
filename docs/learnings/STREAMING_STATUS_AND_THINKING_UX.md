@@ -77,4 +77,16 @@ So: **can** we put it all in one location? Yes (global panel). **Should** we? St
 
 ---
 
-*Doc reflects `main` as of 2026-02-03.*
+## Phase 6 (Issue #89): Streaming polish and error handling
+
+As of 2026-02-04, the following production-hardening features are in place:
+
+- **Auto-reconnect**: Job SSE (`connectToJobStream`) reconnects up to 5 times with exponential backoff when the connection drops.
+- **Rate limit handling**: 429 or `rate_limit` errors surface a friendly message ("Service is busy. Please wait a moment and try again.") with `retryable: true` for UI retry buttons.
+- **Feature flag**: `REACT_APP_STREAMING_ENABLED=false` disables SSE and falls back to polling without deployment.
+- **Streaming indicators**: ThinkingPanel shows "Generating…" when active with no step; StreamingText uses a pulsing cursor during stream.
+- **Graceful degradation**: When streaming fails or is disabled, the app falls back to polling (website analysis, content generation).
+
+---
+
+*Doc reflects `main` as of 2026-02-03. Phase 6 added 2026-02-04.*
