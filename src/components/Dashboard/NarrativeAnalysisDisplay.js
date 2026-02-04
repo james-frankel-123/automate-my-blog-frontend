@@ -7,6 +7,7 @@ import React, { useEffect, useRef } from 'react';
 import { Card, Typography, Divider } from 'antd';
 import StreamingText from '../shared/StreamingText';
 import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
+import ThinkingPanel from '../shared/ThinkingPanel';
 import { useNarrativeStream, MOMENTS } from '../../hooks/useNarrativeStream';
 import { systemVoice } from '../../copy/systemVoice';
 
@@ -21,6 +22,25 @@ const cardStyles = {
 function splitParagraphs(text) {
   if (!text || !text.trim()) return [];
   return text.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+}
+
+/** Split scraping narrative into item-style chunks like "What I Discovered": paragraphs first, then by sentence if still long. */
+function splitScrapingIntoItems(text) {
+  if (!text || !text.trim()) return [];
+  const paragraphs = splitParagraphs(text);
+  const maxChunkLength = 220;
+  const result = [];
+  for (const para of paragraphs) {
+    if (para.length <= maxChunkLength) {
+      result.push(para);
+    } else {
+      const sentences = para.split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter(Boolean);
+      for (const s of sentences) {
+        result.push(s);
+      }
+    }
+  }
+  return result;
 }
 
 const paragraphCardBase = {
@@ -62,8 +82,12 @@ const analysisTextStyle = {
  * @param {Object} [props.analysisResults] - Full analysis result with scenarios (for Moment 3)
  * @param {Function} [props.renderFallback] - Rendered when narrative stream unavailable (e.g. 404). Enables graceful fallback to ThinkingPanel.
  * @param {Function} [props.onNarrativeComplete] - Called when stream ends with final narrative text so parent can persist it (e.g. into analysisResults).
+ * @param {Object} [props.analysisProgress] - From job stream (progress, currentStep, phase, detail, estimatedTimeRemaining) for progress bar.
+ * @param {boolean} [props.loading] - When true, show progress bar at top.
+ * @param {string} [props.currentScanningMessage] - Fallback step label when analysisProgress.currentStep is missing.
+ * @param {Array} [props.analysisThoughts] - Scrape-phase thoughts for ThinkingPanel.
  */
-export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback, onNarrativeComplete }) {
+export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback, onNarrativeComplete, analysisProgress, loading, currentScanningMessage, analysisThoughts }) {
   const {
     scrapingNarrative,
     analysisNarrative,
@@ -98,17 +122,17 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
 
   const scenarios = analysisResults?.scenarios ?? analysisResults?.analysis?.scenarios ?? [];
 
-  const scrapingParagraphs = splitParagraphs(scrapingNarrative);
+  const scrapingItems = splitScrapingIntoItems(scrapingNarrative);
   const analysisParagraphs = splitParagraphs(analysisNarrative);
   const showAnalysisSection =
     currentMoment === MOMENTS.ANALYSIS || currentMoment === MOMENTS.AUDIENCES || analysisNarrative;
 
-  // Scraping: complete paragraphs + streaming card for last incomplete
-  const scrapingComplete = currentMoment === MOMENTS.SCRAPING && isStreaming && scrapingParagraphs.length > 0
-    ? scrapingParagraphs.slice(0, -1)
-    : scrapingParagraphs;
-  const scrapingStreamingContent = currentMoment === MOMENTS.SCRAPING && isStreaming && scrapingParagraphs.length > 0
-    ? scrapingParagraphs[scrapingParagraphs.length - 1]
+  // Scraping: item-style cards (paragraphs or sentences when long) + streaming card for last incomplete
+  const scrapingComplete = currentMoment === MOMENTS.SCRAPING && isStreaming && scrapingItems.length > 0
+    ? scrapingItems.slice(0, -1)
+    : scrapingItems;
+  const scrapingStreamingContent = currentMoment === MOMENTS.SCRAPING && isStreaming && scrapingItems.length > 0
+    ? scrapingItems[scrapingItems.length - 1]
     : (currentMoment === MOMENTS.SCRAPING && isStreaming ? scrapingNarrative.trim() : '');
 
   // Analysis: complete paragraphs + streaming card for last incomplete
@@ -119,9 +143,31 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
     ? analysisParagraphs[analysisParagraphs.length - 1]
     : (currentMoment === MOMENTS.ANALYSIS && isStreaming ? analysisNarrative.trim() : '');
 
+  const showProgressBar = loading && (analysisProgress || currentScanningMessage);
+
   return (
     <div style={cardStyles}>
-      {/* Moment 1: Scraping progress / thought process — one card per paragraph, markdown rendered */}
+      {/* Progress bar when loading (job stream progress) */}
+      {showProgressBar && (
+        <div style={{ marginBottom: 16 }}>
+          <ThinkingPanel
+            isActive
+            currentStep={analysisProgress?.currentStep || currentScanningMessage}
+            progress={analysisProgress?.progress}
+            thoughts={analysisThoughts || []}
+            estimatedTimeRemaining={analysisProgress?.estimatedTimeRemaining}
+            phase={analysisProgress?.phase}
+            detail={analysisProgress?.detail}
+            workingForYouLabel={systemVoice.analysis.workingForYou}
+            progressPreamble={systemVoice.analysis.progressPreamble}
+            progressLabel={systemVoice.analysis.progressLabel}
+            fallbackStep={currentScanningMessage}
+            dataTestId="website-analysis-progress"
+          />
+        </div>
+      )}
+
+      {/* Moment 1: Scraping progress / thought process — item-style cards (like What I Discovered) */}
       {(scrapingNarrative || currentMoment === MOMENTS.SCRAPING) && (
         <div data-testid="narrative-scraping-card">
           {scrapingComplete.map((para, idx) => (
@@ -133,6 +179,7 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
                 animation: 'slideInUp 0.4s ease forwards',
                 animationDelay: `${idx * 0.08}s`,
               }}
+              bodyStyle={{ overflow: 'visible' }}
               data-testid={`narrative-scraping-card-${idx}`}
             >
               <div style={scrapingTextStyle}>
@@ -147,6 +194,7 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
                 opacity: 1,
                 animation: 'slideInUp 0.4s ease forwards',
               }}
+              bodyStyle={{ overflow: 'visible' }}
               data-testid="narrative-scraping-card-streaming"
             >
               <div style={scrapingTextStyle}>

@@ -933,6 +933,10 @@ const WebsiteAnalysisStepStandalone = ({
           analysisResults={analysisResults}
           renderFallback={renderThinkingPanelFallback}
           onNarrativeComplete={handleNarrativeComplete}
+          analysisProgress={analysisProgress}
+          loading={loading}
+          currentScanningMessage={currentScanningMessage}
+          analysisThoughts={analysisThoughts}
         />
       );
     }
