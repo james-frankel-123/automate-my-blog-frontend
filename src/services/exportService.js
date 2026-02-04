@@ -118,7 +118,7 @@ class ExportService {
         icon: 'FileTextOutlined',
         mimeType: 'text/html',
         extension: '.html',
-        color: '#52c41a'
+        color: 'var(--color-success)'
       },
       {
         key: 'json',
@@ -127,7 +127,7 @@ class ExportService {
         icon: 'DatabaseOutlined',
         mimeType: 'application/json',
         extension: '.json',
-        color: '#8FBC8F'
+        color: 'var(--color-success)'
       },
       {
         key: 'package',
@@ -136,7 +136,7 @@ class ExportService {
         icon: 'FileZipOutlined',
         mimeType: 'application/zip',
         extension: '.zip',
-        color: '#FA8C16',
+        color: 'var(--color-warning)',
         disabled: true // Not yet implemented
       }
     ];

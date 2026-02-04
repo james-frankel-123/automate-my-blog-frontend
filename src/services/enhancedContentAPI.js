@@ -1,6 +1,7 @@
 import autoBlogAPI from './api';
 import jobsAPI from './jobsAPI';
 import { ContentPromptEngine, StrategicCTABuilder } from './contentPromptEngine';
+import { normalizeContentString } from '../utils/streamingUtils';
 
 /**
  * Enhanced Content Generation API
@@ -51,17 +52,19 @@ export class EnhancedContentAPI {
   }
 
   /**
-   * Map job result (result.data, result.savedPost) to enhancedContentAPI response shape
+   * Map job result (result.data, result.savedPost) to enhancedContentAPI response shape.
+   * Normalizes content so fenced/raw JSON from the backend becomes displayable HTML/text only.
    */
   _mapResultToResponse(result, comprehensivePrompt, strategicCTAs, selectedTopic) {
     const data = result.data || {};
     const savedPost = result.savedPost;
     const blogPost = savedPost || data.blogPost || data;
-    const content = blogPost?.content || data.content || blogPost;
+    const rawContent = blogPost?.content || data.content || (typeof blogPost === 'string' ? blogPost : undefined);
+    const content = typeof rawContent === 'string' ? normalizeContentString(rawContent) : rawContent;
 
     return {
       success: true,
-      content,
+      content: content ?? '',
       visualSuggestions: data.visualSuggestions || [],
       enhancedMetadata: data.enhancedMetadata || {
         seoAnalysis: data.seoAnalysis,
@@ -169,7 +172,7 @@ export class EnhancedContentAPI {
           error: finalStatus.error || 'Content generation failed',
           errorCode: finalStatus.errorCode,
           jobId,
-          retryable: finalStatus.status === 'failed'
+          retryable: finalStatus.retryable ?? true
         };
       }
 

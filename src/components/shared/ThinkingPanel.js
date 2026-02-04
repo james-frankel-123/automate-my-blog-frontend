@@ -23,7 +23,7 @@ const panelStyles = {
     textAlign: 'left',
     width: '100%',
     maxWidth: '100%',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    boxShadow: 'var(--shadow-card)',
   },
   statusLine: {
     display: 'flex',
@@ -89,7 +89,7 @@ function ThinkingPanel({
   if (!isActive && !hasProgress) return null;
 
   const lastThought = thoughts?.length ? thoughts[thoughts.length - 1] : null;
-  const stepDisplay = currentStep || (lastThought?.message ?? '') || fallbackStep || '';
+  const stepDisplay = currentStep || (lastThought?.message ?? '') || fallbackStep || 'Generating…';
   const stepSuffix = phase || detail ? ` — ${phase || detail}` : '';
   const statusText = stepDisplay ? `${workingForYouLabel} · ${stepDisplay}${stepSuffix}` : workingForYouLabel;
   const showEta = estimatedTimeRemaining != null && estimatedTimeRemaining > 0;

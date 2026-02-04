@@ -524,7 +524,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
         await page.waitForTimeout(1000);
         await removeOverlay(page);
-        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        await page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first().click({ force: true });
         await page.waitForTimeout(1500);
         await page.locator('#audience-segments').scrollIntoViewIfNeeded();
         await page.waitForTimeout(500);
@@ -546,7 +546,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
         await page.waitForTimeout(1000);
         await removeOverlay(page);
-        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        await page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first().click({ force: true });
         await page.waitForTimeout(2000);
         await page.locator('#audience-segments').scrollIntoViewIfNeeded();
         await page.waitForTimeout(800);

@@ -154,10 +154,10 @@ const FormattingToolbar = ({
   return (
     <div style={{ 
       padding: '8px 12px',
-      backgroundColor: '#fafafa',
-      border: '1px solid #e8e8e8',
+      backgroundColor: 'var(--color-background-alt)',
+      border: '1px solid var(--color-border-base)',
       borderRadius: '6px 6px 0 0',
-      borderBottom: '1px solid #e0e0e0',
+      borderBottom: '1px solid var(--color-border-dark)',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',

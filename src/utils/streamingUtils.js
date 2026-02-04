@@ -42,44 +42,91 @@ export function extractStreamChunk(data) {
 }
 
 /**
- * Extract final content from a complete event payload.
- * Handles nested structures like { blogPost: { content: "..." } }.
+ * Extract final content from a complete event payload (object or raw string).
+ * Handles nested structures like { blogPost: { content: "..." } } and when
+ * the payload is a string (e.g. blogPost/result as the whole fenced JSON).
  * Normalizes content so raw JSON is never returned (e.g. backend sending
  * stringified blog object or ProseMirror doc); only displayable content is returned.
  *
- * @param {Object} data - Complete event payload
+ * @param {Object|string} data - Complete event payload or raw content string
  * @returns {string} Final content string, or empty if none found
  */
 export function extractStreamCompleteContent(data) {
   if (data == null) return '';
 
-  const content =
-    data.content ??
-    data.text ??
-    data.overview ??
-    data.blogPost?.content ??
-    data.result?.content ??
-    data.data?.content;
-  if (typeof content !== 'string') return '';
+  let content;
+  if (typeof data === 'string') {
+    content = data;
+  } else {
+    content =
+      data.content ??
+      data.text ??
+      data.overview ??
+      (typeof data.blogPost === 'string' ? data.blogPost : data.blogPost?.content) ??
+      (typeof data.result === 'string' ? data.result : data.result?.content) ??
+      data.data?.content;
+    if (typeof content !== 'string') return '';
+  }
+
+  // Backend may wrap payload in markdown code fences (```json ... ```); strip first.
+  const normalized = stripMarkdownCodeFences(content).trim();
+  const wasFenced = content.trim().startsWith('```');
 
   // If content looks like JSON (e.g. full blog object or ProseMirror doc),
   // parse and extract inner content so we never show raw JSON in the editor.
-  const trimmed = content.trim();
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    return tryExtractFromJsonString(content);
+  if (normalized.startsWith('{') || normalized.startsWith('[')) {
+    return tryExtractFromJsonString(normalized);
   }
-  return content;
+  return wasFenced ? normalized : content;
+}
+
+/**
+ * Normalize a content string: strip code fences, parse JSON, return .content (or plain text).
+ * Use when the backend returns a raw/fenced string (e.g. final job result.content).
+ *
+ * @param {string} str - Raw content (may be fenced JSON or plain HTML/text)
+ * @returns {string} Displayable content, or str if not JSON/fenced
+ */
+export function normalizeContentString(str) {
+  if (typeof str !== 'string' || !str.trim()) return str;
+  const out = extractStreamCompleteContent({ content: str });
+  return out !== '' ? out : str;
+}
+
+
+/**
+ * Strip markdown code fences (``` or ```json etc.) from a string.
+ * Backend may wrap JSON or content in code blocks; we unwrap so we can parse or display inner content.
+ *
+ * @param {string} str - Possibly fenced string
+ * @returns {string} Inner content or original string if no fences
+ */
+function stripMarkdownCodeFences(str) {
+  if (typeof str !== 'string' || !str.trim()) return str;
+  const trimmed = str.trim();
+  const open = '```';
+  if (!trimmed.startsWith(open)) return str;
+  const afterOpen = trimmed.slice(open.length);
+  const firstNewline = afterOpen.indexOf('\n');
+  const body = firstNewline === -1 ? afterOpen : afterOpen.slice(firstNewline + 1);
+  const closeIdx = body.indexOf(open);
+  const inner = closeIdx === -1 ? body : body.slice(0, closeIdx);
+  return inner.trim();
 }
 
 /**
  * If a string looks like JSON, try to parse and extract content/text.
  * Prevents raw JSON from being appended to the editor.
+ * Strips markdown code fences first if present (e.g. ```json ... ```).
  *
- * @param {string} str - Possibly JSON string
+ * @param {string} str - Possibly JSON string (optionally wrapped in ```)
  * @returns {string} Extracted content or original string if not JSON / no content
  */
 function tryExtractFromJsonString(str) {
   if (typeof str !== 'string' || !str.trim()) return '';
+
+  str = stripMarkdownCodeFences(str);
+  if (!str.trim()) return '';
 
   const trimmed = str.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {

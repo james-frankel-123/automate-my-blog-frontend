@@ -27,7 +27,7 @@ const ProgressiveStickyHeader = ({
   // Step configuration with app-consistent colors
   const stepConfig = {
     websiteAnalysis: {
-      icon: <GlobalOutlined style={{ color: '#6B8CAE', fontSize: '14px' }} />,
+      icon: <GlobalOutlined style={{ color: 'var(--color-primary)', fontSize: '14px' }} />,
       label: 'Website',
       getDisplayText: (data) => {
         if (data.businessName) {
@@ -37,7 +37,7 @@ const ProgressiveStickyHeader = ({
       }
     },
     audienceSelection: {
-      icon: <TeamOutlined style={{ color: '#6B8CAE', fontSize: '14px' }} />,
+      icon: <TeamOutlined style={{ color: 'var(--color-primary)', fontSize: '14px' }} />,
       label: 'Audience',
       getDisplayText: (data) => {
         if (data.targetSegment) {
@@ -48,7 +48,7 @@ const ProgressiveStickyHeader = ({
       }
     },
     topicSelection: {
-      icon: <BulbOutlined style={{ color: '#6B8CAE', fontSize: '14px' }} />,
+      icon: <BulbOutlined style={{ color: 'var(--color-primary)', fontSize: '14px' }} />,
       label: 'Topic',
       getDisplayText: (data) => {
         const title = data.title || data.topicName || 'Topic selected';
@@ -66,8 +66,8 @@ const ProgressiveStickyHeader = ({
         left: 0,
         right: 0,
         backgroundColor: 'var(--color-background-elevated)',
-        borderBottom: '1px solid #f0f0f0',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+        borderBottom: '1px solid var(--color-border-base)',
+        boxShadow: 'var(--shadow-sm)',
         zIndex: 999,
         transition: 'all 0.3s ease',
         ...style
@@ -85,8 +85,8 @@ const ProgressiveStickyHeader = ({
               display: 'flex',
               alignItems: 'center',
               padding: '8px 24px',
-              borderBottom: index < completedSteps.length - 1 ? '1px solid #f0f0f0' : 'none',
-              backgroundColor: '#fafafa',
+              borderBottom: index < completedSteps.length - 1 ? '1px solid var(--color-border-base)' : 'none',
+              backgroundColor: 'var(--color-background-alt)',
               transition: 'all 0.3s ease',
               minHeight: '40px',
               animationDelay: `${index * 80}ms`,
@@ -98,7 +98,7 @@ const ProgressiveStickyHeader = ({
               width: '6px',
               height: '6px',
               borderRadius: '50%',
-              backgroundColor: '#6B8CAE',
+              backgroundColor: 'var(--color-primary)',
               marginRight: '12px',
               flexShrink: 0
             }} />
@@ -115,7 +115,7 @@ const ProgressiveStickyHeader = ({
               <Text style={{ 
                 marginLeft: '6px', 
                 fontSize: '13px',
-                color: '#262626',
+                color: 'var(--color-text-primary)',
                 fontWeight: 500
               }}>
                 {config.label}:
@@ -129,7 +129,7 @@ const ProgressiveStickyHeader = ({
             }}>
               <Text style={{ 
                 fontSize: '13px', 
-                color: '#595959',
+                color: 'var(--color-text-secondary)',
                 fontWeight: 400
               }}>
                 {config.getDisplayText(step.data)}

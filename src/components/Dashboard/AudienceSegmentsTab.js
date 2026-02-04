@@ -1002,7 +1002,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             cursor: 'pointer',
             opacity: isOthersSelected ? 0.5 : 1,
             transition: 'all 0.3s ease',
-            margin: '0 auto',
+            margin: '15px auto', // Issue #166: Add 15px top/bottom margin to prevent shadow cutoff
             maxWidth: '480px',
             position: 'relative',
             boxShadow: isSubscribed
@@ -1014,18 +1014,18 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           }}
           onMouseEnter={(e) => {
             if (isSubscribed) {
-              e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.2)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-elevated)';
             } else if (isSelected) {
-              e.currentTarget.style.boxShadow = '0 12px 32px rgba(0, 0, 0, 0.22)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-xl)';
             } else {
               e.currentTarget.style.boxShadow = 'var(--shadow-elevated)';
             }
           }}
           onMouseLeave={(e) => {
             if (isSubscribed) {
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.15)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-success)';
             } else if (isSelected) {
-              e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.18)';
+              e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
             } else {
               e.currentTarget.style.boxShadow = 'var(--shadow-card)';
             }
@@ -1039,12 +1039,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               top: '16px',
               right: '16px',
               backgroundColor: 'var(--color-success)',
-              color: 'white',
+              color: 'var(--color-text-on-primary)',
               padding: '8px 16px',
               borderRadius: 'var(--radius-md)',
               fontSize: '13px',
               fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+              boxShadow: 'var(--shadow-success)',
               zIndex: 10,
               display: 'flex',
               alignItems: 'center',
@@ -1059,12 +1059,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               top: '16px',
               right: '16px',
               backgroundColor: 'var(--color-primary)',
-              color: 'white',
+              color: 'var(--color-text-on-primary)',
               padding: '8px 12px',
               borderRadius: 'var(--radius-md)',
               fontSize: '13px',
               fontWeight: 600,
-              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              boxShadow: 'var(--shadow-card)',
               zIndex: 10,
               display: 'flex',
               flexDirection: 'column',
@@ -1140,7 +1140,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 {strategy.businessValue?.priority === 1 && (
                   <span style={{
                     backgroundColor: 'var(--color-error)',
-                    color: 'white',
+                    color: 'var(--color-text-on-primary)',
                     padding: '2px 8px',
                     borderRadius: '10px',
                     fontSize: '11px',
@@ -1400,46 +1400,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             );
           })()}
 
-          {/* Generate Post Button - Shows when card is selected in workflow mode */}
-          {isSelected && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
-            <Button
-              type="primary"
-              block
-              size="large"
-              style={{
-                marginTop: '20px',
-                height: '48px',
-                fontWeight: 600,
-                fontSize: '15px',
-                backgroundColor: 'var(--color-success)',
-                borderColor: 'var(--color-success)'
-              }}
-              icon={<BulbOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedCustomerStrategy(strategy);
-                updateCustomerStrategy(strategy);
-                if (onNextStep) {
-                  onNextStep();
-                } else {
-                  if (onEnterProjectMode) {
-                    onEnterProjectMode();
-                  } else {
-                    tabMode.enterWorkflowMode();
-                  }
-                  setTimeout(() => {
-                    const postsSection = document.getElementById('posts');
-                    if (postsSection) {
-                      postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                  }, 100);
-                  message.success('Moving to content creation...');
-                }
-              }}
-            >
-              Generate Post
-            </Button>
-          )}
         </Card>
       </motion.div>
     );
@@ -1519,12 +1479,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                           top: '16px',
                           right: '16px',
                           background: 'var(--color-success)',
-                          color: 'white',
+                          color: 'var(--color-text-on-primary)',
                           padding: '6px 16px',
                           borderRadius: 'var(--radius-md)',
                           fontSize: '12px',
                           fontWeight: 600,
-                          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                          boxShadow: 'var(--shadow-success)',
                           zIndex: 1
                         }}>
                           BEST VALUE
@@ -1533,8 +1493,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                         <div style={{ padding: '8px' }}>
                           <Row gutter={24} align="middle">
                             <Col xs={24} md={12}>
-                              <div style={{ color: 'white' }}>
-                                <Title level={3} style={{ color: 'white', marginBottom: '16px', marginTop: '0' }}>
+                              <div style={{ color: 'var(--color-text-on-primary)' }}>
+                                <Title level={3} style={{ color: 'var(--color-text-on-primary)', marginBottom: '16px', marginTop: '0' }}>
                                   {bundleOverview?.title || 'Multi-Audience Content Strategy'}
                                 </Title>
 
@@ -1542,7 +1502,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                 {(isStreamingOverview && streamingOverview !== undefined) || (bundleOverview && bundleOverview.overview) ? (
                                   <>
                                     <div style={{
-                                      color: 'rgba(255,255,255,0.95)',
+                                      color: 'var(--color-text-on-primary)',
                                       fontSize: '15px',
                                       marginBottom: '20px',
                                       lineHeight: '1.7',
@@ -1559,23 +1519,23 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
                                     {/* Key Metrics */}
                                     <div style={{
-                                      background: 'rgba(255,255,255,0.15)',
+                                      background: 'var(--color-overlay-on-primary)',
                                       backdropFilter: 'blur(10px)',
                                       padding: '16px',
                                       borderRadius: 'var(--radius-md)',
                                       marginBottom: '16px'
                                     }}>
                                       {bundleOverview?.totalMonthlySearches != null && (
-                                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                        <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                           📊 <strong>{(bundleOverview?.totalMonthlySearches ?? 0).toLocaleString()}</strong> monthly searches targeted
                                         </Text>
                                       )}
                                       {bundleOverview?.projectedMonthlyProfit && (
-                                        <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                        <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                           💰 <strong>${bundleOverview.projectedMonthlyProfit.low?.toLocaleString() || 'N/A'}-${bundleOverview.projectedMonthlyProfit.high?.toLocaleString() || 'N/A'}</strong> projected monthly profit
                                         </Text>
                                       )}
-                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                                      <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block' }}>
                                         <strong>{bundlePricing.strategyCount}</strong> audience segments covered
                                       </Text>
                                     </div>
@@ -1584,24 +1544,24 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                 ) : (
                                   // Fallback to basic display while AI overview loads
                                   <>
-                                    <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
+                                    <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
                                       Get all {bundlePricing.strategyCount} audience strategies with one subscription
                                     </Text>
 
                                     <div style={{
-                                      background: 'rgba(255,255,255,0.1)',
+                                      background: 'var(--color-overlay-on-primary-hover)',
                                       backdropFilter: 'blur(10px)',
                                       padding: '16px',
                                       borderRadius: 'var(--radius-md)',
                                       marginBottom: '16px'
                                     }}>
-                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                      <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                         ✓ {bundlePricing.strategyCount} targeted audience strategies
                                       </Text>
-                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                                      <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                         ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
                                       </Text>
-                                      <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                                      <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block' }}>
                                         ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
                                       </Text>
                                     </div>
@@ -1750,7 +1710,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'var(--color-background-elevated)',
-                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                              boxShadow: 'var(--shadow-card)',
                               border: '1px solid var(--color-border-light)',
                               width: '40px',
                               height: '40px',
@@ -1760,11 +1720,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transition: 'all 0.3s ease'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                               e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                              e.currentTarget.style.boxShadow = 'var(--shadow-card)';
                               e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                             }}
                           />
@@ -1779,7 +1739,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transform: 'translateY(-50%)',
                               zIndex: 10,
                               backgroundColor: 'var(--color-background-elevated)',
-                              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                              boxShadow: 'var(--shadow-card)',
                               border: '1px solid var(--color-border-light)',
                               width: '40px',
                               height: '40px',
@@ -1789,11 +1749,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                               transition: 'all 0.3s ease'
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                              e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                               e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                              e.currentTarget.style.boxShadow = 'var(--shadow-card)';
                               e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                             }}
                           />
@@ -1882,12 +1842,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 top: '16px',
                 right: '16px',
                 background: 'var(--color-success)',
-                color: 'white',
+                color: 'var(--color-text-on-primary)',
                 padding: '6px 16px',
                 borderRadius: 'var(--radius-md)',
                 fontSize: '12px',
                 fontWeight: 600,
-                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                boxShadow: 'var(--shadow-success)',
                 zIndex: 1
               }}>
                 BEST VALUE
@@ -1896,8 +1856,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               <div style={{ padding: '8px' }}>
                 <Row gutter={24} align="middle">
                   <Col xs={24} md={12}>
-                    <div style={{ color: 'white' }}>
-                      <Title level={3} style={{ color: 'white', marginBottom: '16px', marginTop: '0' }}>
+                    <div style={{ color: 'var(--color-text-on-primary)' }}>
+                      <Title level={3} style={{ color: 'var(--color-text-on-primary)', marginBottom: '16px', marginTop: '0' }}>
                         {bundleOverview?.title || 'Multi-Audience Content Strategy'}
                       </Title>
 
@@ -1905,7 +1865,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       {bundleOverview && bundleOverview.overview ? (
                         <>
                           <div style={{
-                            color: 'rgba(255,255,255,0.95)',
+                            color: 'var(--color-text-on-primary)',
                             fontSize: '15px',
                             marginBottom: '20px',
                             lineHeight: '1.7',
@@ -1918,23 +1878,23 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
                           {/* Key Metrics */}
                           <div style={{
-                            background: 'rgba(255,255,255,0.15)',
+                            background: 'var(--color-overlay-on-primary)',
                             backdropFilter: 'blur(10px)',
                             padding: '16px',
                             borderRadius: 'var(--radius-md)',
                             marginBottom: '16px'
                           }}>
                             {bundleOverview?.totalMonthlySearches != null && (
-                              <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                              <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                 📊 <strong>{(bundleOverview?.totalMonthlySearches ?? 0).toLocaleString()}</strong> monthly searches targeted
                               </Text>
                             )}
                             {bundleOverview?.projectedMonthlyProfit && (
-                              <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                              <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                                 💰 <strong>${bundleOverview.projectedMonthlyProfit.low?.toLocaleString() || 'N/A'}-${bundleOverview.projectedMonthlyProfit.high?.toLocaleString() || 'N/A'}</strong> projected monthly profit
                               </Text>
                             )}
-                            <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                            <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block' }}>
                               🎯 <strong>{bundlePricing.strategyCount}</strong> audience segments covered
                             </Text>
                           </div>
@@ -1943,24 +1903,24 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       ) : (
                         // Fallback to basic display while AI overview loads
                         <>
-                          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
+                          <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '15px', display: 'block', marginBottom: '16px' }}>
                             Get all {bundlePricing.strategyCount} audience strategies with one subscription
                           </Text>
 
                           <div style={{
-                            background: 'rgba(255,255,255,0.1)',
+                            background: 'var(--color-overlay-on-primary-hover)',
                             backdropFilter: 'blur(10px)',
                             padding: '16px',
                             borderRadius: 'var(--radius-md)',
                             marginBottom: '16px'
                           }}>
-                            <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                            <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                               ✓ {bundlePricing.strategyCount} targeted audience strategies
                             </Text>
-                            <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
+                            <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
                               ✓ {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.recommended} posts/month total (up to {bundlePricing.strategyCount * bundlePricing.postsPerStrategy.maximum})
                             </Text>
-                            <Text style={{ color: 'white', fontSize: '13px', display: 'block' }}>
+                            <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '13px', display: 'block' }}>
                               ✓ Save ${bundlePricing.savings.monthlyDiscount.toFixed(0)}/month compared to individual subscriptions
                             </Text>
                           </div>
@@ -2111,7 +2071,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       transform: 'translateY(-50%)',
                       zIndex: 10,
                       backgroundColor: 'var(--color-background-elevated)',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      boxShadow: 'var(--shadow-card)',
                       border: '1px solid var(--color-border-light)',
                       width: '40px',
                       height: '40px',
@@ -2121,11 +2081,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                      e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                      e.currentTarget.style.boxShadow = 'var(--shadow-card)';
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                     }}
                   />
@@ -2140,7 +2100,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       transform: 'translateY(-50%)',
                       zIndex: 10,
                       backgroundColor: 'var(--color-background-elevated)',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                      boxShadow: 'var(--shadow-card)',
                       border: '1px solid var(--color-border-light)',
                       width: '40px',
                       height: '40px',
@@ -2150,11 +2110,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       transition: 'all 0.3s ease'
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+                      e.currentTarget.style.boxShadow = 'var(--shadow-md)';
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)';
+                      e.currentTarget.style.boxShadow = 'var(--shadow-card)';
                       e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
                     }}
                   />
