@@ -217,6 +217,54 @@ test.describe('E2E (mocked backend)', () => {
       });
       expect(isInViewport).toBeTruthy();
     });
+
+    test('when website analysis fails, shows informative empty state with Try again and Try a different URL (#185)', async ({ page }) => {
+      test.setTimeout(35000);
+      // Install mocks: job creation 404 so sync flow is used; sync analyze returns failure (Issue #185)
+      await installWorkflowMocksWithOptions(page, { analysisSyncFails: true });
+      await page.goto('/');
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      await expect(createBtn).toBeVisible({ timeout: 5000 });
+      await createBtn.click();
+      await page.waitForTimeout(500);
+      const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(input).toBeVisible({ timeout: 5000 });
+      await input.fill('https://example.com');
+      const analyzeBtn = page.locator('button:has-text("Analyze")').first();
+      await expect(analyzeBtn).toBeVisible({ timeout: 2000 });
+      await analyzeBtn.click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      const emptyState = page.locator('[data-testid="analysis-failed-empty-state"]');
+      await expect(emptyState).toBeVisible({ timeout: 8000 });
+      await expect(emptyState.locator('text=Try again')).toBeVisible({ timeout: 2000 });
+      await expect(emptyState.locator('text=Try a different URL')).toBeVisible({ timeout: 2000 });
+    });
+
+    test('after website analysis, inline empty states are shown for missing categories (#185)', async ({ page }) => {
+      test.setTimeout(45000);
+      await runWebsiteAnalysisToCompletion(page);
+      const emptyStateIds = [
+        '[data-testid="empty-business-model"]',
+        '[data-testid="empty-website-goals"]',
+        '[data-testid="empty-blog-strategy"]',
+        '[data-testid="empty-keywords"]',
+        '[data-testid="empty-ctas"]',
+      ];
+      let found = false;
+      for (const id of emptyStateIds) {
+        const el = page.locator(id).first();
+        if (await el.isVisible({ timeout: 2000 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      expect(found).toBeTruthy();
+    });
   });
 
   test.describe('Workflow', () => {
