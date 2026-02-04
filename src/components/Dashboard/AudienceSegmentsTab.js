@@ -1400,46 +1400,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             );
           })()}
 
-          {/* Generate Post Button - Shows when card is selected in workflow mode */}
-          {isSelected && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
-            <Button
-              type="primary"
-              block
-              size="large"
-              style={{
-                marginTop: '20px',
-                height: '48px',
-                fontWeight: 600,
-                fontSize: '15px',
-                backgroundColor: 'var(--color-success)',
-                borderColor: 'var(--color-success)'
-              }}
-              icon={<BulbOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                setSelectedCustomerStrategy(strategy);
-                updateCustomerStrategy(strategy);
-                if (onNextStep) {
-                  onNextStep();
-                } else {
-                  if (onEnterProjectMode) {
-                    onEnterProjectMode();
-                  } else {
-                    tabMode.enterWorkflowMode();
-                  }
-                  setTimeout(() => {
-                    const postsSection = document.getElementById('posts');
-                    if (postsSection) {
-                      postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }
-                  }, 100);
-                  message.success('Moving to content creation...');
-                }
-              }}
-            >
-              Generate Post
-            </Button>
-          )}
         </Card>
       </motion.div>
     );
