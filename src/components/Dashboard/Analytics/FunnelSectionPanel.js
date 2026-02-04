@@ -154,7 +154,10 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
           <div style={{ padding: '16px 0' }}>
             {funnelSteps.map((step, index) => {
               // Use 100% for first step (no previous step to convert from), otherwise use provided conversion_rate
-              const conversionRate = step.conversion_rate !== undefined ? step.conversion_rate : 100;
+              // Issue #163: Add type checking to prevent crash when conversion_rate is null/string
+              const conversionRate = typeof step.conversion_rate === 'number' && !isNaN(step.conversion_rate)
+                ? step.conversion_rate
+                : (index === 0 ? 100 : 0);
               const isLowConversion = conversionRate <= 50;
               const stageKey = step.step;
               const isExpanded = expandedStages[stageKey];
