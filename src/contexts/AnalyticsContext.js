@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import WorkflowModeContext from './WorkflowModeContext';
 import autoBlogAPI from '../services/api';
 
 const AnalyticsContext = createContext();
@@ -14,28 +15,30 @@ export const useAnalytics = () => {
 
 export const AnalyticsProvider = ({ children }) => {
   const { user } = useAuth();
+  const workflowContext = useContext(WorkflowModeContext);
+  const workflowWebsiteUrl = workflowContext?.websiteUrl ?? null;
   const sessionId = useRef(generateSessionId());
   const eventQueue = useRef([]);
   const flushTimeout = useRef(null);
 
   /**
-   * Track individual event (only sends when user is authenticated; backend returns 401 without token)
+   * Track individual event. Sends for all users (logged in or out); backend should accept
+   * unauthenticated requests and key by workflowWebsiteUrl/sessionId. See issue #202.
    */
   const trackEvent = useCallback(async (eventType, eventData = {}, metadata = {}) => {
-    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('accessToken');
-    if (!hasToken) return;
-
     try {
       const event = {
         eventType,
         eventData,
         pageUrl: window.location.href,
-        userId: user?.id || null, // Include user ID in all events
+        userId: user?.id || null,
+        workflowWebsiteUrl: workflowWebsiteUrl || metadata.workflowWebsiteUrl || null,
         metadata: {
           sessionId: sessionId.current,
           referrer: document.referrer,
           conversionFunnelStep: metadata.conversionFunnelStep || null,
           revenueAttributed: metadata.revenueAttributed || null,
+          workflowWebsiteUrl: workflowWebsiteUrl || metadata.workflowWebsiteUrl || null,
           ...metadata
         }
       };
@@ -58,21 +61,14 @@ export const AnalyticsProvider = ({ children }) => {
       console.error('Failed to track event:', error);
       // Don't throw - analytics failures shouldn't break the app
     }
-  }, [user]);
+  }, [user, workflowWebsiteUrl]);
 
   /**
-   * Batch send events (only when authenticated; backend returns 401 without token)
+   * Batch send events. Sends for all users; backend should accept unauthenticated
+   * requests (issue #202).
    */
   const flushEvents = useCallback(async () => {
     if (eventQueue.current.length === 0) return;
-
-    const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem('accessToken');
-    if (!hasToken) {
-      eventQueue.current = [];
-      clearTimeout(flushTimeout.current);
-      flushTimeout.current = null;
-      return;
-    }
 
     const eventsToSend = [...eventQueue.current];
     eventQueue.current = [];
