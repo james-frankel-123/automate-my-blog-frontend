@@ -11,7 +11,8 @@ import {
   ReloadOutlined,
   LockOutlined,
   TeamOutlined,
-  TrophyOutlined
+  TrophyOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -347,6 +348,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   
   // Editor state for TipTap integration
   const [richTextEditor, setRichTextEditor] = useState(null);
+
+  // Stream preview vs WYSIWYG: show HTML/Markdown preview while streaming; when done, offer "Switch to WYSIWYG"
+  const [contentViewMode, setContentViewMode] = useState('preview'); // 'preview' | 'editor'
 
   // Fullscreen editor state
   const [isEditorFullscreen, setIsEditorFullscreen] = useState(false);
@@ -735,6 +739,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     const websiteAnalysisData = stepResults?.home?.websiteAnalysis || {};
     
     setSelectedTopic(topic);
+    setEditingContent('');
+    setContentViewMode('preview');
     setGeneratingContent(true);
     setRelatedTweets([]);
 
@@ -876,6 +882,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             enhancementOptions
           );
           setEditingContent('');
+          setContentViewMode('preview');
           const streamDone = new Promise((resolve, reject) => {
             api.connectToStream(connectionId, {
               onChunk: (data) => {
@@ -3027,16 +3034,51 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               </div>
             </div>
             
-            {/* ENHANCED MODERN EDITOR SECTION */}
+            {/* ENHANCED MODERN EDITOR SECTION - Preview (HTML/Markdown) while streaming; WYSIWYG when user switches */}
             <EditorLayout
               isFullscreen={isEditorFullscreen}
               onToggleFullscreen={handleToggleFullscreen}
               toolbarContent={
-                <EditorToolbar
-                  editor={richTextEditor}
-                  content={editingContent}
-                  onInsert={handleTextInsert}
-                />
+                contentViewMode === 'preview' && !generatingContent && editingContent?.trim() ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <Button
+                      type="primary"
+                      icon={<EditOutlined />}
+                      onClick={() => {
+                        const normalized = normalizeContentString(editingContent) || editingContent;
+                        if (normalized !== editingContent) setEditingContent(normalized);
+                        setContentViewMode('editor');
+                      }}
+                    >
+                      Switch to WYSIWYG
+                    </Button>
+                    <Button
+                      icon={<CopyOutlined />}
+                      onClick={async () => {
+                        const toCopy = normalizeContentString(editingContent) || editingContent;
+                        try {
+                          await navigator.clipboard.writeText(toCopy);
+                          message.success('Copied to clipboard');
+                        } catch (err) {
+                          message.error('Failed to copy to clipboard');
+                        }
+                      }}
+                    >
+                      Copy to clipboard
+                    </Button>
+                    <Text type="secondary" style={{ fontSize: '13px' }}>Edit formatting in the editor</Text>
+                  </div>
+                ) : contentViewMode === 'editor' ? (
+                  <EditorToolbar
+                    editor={richTextEditor}
+                    content={editingContent}
+                    onInsert={handleTextInsert}
+                  />
+                ) : (
+                  <Text type="secondary" style={{ fontSize: '13px' }}>
+                    {generatingContent ? 'Streaming content…' : 'Content preview'}
+                  </Text>
+                )
               }
               sidebarContent={
                 seoAnalysisVisible && currentDraft?.generation_metadata?.seoAnalysis ? (
@@ -3046,14 +3088,37 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 ) : null
               }
             >
-              <EditorPane>
-                <RichTextEditor
-                  content={editingContent}
-                  onChange={handleContentChange}
-                  onEditorReady={setRichTextEditor}
-                  placeholder="Your generated content will appear here for editing..."
-                />
-              </EditorPane>
+              {(generatingContent || contentViewMode === 'preview') ? (
+                <div style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'auto',
+                  backgroundColor: 'var(--color-background-body)',
+                  padding: 'var(--space-5)',
+                  minHeight: '320px'
+                }}>
+                  <HTMLPreview
+                    content={normalizeContentString(editingContent) || editingContent || (generatingContent ? 'Waiting for content…' : '')}
+                    typographySettings={typography}
+                    style={{
+                      minHeight: '300px',
+                      padding: '20px',
+                      backgroundColor: 'var(--color-background-alt)',
+                      borderRadius: '6px'
+                    }}
+                  />
+                </div>
+              ) : (
+                <EditorPane>
+                  <RichTextEditor
+                    content={editingContent}
+                    onChange={handleContentChange}
+                    onEditorReady={setRichTextEditor}
+                    placeholder="Your generated content will appear here for editing..."
+                  />
+                </EditorPane>
+              )}
             </EditorLayout>
             
             {/* Typography Settings Panel - Temporarily disabled to fix infinite loop */}
@@ -3099,6 +3164,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     setSelectedTopic(null);
                     setCurrentDraft(null);
                     setRelatedTweets([]);
+                    setContentViewMode('preview');
                   }}
                 >
                   Start Over
