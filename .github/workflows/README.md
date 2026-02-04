@@ -118,6 +118,12 @@ Do **not** require **Deploy to Vercel** or **Deploy Preview**. Those jobs are sk
 **Fix "Some required checks haven't completed yet":**  
 Repo **Settings → Branches** → rule for `main` → **Require status checks** → remove "Deploy to Vercel" and "Deploy Preview" from the list; keep only Run Tests, Run E2E Tests, Verify Build.
 
+### Speeding up the merge queue
+
+- **No duplicate unit tests on merge queue:** CI workflow skips its "Unit Tests" job on `merge_group`; deploy.yml "Run Tests" already runs unit tests, so merge queue runs them once.
+- **Playwright browser cache:** E2E workflow caches `~/.cache/ms-playwright` keyed by `package-lock.json`; cache hits avoid re-downloading Chromium (~1–2 min saved).
+- **Optional (future):** E2E sharding (`playwright test --shard=1/2` with a matrix) can run E2E in parallel across runners to cut E2E wall time; branch protection would need to require all shard checks.
+
 ## Troubleshooting
 
 ### Tests fail in CI but pass locally
