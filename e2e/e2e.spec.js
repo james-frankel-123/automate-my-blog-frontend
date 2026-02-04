@@ -53,13 +53,20 @@ async function waitForNoModal(page, timeoutMs = 6000) {
   ).catch(() => {});
 }
 
-/** Click the Create Post / Generate post button via DOM so overlays cannot intercept. */
+/**
+ * Click the Create Post / Generate post button (topic → full post).
+ * When topicTitle is set, clicks the button inside the topic card with that title so we don't hit the "Generate post" (topics) CTA.
+ */
 async function clickCreatePostButton(page, options = {}) {
-  const { waitForContentResponse = true } = options;
+  const { waitForContentResponse = true, topicTitle = null } = options;
   await dismissOpenModalIfPresent(page);
   await waitForNoModal(page, 6000);
-  const createPostBtn = page.locator('#posts').getByRole('button', { name: /Create Post|Generate post/i }).first();
-  await createPostBtn.waitFor({ state: 'attached', timeout: 15000 });
+  const postsSection = page.locator('#posts');
+  // When topicTitle is set, use per-topic button (data-testid wrapper in PostsTab). Otherwise first Create Post / Generate post in #posts.
+  const createPostBtn = topicTitle
+    ? page.locator('[data-testid="create-post-from-topic"]').first().getByRole('button')
+    : postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
+  await createPostBtn.waitFor({ state: 'attached', timeout: 20000 });
   if (waitForContentResponse) {
     await Promise.all([
       page.waitForResponse(
@@ -773,7 +780,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-        await clickCreatePostButton(page);
+        await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
         await page.waitForTimeout(1000);
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
@@ -812,7 +819,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
         await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-        await clickCreatePostButton(page);
+        await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
         await page.waitForTimeout(1000);
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
@@ -866,7 +873,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForTimeout(2000);
 
       await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-      await clickCreatePostButton(page);
+      await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
       await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
       await page.waitForTimeout(1000);
 
@@ -925,7 +932,7 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(1500);
 
-      await clickCreatePostButton(page);
+      await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
 
       // Progress panel may appear briefly; wait for content to complete (progress hidden or editor visible)
       await Promise.race([
@@ -970,7 +977,7 @@ test.describe('E2E (mocked backend)', () => {
       await expect(page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience|We\'ve got a basic picture/i').first()).toBeVisible({ timeout: 8000 });
     });
 
-    test.skip('503 on job create shows queue unavailable message', async ({ page }) => {
+    test('503 on job create shows queue unavailable message', async ({ page }) => {
       test.setTimeout(90000);
       await installWorkflowMocks(page);
       await page.goto('/');
@@ -1061,7 +1068,7 @@ test.describe('E2E (mocked backend)', () => {
 
       await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
       await page.waitForTimeout(500);
-      await clickCreatePostButton(page, { waitForContentResponse: false });
+      await clickCreatePostButton(page, { waitForContentResponse: false, topicTitle: MOCK_TOPICS[0].title });
 
       const retryModal = page.locator('.ant-modal').filter({ hasText: /Content generation failed|Retry|Something went wrong/i });
       await expect(retryModal).toBeVisible({ timeout: 15000 });

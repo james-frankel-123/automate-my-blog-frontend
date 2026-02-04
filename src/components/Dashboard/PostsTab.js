@@ -2037,7 +2037,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 )}
                                 
                                 {/* Action Buttons */}
-                                <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                                <div style={{ textAlign: 'center', marginTop: '16px' }} data-testid="create-post-from-topic">
                                   <Button
                                     type="primary"
                                     size="large"
@@ -2798,7 +2798,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               )}
                               
                               {/* Action Buttons */}
-                              <div style={{ textAlign: 'center', marginTop: '16px' }}>
+                              <div style={{ textAlign: 'center', marginTop: '16px' }} data-testid="create-post-from-topic">
                                 <Button
                                   type="primary"
                                   size="large"
