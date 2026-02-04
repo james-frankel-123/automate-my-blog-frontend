@@ -261,7 +261,7 @@ const AppContent = () => {
   );
 };
 
-// Main App wrapper with HelmetProvider, AuthProvider, AnalyticsProvider, and WorkflowModeProvider
+// Main App wrapper: WorkflowModeProvider wraps AnalyticsProvider so analytics can read workflowWebsiteUrl (issue #202)
 const App = () => {
   const isDarkMode = useDarkMode();
 
@@ -269,11 +269,11 @@ const App = () => {
     <ConfigProvider theme={getAntdTheme(isDarkMode)}>
       <HelmetProvider>
         <AuthProvider>
-          <AnalyticsProvider>
-            <WorkflowModeProvider>
+          <WorkflowModeProvider>
+            <AnalyticsProvider>
               <AppContent />
-            </WorkflowModeProvider>
-          </AnalyticsProvider>
+            </AnalyticsProvider>
+          </WorkflowModeProvider>
         </AuthProvider>
       </HelmetProvider>
     </ConfigProvider>
