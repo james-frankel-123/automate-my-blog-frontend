@@ -234,7 +234,9 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
                 </Text>
               )}
               {scenario.pitch && (
-                <Paragraph style={{ marginBottom: 0 }}>{scenario.pitch}</Paragraph>
+                <div style={{ marginTop: 8 }}>
+                  <MarkdownPreview content={scenario.pitch} style={{ marginBottom: 0 }} />
+                </div>
               )}
             </Card>
           ))}
