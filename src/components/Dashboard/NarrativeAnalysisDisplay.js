@@ -43,8 +43,9 @@ const analysisText = {
  * @param {Object} props
  * @param {string} [props.jobId] - Website analysis job ID for narrative stream
  * @param {Object} [props.analysisResults] - Full analysis result with scenarios (for Moment 3)
+ * @param {Function} [props.renderFallback] - Rendered when narrative stream unavailable (e.g. 404). Enables graceful fallback to ThinkingPanel.
  */
-export function NarrativeAnalysisDisplay({ jobId, analysisResults }) {
+export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback }) {
   const {
     scrapingNarrative,
     analysisNarrative,
@@ -55,9 +56,9 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults }) {
 
   if (!jobId) return null;
 
-  // Don't render if narrative stream not available and no content (caller should show fallback)
+  // When narrative stream not available and no content, render fallback if provided
   if (!narrativeAvailable && !scrapingNarrative && !analysisNarrative) {
-    return null;
+    return renderFallback ? renderFallback() : null;
   }
 
   const scenarios = analysisResults?.scenarios ?? analysisResults?.analysis?.scenarios ?? [];
