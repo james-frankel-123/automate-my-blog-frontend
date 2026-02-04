@@ -42,25 +42,31 @@ export function extractStreamChunk(data) {
 }
 
 /**
- * Extract final content from a complete event payload.
- * Handles nested structures like { blogPost: { content: "..." } }.
+ * Extract final content from a complete event payload (object or raw string).
+ * Handles nested structures like { blogPost: { content: "..." } } and when
+ * the payload is a string (e.g. blogPost/result as the whole fenced JSON).
  * Normalizes content so raw JSON is never returned (e.g. backend sending
  * stringified blog object or ProseMirror doc); only displayable content is returned.
  *
- * @param {Object} data - Complete event payload
+ * @param {Object|string} data - Complete event payload or raw content string
  * @returns {string} Final content string, or empty if none found
  */
 export function extractStreamCompleteContent(data) {
   if (data == null) return '';
 
-  const content =
-    data.content ??
-    data.text ??
-    data.overview ??
-    data.blogPost?.content ??
-    data.result?.content ??
-    data.data?.content;
-  if (typeof content !== 'string') return '';
+  let content;
+  if (typeof data === 'string') {
+    content = data;
+  } else {
+    content =
+      data.content ??
+      data.text ??
+      data.overview ??
+      (typeof data.blogPost === 'string' ? data.blogPost : data.blogPost?.content) ??
+      (typeof data.result === 'string' ? data.result : data.result?.content) ??
+      data.data?.content;
+    if (typeof content !== 'string') return '';
+  }
 
   // Backend may wrap payload in markdown code fences (```json ... ```); strip first.
   const normalized = stripMarkdownCodeFences(content).trim();
@@ -73,6 +79,20 @@ export function extractStreamCompleteContent(data) {
   }
   return wasFenced ? normalized : content;
 }
+
+/**
+ * Normalize a content string: strip code fences, parse JSON, return .content (or plain text).
+ * Use when the backend returns a raw/fenced string (e.g. final job result.content).
+ *
+ * @param {string} str - Raw content (may be fenced JSON or plain HTML/text)
+ * @returns {string} Displayable content, or str if not JSON/fenced
+ */
+export function normalizeContentString(str) {
+  if (typeof str !== 'string' || !str.trim()) return str;
+  const out = extractStreamCompleteContent({ content: str });
+  return out !== '' ? out : str;
+}
+
 
 /**
  * Strip markdown code fences (``` or ```json etc.) from a string.

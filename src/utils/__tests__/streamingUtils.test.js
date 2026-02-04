@@ -1,4 +1,4 @@
-import { extractStreamChunk, extractStreamCompleteContent } from '../streamingUtils';
+import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../streamingUtils';
 
 describe('streamingUtils', () => {
   describe('extractStreamChunk', () => {
@@ -95,6 +95,16 @@ describe('streamingUtils', () => {
       expect(extractStreamCompleteContent({ content: html })).toBe(html);
     });
 
+    it('accepts raw string payload (e.g. event.data as string)', () => {
+      const fenced = '```json\n{"content":"<p>From string</p>"}\n```';
+      expect(extractStreamCompleteContent(fenced)).toBe('<p>From string</p>');
+    });
+
+    it('extracts content when blogPost is the fenced string', () => {
+      const payload = { blogPost: '```json\n{"content":"<p>Blog</p>"}\n```' };
+      expect(extractStreamCompleteContent(payload)).toBe('<p>Blog</p>');
+    });
+
     it('strips markdown code fences and extracts content when wrapped in ```', () => {
       const fenced = '```json\n{"title":"Post","content":"<p>Hello</p>"}\n```';
       expect(extractStreamCompleteContent({ content: fenced })).toBe(
@@ -121,6 +131,20 @@ describe('streamingUtils', () => {
     it('strips ``` and extracts content from fenced JSON chunk', () => {
       const chunk = '```json\n{"content":"Hello"}\n```';
       expect(extractStreamChunk(chunk)).toBe('Hello');
+    });
+  });
+
+  describe('normalizeContentString', () => {
+    it('returns displayable content for fenced JSON (e.g. final result.content)', () => {
+      const raw = '```json\n{"title":"Post","content":"<p>Hi</p>"}\n```';
+      expect(normalizeContentString(raw)).toBe('<p>Hi</p>');
+    });
+    it('returns plain HTML as-is', () => {
+      const html = '<p>Hello</p>';
+      expect(normalizeContentString(html)).toBe(html);
+    });
+    it('returns empty string as-is', () => {
+      expect(normalizeContentString('')).toBe('');
     });
   });
 });

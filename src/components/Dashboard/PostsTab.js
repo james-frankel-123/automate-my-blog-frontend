@@ -33,7 +33,7 @@ import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
-import { extractStreamChunk, extractStreamCompleteContent } from '../../utils/streamingUtils';
+import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
 import ThinkingPanel from '../shared/ThinkingPanel';
 
 // New Enhanced Components
@@ -947,7 +947,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }
       
       if (result.success) {
-        setEditingContent(result.content);
+        setEditingContent(normalizeContentString(result.content) || result.content);
         setContentGenerated(true);
 
         // If images are generating in background, show indicator and update when ready
@@ -1116,7 +1116,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   }
                 });
                 if (retryResult.success) {
-                  setEditingContent(retryResult.content);
+                  setEditingContent(normalizeContentString(retryResult.content) || retryResult.content);
                   setContentGenerated(true);
                   const savedPost = retryResult.blogPost;
                   setCurrentDraft({
