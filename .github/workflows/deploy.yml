@@ -1,5 +1,9 @@
 name: Test and Deploy to Vercel
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -34,33 +38,38 @@ env:
   CI: true
 
 jobs:
-  # Unit tests and lint (E2E runs in e2e-tests.yml; require "Run E2E Tests" via branch protection)
-  test:
-    name: Run Tests
+  # Lint, unit tests, and build in one job (one npm ci; E2E runs in e2e-tests.yml)
+  test-and-build:
+    name: Test and Build
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
-        
+
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '18'
           cache: 'npm'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Run linting
         run: npm run lint --if-present
         continue-on-error: true
-        
+
       - name: Run unit tests
         run: npm test -- --coverage --watchAll=false --passWithNoTests
         env:
           CI: true
-          
+
+      - name: Build project
+        run: npm run build
+        env:
+          CI: true
+          DISABLE_ESLINT_PLUGIN: true
+
       - name: Upload test coverage
         uses: actions/upload-artifact@v6
         if: always()
@@ -69,37 +78,12 @@ jobs:
           path: coverage/
           retention-days: 7
 
-  # Build verification - ensure project builds successfully
-  build:
-    name: Verify Build
-    runs-on: ubuntu-latest
-    needs: [test]
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: '18'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Build project
-        run: npm run build
-        env:
-          CI: true
-          DISABLE_ESLINT_PLUGIN: true
-
-  # Deploy only after tests and build pass (E2E required via branch protection).
+  # Deploy only after test-and-build passes (E2E required via branch protection).
   # Do NOT add "Deploy to Vercel" as a required status check — it is skipped on PRs and merge queue.
   deploy:
     name: Deploy to Vercel
     runs-on: ubuntu-latest
-    needs: [test, build]
+    needs: [test-and-build]
     # Only deploy on push to main, not on PRs or merge queue
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
@@ -133,12 +117,12 @@ jobs:
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 
-  # Preview deployment for PRs (after tests pass). Skipped on merge queue.
+  # Preview deployment for PRs (after test-and-build passes). Skipped on merge queue.
   # Do NOT add "Deploy Preview" as a required status check — it is skipped in merge queue.
   preview:
     name: Deploy Preview
     runs-on: ubuntu-latest
-    needs: [test, build]
+    needs: [test-and-build]
     if: github.event_name == 'pull_request'
     permissions:
       contents: read
