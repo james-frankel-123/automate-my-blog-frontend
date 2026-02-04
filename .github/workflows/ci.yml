@@ -34,12 +34,12 @@ jobs:
     name: E2E Tests
     uses: ./.github/workflows/e2e-tests.yml
 
-  # Run unit tests (if you have them)
+  # Run unit tests (if you have them). Skip on merge_group — deploy.yml "Run Tests" already runs them.
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+    if: github.event_name != 'merge_group'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
