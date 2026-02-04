@@ -141,10 +141,8 @@ const WebsiteAnalysisStepStandalone = ({
     }
   }, [loading, analysisResults]);
 
-  // Clear narrative stream job ID when loading ends
-  useEffect(() => {
-    if (!loading) setAnalysisJobId(null);
-  }, [loading]);
+  // Narrative stream job ID is cleared only when stream completes (onNarrativeComplete), not when loading ends,
+  // so the streaming UI stays visible until the narrative is persisted into analysisResults.
 
   // Poll for narrative when it's generating
   useEffect(() => {
@@ -912,8 +910,20 @@ const WebsiteAnalysisStepStandalone = ({
   );
 
   /**
+   * Persist streamed narrative into analysisResults when narrative stream completes, then clear jobId
+   * so the results view (NarrativeAnalysisCard) shows the narrative instead of the streaming UI.
+   */
+  const handleNarrativeComplete = (analysisNarrative, _scrapingNarrative) => {
+    if (analysisNarrative && setAnalysisResults) {
+      setAnalysisResults(prev => ({ ...prev, narrative: analysisNarrative }));
+    }
+    setAnalysisJobId(null);
+  };
+
+  /**
    * Render analysis loading state. Uses NarrativeAnalysisDisplay when jobId available (Issue #157);
-   * falls back to ThinkingPanel when narrative stream unavailable.
+   * falls back to ThinkingPanel when narrative stream unavailable. Display is shown whenever we have
+   * analysisJobId (during and after loading) so streamed content does not disappear when the API returns.
    */
   const renderAnalysisLoading = () => {
     if (analysisJobId) {
@@ -922,6 +932,7 @@ const WebsiteAnalysisStepStandalone = ({
           jobId={analysisJobId}
           analysisResults={analysisResults}
           renderFallback={renderThinkingPanelFallback}
+          onNarrativeComplete={handleNarrativeComplete}
         />
       );
     }
@@ -941,8 +952,8 @@ const WebsiteAnalysisStepStandalone = ({
       websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] :
       '';
 
-    // Show narrative as primary display if available
-    const hasNarrative = analysis.narrative && analysis.narrative.trim().length > 0;
+    // Show narrative as primary display if available (hide when streaming UI is still showing same narrative)
+    const hasNarrative = analysis.narrative && analysis.narrative.trim().length > 0 && !analysisJobId;
 
     // Helper function to get status message
     const getStatusMessage = (status, attempts) => {
@@ -1519,8 +1530,8 @@ const WebsiteAnalysisStepStandalone = ({
         {/* Always show URL input - greyed out when analysis exists and not in edit mode */}
         {renderUrlInput()}
 
-        {/* Show loading state when analyzing */}
-        {loading && renderAnalysisLoading()}
+        {/* Show streaming UI when we have a narrative job (during and after API loading so streamed content persists) */}
+        {(loading || analysisJobId) && renderAnalysisLoading()}
 
         {/* Show analysis results only after user has run analysis (loading or completed), not initial placeholder state */}
         {(analysisCompleted || loading) && analysisResults && renderAnalysisResults()}
