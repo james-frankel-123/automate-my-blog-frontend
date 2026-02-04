@@ -1002,7 +1002,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             cursor: 'pointer',
             opacity: isOthersSelected ? 0.5 : 1,
             transition: 'all 0.3s ease',
-            margin: '0 auto',
+            margin: '15px auto', // Issue #166: Add 15px top/bottom margin to prevent shadow cutoff
             maxWidth: '480px',
             position: 'relative',
             boxShadow: isSubscribed
