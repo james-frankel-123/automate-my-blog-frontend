@@ -56,11 +56,20 @@ jobs:
           
       - name: Install dependencies
         run: npm ci
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
         
-      - name: Install Playwright browsers
+      - name: Install Playwright browsers (cache miss)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
         
-      - name: Install Playwright dependencies
+      - name: Install Playwright OS dependencies only (browsers from cache)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
           
       - name: Run E2E tests

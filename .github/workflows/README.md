@@ -128,6 +128,12 @@ Repo **Settings → Branches** → rule for `main` → **Require status checks**
   - **E2E sharding:** Run `playwright test --shard=1/2` and `--shard=2/2` in a matrix to cut E2E wall time; add all shard checks to branch protection.
   - **Coverage only when needed:** Run unit tests without `--coverage` on PR/merge for speed; run with coverage on main or in a separate job.
 
+### Speeding up the merge queue
+
+- **No duplicate unit tests on merge queue:** CI workflow skips its "Unit Tests" job on `merge_group`; deploy.yml "Run Tests" already runs unit tests, so merge queue runs them once.
+- **Playwright browser cache:** E2E workflow caches `~/.cache/ms-playwright` keyed by `package-lock.json`; cache hits avoid re-downloading Chromium (~1–2 min saved).
+- **Optional (future):** E2E sharding (`playwright test --shard=1/2` with a matrix) can run E2E in parallel across runners to cut E2E wall time; branch protection would need to require all shard checks.
+
 ## Troubleshooting
 
 ### Tests fail in CI but pass locally
