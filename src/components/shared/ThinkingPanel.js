@@ -13,10 +13,9 @@ import { Progress } from 'antd';
 const panelStyles = {
   panel: {
     position: 'sticky',
-    // Stick below fixed header (e.g. login/signup bar); layout sets --thinking-panel-sticky-top
-    top: 'var(--thinking-panel-sticky-top, 0)',
+    bottom: 'var(--thinking-panel-sticky-bottom, 0)',
     zIndex: 10,
-    marginBottom: '12px',
+    marginTop: '12px',
     padding: '8px 14px 10px',
     backgroundColor: 'var(--color-primary-50)',
     borderRadius: '8px',

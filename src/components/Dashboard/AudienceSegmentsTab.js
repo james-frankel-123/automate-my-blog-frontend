@@ -1418,6 +1418,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               onClick={(e) => {
                 e.stopPropagation();
                 setSelectedCustomerStrategy(strategy);
+                updateCustomerStrategy(strategy);
                 if (onNextStep) {
                   onNextStep();
                 } else {
@@ -1564,9 +1565,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                                       borderRadius: 'var(--radius-md)',
                                       marginBottom: '16px'
                                     }}>
-                                      {bundleOverview && bundleOverview.totalMonthlySearches != null && (
+                                      {bundleOverview?.totalMonthlySearches != null && (
                                         <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-                                          📊 <strong>{bundleOverview.totalMonthlySearches.toLocaleString()}</strong> monthly searches targeted
+                                          📊 <strong>{(bundleOverview?.totalMonthlySearches ?? 0).toLocaleString()}</strong> monthly searches targeted
                                         </Text>
                                       )}
                                       {bundleOverview?.projectedMonthlyProfit && (
@@ -1923,9 +1924,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                             borderRadius: 'var(--radius-md)',
                             marginBottom: '16px'
                           }}>
-                            {bundleOverview && bundleOverview.totalMonthlySearches != null && (
+                            {bundleOverview?.totalMonthlySearches != null && (
                               <Text style={{ color: 'white', fontSize: '13px', display: 'block', marginBottom: '8px' }}>
-                                📊 <strong>{bundleOverview.totalMonthlySearches.toLocaleString()}</strong> monthly searches targeted
+                                📊 <strong>{(bundleOverview?.totalMonthlySearches ?? 0).toLocaleString()}</strong> monthly searches targeted
                               </Text>
                             )}
                             {bundleOverview?.projectedMonthlyProfit && (
