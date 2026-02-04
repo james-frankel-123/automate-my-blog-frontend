@@ -8,7 +8,7 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { installWorkflowMocks, installWorkflowMocksWithOptions, injectLoggedInUser, MOCK_TOPICS } = require('./mocks/workflow-api-mocks');
+const { installWorkflowMocks, installWorkflowMocksWithOptions, injectLoggedInUser, MOCK_TOPICS, creditsWithPosts, creditsZero, creditsUnlimited } = require('./mocks/workflow-api-mocks');
 
 async function clearStorage(page) {
   await page.evaluate(() => {
@@ -585,6 +585,149 @@ test.describe('E2E (mocked backend)', () => {
       const genBtn = page.locator('button:has-text("Generate post")').first();
       await expect(genBtn).toBeVisible({ timeout: 10000 });
       expect(await genBtn.textContent()).not.toContain('Buy more');
+    });
+
+    /**
+     * Content Topics button display (fix/content-topics-button-label)
+     * Ensures the CTA shows "Create Post" / "Generate post" when user has credits or isUnlimited,
+     * and "Buy more posts" only when credits are 0; logged-out shows register/free post copy.
+     */
+    test.describe('Content Topics button display', () => {
+      /** Navigate to Content Topics section: Create New Post → analyze → audience → select strategy → #posts visible */
+      async function navigateToContentTopics(page) {
+        await page.locator('button:has-text("Create New Post")').first().click();
+        await page.waitForTimeout(800);
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        await expect(websiteInput).toBeVisible({ timeout: 10000 });
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        await page.waitForTimeout(800);
+        await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(500);
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+        await expect(strategyCard).toBeVisible({ timeout: 10000 });
+        await strategyCard.click();
+        await page.waitForTimeout(2000);
+        await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+        await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+        await page.waitForTimeout(800);
+      }
+
+      test('logged in with available credits: initial CTA shows "Generate post" (not Buy more posts)', async ({ page }) => {
+        test.setTimeout(60000);
+        await installWorkflowMocksWithOptions(page, { userCredits: creditsWithPosts(5) });
+        await page.goto('/');
+        await clearStorage(page);
+        await injectLoggedInUser(page);
+        await page.reload();
+        await page.waitForLoadState('load');
+        await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        await removeOverlay(page);
+        await navigateToContentTopics(page);
+        const initialCta = page.locator('#posts').locator('button:has-text("Generate post"), button:has-text("Buy more posts"), button:has-text("Select an audience first")').first();
+        await expect(initialCta).toBeVisible({ timeout: 12000 });
+        const text = await initialCta.textContent();
+        expect(text).toMatch(/Generate post/i);
+        expect(text).not.toMatch(/Buy more posts/i);
+      });
+
+      test('logged in with default credits: initial CTA shows "Generate post" (not Buy more posts)', async ({ page }) => {
+        test.setTimeout(60000);
+        await setupLoggedIn(page);
+        await navigateToContentTopics(page);
+        const initialCta = page.locator('#posts').locator('button:has-text("Generate post"), button:has-text("Buy more posts"), button:has-text("Select an audience first")').first();
+        await expect(initialCta).toBeVisible({ timeout: 12000 });
+        const text = await initialCta.textContent();
+        expect(text).toMatch(/Generate post/i);
+        expect(text).not.toMatch(/Buy more posts/i);
+      });
+
+      test('logged in with isUnlimited: initial CTA shows "Generate post" (not Buy more posts)', async ({ page }) => {
+        test.setTimeout(60000);
+        await installWorkflowMocksWithOptions(page, { userCredits: creditsUnlimited() });
+        await page.goto('/');
+        await clearStorage(page);
+        await injectLoggedInUser(page);
+        await page.reload();
+        await page.waitForLoadState('load');
+        await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        await removeOverlay(page);
+        await navigateToContentTopics(page);
+        const initialCta = page.locator('#posts').locator('button:has-text("Generate post"), button:has-text("Buy more posts"), button:has-text("Select an audience first")').first();
+        await expect(initialCta).toBeVisible({ timeout: 12000 });
+        const text = await initialCta.textContent();
+        expect(text).toMatch(/Generate post/i);
+        expect(text).not.toMatch(/Buy more posts/i);
+      });
+
+      test('logged in with zero credits: initial CTA shows "Buy more posts" and click opens pricing modal', async ({ page }) => {
+        test.setTimeout(60000);
+        await installWorkflowMocksWithOptions(page, { userCredits: creditsZero() });
+        await page.goto('/');
+        await clearStorage(page);
+        await injectLoggedInUser(page);
+        await page.reload();
+        await page.waitForLoadState('load');
+        await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        await removeOverlay(page);
+        await navigateToContentTopics(page);
+        const buyMoreBtn = page.locator('#posts').locator('button:has-text("Buy more posts")').first();
+        await expect(buyMoreBtn).toBeVisible({ timeout: 12000 });
+        await buyMoreBtn.click();
+        await page.waitForTimeout(1000);
+        const pricingModal = page.locator('.ant-modal').filter({ hasText: /pricing|upgrade|plan|buy|credits/i });
+        await expect(pricingModal.first()).toBeVisible({ timeout: 5000 });
+      });
+
+      test('logged in with available credits: after generating topics, no CTA in #posts says Buy more posts', async ({ page }) => {
+        test.setTimeout(70000);
+        await setupLoggedIn(page);
+        await navigateToContentTopics(page);
+        const generateBtn = page.locator('#posts').locator('button:has-text("Generate post")').first();
+        await expect(generateBtn).toBeVisible({ timeout: 8000 });
+        await generateBtn.click();
+        await page.waitForSelector('button:has-text("Generating Topics"), button:has-text("Generating…")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(2000);
+        await expect(page.locator('#posts').locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        const buyMoreButtons = page.locator('#posts').locator('button').filter({ hasText: /Buy more posts/i });
+        await expect(buyMoreButtons.count()).resolves.toBe(0);
+      });
+
+      test('anonymous flow: Content Topics CTA is never "Buy more posts" (may be Generate post, Register, or Get One Free)', async ({ page }) => {
+        test.setTimeout(60000);
+        await setupLoggedOut(page);
+        await page.locator('button:has-text("Create New Post")').first().click();
+        await page.waitForTimeout(800);
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        await expect(websiteInput).toBeVisible({ timeout: 10000 });
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        await page.waitForTimeout(800);
+        await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(500);
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+        await expect(strategyCard).toBeVisible({ timeout: 10000 });
+        await strategyCard.click();
+        await page.waitForTimeout(2000);
+        await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+        await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+        await page.waitForTimeout(800);
+        const anyCta = page.locator('#posts').getByRole('button').first();
+        await expect(anyCta).toBeVisible({ timeout: 12000 });
+        const text = await anyCta.textContent();
+        expect(text).not.toMatch(/Buy more posts/i);
+      });
     });
 
     // PR 104 – Job stream: when GET /api/v1/jobs/:id/stream returns 404, app falls back to pollJobStatus.

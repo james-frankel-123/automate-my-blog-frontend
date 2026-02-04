@@ -100,6 +100,27 @@ const MOCK_CONTENT_WITH_IMAGES = `
 <p>Key points include setup, authentication, and your first request.</p>
 `.trim();
 
+/** Default credits payload (frontend receives this as response.data from GET /api/v1/user/credits) */
+const DEFAULT_CREDITS = {
+  availableCredits: 10,
+  totalCredits: 10,
+  usedCredits: 0,
+  basePlan: 'Free',
+  isUnlimited: false,
+  breakdown: [],
+};
+
+/** Credits payloads for E2E (Content Topics button display tests) */
+function creditsWithPosts(available = 5) {
+  return { availableCredits: available, totalCredits: 10, usedCredits: 10 - available, basePlan: 'Free', isUnlimited: false, breakdown: [] };
+}
+function creditsZero() {
+  return { availableCredits: 0, totalCredits: 1, usedCredits: 1, basePlan: 'Free', isUnlimited: false, breakdown: [] };
+}
+function creditsUnlimited() {
+  return { availableCredits: 0, totalCredits: 0, usedCredits: 0, basePlan: 'Pro', isUnlimited: true, breakdown: [] };
+}
+
 /** JSON response helper */
 function json(obj) {
   return {
@@ -175,11 +196,12 @@ const MOCK_CONTENT_WITH_IMAGE_GEN = {
  *   - imageGenerationInBackground: job result includes needsImageGeneration; images API returns content with images (progressive UX)
  */
 async function installWorkflowMocksWithOptions(page, options = {}) {
-  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false } = options;
+  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null } = options;
   const pollCounts = {};
 
   await installWorkflowMocksBase(page, {
     imageGenerationInBackground,
+    userCredits,
     jobsStatusHandler: (jobId) => {
       pollCounts[jobId] = (pollCounts[jobId] || 0) + 1;
       const pollNum = pollCounts[jobId];
@@ -237,7 +259,8 @@ async function installWorkflowMocks(page) {
 }
 
 async function installWorkflowMocksBase(page, options = {}) {
-  const { jobsStatusHandler, imageGenerationInBackground = false } = options;
+  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null } = options;
+  const creditsPayload = userCredits != null ? userCredits : DEFAULT_CREDITS;
   const patterns = [
     { path: '/api/analyze-website', method: 'POST', body: () => json(MOCK_ANALYSIS) },
     { path: '/api/generate-audiences', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
@@ -263,7 +286,7 @@ async function installWorkflowMocksBase(page, options = {}) {
     { path: '/api/v1/auth/me', method: 'GET', body: () => json({ success: true, user: MOCK_USER }) },
     { path: '/api/v1/auth/refresh', method: 'POST', body: () => json({ success: true, accessToken: fakeJWT(), refreshToken: fakeJWT() }) },
     { path: '/api/v1/auth/logout', method: 'POST', body: () => json({}) },
-    { path: '/api/v1/user/credits', method: 'GET', body: () => json({ data: { availableCredits: 10, totalCredits: 10, usedCredits: 0, basePlan: 'Free', isUnlimited: false, breakdown: [] } }) },
+    { path: '/api/v1/user/credits', method: 'GET', body: () => json({ data: creditsPayload }) },
     { path: '/api/v1/audiences', method: 'GET', body: () => json({ success: true, audiences: [] }) },
     { path: '/api/v1/analytics/track', method: 'POST', body: () => json({}) },
     { path: '/api/v1/analytics/track-batch', method: 'POST', body: () => json({}) },
@@ -389,4 +412,8 @@ module.exports = {
   MOCK_CONTENT,
   MOCK_SCENARIOS,
   MOCK_POST,
+  DEFAULT_CREDITS,
+  creditsWithPosts,
+  creditsZero,
+  creditsUnlimited,
 };
