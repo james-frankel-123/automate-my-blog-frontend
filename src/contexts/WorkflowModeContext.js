@@ -924,26 +924,26 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Navigation functions
   const navigateToNextStep = useCallback(() => {
-    if (!isWorkflowMode) return;
-    
-    const nextStepIndex = currentWorkflowStep + 1;
-    if (nextStepIndex < WORKFLOW_STEPS.length) {
-      setCurrentWorkflowStep(nextStepIndex);
-      const nextStep = WORKFLOW_STEPS[nextStepIndex];
-      
-      // Update active tab to ensure UI components know about the change
-      setActiveTab(nextStep.tab);
-      
-      // Auto-scroll to the next tab while preserving workflow mode
-      autoScrollToTab(nextStep.tab, {
-        smooth: true,
-        preserveWorkflowMode: true // Keep workflow mode active
-      });
-      
-      return nextStep;
-    }
-    return null;
-  }, [isWorkflowMode, currentWorkflowStep, autoScrollToTab]);
+    // Allow advancing from audience step (e.g. "Choose your SEO strategy") even when not in workflow mode (forceWorkflowMode path)
+    const stepIndex = isWorkflowMode
+      ? currentWorkflowStep
+      : WORKFLOW_STEPS.findIndex((s) => s.tab === activeTab);
+    if (stepIndex < 0) return;
+
+    const nextStepIndex = stepIndex + 1;
+    if (nextStepIndex >= WORKFLOW_STEPS.length) return;
+
+    const nextStep = WORKFLOW_STEPS[nextStepIndex];
+    setCurrentWorkflowStep(nextStepIndex);
+    setActiveTab(nextStep.tab);
+
+    autoScrollToTab(nextStep.tab, {
+      smooth: true,
+      preserveWorkflowMode: true
+    });
+
+    return nextStep;
+  }, [isWorkflowMode, currentWorkflowStep, activeTab, autoScrollToTab]);
   
   const navigateToPreviousStep = useCallback(() => {
     if (!isWorkflowMode) return;
