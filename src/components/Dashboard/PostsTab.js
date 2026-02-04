@@ -385,8 +385,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Check if user can schedule (Creator, Professional, Enterprise)
   const canSchedule = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
 
-  // Calculate remaining posts from live credits
-  const remainingPosts = userCredits ? userCredits.availableCredits : null;
+  // Calculate remaining posts from live credits (align with DashboardLayout: isUnlimited + fallback)
+  const remainingPosts = userCredits
+    ? (userCredits.isUnlimited
+        ? 'unlimited'
+        : (userCredits.availableCredits ?? (
+            userCredits.totalCredits != null && userCredits.usedCredits != null
+              ? userCredits.totalCredits - userCredits.usedCredits
+              : 0
+          )))
+    : null;
+  const hasAvailablePosts = userCredits && (userCredits.isUnlimited || (typeof remainingPosts === 'number' ? remainingPosts > 0 : remainingPosts === 'unlimited'));
 
   // Debug logging for credits
   React.useEffect(() => {
@@ -396,10 +405,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         totalCredits: userCredits.totalCredits,
         usedCredits: userCredits.usedCredits,
         remainingPosts,
+        hasAvailablePosts,
         breakdown: userCredits.breakdown
       });
     }
-  }, [userCredits, remainingPosts]);
+  }, [userCredits, remainingPosts, hasAvailablePosts]);
   
 
   // Load posts and credits in parallel when user is present
@@ -1856,7 +1866,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           type="primary"
                           size="large"
                           onClick={() => {
-                            if (user && remainingPosts === 0) {
+                            if (user && !hasAvailablePosts) {
                               // Open pricing modal to buy more posts
                               if (onOpenPricingModal) {
                                 onOpenPricingModal();
@@ -1871,7 +1881,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           {!tabMode.tabWorkflowData?.selectedCustomerStrategy
                             ? 'Select an audience first'
                             : user
-                              ? (remainingPosts !== 0 ? 'Generate post' : 'Buy more posts')
+                              ? (hasAvailablePosts ? 'Generate post' : 'Buy more posts')
                               : 'Register to claim free post'
                           }
                         </Button>
@@ -2029,7 +2039,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   <Button
                                     type="primary"
                                     size="large"
-                                    onClick={() => handleTopicSelection(topic.id)}
+                                    onClick={() => {
+                                      if (user && !hasAvailablePosts) {
+                                        if (onOpenPricingModal) onOpenPricingModal();
+                                      } else {
+                                        handleTopicSelection(topic.id);
+                                      }
+                                    }}
                                     loading={isGenerating}
                                     style={{
                                       backgroundColor: defaultColors.primary,
@@ -2039,7 +2055,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     }}
                                   >
                                     {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
-                                     user ? (remainingPosts > 0 ? 'Create Post' : 'Buy More Posts') : 'Get One Free Post'}
+                                     user ? (hasAvailablePosts ? 'Create Post' : 'Buy More Posts') : 'Get One Free Post'}
                                   </Button>
                                 </div>
                               </Card>
@@ -2618,7 +2634,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         type="primary"
                         size="large"
                         onClick={() => {
-                          if (user && remainingPosts === 0) {
+                          if (user && !hasAvailablePosts) {
                             // Open pricing modal to buy more posts
                             if (onOpenPricingModal) {
                               onOpenPricingModal();
@@ -2633,7 +2649,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         {!selectedCustomerStrategy
                           ? 'Select an audience first'
                           : user
-                            ? (remainingPosts !== 0 ? 'Generate post' : 'Buy more posts')
+                            ? (hasAvailablePosts ? 'Generate post' : 'Buy more posts')
                             : 'Register to claim free post'
                         }
                       </Button>
@@ -2792,7 +2808,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   type="primary"
                                   size="large"
                                   onClick={() => {
-                                    if (user && remainingPosts === 0) {
+                                    if (user && !hasAvailablePosts) {
                                       // Open pricing modal to buy more posts
                                       if (onOpenPricingModal) {
                                         onOpenPricingModal();
@@ -2811,7 +2827,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 >
                                   {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
                                    user ?
-                                     (remainingPosts !== 0 ? 'Generate post' : 'Buy more posts') :
+                                     (hasAvailablePosts ? 'Generate post' : 'Buy more posts') :
                                      'Register to claim free post'
                                   }
                                 </Button>
