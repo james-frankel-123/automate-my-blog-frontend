@@ -60,10 +60,10 @@ const SEOAnalysisDisplay = ({ post }) => {
   }
 
   const getScoreColor = (score) => {
-    if (score >= 95) return '#52c41a';
-    if (score >= 90) return '#1890ff';
-    if (score >= 80) return '#fa8c16';
-    return '#ff4d4f';
+    if (score >= 95) return 'var(--color-success)';
+    if (score >= 90) return 'var(--color-info)';
+    if (score >= 80) return 'var(--color-warning)';
+    return 'var(--color-error)';
   };
 
   const getScoreStatus = (score) => {
@@ -1739,10 +1739,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         }
 
         const getScoreColor = (score) => {
-          if (score >= 95) return '#52c41a'; // Green
-          if (score >= 90) return '#1890ff'; // Blue
-          if (score >= 80) return '#fa8c16'; // Orange
-          return '#ff4d4f'; // Red
+          if (score >= 95) return 'var(--color-success)';
+          if (score >= 90) return 'var(--color-info)';
+          if (score >= 80) return 'var(--color-warning)';
+          return 'var(--color-error)';
         };
 
         const getScoreIcon = (score) => {
@@ -1977,7 +1977,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       display: 'flex',
                                       alignItems: 'center',
                                       justifyContent: 'center',
-                                      color: 'white',
+                                      color: 'var(--color-text-on-primary)',
                                       fontSize: '16px',
                                       fontWeight: 500,
                                       padding: '20px',
@@ -2454,7 +2454,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           top: '50%',
                           left: '50%',
                           transform: 'translate(-50%, -50%)',
-                          background: 'rgba(255,255,255,0.9)',
+                          background: 'var(--color-hero-input-bg)',
                           padding: '12px 20px',
                           borderRadius: '6px',
                           fontSize: '14px',
@@ -2524,7 +2524,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           top: '50%',
                           left: '50%',
                           transform: 'translate(-50%, -50%)',
-                          background: 'rgba(255,255,255,0.9)',
+                          background: 'var(--color-hero-input-bg)',
                           padding: '12px 20px',
                           borderRadius: '6px',
                           fontSize: '14px',
@@ -2745,7 +2745,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    color: 'white',
+                                    color: 'var(--color-text-on-primary)',
                                     fontSize: '16px',
                                     fontWeight: 500,
                                     padding: '20px',

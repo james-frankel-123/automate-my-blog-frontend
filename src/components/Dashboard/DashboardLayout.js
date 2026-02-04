@@ -1229,7 +1229,7 @@ const DashboardLayout = ({
                     style={{
                       backgroundColor: 'var(--color-error)',
                       borderColor: 'var(--color-error)',
-                      color: 'white',
+                      color: 'var(--color-text-on-primary)',
                       fontWeight: 600,
                       boxShadow: 'none',
                       border: '2px solid var(--color-error)'
@@ -1279,7 +1279,7 @@ const DashboardLayout = ({
           right: 0,
           zIndex: 1000,
           background: 'var(--color-error)',
-          color: 'white',
+          color: 'var(--color-text-on-primary)',
           padding: '8px 16px',
           display: 'flex',
           alignItems: 'center',
@@ -1303,8 +1303,8 @@ const DashboardLayout = ({
             icon={<CloseOutlined />}
             onClick={handleEndImpersonation}
             style={{
-              color: 'white',
-              border: '1px solid rgba(255,255,255,0.5)',
+              color: 'var(--color-text-on-primary)',
+              border: '1px solid var(--color-hero-input-border)',
               borderRadius: '4px'
             }}
           >

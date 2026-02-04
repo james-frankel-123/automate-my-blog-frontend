@@ -71,7 +71,7 @@ const EnhancementStatusIndicator = ({
         </Title>
         {enhancementStatus.status === 'enhanced' && (
           <Tooltip title="Using advanced AI with your organization data">
-            <RocketOutlined style={{ marginLeft: 8, color: '#52c41a' }} />
+            <RocketOutlined style={{ marginLeft: 8, color: 'var(--color-success)' }} />
           </Tooltip>
         )}
       </div>
@@ -88,8 +88,8 @@ const EnhancementStatusIndicator = ({
         <Text strong>Data Completeness: </Text>
         <Badge 
           color={
-            enhancementStatus.dataCompleteness === 'high' ? '#52c41a' :
-            enhancementStatus.dataCompleteness === 'medium' ? '#faad14' : '#ff4d4f'
+            enhancementStatus.dataCompleteness === 'high' ? 'var(--color-success)' :
+            enhancementStatus.dataCompleteness === 'medium' ? 'var(--color-warning)' : 'var(--color-error)'
           }
           text={enhancementStatus.dataCompleteness.toUpperCase()}
         />
@@ -109,7 +109,7 @@ const EnhancementStatusIndicator = ({
             dataSource={enhancementStatus.capabilities}
             renderItem={(capability) => (
               <List.Item style={{ padding: '2px 0', border: 'none' }}>
-                <CheckCircleOutlined style={{ color: '#52c41a', marginRight: 4 }} />
+                <CheckCircleOutlined style={{ color: 'var(--color-success)', marginRight: 4 }} />
                 <Text style={{ fontSize: '12px' }}>{capability}</Text>
               </List.Item>
             )}
@@ -126,7 +126,7 @@ const EnhancementStatusIndicator = ({
             dataSource={enhancementStatus.reasons}
             renderItem={(reason) => (
               <List.Item style={{ padding: '2px 0', border: 'none' }}>
-                <ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 4 }} />
+                <ExclamationCircleOutlined style={{ color: 'var(--color-warning)', marginRight: 4 }} />
                 <Text style={{ fontSize: '12px' }}>{reason}</Text>
               </List.Item>
             )}

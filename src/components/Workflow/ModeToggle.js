@@ -45,8 +45,8 @@ const ModeToggle = ({
       className={className}
       style={{
         padding: '12px 16px',
-        backgroundColor: mode === 'workflow' ? '#f0f2ff' : '#fafafa',
-        borderBottom: '1px solid #e8e8e8',
+        backgroundColor: mode === 'workflow' ? 'var(--color-primary-50)' : 'var(--color-background-alt)',
+        borderBottom: '1px solid var(--color-border-base)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -180,7 +180,7 @@ export const WorkflowGuidance = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
         <div style={{
           backgroundColor: 'var(--color-success)',
-          color: '#ffffff',
+          color: 'var(--color-text-on-primary)',
           borderRadius: '12px',
           padding: '2px 8px',
           fontSize: '12px',

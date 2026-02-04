@@ -265,7 +265,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) =
               padding: '4px 8px',
               cursor: 'pointer',
               fontSize: '14px',
-              color: '#ff4d4f',
+              color: 'var(--color-error)',
             }}
             title="Remove highlight"
           >

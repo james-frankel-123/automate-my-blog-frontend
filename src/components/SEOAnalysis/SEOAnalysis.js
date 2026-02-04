@@ -448,7 +448,7 @@ const SEOAnalysis = ({
                       justifyContent: 'center',
                       marginTop: '2px'
                     }}>
-                      <Text style={{ color: 'white', fontSize: '11px', fontWeight: 'bold' }}>
+                      <Text style={{ color: 'var(--color-text-on-primary)', fontSize: '11px', fontWeight: 'bold' }}>
                         {index + 1}
                       </Text>
                     </div>

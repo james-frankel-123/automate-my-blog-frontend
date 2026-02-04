@@ -171,7 +171,7 @@ const ComprehensiveAnalysisTab = () => {
     const postLinks = getPostLinks(record.url);
     
     return (
-      <div style={{ padding: '16px', backgroundColor: '#fafafa' }}>
+      <div style={{ padding: '16px', backgroundColor: 'var(--color-background-alt)' }}>
         <Row gutter={16}>
           {/* Blog Post Content Preview */}
           <Col span={8}>
@@ -182,7 +182,7 @@ const ComprehensiveAnalysisTab = () => {
                 </Text>
               </div>
               {record.word_count && (
-                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid #f0f0f0' }}>
+                <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--color-border-base)' }}>
                   <Text type="secondary" style={{ fontSize: '12px' }}>
                     Word Count: {record.word_count} | CTAs: {postCTAs.length} | Links: {postLinks.length}
                   </Text>
@@ -197,7 +197,7 @@ const ComprehensiveAnalysisTab = () => {
               {postCTAs.length > 0 ? (
                 <div style={{ maxHeight: '200px', overflow: 'auto' }}>
                   {postCTAs.map((cta, index) => (
-                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '4px', border: '1px solid #f0f0f0' }}>
+                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '4px', border: '1px solid var(--color-border-base)' }}>
                       <Tag color="blue" size="small" style={{ marginBottom: '4px' }}>
                         {cta.cta_text || 'Unknown CTA'}
                       </Tag>
@@ -226,7 +226,7 @@ const ComprehensiveAnalysisTab = () => {
               {postLinks.length > 0 ? (
                 <div style={{ maxHeight: '200px', overflow: 'auto' }}>
                   {postLinks.slice(0, 5).map((link, index) => (
-                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '4px', border: '1px solid #f0f0f0' }}>
+                    <div key={index} style={{ marginBottom: '8px', padding: '8px', backgroundColor: 'var(--color-background-elevated)', borderRadius: '4px', border: '1px solid var(--color-border-base)' }}>
                       <div style={{ fontSize: '12px', fontWeight: '500', marginBottom: '4px' }}>
                         {link.anchor_text || 'Link'}
                       </div>
@@ -344,7 +344,7 @@ const ComprehensiveAnalysisTab = () => {
           percent={score || 75} 
           size="small"
           format={() => `${score || 75}%`}
-          strokeColor={score >= 80 ? '#52c41a' : score >= 60 ? '#faad14' : '#ff4d4f'}
+          strokeColor={score >= 80 ? 'var(--color-success)' : score >= 60 ? 'var(--color-warning)' : 'var(--color-error)'}
         />
       ),
     },
@@ -481,7 +481,7 @@ const ComprehensiveAnalysisTab = () => {
                   <Statistic
                     title="Blog Posts Analyzed"
                     value={blogContent.length}
-                    prefix={<BookOutlined style={{ color: '#52c41a' }} />}
+                    prefix={<BookOutlined style={{ color: 'var(--color-success)' }} />}
                   />
                   <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {blogContent.filter(post => post.discovered_from === 'sitemap').length} from sitemap
@@ -506,7 +506,7 @@ const ComprehensiveAnalysisTab = () => {
                     title="Enhanced Analysis"
                     value={blogContent.filter(post => post.visual_design || post.ctas_count > 0).length}
                     suffix={`/ ${blogContent.length}`}
-                    prefix={<BgColorsOutlined style={{ color: '#722ed1' }} />}
+                    prefix={<BgColorsOutlined style={{ color: 'var(--color-primary)' }} />}
                   />
                   <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     Posts with design data
@@ -519,7 +519,7 @@ const ComprehensiveAnalysisTab = () => {
                     title="Overall Score"
                     value={comprehensiveResults?.analysisQuality || 85}
                     suffix="%"
-                    prefix={<TrophyOutlined style={{ color: '#fa8c16' }} />}
+                    prefix={<TrophyOutlined style={{ color: 'var(--color-warning)' }} />}
                   />
                   <div style={{ marginTop: '8px', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
                     {visualDesignData?.totalPages || 0} pages with visual data
@@ -551,7 +551,7 @@ const ComprehensiveAnalysisTab = () => {
                     <Progress 
                       percent={Math.round((blogContent.filter(post => post.visual_design).length / Math.max(blogContent.length, 1)) * 100)}
                       size="small" 
-                      strokeColor="#52c41a"
+                      strokeColor="var(--color-success)"
                     />
                   </div>
                 </Card>
@@ -619,7 +619,7 @@ const ComprehensiveAnalysisTab = () => {
                 <Row gutter={16}>
                   <Col span={8}>
                     <div style={{ textAlign: 'center' }}>
-                      <BulbOutlined style={{ fontSize: '24px', color: '#52c41a', marginBottom: '8px' }} />
+                      <BulbOutlined style={{ fontSize: '24px', color: 'var(--color-success)', marginBottom: '8px' }} />
                       <div>
                         <Text strong>Content Patterns</Text>
                         <div style={{ marginTop: '8px' }}>
@@ -645,7 +645,7 @@ const ComprehensiveAnalysisTab = () => {
                   </Col>
                   <Col span={8}>
                     <div style={{ textAlign: 'center' }}>
-                      <LinkOutlined style={{ fontSize: '24px', color: '#722ed1', marginBottom: '8px' }} />
+                      <LinkOutlined style={{ fontSize: '24px', color: 'var(--color-primary)', marginBottom: '8px' }} />
                       <div>
                         <Text strong>Linking Strategy</Text>
                         <div style={{ marginTop: '8px' }}>
@@ -680,14 +680,14 @@ const ComprehensiveAnalysisTab = () => {
                     <Statistic
                       title="Successful"
                       value={uploadStatus.summary.successful_uploads}
-                      valueStyle={{ color: '#52c41a' }}
+                      valueStyle={{ color: 'var(--color-success)' }}
                     />
                   </Col>
                   <Col span={6}>
                     <Statistic
                       title="Failed"
                       value={uploadStatus.summary.failed_uploads}
-                      valueStyle={{ color: '#ff4d4f' }}
+                      valueStyle={{ color: 'var(--color-error)' }}
                     />
                   </Col>
                 </Row>
@@ -846,7 +846,7 @@ const ComprehensiveAnalysisTab = () => {
                               <Card size="small" title="Heading Styles" style={{ height: '300px' }}>
                                 <div style={{ maxHeight: '250px', overflow: 'auto' }}>
                                   {Object.entries(elementPatterns.headings).map(([headingLevel, data]) => (
-                                    <div key={headingLevel} style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#f9f9f9', borderRadius: '4px' }}>
+                                    <div key={headingLevel} style={{ marginBottom: '12px', padding: '8px', backgroundColor: 'var(--color-background-alt)', borderRadius: '4px' }}>
                                       <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
                                         {headingLevel.toUpperCase()} ({data.count} found)
                                       </div>
@@ -895,7 +895,7 @@ const ComprehensiveAnalysisTab = () => {
                               <Card size="small" title="Interactive Elements" style={{ height: '300px' }}>
                                 <div style={{ maxHeight: '250px', overflow: 'auto' }}>
                                   {Object.entries(elementPatterns.interactive).map(([elementType, data]) => (
-                                    <div key={elementType} style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#f0f8ff', borderRadius: '4px' }}>
+                                    <div key={elementType} style={{ marginBottom: '12px', padding: '8px', backgroundColor: 'var(--color-info-bg)', borderRadius: '4px' }}>
                                       <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
                                         {elementType.replace('_', ' ').toUpperCase()} ({data.count} found)
                                       </div>
@@ -1009,7 +1009,7 @@ const ComprehensiveAnalysisTab = () => {
                                       display: 'inline-block',
                                       padding: '8px 16px', 
                                       backgroundColor: elementPatterns.interactive.button.patterns.colors?.backgroundColor?.[0] || 'var(--color-primary)',
-                                      color: elementPatterns.interactive.button.patterns.colors?.textColor?.[0] || 'white',
+                                      color: elementPatterns.interactive.button.patterns.colors?.textColor?.[0] || 'var(--color-text-on-primary)',
                                       borderRadius: elementPatterns.interactive.button.patterns.commonStyles?.borderRadius?.[0] || '4px',
                                       border: 'none',
                                       fontSize: '14px'
@@ -1050,7 +1050,7 @@ const ComprehensiveAnalysisTab = () => {
                     title="With Visual Design"
                     value={blogContent.filter(post => post.visual_design).length}
                     suffix={`/ ${blogContent.length}`}
-                    valueStyle={{ color: blogContent.filter(post => post.visual_design).length > 0 ? '#52c41a' : '#faad14' }}
+                    valueStyle={{ color: blogContent.filter(post => post.visual_design).length > 0 ? 'var(--color-success)' : 'var(--color-warning)' }}
                   />
                 </Col>
                 <Col span={6}>
