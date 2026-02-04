@@ -11,7 +11,8 @@ import {
   ReloadOutlined,
   LockOutlined,
   TeamOutlined,
-  TrophyOutlined
+  TrophyOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -3039,7 +3040,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               onToggleFullscreen={handleToggleFullscreen}
               toolbarContent={
                 contentViewMode === 'preview' && !generatingContent && editingContent?.trim() ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                     <Button
                       type="primary"
                       icon={<EditOutlined />}
@@ -3050,6 +3051,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       }}
                     >
                       Switch to WYSIWYG
+                    </Button>
+                    <Button
+                      icon={<CopyOutlined />}
+                      onClick={async () => {
+                        const toCopy = normalizeContentString(editingContent) || editingContent;
+                        try {
+                          await navigator.clipboard.writeText(toCopy);
+                          message.success('Copied to clipboard');
+                        } catch (err) {
+                          message.error('Failed to copy to clipboard');
+                        }
+                      }}
+                    >
+                      Copy to clipboard
                     </Button>
                     <Text type="secondary" style={{ fontSize: '13px' }}>Edit formatting in the editor</Text>
                   </div>
