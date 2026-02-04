@@ -196,7 +196,7 @@ const VisualContentSuggestions = ({
                       <>
                         <Button 
                           size="small" 
-                          style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-success)', color: 'white' }}
+                          style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-success)', color: 'var(--color-text-on-primary)' }}
                           icon={<PictureOutlined />}
                           loading={generating === `${suggestion.id}-pullout-style`}
                           onClick={() => handleGenerateVisual({...suggestion, testService: 'pullout-style', id: `${suggestion.id}-pullout-style`})}
@@ -205,7 +205,7 @@ const VisualContentSuggestions = ({
                         </Button>
                         <Button 
                           size="small" 
-                          style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: 'white' }}
+                          style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)', color: 'var(--color-text-on-primary)' }}
                           icon={<PictureOutlined />}
                           loading={generating === `${suggestion.id}-box-style`}
                           onClick={() => handleGenerateVisual({...suggestion, testService: 'box-style', id: `${suggestion.id}-box-style`})}
@@ -214,7 +214,7 @@ const VisualContentSuggestions = ({
                         </Button>
                         <Button 
                           size="small" 
-                          style={{ backgroundColor: 'var(--color-warning)', borderColor: 'var(--color-warning)', color: 'white' }}
+                          style={{ backgroundColor: 'var(--color-warning)', borderColor: 'var(--color-warning)', color: 'var(--color-text-on-primary)' }}
                           icon={<PictureOutlined />}
                           loading={generating === `${suggestion.id}-inline-style`}
                           onClick={() => handleGenerateVisual({...suggestion, testService: 'inline-style', id: `${suggestion.id}-inline-style`})}

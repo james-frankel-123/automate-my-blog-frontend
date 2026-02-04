@@ -53,7 +53,7 @@ const ThemeToggle = ({ style }) => {
         onClick={toggleTheme}
         style={{
           fontSize: '18px',
-          color: isDarkMode ? '#FB923C' : '#0D9488', // Orange in dark, teal in light
+          color: isDarkMode ? 'var(--color-accent)' : 'var(--color-primary)',
           transition: 'all 0.3s ease',
           ...style
         }}

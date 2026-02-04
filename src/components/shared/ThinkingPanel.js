@@ -23,7 +23,7 @@ const panelStyles = {
     textAlign: 'left',
     width: '100%',
     maxWidth: '100%',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    boxShadow: 'var(--shadow-card)',
   },
   statusLine: {
     display: 'flex',

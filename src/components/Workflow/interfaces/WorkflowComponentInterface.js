@@ -356,7 +356,7 @@ export const ComponentHelpers = {
     <div style={{ textAlign: 'center', padding: '40px 20px' }}>
       <div style={{ 
         fontSize: '48px', 
-        color: '#ff4d4f', 
+        color: 'var(--color-error)', 
         marginBottom: '24px'
       }}>
         ⚠️
@@ -374,7 +374,7 @@ export const ComponentHelpers = {
           style={{
             padding: '8px 16px',
             backgroundColor: 'var(--color-primary)',
-            color: 'white',
+            color: 'var(--color-text-on-primary)',
             border: 'none',
             borderRadius: '4px',
             cursor: 'pointer'

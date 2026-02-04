@@ -90,7 +90,7 @@ const ProfileSettings = () => {
   return (
     <div style={{ padding: '20px 0' }}>
       {/* Personal Information */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-success)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
             <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>👤 Personal Information</Title>
@@ -187,7 +187,7 @@ const ProfileSettings = () => {
                   href={profileData.organizationWebsite.startsWith('http') ? profileData.organizationWebsite : `https://${profileData.organizationWebsite}`} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  style={{ fontSize: '12px', color: '#1677ff' }}
+                  style={{ fontSize: '12px', color: 'var(--color-info)' }}
                 >
                   Visit Website →
                 </a>
@@ -202,7 +202,7 @@ const ProfileSettings = () => {
               type="primary" 
               onClick={handleProfileSave}
               loading={saving}
-              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-success)' }}
             >
               {saving ? 'Saving...' : 'Save Profile'}
             </Button>
@@ -277,7 +277,7 @@ const ProfileSettings = () => {
         <Title level={4}>📊 Account Information</Title>
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={6}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-info-bg)' }}>
               <Statistic
                 title="Account Type"
                 value={user?.role?.toUpperCase() || 'USER'}
@@ -286,7 +286,7 @@ const ProfileSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={6}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f6ffed' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-success-bg)' }}>
               <Statistic
                 title="Member Since"
                 value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
@@ -299,21 +299,21 @@ const ProfileSettings = () => {
               <Statistic
                 title="Last Login"
                 value={user?.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'N/A'}
-                valueStyle={{ color: '#fa8c16', fontSize: '14px' }}
+                valueStyle={{ color: 'var(--color-warning)', fontSize: '14px' }}
               />
             </Card>
           </Col>
           <Col xs={24} sm={6}>
             <Card size="small" style={{ 
               textAlign: 'center', 
-              backgroundColor: hasOrganization ? '#f6ffed' : '#fff1f0',
-              border: hasOrganization ? '1px solid #b7eb8f' : '1px solid #ffccc7'
+              backgroundColor: hasOrganization ? 'var(--color-success-bg)' : 'var(--color-error-bg)',
+              border: hasOrganization ? '1px solid var(--color-success-border)' : '1px solid var(--color-error-border)'
             }}>
               <Statistic
                 title="Organization Status"
                 value={hasOrganization ? user.organizationRole?.toUpperCase() || 'MEMBER' : 'NO ORG'}
                 valueStyle={{ 
-                  color: hasOrganization ? '#52c41a' : '#ff4d4f', 
+                  color: hasOrganization ? 'var(--color-success)' : 'var(--color-error)', 
                   fontSize: '14px' 
                 }}
               />
@@ -491,7 +491,7 @@ const OrganizationSettings = () => {
         
         <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
           <Col xs={24} sm={8}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-info-bg)' }}>
               <Statistic
                 title="Total Members"
                 value={orgData.members?.length || 0}
@@ -501,7 +501,7 @@ const OrganizationSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={8}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-info-bg)' }}>
               <Statistic
                 title="Your Role"
                 value={orgData.organization.userRole?.toUpperCase() || 'MEMBER'}
@@ -510,7 +510,7 @@ const OrganizationSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={8}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-info-bg)' }}>
               <Statistic
                 title="Active Members"
                 value={orgData.members?.filter(m => m.status === 'active')?.length || 0}
@@ -531,7 +531,7 @@ const OrganizationSettings = () => {
 
       {/* Invite New Team Member */}
       {['owner', 'admin'].includes(orgData.organization.userRole) && (
-        <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+        <Card style={{ marginBottom: '24px', border: '2px solid var(--color-success)' }}>
           <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
             <Col>
               <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>➕ Invite Team Member</Title>
@@ -568,7 +568,7 @@ const OrganizationSettings = () => {
               icon={<MailOutlined />}
               onClick={handleSendOrgInvite}
               loading={sendingInvite}
-              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-success)' }}
             >
               {sendingInvite ? 'Sending Invitation...' : 'Send Team Invitation'}
             </Button>
@@ -688,7 +688,7 @@ const BillingSettings = () => {
   return (
     <div style={{ padding: '20px 0' }}>
       {/* Current Billing Status */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-success)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
             <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>💳 Current Billing Status</Title>
@@ -700,7 +700,7 @@ const BillingSettings = () => {
 
         <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
           <Col xs={24} sm={8}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f6ffed' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-success-bg)' }}>
               <Statistic
                 title="Current Month Usage"
                 value={estimatedBill}
@@ -711,7 +711,7 @@ const BillingSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={8}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f0f9ff' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-info-bg)' }}>
               <Statistic
                 title="Plan Type"
                 value={user?.billingStatus || 'Pay-as-you-go'}
@@ -724,7 +724,7 @@ const BillingSettings = () => {
               <Statistic
                 title="Next Bill Date"
                 value={user?.nextBillDate ? new Date(user.nextBillDate).toLocaleDateString() : 'N/A'}
-                valueStyle={{ color: '#fa8c16', fontSize: '14px' }}
+                valueStyle={{ color: 'var(--color-warning)', fontSize: '14px' }}
               />
             </Card>
           </Col>
@@ -955,7 +955,7 @@ const ReferralSettings = () => {
   return (
     <div style={{ padding: '20px 0' }}>
       {/* Referral Statistics Dashboard */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-success)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
             <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>🎁 Your Referral Statistics</Title>
@@ -967,7 +967,7 @@ const ReferralSettings = () => {
         
         <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
           <Col xs={24} sm={12}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f6ffed' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-success-bg)' }}>
               <Statistic
                 title="Successful Referrals"
                 value={stats?.successfulReferrals || 0}
@@ -977,7 +977,7 @@ const ReferralSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={12}>
-            <Card size="small" style={{ textAlign: 'center', backgroundColor: '#f6ffed' }}>
+            <Card size="small" style={{ textAlign: 'center', backgroundColor: 'var(--color-success-bg)' }}>
               <Statistic
                 title="Invites Sent"
                 value={stats?.inviteStats?.totalSent || 0}
@@ -997,7 +997,7 @@ const ReferralSettings = () => {
       </Card>
       
       {/* Personal Referral Link */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-success)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
             <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>🔗 Your Personal Referral Link</Title>
@@ -1041,7 +1041,7 @@ const ReferralSettings = () => {
       </Card>
       
       {/* Email Invitations - Now Working */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-success)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
             <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>📧 Send Referral Invitations</Title>
@@ -1072,7 +1072,7 @@ const ReferralSettings = () => {
             icon={<MailOutlined />}
             onClick={handleSendInvites}
             loading={sendingInvite}
-            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-success)' }}
           >
             {sendingInvite ? 'Sending Invitations...' : 'Send Invitations'}
           </Button>
@@ -1083,7 +1083,7 @@ const ReferralSettings = () => {
       </Card>
       
       {/* Social Sharing - GREEN (pure frontend) */}
-      <Card style={{ border: '2px solid #52c41a' }}>
+      <Card style={{ border: '2px solid var(--color-success)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
             <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>📱 Social Sharing</Title>
@@ -1218,7 +1218,7 @@ const SubscriptionSettings = () => {
   return (
     <div style={{ padding: '20px 0' }}>
       {/* Current Plan Overview */}
-      <Card style={{ marginBottom: '24px', border: '2px solid #52c41a' }}>
+      <Card style={{ marginBottom: '24px', border: '2px solid var(--color-success)' }}>
         <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
           <Col>
             <Title level={4} style={{ margin: 0, color: 'var(--color-success)' }}>📊 Current Plan</Title>
@@ -1248,7 +1248,7 @@ const SubscriptionSettings = () => {
         
         <Row gutter={[16, 16]} style={{ marginBottom: '20px' }}>
           <Col xs={24} sm={6}>
-            <Card size="small" style={{ textAlign: 'center', border: currentUsage > 0 ? '2px solid #52c41a' : '1px solid #d9d9d9' }}>
+            <Card size="small" style={{ textAlign: 'center', border: currentUsage > 0 ? '2px solid var(--color-success)' : '1px solid var(--color-border-base)' }}>
               <Statistic
                 title="Posts Used"
                 value={currentUsage}
@@ -1278,13 +1278,13 @@ const SubscriptionSettings = () => {
             </Card>
           </Col>
           <Col xs={24} sm={6}>
-            <Card size="small" style={{ textAlign: 'center', border: bonusCredits > 0 ? '2px solid #52c41a' : '1px solid #d9d9d9' }}>
+            <Card size="small" style={{ textAlign: 'center', border: bonusCredits > 0 ? '2px solid var(--color-success)' : '1px solid var(--color-border-base)' }}>
               <Statistic
                 title="Bonus Posts"
                 value={bonusCredits}
-                valueStyle={{ color: bonusCredits > 0 ? '#52c41a' : '#ccc', fontSize: '24px' }}
+                valueStyle={{ color: bonusCredits > 0 ? 'var(--color-success)' : 'var(--color-text-tertiary)', fontSize: '24px' }}
               />
-              <Text style={{ color: bonusCredits > 0 ? '#52c41a' : '#ccc', fontSize: '10px' }}>
+              <Text style={{ color: bonusCredits > 0 ? 'var(--color-success)' : 'var(--color-text-tertiary)', fontSize: '10px' }}>
                 {bonusCredits > 0 ? '🎉 From referrals!' : 'Refer friends!'}
               </Text>
             </Card>
@@ -1335,7 +1335,7 @@ const SubscriptionSettings = () => {
 
         <Row gutter={[16, 16]}>
           <Col xs={24} lg={8}>
-            <Card size="small" style={{ border: billingStatus === 'Pay-as-you-go' ? '2px solid #52c41a' : '1px solid #d9d9d9' }}>
+            <Card size="small" style={{ border: billingStatus === 'Pay-as-you-go' ? '2px solid var(--color-success)' : '1px solid var(--color-border-base)' }}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text strong style={{ color: 'var(--color-success)' }}>Pay-as-you-go</Text>
                 <div>
@@ -1358,7 +1358,7 @@ const SubscriptionSettings = () => {
             </Card>
           </Col>
           <Col xs={24} lg={8}>
-            <Card size="small" style={{ border: billingStatus === 'Creator' ? '2px solid var(--color-primary)' : '1px solid #d9d9d9' }}>
+            <Card size="small" style={{ border: billingStatus === 'Creator' ? '2px solid var(--color-primary)' : '1px solid var(--color-border-base)' }}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text strong style={{ color: 'var(--color-primary)' }}>Creator</Text>
                 <div>
@@ -1383,7 +1383,7 @@ const SubscriptionSettings = () => {
             </Card>
           </Col>
           <Col xs={24} lg={8}>
-            <Card size="small" style={{ border: billingStatus === 'Professional' ? '2px solid #722ed1' : '1px solid #d9d9d9' }}>
+            <Card size="small" style={{ border: billingStatus === 'Professional' ? '2px solid #722ed1' : '1px solid var(--color-border-base)' }}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Text strong style={{ color: 'var(--color-accent)' }}>Professional</Text>
                 <div>
@@ -1399,7 +1399,7 @@ const SubscriptionSettings = () => {
                     size="small" 
                     onClick={() => handlePlanRequest('Professional')}
                     loading={requestingPlan}
-                    style={{ backgroundColor: '#722ed1', borderColor: '#722ed1' }}
+                    style={{ backgroundColor: 'var(--color-primary)', borderColor: 'var(--color-primary)' }}
                   >
                     Upgrade to Professional
                   </Button>

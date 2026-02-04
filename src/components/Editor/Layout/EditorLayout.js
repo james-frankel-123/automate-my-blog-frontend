@@ -112,7 +112,7 @@ const EditorLayout = ({
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(10, 37, 64, 0.6)',
+            backgroundColor: 'var(--color-background-overlay)',
             zIndex: 9998,
             backdropFilter: 'blur(4px)',
             transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'

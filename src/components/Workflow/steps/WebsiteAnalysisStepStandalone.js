@@ -786,7 +786,7 @@ const WebsiteAnalysisStepStandalone = ({
           style={{
             width: '100%',
             position: 'relative',
-            boxShadow: '0 4px 20px rgba(24, 144, 255, 0.15), 0 0 0 2px rgba(24, 144, 255, 0.1)',
+            boxShadow: 'var(--shadow-focus)',
             borderRadius: '8px',
             transition: 'all 0.3s ease'
           }}

@@ -338,8 +338,8 @@ const ManualInputModal = ({
         </Form>
       </Spin>
 
-      <div style={{ marginTop: 16, padding: 12, background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 6 }}>
-        <Text style={{ fontSize: 12, color: '#52c41a' }}>
+      <div style={{ marginTop: 16, padding: 12, background: 'var(--color-success-bg)', border: '1px solid var(--color-success-border)', borderRadius: 6 }}>
+        <Text style={{ fontSize: 12, color: 'var(--color-success)' }}>
           💡 <strong>Tip:</strong> The more information you provide, the better your content quality will be. 
           You can always add more data later to improve future generations.
         </Text>
