@@ -69,7 +69,7 @@ export const analysisAPI = {
   /**
    * Analyze website with comprehensive business intelligence
    * @param {string} websiteUrl - The website URL to analyze
-   * @param {{ onProgress?, onScrapePhase?, onScrapeResult?, onAnalysisResult?, onAudienceComplete?, onAudiencesResult?, onPitchComplete?, onPitchesResult?, onScenarioImageComplete?, onScenariosResult?, onStreamTimeout? }} options - Optional; onProgress for progress-update; onScrapePhase for scrape-phase "thoughts"; onScrapeResult for page preview (title, metaDescription, headings); onAnalysisResult/onAudiencesResult/onPitchesResult/onScenariosResult for step-level results; onAudienceComplete/onPitchComplete/onScenarioImageComplete for per-item updates; onStreamTimeout for ~10 min warning
+   * @param {{ onProgress?, onScrapePhase?, onScrapeResult?, onAnalysisResult?, onAudienceComplete?, onAudiencesResult?, onPitchComplete?, onPitchesResult?, onScenarioImageComplete?, onScenariosResult?, onStreamTimeout?, onJobCreated? }} options - Optional; onJobCreated(jobId) called when job is created (for narrative stream); onProgress for progress-update; onScrapePhase for scrape-phase "thoughts"; etc.
    * @returns {Promise<Object>} Analysis results with business data
    */
   async analyzeWebsite(websiteUrl, options = {}) {
@@ -86,6 +86,7 @@ export const analysisAPI = {
       try {
         const createResponse = await jobsAPI.createWebsiteAnalysisJob(formattedUrl, sessionId);
         const jobId = createResponse.jobId;
+        if (options.onJobCreated) options.onJobCreated(jobId);
 
         // Prefer SSE job stream for real-time progress and scrape-phase thoughts; fall back to polling if stream unavailable
         let finalStatus = null;

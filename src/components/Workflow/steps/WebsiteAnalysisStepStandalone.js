@@ -12,6 +12,7 @@ import autoBlogAPI from '../../../services/api';
 import { systemVoice } from '../../../copy/systemVoice';
 import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
+import { NarrativeAnalysisDisplay } from '../../Dashboard/NarrativeAnalysisDisplay';
 import ThinkingPanel from '../../shared/ThinkingPanel';
 
 const { Title, Text, Paragraph } = Typography;
@@ -89,6 +90,9 @@ const WebsiteAnalysisStepStandalone = ({
   // Success highlight when analysis result first appears
   const [showSuccessHighlight, setShowSuccessHighlight] = useState(false);
 
+  // Job ID for narrative stream (Issue #157); cleared when loading ends
+  const [analysisJobId, setAnalysisJobId] = useState(null);
+
   // Animation state for delayed reveal
   const [inputVisible, setInputVisible] = useState(!delayedReveal);
   const [showSparkle, setShowSparkle] = useState(false);
@@ -136,6 +140,11 @@ const WebsiteAnalysisStepStandalone = ({
       return () => clearTimeout(t);
     }
   }, [loading, analysisResults]);
+
+  // Clear narrative stream job ID when loading ends
+  useEffect(() => {
+    if (!loading) setAnalysisJobId(null);
+  }, [loading]);
 
   // Poll for narrative when it's generating
   useEffect(() => {
@@ -376,6 +385,7 @@ const WebsiteAnalysisStepStandalone = ({
       setAnalysisThoughts([]);
 
       const result = await analysisAPI.analyzeWebsite(validation.formattedUrl, {
+        onJobCreated: (jobId) => setAnalysisJobId(jobId),
         onProgress: (stepOrStatus) => {
           if (typeof stepOrStatus === 'number') {
             if (stepOrStatus >= 1 && stepOrStatus <= steps.length) {
@@ -853,9 +863,9 @@ const WebsiteAnalysisStepStandalone = ({
   );
   
   /**
-   * Render analysis loading state
+   * Render fallback loading UX (ThinkingPanel) when narrative stream unavailable
    */
-  const renderAnalysisLoading = () => (
+  const renderThinkingPanelFallback = () => (
     <Card style={{ marginBottom: '20px' }}>
       <div style={{ textAlign: 'center', padding: '24px 20px' }}>
         <Spin size="large" />
@@ -864,7 +874,6 @@ const WebsiteAnalysisStepStandalone = ({
             <ScanOutlined style={{ marginRight: '8px' }} />
             {systemVoice.analysis.loadingTitle}
           </Title>
-          {/* Single status line: show paragraph only before progress exists; once panel is visible it carries the step */}
           {!analysisProgress && (
             <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '12px', fontSize: responsive.fontSize.text }}>
               {systemVoice.analysis.defaultProgress}
@@ -878,6 +887,7 @@ const WebsiteAnalysisStepStandalone = ({
           {analysisProgress && (
             <div style={{ margin: '0 auto 16px', maxWidth: '420px' }}>
               <ThinkingPanel
+                isActive
                 currentStep={analysisProgress.currentStep || currentScanningMessage}
                 progress={analysisProgress.progress}
                 thoughts={analysisThoughts}
@@ -900,6 +910,23 @@ const WebsiteAnalysisStepStandalone = ({
       </div>
     </Card>
   );
+
+  /**
+   * Render analysis loading state. Uses NarrativeAnalysisDisplay when jobId available (Issue #157);
+   * falls back to ThinkingPanel when narrative stream unavailable.
+   */
+  const renderAnalysisLoading = () => {
+    if (analysisJobId) {
+      return (
+        <NarrativeAnalysisDisplay
+          jobId={analysisJobId}
+          analysisResults={analysisResults}
+          renderFallback={renderThinkingPanelFallback}
+        />
+      );
+    }
+    return renderThinkingPanelFallback();
+  };
   
   /**
    * Render analysis results - Enhanced version matching WebsiteAnalysisStep-v2
