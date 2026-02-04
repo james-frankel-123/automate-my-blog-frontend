@@ -69,5 +69,30 @@ describe('streamingUtils', () => {
       expect(extractStreamCompleteContent({ status: 'ok' })).toBe('');
       expect(extractStreamCompleteContent(null)).toBe('');
     });
+
+    it('does not return raw JSON when content is a JSON string (wrapper object)', () => {
+      const payload = {
+        content: '{"title":"My Post","content":"<p>Hello world</p>","metaDescription":"..."}'
+      };
+      expect(extractStreamCompleteContent(payload)).toBe('<p>Hello world</p>');
+    });
+
+    it('extracts text from ProseMirror doc when content is doc JSON', () => {
+      const payload = {
+        content: JSON.stringify({
+          type: 'doc',
+          content: [
+            { type: 'paragraph', content: [{ type: 'text', text: 'Hello ' }] },
+            { type: 'paragraph', content: [{ type: 'text', text: 'world' }] }
+          ]
+        })
+      };
+      expect(extractStreamCompleteContent(payload)).toBe('Hello world');
+    });
+
+    it('returns plain HTML as-is when content does not look like JSON', () => {
+      const html = '<p>Hello <strong>world</strong></p>';
+      expect(extractStreamCompleteContent({ content: html })).toBe(html);
+    });
   });
 });
