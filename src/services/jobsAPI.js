@@ -154,6 +154,90 @@ class JobsAPI {
   }
 
   /**
+   * Build SSE URL for narrative stream (Issue #157). Separate endpoint from job stream.
+   * GET /api/v1/jobs/:jobId/narrative-stream - conversational scraping/analysis narrative.
+   * @param {string} jobId
+   * @returns {string}
+   */
+  getNarrativeStreamUrl(jobId) {
+    const path = `/api/v1/jobs/${encodeURIComponent(jobId)}/narrative-stream`;
+    const url = `${this.baseURL}${path}`;
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      return `${url}?token=${encodeURIComponent(token)}`;
+    }
+    const sessionId = sessionStorage.getItem('audience_session_id');
+    if (sessionId) {
+      return `${url}?sessionId=${encodeURIComponent(sessionId)}`;
+    }
+    return url;
+  }
+
+  /**
+   * Connect to narrative stream SSE (Issue #157).
+   * Events: scraping-thought, transition, analysis-chunk, complete.
+   * @param {string} jobId
+   * @param {Object} [handlers] - { onScrapingThought?, onTransition?, onAnalysisChunk?, onComplete?, onError? }
+   * @param {{ signal?: AbortSignal }} [options] - AbortSignal to cancel and close stream
+   * @returns {Promise<{ available: boolean }>} Resolves when stream ends. available: false if endpoint unavailable (404) or aborted.
+   */
+  connectToNarrativeStream(jobId, handlers = {}, options = {}) {
+    return new Promise((resolve) => {
+      const url = this.getNarrativeStreamUrl(jobId);
+      const eventSource = new EventSource(url);
+      let settled = false;
+
+      const parseData = (event) => {
+        try {
+          return JSON.parse(event.data || '{}');
+        } catch {
+          return {};
+        }
+      };
+
+      const resolveAvailable = (available) => {
+        if (!settled) {
+          settled = true;
+          eventSource.close();
+          resolve({ available });
+        }
+      };
+
+      if (options.signal) {
+        options.signal.addEventListener('abort', () => {
+          resolveAvailable(false);
+        });
+      }
+
+      eventSource.addEventListener('scraping-thought', (event) => {
+        const data = parseData(event);
+        if (handlers.onScrapingThought) handlers.onScrapingThought(data);
+      });
+
+      eventSource.addEventListener('transition', (event) => {
+        const data = parseData(event);
+        if (handlers.onTransition) handlers.onTransition(data);
+      });
+
+      eventSource.addEventListener('analysis-chunk', (event) => {
+        const data = parseData(event);
+        if (handlers.onAnalysisChunk) handlers.onAnalysisChunk(data);
+      });
+
+      eventSource.addEventListener('complete', (event) => {
+        const data = parseData(event);
+        if (handlers.onComplete) handlers.onComplete(data);
+        resolveAvailable(true);
+      });
+
+      eventSource.onerror = () => {
+        if (handlers.onError) handlers.onError(new Error('Narrative stream unavailable'));
+        resolveAvailable(false);
+      };
+    });
+  }
+
+  /**
    * Connect to job progress stream (SSE).
    * Supports auto-reconnect on connection loss (Issue #89).
    * When REACT_APP_STREAMING_ENABLED=false, rejects immediately so caller can fall back to polling.
