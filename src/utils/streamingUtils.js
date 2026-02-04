@@ -44,6 +44,8 @@ export function extractStreamChunk(data) {
 /**
  * Extract final content from a complete event payload.
  * Handles nested structures like { blogPost: { content: "..." } }.
+ * Normalizes content so raw JSON is never returned (e.g. backend sending
+ * stringified blog object or ProseMirror doc); only displayable content is returned.
  *
  * @param {Object} data - Complete event payload
  * @returns {string} Final content string, or empty if none found
@@ -58,9 +60,15 @@ export function extractStreamCompleteContent(data) {
     data.blogPost?.content ??
     data.result?.content ??
     data.data?.content;
-  if (typeof content === 'string') return content;
+  if (typeof content !== 'string') return '';
 
-  return '';
+  // If content looks like JSON (e.g. full blog object or ProseMirror doc),
+  // parse and extract inner content so we never show raw JSON in the editor.
+  const trimmed = content.trim();
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    return tryExtractFromJsonString(content);
+  }
+  return content;
 }
 
 /**
@@ -87,6 +95,10 @@ function tryExtractFromJsonString(str) {
       if (Array.isArray(parsed.choices)?.[0]?.delta?.content) {
         return String(parsed.choices[0].delta.content);
       }
+      // ProseMirror/TipTap doc: extract text from content nodes so we never show raw JSON
+      if (parsed.type === 'doc' && Array.isArray(parsed.content)) {
+        return proseMirrorDocToText(parsed);
+      }
       // Parsed JSON but no displayable content - don't append raw JSON
       return '';
     }
@@ -94,4 +106,27 @@ function tryExtractFromJsonString(str) {
     // Not valid JSON, return as plain text
   }
   return str;
+}
+
+/**
+ * Extract plain text from a ProseMirror/TipTap doc JSON.
+ * Used when backend sends doc JSON so we show content, not raw JSON.
+ *
+ * @param {Object} doc - Parsed doc with type: "doc" and content: [ nodes ]
+ * @returns {string} Concatenated text from text nodes
+ */
+function proseMirrorDocToText(doc) {
+  if (!doc?.content || !Array.isArray(doc.content)) return '';
+  const parts = [];
+  function visit(node) {
+    if (node.text) {
+      parts.push(node.text);
+      return;
+    }
+    if (Array.isArray(node.content)) {
+      node.content.forEach(visit);
+    }
+  }
+  doc.content.forEach(visit);
+  return parts.join('');
 }
