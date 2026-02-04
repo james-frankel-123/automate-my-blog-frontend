@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import autoBlogAPI from '../services/api';
+import { isTestMode } from '../utils/storageUtils';
 
 /**
  * Workflow Mode Context
@@ -543,6 +544,9 @@ export const WorkflowModeProvider = ({ children }) => {
       return false;
     }
 
+    // ?test=true: skip persistence so workflow can be tested repeatedly with a clean slate
+    if (isTestMode()) return false;
+
     try {
       const workflowStateSnapshot = {
         // Authentication context
@@ -604,7 +608,11 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Restore workflow state from localStorage (auth-aware)
   const restoreWorkflowState = useCallback(() => {
-    
+    if (isTestMode()) {
+      localStorage.removeItem('automate-my-blog-workflow-state');
+      return false;
+    }
+
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
       if (!savedState) {
@@ -790,6 +798,7 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Check if there's saved workflow state available
   const hasSavedWorkflowState = useCallback(() => {
+    if (isTestMode()) return false;
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
       if (!savedState) return false;
@@ -1055,13 +1064,9 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Auto-restore workflow state AFTER authentication completes (RACE CONDITION FIX)
   useEffect(() => {
-    // Wait for authentication to complete before attempting restoration
-    if (authLoading) {
-      return;
-    }
-    
-    // Auth loading complete, checking for saved state
-    
+    if (authLoading) return;
+    if (isTestMode()) return;
+
     try {
       const savedState = localStorage.getItem('automate-my-blog-workflow-state');
       
@@ -1088,10 +1093,9 @@ export const WorkflowModeProvider = ({ children }) => {
   // Fallback restore mechanism - Retry restoration after a delay if race condition still occurs
   useEffect(() => {
     let timeoutId;
-    
-    // Only set up fallback when auth is loaded and we have saved state but current analysis is empty
-    if (authLoading) return; // Don't run fallback during auth loading
-    
+    if (authLoading) return;
+    if (isTestMode()) return;
+
     const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
                                 stepResults.home.websiteAnalysis?.targetAudience &&
                                 stepResults.home.websiteAnalysis?.contentFocus;
@@ -1123,6 +1127,13 @@ export const WorkflowModeProvider = ({ children }) => {
       }
     };
   }, [authLoading, user, isAuthenticated, stepResults.home.websiteAnalysis?.businessName, restoreWorkflowState]);
+
+  // ?test=true: clear any persisted workflow state on load so workflow is repeatable
+  useEffect(() => {
+    if (isTestMode()) {
+      localStorage.removeItem('automate-my-blog-workflow-state');
+    }
+  }, []);
   
   // SECURITY: Clear user data when user logs out (FIXED - track previous auth state)
   useEffect(() => {
