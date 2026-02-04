@@ -93,6 +93,11 @@ export const systemVoice = {
     enterUrl: "Please enter a website URL",
     analysisFailed: "We couldn't finish reading your site. Check the URL and try again?",
     saveFailed: "We couldn't save your changes. Try again in a moment.",
+    // Narrative streaming (Issue #157)
+    whatIDiscovered: "What I Discovered",
+    yourBestOpportunities: "Your Best Opportunities",
+    audiencesIntro: "Based on what I learned, here are your highest-value audience segments:",
+    analysisComplete: "Analysis Complete",
   },
 
   // ─── Audience strategies (AudienceSegmentsTab) ───
