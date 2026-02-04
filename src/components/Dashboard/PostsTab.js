@@ -858,7 +858,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         },
         // Content-generation job stream partial results: show post as soon as blog-result arrives
         onBlogResult: (data) => {
-          if (data?.content) setEditingContent(data.content);
+          const text = extractStreamCompleteContent(data);
+          if (text) setEditingContent(text);
         }
       };
 
@@ -1110,7 +1111,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     estimatedTimeRemaining: status.estimatedTimeRemaining
                   }),
                   onBlogResult: (data) => {
-                    if (data?.content) setEditingContent(data.content);
+                    const text = extractStreamCompleteContent(data);
+                    if (text) setEditingContent(text);
                   }
                 });
                 if (retryResult.success) {
