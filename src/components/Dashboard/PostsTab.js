@@ -1847,13 +1847,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               {!contentGenerated ? (
                 // Topic Generation Phase
                 <Card title={<h3 className="heading-subsection" style={{ marginBottom: 0 }}>Generate Content Topics</h3>} style={{ marginBottom: 'var(--space-6)' }}>
-                  <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-5)' }}>
-                    {tabMode.tabWorkflowData?.selectedCustomerStrategy ?
-                      'AI will generate trending topics based on your selected audience strategy.' :
-                      'Generate content topics that resonate with your target audience.'
-                    }
-                  </Paragraph>
-                  
                   {availableTopics.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '20px' }}>
                       {generatingContent ? (
@@ -2615,13 +2608,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             {!contentGenerated ? (
               // Topic Generation Phase
               <Card title="Generate Content Topics" style={{ marginBottom: '24px' }}>
-                <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '20px' }}>
-                  {selectedCustomerStrategy ? 
-                    'AI will generate trending topics based on your selected audience strategy.' :
-                    'Generate content topics that resonate with your target audience.'
-                  }
-                </Paragraph>
-                
                 {availableTopics.length === 0 ? (
                   <div style={{ textAlign: 'center', padding: '20px' }}>
                     {generatingContent ? (
