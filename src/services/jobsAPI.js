@@ -6,10 +6,42 @@
  * - Website analysis
  *
  * See: docs/backend-queue-system-specification.md (Frontend Handoff)
+ * Issue #89: Phase 6 streaming polish — reconnection, rate limits, feature flag.
  */
 
 const DEFAULT_POLL_INTERVAL_MS = 2500;
 const DEFAULT_MAX_POLL_ATTEMPTS = 120; // ~5 minutes at 2.5s interval
+
+/** Max reconnection attempts for EventSource after connection loss */
+const DEFAULT_MAX_RECONNECT_ATTEMPTS = 5;
+
+/** Base delay (ms) for exponential backoff on reconnect */
+const RECONNECT_BASE_DELAY_MS = 1000;
+
+/** Check if streaming is enabled via feature flag (default: true) */
+function isStreamingEnabled() {
+  const val = process.env.REACT_APP_STREAMING_ENABLED;
+  if (val === undefined || val === '') return true;
+  return val === 'true' || val === '1';
+}
+
+/** Check if error indicates rate limit (429 or errorCode/message) */
+function isRateLimitError(data) {
+  if (!data) return false;
+  const code = (data.errorCode || data.code || '').toString().toLowerCase();
+  const msg = (data.error || data.message || '').toString().toLowerCase();
+  return (
+    data.status === 429 ||
+    code === 'rate_limit' ||
+    code === 'rate_limit_exceeded' ||
+    msg.includes('rate limit') ||
+    msg.includes('too many requests')
+  );
+}
+
+/** User-facing message for rate limit with retry suggestion */
+const RATE_LIMIT_MESSAGE =
+  'Service is busy. Please wait a moment and try again.';
 
 class JobsAPI {
   constructor() {
@@ -123,38 +155,40 @@ class JobsAPI {
 
   /**
    * Connect to job progress stream (SSE).
+   * Supports auto-reconnect on connection loss (Issue #89).
+   * When REACT_APP_STREAMING_ENABLED=false, rejects immediately so caller can fall back to polling.
+   *
    * @param {string} jobId
-   * @param {Object} [handlers] - { onProgress?, onStepChange?, onComplete?, onFailed?, onConnected?, onScrapePhase?,
-   *   onScrapeResult?, onAnalysisResult?, onAudienceComplete?, onAudiencesResult?, onPitchComplete?, onPitchesResult?,
-   *   onScenarioImageComplete?, onScenariosResult?, onStreamTimeout?,
-   *   onContextResult?, onBlogResult?, onVisualsResult?, onSeoResult? (content-generation partial results) }
-   *   - onProgress(data) - progress-update: { progress, currentStep, phase?, detail?, estimatedTimeRemaining }
-   *   - onScrapePhase(data) - scrape-phase: { phase, message, url? } (thoughts / step log)
-   *   - onScrapeResult(data) - scrape-result: { url, title, metaDescription, headings, scrapedAt } (page preview)
-   *   - onAnalysisResult(data) - analysis-result: org summary, ctas, metadata (partial; no scenarios yet)
-   *   - onAudienceComplete(data) - audience-complete (per-item): { audience } (one scenario, no pitch/image)
-   *   - onAudiencesResult(data) - audiences-result: { scenarios } (no pitch/imageUrl)
-   *   - onPitchComplete(data) - pitch-complete (per-item): { index, scenario } (includes pitch)
-   *   - onPitchesResult(data) - pitches-result: { scenarios } (with pitch; no imageUrl)
-   *   - onScenarioImageComplete(data) - scenario-image-complete (per-item): { index, scenario } (includes imageUrl)
-   *   - onScenariosResult(data) - scenarios-result: { scenarios } (with imageUrl)
-   *   - onStreamTimeout(data) - stream-timeout: ~10 min warning
-   *   - onContextResult(data) - context-result (content-generation): { completenessScore?, availability? }
-   *   - onBlogResult(data) - blog-result (content-generation): { title, content, metaDescription?, tags?, ... }
-   *   - onVisualsResult(data) - visuals-result (content-generation): { visualContentSuggestions? }
-   *   - onSeoResult(data) - seo-result (content-generation): { seoAnalysis? }
-   *   - onComplete(data) - complete: data.result is full job result
-   *   - onFailed(data) - failed: { error, errorCode? }
-   * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error?, errorCode? }
+   * @param {Object} [handlers] - { onProgress?, onStepChange?, onComplete?, onFailed?, onConnected?, onReconnecting?,
+   *   onScrapePhase?, onScrapeResult?, onAnalysisResult?, ... }
+   *   - onReconnecting(attempt, maxAttempts) - called when reconnecting after connection loss
+   *   - onFailed(data) - failed: { error, errorCode?, retryable? }; rate limit errors include retryable: true
+   * @param {Object} [options] - { maxReconnectAttempts?: number }
+   * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error?, errorCode?, retryable? }
    */
-  connectToJobStream(jobId, handlers = {}) {
+  connectToJobStream(jobId, handlers = {}, options = {}) {
+    if (!isStreamingEnabled()) {
+      return Promise.reject(new Error('Streaming disabled by feature flag'));
+    }
+
+    const maxReconnectAttempts = options.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS;
+
     return new Promise((resolve, reject) => {
       const url = this.getJobStreamUrl(jobId);
-      const eventSource = new EventSource(url);
+      let eventSource = null;
       let settled = false;
+      let reconnectAttempt = 0;
+      let reconnectTimeoutId = null;
 
       const close = () => {
-        eventSource.close();
+        if (reconnectTimeoutId) {
+          clearTimeout(reconnectTimeoutId);
+          reconnectTimeoutId = null;
+        }
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
       };
 
       const parseData = (event) => {
@@ -170,11 +204,15 @@ class JobsAPI {
         if (settled) return;
         settled = true;
         const payload = data || {};
-        const error = payload.error ?? payload.message ?? 'Job failed';
+        let error = payload.error ?? payload.message ?? 'Job failed';
         const errorCode = payload.errorCode;
-        if (handlers.onFailed) handlers.onFailed({ error, errorCode });
+        const retryable = isRateLimitError(payload);
+        if (retryable) {
+          error = payload.error ?? payload.message ?? RATE_LIMIT_MESSAGE;
+        }
+        if (handlers.onFailed) handlers.onFailed({ error, errorCode, retryable });
         close();
-        resolve({ status: 'failed', error, errorCode });
+        resolve({ status: 'failed', error, errorCode, retryable });
       };
 
       const resolveSucceeded = (result) => {
@@ -184,171 +222,208 @@ class JobsAPI {
         resolve({ status: 'succeeded', result });
       };
 
-      // Backend may send named SSE events — only named listeners receive them
-      eventSource.addEventListener('connected', (event) => {
-        const data = parseData(event);
-        if (handlers.onConnected) handlers.onConnected(data);
-      });
-      eventSource.addEventListener('progress-update', (event) => {
-        const data = parseData(event);
-        if (handlers.onProgress) handlers.onProgress(data);
-      });
-      eventSource.addEventListener('step-change', (event) => {
-        const data = parseData(event);
-        if (handlers.onStepChange) handlers.onStepChange(data);
-        if (handlers.onProgress && (data.progress != null || data.currentStep != null)) handlers.onProgress(data);
-      });
-      eventSource.addEventListener('scrape-phase', (event) => {
-        const data = parseData(event);
-        if (handlers.onScrapePhase) handlers.onScrapePhase(data);
-      });
-      eventSource.addEventListener('scrape-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onScrapeResult) handlers.onScrapeResult(data);
-      });
-      eventSource.addEventListener('analysis-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onAnalysisResult) handlers.onAnalysisResult(data);
-      });
-      eventSource.addEventListener('audience-complete', (event) => {
-        const data = parseData(event);
-        if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
-      });
-      eventSource.addEventListener('audiences-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onAudiencesResult) handlers.onAudiencesResult(data);
-      });
-      eventSource.addEventListener('pitch-complete', (event) => {
-        const data = parseData(event);
-        if (handlers.onPitchComplete) handlers.onPitchComplete(data);
-      });
-      eventSource.addEventListener('pitches-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onPitchesResult) handlers.onPitchesResult(data);
-      });
-      eventSource.addEventListener('scenario-image-complete', (event) => {
-        const data = parseData(event);
-        if (handlers.onScenarioImageComplete) handlers.onScenarioImageComplete(data);
-      });
-      eventSource.addEventListener('scenarios-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onScenariosResult) handlers.onScenariosResult(data);
-      });
-      eventSource.addEventListener('stream-timeout', (event) => {
-        const data = parseData(event);
-        if (handlers.onStreamTimeout) handlers.onStreamTimeout(data);
-      });
-      eventSource.addEventListener('context-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onContextResult) handlers.onContextResult(data);
-      });
-      eventSource.addEventListener('blog-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onBlogResult) handlers.onBlogResult(data);
-      });
-      eventSource.addEventListener('visuals-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onVisualsResult) handlers.onVisualsResult(data);
-      });
-      eventSource.addEventListener('seo-result', (event) => {
-        const data = parseData(event);
-        if (handlers.onSeoResult) handlers.onSeoResult(data);
-      });
-      eventSource.addEventListener('complete', (event) => {
-        const data = parseData(event);
-        if (handlers.onComplete) handlers.onComplete(data);
-        resolveSucceeded(data?.result ?? data);
-      });
-      eventSource.addEventListener('failed', (event) => {
-        const data = parseData(event);
-        resolveFailed(data);
-      });
-      eventSource.addEventListener('error', (event) => {
-        const data = parseData(event);
-        if (event.data != null) resolveFailed(data);
-      });
-
-      // Fallback: generic 'message' events with payload { type, data }
-      eventSource.addEventListener('message', (event) => {
-        try {
-          const payload = JSON.parse(event.data || '{}');
-          const { type, data } = payload;
-          const payloadData = data ?? payload;
-          switch (type) {
-            case 'connected':
-              if (handlers.onConnected) handlers.onConnected(payloadData);
-              break;
-            case 'progress-update':
-              if (handlers.onProgress) handlers.onProgress(payloadData);
-              break;
-            case 'step-change':
-              if (handlers.onStepChange) handlers.onStepChange(payloadData);
-              if (handlers.onProgress && (payloadData?.progress != null || payloadData?.currentStep != null)) handlers.onProgress(payloadData);
-              break;
-            case 'scrape-phase':
-              if (handlers.onScrapePhase) handlers.onScrapePhase(payloadData);
-              break;
-            case 'scrape-result':
-              if (handlers.onScrapeResult) handlers.onScrapeResult(payloadData);
-              break;
-            case 'analysis-result':
-              if (handlers.onAnalysisResult) handlers.onAnalysisResult(payloadData);
-              break;
-            case 'audience-complete':
-              if (handlers.onAudienceComplete) handlers.onAudienceComplete(payloadData);
-              break;
-            case 'audiences-result':
-              if (handlers.onAudiencesResult) handlers.onAudiencesResult(payloadData);
-              break;
-            case 'pitch-complete':
-              if (handlers.onPitchComplete) handlers.onPitchComplete(payloadData);
-              break;
-            case 'pitches-result':
-              if (handlers.onPitchesResult) handlers.onPitchesResult(payloadData);
-              break;
-            case 'scenario-image-complete':
-              if (handlers.onScenarioImageComplete) handlers.onScenarioImageComplete(payloadData);
-              break;
-            case 'scenarios-result':
-              if (handlers.onScenariosResult) handlers.onScenariosResult(payloadData);
-              break;
-            case 'stream-timeout':
-              if (handlers.onStreamTimeout) handlers.onStreamTimeout(payloadData);
-              break;
-            case 'context-result':
-              if (handlers.onContextResult) handlers.onContextResult(payloadData);
-              break;
-            case 'blog-result':
-              if (handlers.onBlogResult) handlers.onBlogResult(payloadData);
-              break;
-            case 'visuals-result':
-              if (handlers.onVisualsResult) handlers.onVisualsResult(payloadData);
-              break;
-            case 'seo-result':
-              if (handlers.onSeoResult) handlers.onSeoResult(payloadData);
-              break;
-            case 'complete':
-              if (handlers.onComplete) handlers.onComplete(payloadData);
-              resolveSucceeded(payloadData?.result ?? payloadData);
-              break;
-            case 'failed':
-            case 'error':
-              resolveFailed(payloadData);
-              break;
-            default:
-              break;
+      const tryReconnect = () => {
+        if (settled || reconnectAttempt >= maxReconnectAttempts) {
+          if (!settled) {
+            settled = true;
+            reject(new Error('Job stream connection failed after reconnection attempts'));
           }
-        } catch (err) {
-          console.warn('[Job SSE] Parse error:', err);
+          return;
         }
-      });
-
-      eventSource.onerror = () => {
-        if (settled) return;
-        settled = true;
-        close();
-        reject(new Error('Job stream connection failed'));
+        reconnectAttempt += 1;
+        if (eventSource) {
+          eventSource.close();
+          eventSource = null;
+        }
+        if (handlers.onReconnecting) {
+          handlers.onReconnecting(reconnectAttempt, maxReconnectAttempts);
+        }
+        const delay = RECONNECT_BASE_DELAY_MS * Math.pow(2, reconnectAttempt - 1);
+        reconnectTimeoutId = setTimeout(() => {
+          reconnectTimeoutId = null;
+          connect();
+        }, delay);
       };
+
+      const connect = () => {
+        if (settled) return;
+        eventSource = new EventSource(url);
+
+        // Backend may send named SSE events — only named listeners receive them
+        eventSource.addEventListener('connected', (event) => {
+          const data = parseData(event);
+          reconnectAttempt = 0; // Reset on successful connection
+          if (handlers.onConnected) handlers.onConnected(data);
+        });
+        eventSource.addEventListener('progress-update', (event) => {
+          const data = parseData(event);
+          if (handlers.onProgress) handlers.onProgress(data);
+        });
+        eventSource.addEventListener('step-change', (event) => {
+          const data = parseData(event);
+          if (handlers.onStepChange) handlers.onStepChange(data);
+          if (handlers.onProgress && (data.progress != null || data.currentStep != null)) handlers.onProgress(data);
+        });
+        eventSource.addEventListener('scrape-phase', (event) => {
+          const data = parseData(event);
+          if (handlers.onScrapePhase) handlers.onScrapePhase(data);
+        });
+        eventSource.addEventListener('scrape-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onScrapeResult) handlers.onScrapeResult(data);
+        });
+        eventSource.addEventListener('analysis-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onAnalysisResult) handlers.onAnalysisResult(data);
+        });
+        eventSource.addEventListener('audience-complete', (event) => {
+          const data = parseData(event);
+          if (handlers.onAudienceComplete) handlers.onAudienceComplete(data);
+        });
+        eventSource.addEventListener('audiences-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onAudiencesResult) handlers.onAudiencesResult(data);
+        });
+        eventSource.addEventListener('pitch-complete', (event) => {
+          const data = parseData(event);
+          if (handlers.onPitchComplete) handlers.onPitchComplete(data);
+        });
+        eventSource.addEventListener('pitches-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onPitchesResult) handlers.onPitchesResult(data);
+        });
+        eventSource.addEventListener('scenario-image-complete', (event) => {
+          const data = parseData(event);
+          if (handlers.onScenarioImageComplete) handlers.onScenarioImageComplete(data);
+        });
+        eventSource.addEventListener('scenarios-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onScenariosResult) handlers.onScenariosResult(data);
+        });
+        eventSource.addEventListener('stream-timeout', (event) => {
+          const data = parseData(event);
+          if (handlers.onStreamTimeout) handlers.onStreamTimeout(data);
+        });
+        eventSource.addEventListener('context-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onContextResult) handlers.onContextResult(data);
+        });
+        eventSource.addEventListener('blog-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onBlogResult) handlers.onBlogResult(data);
+        });
+        eventSource.addEventListener('visuals-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onVisualsResult) handlers.onVisualsResult(data);
+        });
+        eventSource.addEventListener('seo-result', (event) => {
+          const data = parseData(event);
+          if (handlers.onSeoResult) handlers.onSeoResult(data);
+        });
+        eventSource.addEventListener('complete', (event) => {
+          const data = parseData(event);
+          if (handlers.onComplete) handlers.onComplete(data);
+          resolveSucceeded(data?.result ?? data);
+        });
+        eventSource.addEventListener('failed', (event) => {
+          const data = parseData(event);
+          resolveFailed(data);
+        });
+        eventSource.addEventListener('rate_limit', (event) => {
+          const data = parseData(event);
+          resolveFailed({ ...data, errorCode: 'rate_limit', retryable: true });
+        });
+        eventSource.addEventListener('error', (event) => {
+          const data = parseData(event);
+          if (event.data != null) resolveFailed(data);
+        });
+
+        // Fallback: generic 'message' events with payload { type, data }
+        eventSource.addEventListener('message', (event) => {
+          try {
+            const payload = JSON.parse(event.data || '{}');
+            const { type, data } = payload;
+            const payloadData = data ?? payload;
+            switch (type) {
+              case 'connected':
+                if (handlers.onConnected) handlers.onConnected(payloadData);
+                break;
+              case 'progress-update':
+                if (handlers.onProgress) handlers.onProgress(payloadData);
+                break;
+              case 'step-change':
+                if (handlers.onStepChange) handlers.onStepChange(payloadData);
+                if (handlers.onProgress && (payloadData?.progress != null || payloadData?.currentStep != null)) handlers.onProgress(payloadData);
+                break;
+              case 'scrape-phase':
+                if (handlers.onScrapePhase) handlers.onScrapePhase(payloadData);
+                break;
+              case 'scrape-result':
+                if (handlers.onScrapeResult) handlers.onScrapeResult(payloadData);
+                break;
+              case 'analysis-result':
+                if (handlers.onAnalysisResult) handlers.onAnalysisResult(payloadData);
+                break;
+              case 'audience-complete':
+                if (handlers.onAudienceComplete) handlers.onAudienceComplete(payloadData);
+                break;
+              case 'audiences-result':
+                if (handlers.onAudiencesResult) handlers.onAudiencesResult(payloadData);
+                break;
+              case 'pitch-complete':
+                if (handlers.onPitchComplete) handlers.onPitchComplete(payloadData);
+                break;
+              case 'pitches-result':
+                if (handlers.onPitchesResult) handlers.onPitchesResult(payloadData);
+                break;
+              case 'scenario-image-complete':
+                if (handlers.onScenarioImageComplete) handlers.onScenarioImageComplete(payloadData);
+                break;
+              case 'scenarios-result':
+                if (handlers.onScenariosResult) handlers.onScenariosResult(payloadData);
+                break;
+              case 'stream-timeout':
+                if (handlers.onStreamTimeout) handlers.onStreamTimeout(payloadData);
+                break;
+              case 'context-result':
+                if (handlers.onContextResult) handlers.onContextResult(payloadData);
+                break;
+              case 'blog-result':
+                if (handlers.onBlogResult) handlers.onBlogResult(payloadData);
+                break;
+              case 'visuals-result':
+                if (handlers.onVisualsResult) handlers.onVisualsResult(payloadData);
+                break;
+              case 'seo-result':
+                if (handlers.onSeoResult) handlers.onSeoResult(payloadData);
+                break;
+              case 'complete':
+                if (handlers.onComplete) handlers.onComplete(payloadData);
+                resolveSucceeded(payloadData?.result ?? payloadData);
+                break;
+              case 'failed':
+              case 'error':
+                resolveFailed(payloadData);
+                break;
+              case 'rate_limit':
+                resolveFailed({ ...payloadData, errorCode: 'rate_limit', retryable: true });
+                break;
+              default:
+                break;
+            }
+          } catch (err) {
+            console.warn('[Job SSE] Parse error:', err);
+          }
+        });
+
+        eventSource.onerror = () => {
+          if (settled) return;
+          // EventSource onerror fires on connection loss; try reconnecting
+          tryReconnect();
+        };
+      };
+
+      connect();
     });
   }
 

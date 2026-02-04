@@ -169,7 +169,7 @@ export class EnhancedContentAPI {
           error: finalStatus.error || 'Content generation failed',
           errorCode: finalStatus.errorCode,
           jobId,
-          retryable: finalStatus.status === 'failed'
+          retryable: finalStatus.retryable ?? true
         };
       }
 
