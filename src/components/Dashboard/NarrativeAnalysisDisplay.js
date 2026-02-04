@@ -3,7 +3,7 @@
  * Renders: (1) Scraping narrative with typing cursor, (2) Analysis narrative as markdown
  * in paragraph cards, (3) Audiences progressive reveal. Uses useNarrativeStream when jobId provided.
  */
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Card, Typography, Divider } from 'antd';
 import StreamingText from '../shared/StreamingText';
 import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
@@ -61,8 +61,9 @@ const analysisTextStyle = {
  * @param {string} [props.jobId] - Website analysis job ID for narrative stream
  * @param {Object} [props.analysisResults] - Full analysis result with scenarios (for Moment 3)
  * @param {Function} [props.renderFallback] - Rendered when narrative stream unavailable (e.g. 404). Enables graceful fallback to ThinkingPanel.
+ * @param {Function} [props.onNarrativeComplete] - Called when stream ends with final narrative text so parent can persist it (e.g. into analysisResults).
  */
-export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback }) {
+export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback, onNarrativeComplete }) {
   const {
     scrapingNarrative,
     analysisNarrative,
@@ -71,9 +72,26 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
     narrativeAvailable,
   } = useNarrativeStream(jobId);
 
+  const wasStreamingRef = useRef(false);
+
+  // When stream ends, persist narrative so it doesn’t disappear when this component unmounts
+  useEffect(() => {
+    if (isStreaming) {
+      wasStreamingRef.current = true;
+    } else if (wasStreamingRef.current && (analysisNarrative?.trim() || scrapingNarrative?.trim())) {
+      wasStreamingRef.current = false;
+      onNarrativeComplete?.(analysisNarrative?.trim() || '', scrapingNarrative?.trim() || '');
+    }
+  }, [isStreaming, analysisNarrative, scrapingNarrative, onNarrativeComplete]);
+
+  // When narrative stream not available and no content, clear jobId in effect so parent can show results
+  useEffect(() => {
+    if (!jobId || narrativeAvailable || scrapingNarrative || analysisNarrative) return;
+    onNarrativeComplete?.('', '');
+  }, [jobId, narrativeAvailable, scrapingNarrative, analysisNarrative, onNarrativeComplete]);
+
   if (!jobId) return null;
 
-  // When narrative stream not available and no content, render fallback if provided
   if (!narrativeAvailable && !scrapingNarrative && !analysisNarrative) {
     return renderFallback ? renderFallback() : null;
   }
