@@ -915,7 +915,7 @@ const WebsiteAnalysisStepStandalone = ({
    */
   const handleNarrativeComplete = (analysisNarrative, _scrapingNarrative) => {
     if (analysisNarrative && setAnalysisResults) {
-      setAnalysisResults(prev => ({ ...prev, narrative: analysisNarrative }));
+      setAnalysisResults({ narrative: analysisNarrative });
     }
     setAnalysisJobId(null);
   };
