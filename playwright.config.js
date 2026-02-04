@@ -64,6 +64,8 @@ module.exports = defineConfig({
     env: {
       CI: process.env.CI || 'false',
       BROWSER: 'none', // Don't open browser in CI
+      // E2E mocks return 404 for stream endpoints; disable streaming so app uses polling immediately
+      REACT_APP_STREAMING_ENABLED: 'false',
     },
   },
 });
