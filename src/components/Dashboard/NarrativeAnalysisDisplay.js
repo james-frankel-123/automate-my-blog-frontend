@@ -4,7 +4,7 @@
  * in paragraph cards, (3) Audiences progressive reveal. Uses useNarrativeStream when jobId provided.
  */
 import React, { useEffect, useRef } from 'react';
-import { Card, Typography } from 'antd';
+import { Card, Typography, Divider } from 'antd';
 import StreamingText from '../shared/StreamingText';
 import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
 import { useNarrativeStream, MOMENTS } from '../../hooks/useNarrativeStream';
@@ -31,10 +31,23 @@ const paragraphCardBase = {
   transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
 };
 
+const scrapingCardStyle = {
+  ...paragraphCardBase,
+  borderLeft: '4px solid var(--color-text-tertiary)',
+  background: 'var(--color-background-container)',
+};
+
 const analysisCardStyle = {
   ...paragraphCardBase,
   borderLeft: '4px solid var(--color-primary)',
   background: 'var(--color-background-elevated)',
+};
+
+const scrapingTextStyle = {
+  fontSize: 14,
+  fontStyle: 'italic',
+  color: 'var(--color-text-secondary)',
+  lineHeight: 1.8,
 };
 
 const analysisTextStyle = {
@@ -85,11 +98,20 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
 
   const scenarios = analysisResults?.scenarios ?? analysisResults?.analysis?.scenarios ?? [];
 
+  const scrapingParagraphs = splitParagraphs(scrapingNarrative);
   const analysisParagraphs = splitParagraphs(analysisNarrative);
   const showAnalysisSection =
     currentMoment === MOMENTS.ANALYSIS || currentMoment === MOMENTS.AUDIENCES || analysisNarrative;
 
-  // While streaming, last paragraph is incomplete — show it in its own card with cursor
+  // Scraping: complete paragraphs + streaming card for last incomplete
+  const scrapingComplete = currentMoment === MOMENTS.SCRAPING && isStreaming && scrapingParagraphs.length > 0
+    ? scrapingParagraphs.slice(0, -1)
+    : scrapingParagraphs;
+  const scrapingStreamingContent = currentMoment === MOMENTS.SCRAPING && isStreaming && scrapingParagraphs.length > 0
+    ? scrapingParagraphs[scrapingParagraphs.length - 1]
+    : (currentMoment === MOMENTS.SCRAPING && isStreaming ? scrapingNarrative.trim() : '');
+
+  // Analysis: complete paragraphs + streaming card for last incomplete
   const analysisComplete = currentMoment === MOMENTS.ANALYSIS && isStreaming && analysisParagraphs.length > 0
     ? analysisParagraphs.slice(0, -1)
     : analysisParagraphs;
@@ -99,7 +121,63 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
 
   return (
     <div style={cardStyles}>
-      {/* Only show "What I Discovered" (analysis narrative); scraping narrative is not shown */}
+      {/* Moment 1: Scraping progress / thought process — one card per paragraph, markdown rendered */}
+      {(scrapingNarrative || currentMoment === MOMENTS.SCRAPING) && (
+        <div data-testid="narrative-scraping-card">
+          {scrapingComplete.map((para, idx) => (
+            <Card
+              key={`scraping-${idx}`}
+              style={{
+                ...scrapingCardStyle,
+                opacity: currentMoment === MOMENTS.SCRAPING ? 1 : 0.7,
+                animation: 'slideInUp 0.4s ease forwards',
+                animationDelay: `${idx * 0.08}s`,
+              }}
+              data-testid={`narrative-scraping-card-${idx}`}
+            >
+              <div style={scrapingTextStyle}>
+                <MarkdownPreview content={para} style={{ margin: 0 }} />
+              </div>
+            </Card>
+          ))}
+          {currentMoment === MOMENTS.SCRAPING && isStreaming && (
+            <Card
+              style={{
+                ...scrapingCardStyle,
+                opacity: 1,
+                animation: 'slideInUp 0.4s ease forwards',
+              }}
+              data-testid="narrative-scraping-card-streaming"
+            >
+              <div style={scrapingTextStyle}>
+                {scrapingStreamingContent ? (
+                  <MarkdownPreview content={scrapingStreamingContent} style={{ margin: 0 }} />
+                ) : null}
+                <StreamingText content="" isStreaming />
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Transition */}
+      {currentMoment === MOMENTS.TRANSITION && (
+        <div
+          style={{
+            textAlign: 'center',
+            margin: '32px 0',
+            opacity: 0,
+            animation: 'fadeIn 0.5s ease forwards',
+          }}
+        >
+          <Divider>
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {systemVoice.analysis.analysisComplete}
+            </Text>
+          </Divider>
+        </div>
+      )}
+
       {/* Moment 2: Analysis narrative — one card per paragraph, markdown rendered */}
       {showAnalysisSection && (
         <div data-testid="narrative-analysis-card">
