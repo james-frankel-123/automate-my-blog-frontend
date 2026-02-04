@@ -1102,10 +1102,10 @@ const WebsiteAnalysisStepStandalone = ({
 
     return navSections.length >= 2 ? (
       <Row gutter={[24, 0]} style={{ alignItems: 'flex-start' }}>
-        <Col xs={24} md={0} style={{ marginBottom: 8 }}>
+        <Col xs={24} md={0} style={{ marginBottom: 8 }} data-testid="analysis-section-nav-mobile">
           <AnalysisSectionNavHorizontal sections={navSections} onSectionClick={handleNavSectionClick} />
         </Col>
-        <Col xs={0} md={6} style={{ position: 'sticky', top: 88 }}>
+        <Col xs={0} md={6} style={{ position: 'sticky', top: 88 }} data-testid="analysis-section-nav-sidebar">
           <AnalysisSectionNav sections={navSections} onSectionClick={handleNavSectionClick} />
         </Col>
         <Col xs={24} md={18}>{content}</Col>

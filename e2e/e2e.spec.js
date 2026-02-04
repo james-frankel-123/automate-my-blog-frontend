@@ -54,6 +54,34 @@ async function waitForNoModal(page, timeoutMs = 6000) {
 }
 
 /**
+ * Run website analysis flow: Create New Post → fill URL → Analyze → wait for completion.
+ * Returns when analysis is complete (Continue to Audience or results visible).
+ */
+async function runWebsiteAnalysisToCompletion(page) {
+  const createBtn = page.locator('button:has-text("Create New Post")').first();
+  if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+    throw new Error('Create New Post button not visible');
+  }
+  await createBtn.click();
+  await page.waitForTimeout(500);
+  const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+  if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+    throw new Error('Website URL input not visible');
+  }
+  await input.fill('https://example.com');
+  const analyzeBtn = page.locator('button:has-text("Analyze")').first();
+  if (!(await analyzeBtn.isVisible({ timeout: 2000 }).catch(() => false))) {
+    throw new Error('Analyze button not visible');
+  }
+  await analyzeBtn.click();
+  await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(1000);
+  await removeOverlay(page);
+  const continueOrSuccess = page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience|We\'ve got a basic picture/i').first();
+  await expect(continueOrSuccess).toBeVisible({ timeout: 10000 });
+}
+
+/**
  * Click the Create Post / Generate post button (topic → full post).
  * When topicTitle is set, clicks the button inside the topic card with that title so we don't hit the "Generate post" (topics) CTA.
  */
@@ -170,6 +198,24 @@ test.describe('E2E (mocked backend)', () => {
         const token = await page.evaluate(() => localStorage.getItem('accessToken'));
         expect(token).toBeNull();
       }
+    });
+
+    test('logged in: after website analysis, section nav is visible and scroll-to-section works (#168)', async ({ page }) => {
+      test.setTimeout(45000);
+      await runWebsiteAnalysisToCompletion(page);
+      const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+      await expect(nav).toBeVisible({ timeout: 5000 });
+      const targetAudienceNavBtn = nav.locator('[data-testid="analysis-nav-analysis-target-audience"]');
+      await expect(targetAudienceNavBtn).toBeVisible({ timeout: 3000 });
+      await targetAudienceNavBtn.click();
+      await page.waitForTimeout(600);
+      const section = page.locator('#analysis-target-audience');
+      await expect(section).toBeVisible({ timeout: 3000 });
+      const isInViewport = await section.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.top >= 0 && rect.top <= window.innerHeight;
+      });
+      expect(isInViewport).toBeTruthy();
     });
   });
 
@@ -385,6 +431,71 @@ test.describe('E2E (mocked backend)', () => {
         await expect(hintStrip).toBeVisible({ timeout: 5000 });
         // Full success hint or limited success – mocked backend may return either path
         await expect(hintStrip).toContainText(/We've got your site|Choose your audience|We've got a basic picture|You can continue or try a different URL|Audience strategies ready|Thinking about your audience/i);
+      });
+
+      // Issue #168 – Granular website analysis section nav: sticky/horizontal nav, smooth scroll, scroll spy
+      test.describe('Website analysis section nav (#168)', () => {
+        test('after analysis completes, section nav is visible with at least two sections', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(nav).toBeVisible({ timeout: 5000 });
+          const navLinks = nav.locator('[data-testid^="analysis-nav-"]');
+          await expect(navLinks.first()).toBeVisible({ timeout: 3000 });
+          const count = await navLinks.count();
+          expect(count).toBeGreaterThanOrEqual(2);
+        });
+
+        test('section nav includes expected labels from analysis (What They Do, Target Audience, etc.)', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(nav).toBeVisible({ timeout: 5000 });
+          await expect(nav.locator('button:has-text("What They Do")')).toBeVisible({ timeout: 3000 });
+          await expect(nav.locator('button:has-text("Target Audience")')).toBeVisible({ timeout: 3000 });
+        });
+
+        test('section IDs exist in DOM for scroll targets', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const sectionWhatTheyDo = page.locator('#analysis-what-they-do');
+          const sectionTargetAudience = page.locator('#analysis-target-audience');
+          await expect(sectionWhatTheyDo).toBeVisible({ timeout: 5000 });
+          await expect(sectionTargetAudience).toBeVisible({ timeout: 3000 });
+        });
+
+        test('clicking a nav link scrolls to the section and section is visible', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(nav).toBeVisible({ timeout: 5000 });
+          const targetAudienceNavBtn = nav.locator('[data-testid="analysis-nav-analysis-target-audience"]');
+          await expect(targetAudienceNavBtn).toBeVisible({ timeout: 3000 });
+          await targetAudienceNavBtn.click();
+          await page.waitForTimeout(600);
+          const section = page.locator('#analysis-target-audience');
+          await expect(section).toBeVisible({ timeout: 3000 });
+          const isInViewport = await section.evaluate((el) => {
+            const rect = el.getBoundingClientRect();
+            return rect.top >= 0 && rect.top <= window.innerHeight;
+          });
+          expect(isInViewport).toBeTruthy();
+        });
+
+        test('Sections label is shown in nav header', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          await expect(page.locator('text=Sections').first()).toBeVisible({ timeout: 5000 });
+        });
+
+        test('mobile viewport: horizontal section nav is visible and clickable', async ({ page }) => {
+          await page.setViewportSize({ width: 375, height: 667 });
+          await runWebsiteAnalysisToCompletion(page);
+          const nav = page.locator('[data-testid="analysis-section-nav-mobile"]');
+          await expect(nav).toBeVisible({ timeout: 5000 });
+          const navLinks = nav.locator('[data-testid^="analysis-nav-"]');
+          await expect(navLinks.first()).toBeVisible({ timeout: 3000 });
+          const targetAudienceNavBtn = nav.locator('[data-testid="analysis-nav-analysis-target-audience"]');
+          await targetAudienceNavBtn.click();
+          await page.waitForTimeout(600);
+          const section = page.locator('#analysis-target-audience');
+          await expect(section).toBeVisible({ timeout: 3000 });
+        });
       });
 
       // "Why we suggested this" is implemented in PostsTab (data-testid="topic-why-suggested").

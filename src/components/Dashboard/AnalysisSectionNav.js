@@ -21,7 +21,6 @@ const THRESHOLD = 0;
  */
 export function AnalysisSectionNav({ sections, className = '', style = {}, collapsibleOnMobile = true, onSectionClick }) {
   const [activeId, setActiveId] = useState(sections[0]?.id ?? null);
-  const [mobileOpen, setMobileOpen] = useState(false);
   const observerRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -59,7 +58,6 @@ export function AnalysisSectionNav({ sections, className = '', style = {}, colla
       el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setActiveId(id);
     }
-    if (collapsibleOnMobile) setMobileOpen(false);
   };
 
   if (!sections.length) return null;
@@ -108,35 +106,6 @@ export function AnalysisSectionNav({ sections, className = '', style = {}, colla
               e.currentTarget.style.color = 'var(--color-text-secondary)';
             }
           }}
-        >
-          {label}
-        </button>
-      ))}
-    </nav>
-  );
-
-  const horizontalNav = (
-    <nav
-      role="navigation"
-      aria-label="Analysis sections"
-      style={{
-        display: 'flex',
-        flexDirection: 'row',
-        gap: 4,
-        overflowX: 'auto',
-        paddingBottom: 8,
-        marginBottom: 12,
-        scrollbarWidth: 'thin',
-      }}
-    >
-      {sections.map(({ id, label }) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => scrollToSection(id)}
-          data-section-id={id}
-          data-testid={`analysis-nav-${id}`}
-          style={navItemStyle(id)}
         >
           {label}
         </button>
