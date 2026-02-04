@@ -13,6 +13,7 @@ import { systemVoice } from '../../../copy/systemVoice';
 import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 import { NarrativeAnalysisDisplay } from '../../Dashboard/NarrativeAnalysisDisplay';
+import AnalysisSectionNav, { AnalysisSectionNavHorizontal } from '../../Dashboard/AnalysisSectionNav';
 import ThinkingPanel from '../../shared/ThinkingPanel';
 
 const { Title, Text, Paragraph } = Typography;
@@ -104,6 +105,8 @@ const WebsiteAnalysisStepStandalone = ({
   const [analysisProgress, setAnalysisProgress] = useState(null);
   // Scrape-phase "thoughts" from job stream (phase, message, url?) for step-by-step log
   const [analysisThoughts, setAnalysisThoughts] = useState([]);
+  // Expand Technical Details collapse when nav links to a subsection (Issue #168)
+  const [technicalDetailsExpanded, setTechnicalDetailsExpanded] = useState(false);
   // Ref to latest analysis results for per-item stream updates (audience-complete, pitch-complete, scenario-image-complete)
   const latestAnalysisRef = useRef(analysisResults);
 
@@ -1001,7 +1004,32 @@ const WebsiteAnalysisStepStandalone = ({
       }
     };
 
-    return (
+    // Build granular nav sections for smooth scrolling (Issue #168)
+    const navSections = [];
+    if (hasNarrative) navSections.push({ id: 'analysis-narrative', label: 'Narrative' });
+    if (editMode || (analysis.description && String(analysis.description).trim())) {
+      navSections.push({ id: 'analysis-what-they-do', label: 'What They Do' });
+    }
+    if (editMode || (analysis.decisionMakers && String(analysis.decisionMakers).trim()) || (analysis.targetAudience && String(analysis.targetAudience).trim())) {
+      navSections.push({ id: 'analysis-target-audience', label: 'Target Audience' });
+    }
+    if (editMode || (analysis.brandVoice && String(analysis.brandVoice).trim())) {
+      navSections.push({ id: 'analysis-brand-voice', label: 'Brand Voice' });
+    }
+    if (editMode || (analysis.contentFocus && String(analysis.contentFocus).trim())) {
+      navSections.push({ id: 'analysis-content-focus', label: 'Content Focus' });
+    }
+    if (organizationCTAs.length > 0) {
+      navSections.push({ id: 'analysis-ctas', label: 'Calls-to-Action' });
+    }
+    if (analysis.businessModel || editMode) navSections.push({ id: 'analysis-business-model', label: 'Business Model' });
+    if (analysis.websiteGoals || editMode) navSections.push({ id: 'analysis-website-goals', label: 'Website Goals' });
+    if (analysis.blogStrategy || editMode) navSections.push({ id: 'analysis-blog-strategy', label: 'Blog Strategy' });
+    if ((analysis.keywords && analysis.keywords.length > 0) || editMode) {
+      navSections.push({ id: 'analysis-keywords', label: 'Key Topics & Keywords' });
+    }
+
+    const content = (
       <>
         {/* Narrative Job Status Indicator */}
         {analysis.narrativeGenerating && analysis.narrativeJobStatus && (
@@ -1031,17 +1059,21 @@ const WebsiteAnalysisStepStandalone = ({
 
         {/* Narrative Analysis Card - Primary Display */}
         {hasNarrative && (
-          <NarrativeAnalysisCard
-            narrative={analysis.narrative}
-            confidence={analysis.narrativeConfidence}
-            keyInsights={analysis.keyInsights}
-          />
+          <div id="analysis-narrative" style={{ scrollMarginTop: 100 }}>
+            <NarrativeAnalysisCard
+              narrative={analysis.narrative}
+              confidence={analysis.narrativeConfidence}
+              keyInsights={analysis.keyInsights}
+            />
+          </div>
         )}
 
         {/* Structured Data - Always show, but can be collapsed if narrative exists */}
         {hasNarrative ? (
           <Collapse
             ghost
+            activeKey={technicalDetailsExpanded ? ['1'] : []}
+            onChange={(keys) => setTechnicalDetailsExpanded(keys.includes('1'))}
             style={{ marginBottom: '20px' }}
             items={[
               {
@@ -1063,6 +1095,22 @@ const WebsiteAnalysisStepStandalone = ({
         )}
       </>
     );
+
+    const handleNavSectionClick = (sectionId) => {
+      if (sectionId !== 'analysis-narrative') setTechnicalDetailsExpanded(true);
+    };
+
+    return navSections.length >= 2 ? (
+      <Row gutter={[24, 0]} style={{ alignItems: 'flex-start' }}>
+        <Col xs={24} md={0} style={{ marginBottom: 8 }}>
+          <AnalysisSectionNavHorizontal sections={navSections} onSectionClick={handleNavSectionClick} />
+        </Col>
+        <Col xs={0} md={6} style={{ position: 'sticky', top: 88 }}>
+          <AnalysisSectionNav sections={navSections} onSectionClick={handleNavSectionClick} />
+        </Col>
+        <Col xs={24} md={18}>{content}</Col>
+      </Row>
+    ) : content;
   };
 
   /**
@@ -1181,13 +1229,7 @@ const WebsiteAnalysisStepStandalone = ({
         <Row gutter={responsive.gutter}>
           {(editMode || (analysis.description && String(analysis.description).trim())) && (
             <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
-              }}>
+              <div id="analysis-what-they-do" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
                 <Text strong style={{
                   color: 'var(--color-text-primary)',
                   fontSize: responsive.fontSize.text,
@@ -1214,13 +1256,7 @@ const WebsiteAnalysisStepStandalone = ({
           )}
           {(editMode || (analysis.decisionMakers && String(analysis.decisionMakers).trim()) || (analysis.targetAudience && String(analysis.targetAudience).trim())) && (
             <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
-              }}>
+              <div id="analysis-target-audience" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
                 <Text strong style={{
                   color: 'var(--color-text-primary)',
                   fontSize: responsive.fontSize.text,
@@ -1246,13 +1282,7 @@ const WebsiteAnalysisStepStandalone = ({
           )}
           {(editMode || (analysis.brandVoice && String(analysis.brandVoice).trim())) && (
             <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
-              }}>
+              <div id="analysis-brand-voice" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
                 <Text strong style={{
                   color: 'var(--color-text-primary)',
                   fontSize: responsive.fontSize.text,
@@ -1278,13 +1308,7 @@ const WebsiteAnalysisStepStandalone = ({
           )}
           {(editMode || (analysis.contentFocus && String(analysis.contentFocus).trim())) && (
             <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
-              }}>
+              <div id="analysis-content-focus" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
                 <Text strong style={{
                   color: 'var(--color-text-primary)',
                   fontSize: responsive.fontSize.text,
@@ -1314,12 +1338,7 @@ const WebsiteAnalysisStepStandalone = ({
         {organizationCTAs.length > 0 && (
           <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
             <Col xs={24}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)'
-              }}>
+              <div id="analysis-ctas" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)' }}>
                 <Text strong style={{
                   color: 'var(--color-text-primary)',
                   fontSize: responsive.fontSize.text,
@@ -1375,13 +1394,7 @@ const WebsiteAnalysisStepStandalone = ({
           <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
             {(analysis.businessModel || editMode) && (
               <Col xs={24} lg={8}>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: 'var(--color-background-container)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border-base)',
-                  height: '100%'
-                }}>
+                <div id="analysis-business-model" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
                   <Text strong style={{
                     color: 'var(--color-text-primary)',
                     fontSize: responsive.fontSize.text,
@@ -1409,13 +1422,7 @@ const WebsiteAnalysisStepStandalone = ({
 
             {(analysis.websiteGoals || editMode) && (
               <Col xs={24} lg={8}>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: 'var(--color-background-container)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border-base)',
-                  height: '100%'
-                }}>
+                <div id="analysis-website-goals" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
                   <Text strong style={{
                     color: 'var(--color-text-primary)',
                     fontSize: responsive.fontSize.text,
@@ -1443,13 +1450,7 @@ const WebsiteAnalysisStepStandalone = ({
 
             {(analysis.blogStrategy || editMode) && (
               <Col xs={24} lg={8}>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: 'var(--color-background-container)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border-base)',
-                  height: '100%'
-                }}>
+                <div id="analysis-blog-strategy" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
                   <Text strong style={{
                     color: 'var(--color-text-primary)',
                     fontSize: responsive.fontSize.text,
@@ -1479,12 +1480,7 @@ const WebsiteAnalysisStepStandalone = ({
 
         {/* Keywords if available or in edit mode */}
         {((analysis.keywords && analysis.keywords.length > 0) || editMode) && (
-          <div style={{
-            marginTop: '20px',
-            padding: '16px',
-            backgroundColor: 'var(--color-background-container)',
-            borderRadius: '8px'
-          }}>
+          <div id="analysis-keywords" style={{ scrollMarginTop: 100, marginTop: '20px', padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: '8px' }}>
             <Text strong style={{
               color: 'var(--color-text-primary)',
               fontSize: responsive.fontSize.text,
