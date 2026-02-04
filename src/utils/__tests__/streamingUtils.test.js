@@ -94,5 +94,33 @@ describe('streamingUtils', () => {
       const html = '<p>Hello <strong>world</strong></p>';
       expect(extractStreamCompleteContent({ content: html })).toBe(html);
     });
+
+    it('strips markdown code fences and extracts content when wrapped in ```', () => {
+      const fenced = '```json\n{"title":"Post","content":"<p>Hello</p>"}\n```';
+      expect(extractStreamCompleteContent({ content: fenced })).toBe(
+        '<p>Hello</p>'
+      );
+    });
+
+    it('strips code fences without language tag (``` ... ```)', () => {
+      const fenced = '```\n{"content":"Inner text"}\n```';
+      expect(extractStreamCompleteContent({ content: fenced })).toBe(
+        'Inner text'
+      );
+    });
+
+    it('returns only inner text when response is fenced plain text', () => {
+      const fenced = '```\nJust plain text here\n```';
+      expect(extractStreamCompleteContent({ content: fenced })).toBe(
+        'Just plain text here'
+      );
+    });
+  });
+
+  describe('extractStreamChunk with code fences', () => {
+    it('strips ``` and extracts content from fenced JSON chunk', () => {
+      const chunk = '```json\n{"content":"Hello"}\n```';
+      expect(extractStreamChunk(chunk)).toBe('Hello');
+    });
   });
 });
