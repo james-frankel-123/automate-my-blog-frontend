@@ -90,15 +90,24 @@ async function clickCreatePostButton(page, options = {}) {
   await dismissOpenModalIfPresent(page);
   await waitForNoModal(page, 6000);
   const postsSection = page.locator('#posts');
-  // When topicTitle is set, use per-topic button (data-testid wrapper in PostsTab). Otherwise first Create Post / Generate post in #posts.
+  // When topicTitle is set, click the button inside the topic card that contains that title (scoped to avoid wrong card in CI).
   const createPostBtn = topicTitle
-    ? page.locator('[data-testid="create-post-from-topic"]').first().getByRole('button')
+    ? postsSection.locator('.ant-card').filter({ hasText: topicTitle }).locator('[data-testid="create-post-from-topic"]').getByRole('button').first()
     : postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
-  await createPostBtn.waitFor({ state: 'attached', timeout: 20000 });
+  await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
+  await createPostBtn.waitFor({ state: 'visible', timeout: 20000 });
   if (waitForContentResponse) {
     await Promise.all([
       page.waitForResponse(
-        (res) => (res.url().includes('/api/generate-content') || (res.url().includes('/jobs/') && res.url().includes('/status'))) && res.status() === 200,
+        (res) => {
+          const u = res.url();
+          return res.status() === 200 && (
+            u.includes('/api/generate-content') ||
+            (u.includes('/jobs/') && u.includes('/status')) ||
+            u.includes('/api/v1/blog/generate-stream') ||
+            u.includes('/api/v1/stream/')
+          );
+        },
         { timeout: 45000 }
       ).catch(() => null),
       createPostBtn.evaluate((el) => el.click()),
