@@ -223,5 +223,13 @@ describe('streamingUtils', () => {
       const raw = 'title\nMy Post\nsubtitle\nSub\ncontent\n<p>Only this</p>';
       expect(normalizeContentString(raw)).toBe('<p>Only this</p>');
     });
+    it('extracts .content from streamed ```json\\n{ "title", "content" }``` (backend format)', () => {
+      const fenced = '```json\n{\n  "title": "Example Title",\n  "content": "<p>Body to display</p>"\n}\n```';
+      expect(normalizeContentString(fenced)).toBe('<p>Body to display</p>');
+    });
+    it('strips leading "": " and trailing "} from chunk-boundary noise in extracted content', () => {
+      const withNoise = '"": "\n\nThis is the body to display in the Rendered preview.\n\n"}';
+      expect(normalizeContentString(withNoise)).toBe('This is the body to display in the Rendered preview.');
+    });
   });
 });

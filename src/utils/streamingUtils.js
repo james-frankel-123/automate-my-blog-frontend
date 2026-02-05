@@ -97,6 +97,21 @@ export function extractStreamCompleteContent(data) {
 }
 
 /**
+ * Strip leading/trailing JSON-structure fragments that can slip into extracted content
+ * when the stream is chunked (e.g. leading "": " or trailing "}\n).
+ */
+function stripContentFragmentNoise(str) {
+  if (typeof str !== 'string' || !str.trim()) return str;
+  let s = str.trim();
+  // Leading: "": " or ": " (quote-colon-quote from chunk boundary)
+  s = s.replace(/^"\s*"\s*:\s*"\s*/, '').trim();
+  s = s.replace(/^"\s*:\s*"\s*/, '').trim();
+  // Trailing: "}\n or "}\r\n or "} (quote + closing brace from chunk boundary)
+  s = s.replace(/"\s*}\s*\r?\n?\s*$/, '').trim();
+  return s;
+}
+
+/**
  * Normalize a content string: strip code fences, parse JSON, return .content (or plain text).
  * Use when the backend returns a raw/fenced string (e.g. final job result.content).
  *
@@ -106,7 +121,8 @@ export function extractStreamCompleteContent(data) {
 export function normalizeContentString(str) {
   if (typeof str !== 'string' || !str.trim()) return str;
   const out = extractStreamCompleteContent({ content: str });
-  return out !== '' ? out : str;
+  if (out === '') return str;
+  return stripContentFragmentNoise(out);
 }
 
 
