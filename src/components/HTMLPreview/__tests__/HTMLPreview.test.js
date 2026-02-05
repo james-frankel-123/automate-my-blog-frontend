@@ -65,5 +65,19 @@ describe('HTMLPreview', () => {
       render(<HTMLPreview content={markdown} />);
       expect(screen.getByText(/notable quote/)).toBeInTheDocument();
     });
+
+    it('when forceMarkdown is true, always parses as markdown (e.g. streamed blog content)', () => {
+      const streamed = '# Title\n\nFirst line.\n\n## Section\n\nContent with **bold**.';
+      render(<HTMLPreview content={streamed} forceMarkdown />);
+      expect(screen.getByRole('heading', { level: 1, name: 'Title' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: 'Section' })).toBeInTheDocument();
+      expect(screen.getByText('bold')).toBeInTheDocument();
+    });
+
+    it('renders image placeholder for non-URL refs like ![IMAGE:hero_image:...]', () => {
+      const markdown = 'Text before ![IMAGE:hero_image:placeholder](ref) after.';
+      render(<HTMLPreview content={markdown} forceMarkdown />);
+      expect(screen.getByText(/\[IMAGE:hero_image:placeholder\]/)).toBeInTheDocument();
+    });
   });
 });
