@@ -3087,6 +3087,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   <HTMLPreview
                     content={normalizeContentString(editingContent) || editingContent || (generatingContent ? 'Waiting for content…' : '')}
                     typographySettings={typography}
+                    forceMarkdown
                     style={{
                       minHeight: '300px',
                       padding: '20px',
@@ -3307,6 +3308,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     <HTMLPreview
                       content={editingContent || 'Enter your blog content...'}
                       typographySettings={typography}
+                      forceMarkdown
                       style={{
                         minHeight: '400px',
                         padding: '20px',

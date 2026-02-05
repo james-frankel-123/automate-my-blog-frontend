@@ -2,6 +2,11 @@ import React from 'react';
 import DOMPurify from 'dompurify';
 import { colors, typography } from '../DesignSystem/tokens';
 
+function escapeAttr(s) {
+  if (typeof s !== 'string') return '';
+  return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 /**
  * Convert markdown to HTML
  */
@@ -26,7 +31,16 @@ const markdownToHTML = (markdown) => {
   // Italic (non-greedy)
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
 
-  // Links
+  // Images ![alt](url) — before links so ![...](...) is not treated as link; placeholders get span
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, (_, alt, url) => {
+    const u = url.trim();
+    const isPlaceholder = /^[a-z]+:[^:]+:?/i.test(u) || !/^https?:\/\//i.test(u);
+    const safeAlt = String(alt || 'Image').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+    if (isPlaceholder) return `<span class="markdown-image-placeholder" title="${escapeAttr(alt || u)}">[${safeAlt}]</span>`;
+    return `<img src="${escapeAttr(u)}" alt="${escapeAttr(alt)}" loading="lazy" />`;
+  });
+
+  // Links [text](url)
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
   // Code blocks (non-greedy; partial ``` during stream stays as text)
@@ -94,10 +108,11 @@ const markdownToHTML = (markdown) => {
 
 /**
  * HTML Preview Component
- * Renders HTML content with proper styling and typography settings
- * Automatically converts markdown to HTML if markdown syntax is detected
+ * Renders HTML content with proper styling and typography settings.
+ * When forceMarkdown is true (e.g. streamed blog content), always parses as Markdown.
+ * Otherwise converts markdown to HTML only when content does not look like pre-rendered HTML.
  */
-const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false }) => {
   if (!content || !content.trim()) {
     return (
       <div style={{
@@ -112,9 +127,8 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
     );
   }
 
-  // Treat as Markdown unless content already looks like HTML (e.g. pre-rendered).
-  // Streamed blog content is markdown source; only skip conversion when we have HTML tags.
-  const looksLikeHtml = /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(content);
+  // Streamed blog content: always treat as Markdown. Otherwise skip conversion only when content looks like HTML.
+  const looksLikeHtml = !forceMarkdown && /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(content);
   const rawHtml = looksLikeHtml ? content : markdownToHTML(content);
   
   // Sanitize HTML to prevent XSS attacks
