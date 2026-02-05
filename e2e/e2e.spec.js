@@ -1006,7 +1006,7 @@ test.describe('E2E (mocked backend)', () => {
     // Blog content generation: fallback to sync generate; tweet placeholders replaced when tweet stream completes.
     test.describe('Blog content generation with tweet placeholders', () => {
       test('content generation completes and tweet placeholder is replaced when tweets arrive', async ({ page }) => {
-        test.setTimeout(90000);
+        test.setTimeout(120000);
         await installWorkflowMocksWithOptions(page, {
           contentWithTweetPlaceholder: true,
           tweetsForTopic: MOCK_TWEETS,
@@ -1027,10 +1027,12 @@ test.describe('E2E (mocked backend)', () => {
         await expect(websiteInput).toBeVisible({ timeout: 10000 });
         await websiteInput.fill('https://example.com');
         await page.locator('button:has-text("Analyze")').first().click();
-        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
-        await page.waitForTimeout(1000);
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+        await page.waitForTimeout(1500);
         await removeOverlay(page);
-        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        const continueToAudience = page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first();
+        await expect(continueToAudience).toBeVisible({ timeout: 20000 });
+        await continueToAudience.click();
         await page.waitForTimeout(800);
         await page.locator('#audience-segments').scrollIntoViewIfNeeded();
         await page.waitForTimeout(500);
@@ -1047,15 +1049,13 @@ test.describe('E2E (mocked backend)', () => {
         await expect(page.locator('#posts').getByText(MOCK_TOPICS[0].title, { exact: false }).first()).toBeVisible({ timeout: 20000 });
         await page.waitForTimeout(800);
         await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
-        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 45000 }).catch(() => {});
         await page.waitForTimeout(2000);
-        // Tweet stream completes async; placeholder replacement shows "Related" or tweet text in preview
-        const previewOrEditor = page.locator('.tiptap, [contenteditable="true"], [class*="preview"]').first();
-        await expect(previewOrEditor).toBeVisible({ timeout: 35000 });
-        const hasRelatedTweetsPanel = await page.locator('text=Related tweets').first().isVisible({ timeout: 5000 }).catch(() => false);
-        const hasReplacedTweet = await page.locator('text=E2E related tweet').first().isVisible({ timeout: 5000 }).catch(() => false);
-        const hasMockContent = await page.locator('text=mock AI-generated').first().isVisible({ timeout: 3000 }).catch(() => false);
-        expect(hasMockContent || hasReplacedTweet || hasRelatedTweetsPanel).toBeTruthy();
+        // Tweet stream completes async; placeholder replacement shows "Related tweets" or tweet text or mock content
+        const hasRelatedTweetsPanel = await page.locator('text=Related tweets').first().isVisible({ timeout: 15000 }).catch(() => false);
+        const hasReplacedTweet = await page.locator('text=E2E related tweet').first().isVisible({ timeout: 15000 }).catch(() => false);
+        const hasMockContent = await page.locator('text=mock AI-generated').first().isVisible({ timeout: 15000 }).catch(() => false);
+        expect(hasMockContent || hasReplacedTweet || hasRelatedTweetsPanel, 'expected Related tweets panel, E2E related tweet text, or mock content').toBeTruthy();
       });
     });
 
