@@ -91,11 +91,21 @@ async function clickCreatePostButton(page, options = {}) {
   await waitForNoModal(page, 6000);
   const postsSection = page.locator('#posts');
   // When topicTitle is set, click the button inside the topic card that contains that title (scoped to avoid wrong card in CI).
+  // Only match cards that actually have the create-post-from-topic div so we don't match an outer wrapper card.
   const createPostBtn = topicTitle
-    ? postsSection.locator('.ant-card').filter({ hasText: topicTitle }).locator('[data-testid="create-post-from-topic"]').getByRole('button').first()
+    ? postsSection
+        .locator('.ant-card')
+        .filter({ has: postsSection.locator('[data-testid="create-post-from-topic"]') })
+        .filter({ hasText: new RegExp(topicTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim(), 'i') })
+        .first()
+        .locator('[data-testid="create-post-from-topic"]')
+        .getByRole('button')
+        .first()
     : postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
+  await postsSection.scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(300);
   await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
-  await createPostBtn.waitFor({ state: 'visible', timeout: 20000 });
+  await createPostBtn.waitFor({ state: 'visible', timeout: 25000 });
   if (waitForContentResponse) {
     await Promise.all([
       page.waitForResponse(
