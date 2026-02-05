@@ -158,6 +158,10 @@ const autoBlogAPI = {
     connectionId: 'mock-news-connection-id',
     streamUrl: 'https://api.example.com/api/v1/stream/mock-news-connection-id?token=mock',
   }),
+  searchYouTubeVideosForTopicStream: jest.fn().mockResolvedValue({
+    connectionId: 'mock-youtube-connection-id',
+    streamUrl: 'https://api.example.com/api/v1/stream/mock-youtube-connection-id?token=mock',
+  }),
 
   getTrendingTopics: jest.fn().mockResolvedValue([]),
   generateTrendingTopicsStream: jest.fn().mockRejectedValue(new Error('Not available')),

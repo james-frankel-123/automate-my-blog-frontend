@@ -399,6 +399,30 @@ class AutoBlogAPI {
   }
 
   /**
+   * Start YouTube video search stream. Connect with connectToStream(connectionId, handlers, { streamUrl }).
+   * Events: connected, queries-extracted ({ searchTermsUsed }), complete ({ videos, searchTermsUsed }), error.
+   * @param {Object} topic - { title, subheader, trend, seoBenefit, category }
+   * @param {Object} businessInfo - { businessType, targetAudience }
+   * @param {number} [maxVideos=5]
+   * @returns {Promise<{ connectionId: string, streamUrl: string }>}
+   */
+  async searchYouTubeVideosForTopicStream(topic, businessInfo, maxVideos = 5) {
+    const response = await this.makeRequest('/api/v1/youtube-videos/search-for-topic-stream', {
+      method: 'POST',
+      headers: this._getStreamAuthHeaders(),
+      body: JSON.stringify({
+        topic,
+        businessInfo: businessInfo ?? {},
+        maxVideos,
+      }),
+    });
+    return {
+      connectionId: response.connectionId,
+      streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
+    };
+  }
+
+  /**
    * Generate images for a saved blog post
    * Called AFTER blog generation to avoid timeout issues
    * @param {string} blogPostId - The saved blog post ID

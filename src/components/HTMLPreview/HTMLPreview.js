@@ -254,14 +254,52 @@ function getArticlePlaceholderHtml(index, relatedArticles = []) {
   );
 }
 
+const VIDEO_PLACEHOLDER_TOKEN_REGEX = /__VIDEO_PLACEHOLDER_(\d+)__/g;
+
+/**
+ * Build HTML for a video placeholder slot: animated loading box or video card.
+ * @param {number} index - Placeholder index
+ * @param {Array<{ url?: string, videoId?: string, title?: string, channelTitle?: string, thumbnailUrl?: string, viewCount?: number, duration?: string }>} relatedVideos
+ * @returns {string} Safe HTML string
+ */
+function getVideoPlaceholderHtml(index, relatedVideos = []) {
+  const videos = Array.isArray(relatedVideos) ? relatedVideos : [];
+  const video = videos[index];
+  const safeTitle = (s) => escapeAttr(String(s ?? '').slice(0, 200));
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u ?? '')) ? escapeAttr(u) : '');
+  if (video && (video.url || video.videoId)) {
+    const url = video.url || `https://www.youtube.com/watch?v=${escapeAttr(video.videoId || '')}`;
+    const thumb = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl) ? escapeAttr(video.thumbnailUrl) : '';
+    const title = safeTitle(video.title) || 'Video';
+    const channel = safeTitle(video.channelTitle);
+    const meta = [channel, video.viewCount != null ? `${Number(video.viewCount).toLocaleString()} views` : '', video.duration].filter(Boolean).join(' · ');
+    return (
+      '<div class="markdown-video-card">' +
+      (thumb ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-link">` +
+        `<img src="${thumb}" alt="" class="markdown-video-card-thumb" />` + '</a>' : '') +
+      '<div class="markdown-video-card-body">' +
+      `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-title">${title}</a>` +
+      (meta ? `<span class="markdown-video-card-meta">${escapeAttr(meta)}</span>` : '') +
+      '</div></div>'
+    );
+  }
+  return (
+    '<div class="markdown-video-placeholder" title="Loading video…">' +
+    '<span class="markdown-video-placeholder-icon" aria-hidden="true">▶</span>' +
+    '<span class="markdown-video-placeholder-text">Loading video…</span>' +
+    '</div>'
+  );
+}
+
 /**
  * HTML Preview Component
  * Renders HTML content with proper styling and typography settings.
  * When forceMarkdown is true (e.g. streamed blog content), always parses as Markdown.
  * Otherwise converts markdown to HTML only when content does not look like pre-rendered HTML.
  * Optional relatedArticles: used to replace __ARTICLE_PLACEHOLDER_n__ tokens with article cards or loading UI.
+ * Optional relatedVideos: used to replace __VIDEO_PLACEHOLDER_n__ tokens with video cards or loading UI.
  */
-const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles }) => {
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos }) => {
   if (!content || !content.trim()) {
     return (
       <div style={{
@@ -285,6 +323,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     rawHtml = rawHtml.replace(ARTICLE_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
       const index = parseInt(indexStr, 10);
       return Number.isNaN(index) || index < 0 ? '' : getArticlePlaceholderHtml(index, relatedArticles);
+    });
+  }
+  // Replace video placeholder tokens with loading box or video card HTML
+  if (rawHtml.includes('__VIDEO_PLACEHOLDER_')) {
+    rawHtml = rawHtml.replace(VIDEO_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
+      const index = parseInt(indexStr, 10);
+      return Number.isNaN(index) || index < 0 ? '' : getVideoPlaceholderHtml(index, relatedVideos);
     });
   }
 
@@ -601,6 +646,116 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
 
         div :global(.tweet-fallback:hover) {
           background-color: var(--color-primary-50) !important;
+        }
+
+        /* Image placeholder: shimmer animation (animated loading) */
+        div :global(.markdown-image-placeholder) {
+          display: inline-block;
+          min-width: 120px;
+          min-height: 68px;
+          border-radius: 6px;
+          animation: imagePlaceholderShimmer 2s ease-in-out infinite;
+          background: linear-gradient(90deg,
+            var(--color-gray-200) 0%,
+            var(--color-gray-300) 50%,
+            var(--color-gray-200) 100%);
+          background-size: 200px 100%;
+          color: var(--color-text-tertiary);
+          font-size: 12px;
+          padding: 8px 12px;
+          vertical-align: middle;
+        }
+
+        @keyframes imagePlaceholderShimmer {
+          0% { background-position: -200px 0; }
+          100% { background-position: calc(200px + 100%) 0; }
+        }
+
+        /* Video placeholder: different look – pulse + gradient (YouTube-style) */
+        div :global(.markdown-video-placeholder) {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          min-height: 100px;
+          margin: ${paragraphSpacing}px 0;
+          padding: 16px 20px;
+          border-radius: 8px;
+          border: 1px dashed var(--color-gray-300);
+          background: linear-gradient(135deg, rgba(255, 0, 0, 0.04) 0%, rgba(200, 50, 50, 0.06) 100%);
+          animation: videoPlaceholderPulse 1.8s ease-in-out infinite;
+          color: var(--color-text-tertiary);
+        }
+
+        div :global(.markdown-video-placeholder-icon) {
+          font-size: 24px;
+          opacity: 0.7;
+          animation: videoPlaceholderIconPulse 1.2s ease-in-out infinite;
+        }
+
+        div :global(.markdown-video-placeholder-text) {
+          font-size: 13px;
+          font-style: italic;
+        }
+
+        @keyframes videoPlaceholderPulse {
+          0%, 100% { opacity: 1; background-size: 100% 100%; }
+          50% { opacity: 0.92; background-size: 102% 102%; }
+        }
+
+        @keyframes videoPlaceholderIconPulse {
+          0%, 100% { opacity: 0.7; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.08); }
+        }
+
+        /* Video card (loaded) */
+        div :global(.markdown-video-card) {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin: ${paragraphSpacing}px 0;
+          padding: 12px;
+          border-radius: 8px;
+          border: 1px solid var(--color-gray-200);
+          background: var(--color-background-container);
+          transition: box-shadow 0.2s ease;
+        }
+
+        div :global(.markdown-video-card:hover) {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        div :global(.markdown-video-card-thumb) {
+          width: 120px;
+          height: 68px;
+          object-fit: cover;
+          border-radius: 6px;
+          flex-shrink: 0;
+        }
+
+        div :global(.markdown-video-card-body) {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        div :global(.markdown-video-card-title) {
+          font-weight: 600;
+          font-size: 13px;
+          color: var(--color-primary);
+          text-decoration: none;
+          display: block;
+        }
+
+        div :global(.markdown-video-card-title:hover) {
+          text-decoration: underline;
+        }
+
+        div :global(.markdown-video-card-meta) {
+          font-size: 12px;
+          color: var(--color-text-tertiary);
         }
       `}</style>
         </>
