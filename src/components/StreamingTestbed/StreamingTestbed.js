@@ -1,10 +1,22 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Button, Card, Typography, Space, Divider, Alert, Input, Collapse } from 'antd';
-import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined, ApiOutlined, StopOutlined } from '@ant-design/icons';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
+import api from '../../services/api';
+import { contentAPI } from '../../services/workflowAPI';
 import StreamingPreview from './StreamingPreview';
 
 const { Text } = Typography;
+
+/** Minimal website analysis so production startBlogStream and search streams accept the request (same shape as Posts tab). */
+const MINIMAL_WEBSITE_ANALYSIS = {
+  businessType: 'Business',
+  businessName: 'Test',
+  targetAudience: 'General Audience',
+  contentFocus: 'Content',
+  brandVoice: 'Professional',
+  decisionMakers: 'General Audience',
+};
 
 /** Preset chunk payloads to simulate backend formats */
 const PRESETS = {
@@ -129,12 +141,22 @@ const SAMPLE_RELATED_VIDEOS = [
   { url: 'https://www.youtube.com/watch?v=abc123', videoId: 'abc123', title: 'Real-time Content Generation', channelTitle: 'Tech Talks', thumbnailUrl: 'https://i.ytimg.com/vi/abc123/mqdefault.jpg', viewCount: 5400, duration: '8m' },
 ];
 
+const DEFAULT_LIVE_TOPIC_TITLE = 'How to test the streaming API';
+
 function StreamingTestbed() {
   const [content, setContent] = useState('');
   const [lastChunk, setLastChunk] = useState('');
   const [error, setError] = useState(null);
   const [streamChunks, setStreamChunks] = useState([]);
   const [heroImageUrl, setHeroImageUrl] = useState(SAMPLE_HERO_IMAGE_URL);
+  const [liveStreaming, setLiveStreaming] = useState(false);
+  const [liveStreamError, setLiveStreamError] = useState(null);
+  const [liveTopicTitle, setLiveTopicTitle] = useState(DEFAULT_LIVE_TOPIC_TITLE);
+  const [contentSource, setContentSource] = useState(null); // 'simulated' | 'live' | null
+  const [liveRelatedTweets, setLiveRelatedTweets] = useState([]);
+  const [liveRelatedArticles, setLiveRelatedArticles] = useState([]);
+  const [liveRelatedVideos, setLiveRelatedVideos] = useState([]);
+  const streamClosesRef = useRef([]);
 
   const appendChunk = useCallback((data) => {
     setError(null);
@@ -169,6 +191,7 @@ function StreamingTestbed() {
     setContent('');
     setLastChunk('(simulating…)');
     setStreamChunks(SIMULATED_STREAM.map((payload) => `content-chunk\t${JSON.stringify(payload)}`));
+    setContentSource('simulated');
     let accumulated = '';
     for (let i = 0; i < SIMULATED_STREAM.length; i++) {
       const chunk = extractStreamChunk(SIMULATED_STREAM[i]);
@@ -184,6 +207,110 @@ function StreamingTestbed() {
     setLastChunk('');
     setError(null);
     setStreamChunks([]);
+    setLiveStreamError(null);
+    setContentSource(null);
+    setLiveRelatedTweets([]);
+    setLiveRelatedArticles([]);
+    setLiveRelatedVideos([]);
+  }, []);
+
+  const startLiveStream = useCallback(async () => {
+    setLiveStreamError(null);
+    setError(null);
+    setContent('');
+    setLastChunk('(connecting…)');
+    setStreamChunks([]);
+    setLiveStreaming(true);
+    setContentSource('live');
+    setLiveRelatedTweets([]);
+    setLiveRelatedArticles([]);
+    setLiveRelatedVideos([]);
+    streamClosesRef.current = [];
+
+    const topic = { id: 'testbed-live', title: liveTopicTitle || DEFAULT_LIVE_TOPIC_TITLE };
+    const websiteAnalysisData = MINIMAL_WEBSITE_ANALYSIS;
+
+    // Same parallel streams as Posts tab: tweets, news articles, YouTube videos (onComplete sets related state).
+    api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
+      .then(({ connectionId, streamUrl }) => {
+        const { close } = api.connectToStream(connectionId, {
+          onComplete: (data) => {
+            const tweets = data?.tweets || [];
+            if (tweets.length) setLiveRelatedTweets(tweets);
+          },
+          onError: () => {},
+        }, { streamUrl });
+        streamClosesRef.current.push(close);
+      })
+      .catch(() => {});
+
+    api.searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
+      .then(({ connectionId, streamUrl }) => {
+        const { close } = api.connectToStream(connectionId, {
+          onComplete: (data) => {
+            const articles = data?.articles || [];
+            if (articles.length) setLiveRelatedArticles(articles);
+          },
+          onError: () => {},
+        }, { streamUrl });
+        streamClosesRef.current.push(close);
+      })
+      .catch(() => {});
+
+    api.searchYouTubeVideosForTopicStream(topic, websiteAnalysisData, 5)
+      .then(({ connectionId, streamUrl }) => {
+        const { close } = api.connectToStream(connectionId, {
+          onComplete: (data) => {
+            const videos = data?.videos || [];
+            if (videos.length) setLiveRelatedVideos(videos);
+          },
+          onError: () => {},
+        }, { streamUrl });
+        streamClosesRef.current.push(close);
+      })
+      .catch(() => {});
+
+    try {
+      const { connectionId } = await contentAPI.startBlogStream(
+        topic,
+        websiteAnalysisData,
+        null,
+        {},
+        { prefetchedTweets: [] }
+      );
+      setLastChunk('(streaming…)');
+      const { close } = api.connectToStream(connectionId, {
+        onChunk: (data) => {
+          const chunk = extractStreamChunk(data);
+          if (chunk) {
+            setStreamChunks((prev) => [...prev, `content-chunk\t${JSON.stringify(data)}`]);
+            setContent((prev) => prev + chunk);
+          }
+        },
+        onComplete: (data) => {
+          const full = extractStreamCompleteContent(data);
+          if (full) setContent(full);
+          setLastChunk('(done)');
+          setLiveStreaming(false);
+        },
+        onError: (errData) => {
+          setLiveStreamError(errData?.message || 'Stream error');
+          setLastChunk('(error)');
+          setLiveStreaming(false);
+        },
+      });
+      streamClosesRef.current.push(close);
+    } catch (err) {
+      setLiveStreamError(err?.message || 'Failed to start stream');
+      setLastChunk('(error)');
+      setLiveStreaming(false);
+    }
+  }, [liveTopicTitle]);
+
+  const stopLiveStream = useCallback(() => {
+    streamClosesRef.current.forEach((close) => { if (typeof close === 'function') close(); });
+    streamClosesRef.current = [];
+    setLiveStreaming(false);
   }, []);
 
   // Always show only extracted .content (never raw accumulated string) so markdown renders during stream
@@ -222,6 +349,43 @@ function StreamingTestbed() {
               Clear
             </Button>
           </Space>
+        </Card>
+
+        <Card size="small" title="Stream from API" style={{ marginBottom: 24 }}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+            Same workflow as the Posts tab: contentAPI.startBlogStream (fetches tweets, then blog stream) plus parallel streams for tweets, news articles, and YouTube videos. [TWEET:n], [ARTICLE:n], [VIDEO:n] in the stream resolve as data arrives. Backend: {process.env.REACT_APP_API_URL || 'default'}.
+          </Text>
+          <Space wrap align="center" style={{ marginBottom: 8 }}>
+            <Input
+              placeholder="Topic title"
+              value={liveTopicTitle}
+              onChange={(e) => setLiveTopicTitle(e.target.value)}
+              style={{ width: 280 }}
+              disabled={liveStreaming}
+            />
+            <Button
+              type="primary"
+              icon={liveStreaming ? <StopOutlined /> : <ApiOutlined />}
+              onClick={liveStreaming ? stopLiveStream : startLiveStream}
+              danger={liveStreaming}
+            >
+              {liveStreaming ? 'Stop stream' : 'Start live stream'}
+            </Button>
+          </Space>
+          {liveStreaming && (
+            <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
+              Streaming… Chunks appear in Rendered preview below. Last chunk: {lastChunk || '—'}
+            </Text>
+          )}
+          {liveStreamError && (
+            <Alert
+              type="error"
+              message={liveStreamError}
+              closable
+              onClose={() => setLiveStreamError(null)}
+              style={{ marginTop: 12 }}
+            />
+          )}
         </Card>
 
         <Space style={{ marginBottom: 16 }}>
@@ -361,9 +525,9 @@ function StreamingTestbed() {
           <div style={{ color: '#fff' }}>
             <StreamingPreview
               content={normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.')}
-              relatedArticles={SAMPLE_RELATED_ARTICLES}
-              relatedVideos={SAMPLE_RELATED_VIDEOS}
-              relatedTweets={SAMPLE_RELATED_TWEETS}
+              relatedArticles={contentSource === 'live' ? liveRelatedArticles : SAMPLE_RELATED_ARTICLES}
+              relatedVideos={contentSource === 'live' ? liveRelatedVideos : SAMPLE_RELATED_VIDEOS}
+              relatedTweets={contentSource === 'live' ? liveRelatedTweets : SAMPLE_RELATED_TWEETS}
               heroImageUrl={heroImageUrl || undefined}
               style={{ minHeight: 120, color: '#fff' }}
             />
