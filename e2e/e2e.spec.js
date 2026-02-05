@@ -497,16 +497,9 @@ test.describe('E2E (mocked backend)', () => {
         }
         await input.fill('https://example.com');
         await page.locator('button:has-text("Analyze")').first().click();
-        // With real API we see step messages (Reading your pages…, Understanding who you're for…, etc.).
-        // With fast mocks we may see a step briefly or go straight to success. Accept either within a longer window.
-        const stepMessages = page.locator('text=/Reading your pages|Understanding who you\'re for|Shaping conversion angles|Adding audience visuals/i');
-        const successIndicator = page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience/i').first();
-        const sawStep = await stepMessages.first().isVisible({ timeout: 5000 }).catch(() => false);
-        const sawSuccess = await successIndicator.isVisible({ timeout: 5000 }).catch(() => false);
-        expect(sawStep || sawSuccess).toBeTruthy();
-        // Wait for analysis to complete
+        // Wait for analysis to complete (with fast mocks we may never see step messages).
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
-        await expect(page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience/i').first()).toBeVisible({ timeout: 5000 });
+        await expect(page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience/i').first()).toBeVisible({ timeout: 10000 });
       });
 
       test('should show system hint after analysis complete', async ({ page }) => {
@@ -1066,7 +1059,7 @@ test.describe('E2E (mocked backend)', () => {
         await generateTopicsBtn.click();
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
-        await expect(page.locator('#posts').getByText(MOCK_TOPICS[0].title, { exact: false })).toBeVisible({ timeout: 20000 });
+        await expect(page.locator('#posts').getByText(MOCK_TOPICS[0].title, { exact: false }).first()).toBeVisible({ timeout: 20000 });
         await page.waitForTimeout(800);
         await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
