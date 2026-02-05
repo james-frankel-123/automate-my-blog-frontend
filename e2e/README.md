@@ -61,6 +61,17 @@ e2e/
   env: { CI: true }
 ```
 
+## Manual verification (strategy → next section)
+
+To confirm that **selecting an audience strategy** scrolls to the topic-choice (posts) section:
+
+1. Logged out, open app → click **Create New Post** → enter URL → **Analyze** → wait for completion.
+2. Click **Next Step: Audience Selection** / **Continue to Audience** so the audience section is visible.
+3. Click one of the strategy cards.
+4. **Expected**: The page scrolls to the next section and the **posts** area (topic choice / "Generate post") is visible in view.
+
+E2E test that covers this: **"selecting audience strategy navigates to topic choice section"** in `e2e.spec.js` (Auth logged out / workflow).
+
 ## Troubleshooting
 
 - **Port in use**: Stop existing server on 3000 or set `PLAYWRIGHT_BASE_URL`.
