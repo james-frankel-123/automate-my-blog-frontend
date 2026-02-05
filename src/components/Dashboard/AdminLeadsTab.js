@@ -91,44 +91,19 @@ const AdminLeadsTab = () => {
 
   const loadLeads = async () => {
     try {
-      console.log('🔍 loadLeads() called with options:', {
-        filters,
-        pagination: { current: pagination.current, pageSize: pagination.pageSize }
-      });
-      
       setLoading(true);
       const options = {
         ...filters,
         limit: pagination.pageSize,
         offset: (pagination.current - 1) * pagination.pageSize
       };
-
-      console.log('📡 Calling autoBlogAPI.getLeads with options:', options);
       const result = await autoBlogAPI.getLeads(options);
-      
-      console.log('✅ API response received:', {
-        resultType: typeof result,
-        resultKeys: Object.keys(result || {}),
-        result: result,
-        leadsArray: result?.data?.leads,
-        leadsLength: result?.data?.leads?.length,
-        pagination: result?.data?.pagination
-      });
-
       const leadsData = result.data?.leads || [];
-      console.log('📊 Setting leads data:', {
-        leadsCount: leadsData.length,
-        firstLead: leadsData[0],
-        allLeads: leadsData
-      });
-
       setLeads(leadsData);
       setPagination(prev => ({
         ...prev,
         total: result.data?.pagination?.total || 0
       }));
-      
-      console.log('✅ Leads state updated, total leads:', leadsData.length);
     } catch (error) {
       console.error('❌ loadLeads error:', {
         error: error,

@@ -143,7 +143,6 @@ const ComprehensiveAnalysis = ({
     setError(null);
 
     try {
-      console.log('🧠 Starting comprehensive SEO analysis...');
       const result = await autoBlogAPI.generateComprehensiveAnalysis(
         content, 
         context, 
@@ -157,11 +156,6 @@ const ComprehensiveAnalysis = ({
         if (onAnalysisComplete) {
           onAnalysisComplete(result.analysis);
         }
-
-        console.log('✅ Comprehensive analysis completed:', {
-          overallScore: result.analysis.overallScore,
-          fromCache: result.fromCache
-        });
       } else {
         setError(result.error || 'Analysis failed');
       }

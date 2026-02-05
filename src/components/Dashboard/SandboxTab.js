@@ -655,13 +655,7 @@ const SandboxTab = () => {
               'stable_diffusion': 'Replicate',
               'dalle': 'DALL-E'
             }[serviceName] || serviceName;
-            
-            console.log('🎨 Generate visual requested:', {
-              contentType: suggestion.contentType,
-              service: serviceName,
-              testService: !!suggestion.testService
-            });
-            
+
             try {
               message.loading({ content: `Generating ${suggestion.title} with ${serviceDisplayName}...`, key: 'visual-gen', duration: 0 });
               
@@ -686,8 +680,6 @@ const SandboxTab = () => {
               });
               
               if (response.success && response.data) {
-                console.log('✅ Visual generation successful:', response.data);
-                
                 message.success({
                   content: `${suggestion.title} generated with ${serviceDisplayName}!`,
                   key: 'visual-gen',
