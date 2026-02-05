@@ -12,7 +12,8 @@ import {
   LockOutlined,
   TeamOutlined,
   TrophyOutlined,
-  CopyOutlined
+  CopyOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -35,6 +36,7 @@ import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
+import { replaceArticlePlaceholders } from '../../utils/articlePlaceholders';
 import ThinkingPanel from '../shared/ThinkingPanel';
 
 // New Enhanced Components
@@ -344,6 +346,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   });
   const [currentDraft, setCurrentDraft] = useState(null);
   const [relatedTweets, setRelatedTweets] = useState([]); // Fetched in background after stream starts; shown alongside post
+  const [relatedArticles, setRelatedArticles] = useState([]); // News articles from search-for-topic-stream; shown alongside post
   const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
   // Editor state for TipTap integration
@@ -743,6 +746,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     setContentViewMode('preview');
     setGeneratingContent(true);
     setRelatedTweets([]);
+    setRelatedArticles([]);
 
     // Add to progressive sticky header
     addStickyWorkflowStep('topicSelection', {
@@ -811,6 +815,23 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 setRelatedTweets(tweets);
                 setCurrentDraft((prev) => (prev ? { ...prev, relatedTweets: tweets } : prev));
               }
+            },
+            onError: () => {},
+          }, { streamUrl });
+        })
+        .catch(() => {});
+
+      // Run news article search in parallel; show results in Related articles panel.
+      api.searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
+        .then(({ connectionId, streamUrl }) => {
+          api.connectToStream(connectionId, {
+            onQueriesExtracted: (data) => {
+              const term = data?.searchTermsUsed?.[0];
+              if (term) setHint(`Searching articles: ${term}…`, 'hint', 0);
+            },
+            onComplete: (data) => {
+              const articles = data?.articles || [];
+              if (articles.length) setRelatedArticles(articles);
             },
             onError: () => {},
           }, { streamUrl });
@@ -2113,6 +2134,60 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       </ul>
                     </div>
                   )}
+
+                  {/* Related articles (news search stream, in parallel with blog) */}
+                  {relatedArticles?.length > 0 && (
+                    <div style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: 'var(--color-primary-50)',
+                      border: '1px solid var(--color-primary-100)',
+                      borderRadius: '6px'
+                    }}>
+                      <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
+                        <FileTextOutlined style={{ marginRight: '6px' }} />
+                        Related articles
+                      </Text>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {relatedArticles.slice(0, 5).map((a, i) => (
+                          <a
+                            key={a?.url || i}
+                            href={a?.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '10px',
+                              padding: '8px',
+                              backgroundColor: 'var(--color-background-body)',
+                              borderRadius: '6px',
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              border: '1px solid var(--color-gray-200)'
+                            }}
+                          >
+                            {a?.urlToImage && (
+                              <img
+                                src={a.urlToImage}
+                                alt=""
+                                style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                              />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                                {a?.title || 'Article'}
+                              </Text>
+                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                                {a?.sourceName}
+                                {a?.publishedAt ? ` · ${new Date(a.publishedAt).toLocaleDateString()}` : ''}
+                              </Text>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   
                   {/* Enhanced Generation Toggle - Standalone Panel */}
                   {console.log('🔧 DEBUG: Rendering Enhanced Generation Toggle', { useEnhancedGeneration, selectedTopic: !!selectedTopic }) && null}
@@ -2329,6 +2404,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               setSelectedTopic(null);
                               setCurrentDraft(null);
                               setRelatedTweets([]);
+                              setRelatedArticles([]);
                             }}
                           >
                             Start Over
@@ -3085,7 +3161,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   minHeight: '320px'
                 }}>
                   <HTMLPreview
-                    content={normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : '')}
+                    content={replaceArticlePlaceholders(
+                      normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : ''),
+                      relatedArticles || []
+                    )}
+                    relatedArticles={relatedArticles || []}
                     typographySettings={typography}
                     forceMarkdown
                     heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
@@ -3152,6 +3232,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     setSelectedTopic(null);
                     setCurrentDraft(null);
                     setRelatedTweets([]);
+                    setRelatedArticles([]);
                     setContentViewMode('preview');
                   }}
                 >
@@ -3250,6 +3331,60 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   </ul>
                 </div>
               )}
+
+              {/* Related articles (news search stream, in parallel with blog) */}
+              {relatedArticles?.length > 0 && (
+                <div style={{
+                  marginBottom: '16px',
+                  padding: '12px',
+                  backgroundColor: 'var(--color-primary-50)',
+                  border: '1px solid var(--color-primary-100)',
+                  borderRadius: '6px'
+                }}>
+                  <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
+                    <FileTextOutlined style={{ marginRight: '6px' }} />
+                    Related articles
+                  </Text>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {relatedArticles.slice(0, 5).map((a, i) => (
+                      <a
+                        key={a?.url || i}
+                        href={a?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px',
+                          padding: '8px',
+                          backgroundColor: 'var(--color-background-body)',
+                          borderRadius: '6px',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          border: '1px solid var(--color-gray-200)'
+                        }}
+                      >
+                        {a?.urlToImage && (
+                          <img
+                            src={a.urlToImage}
+                            alt=""
+                            style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                          />
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                            {a?.title || 'Article'}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            {a?.sourceName}
+                            {a?.publishedAt ? ` · ${new Date(a.publishedAt).toLocaleDateString()}` : ''}
+                          </Text>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* SEO Analysis Toggle */}
               {editingContent && editingContent.length >= 200 && (
@@ -3307,7 +3442,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     padding: 'var(--space-5)'
                   }}>
                     <HTMLPreview
-                      content={editingContent || 'Enter your blog content...'}
+                      content={replaceArticlePlaceholders(
+                        editingContent || 'Enter your blog content...',
+                        relatedArticles || []
+                      )}
+                      relatedArticles={relatedArticles || []}
                       typographySettings={typography}
                       forceMarkdown
                       heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}

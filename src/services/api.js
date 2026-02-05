@@ -375,6 +375,30 @@ class AutoBlogAPI {
   }
 
   /**
+   * Start news article search stream. Connect with connectToStream(connectionId, handlers, { streamUrl }).
+   * Events: connected, queries-extracted ({ searchTermsUsed }), complete ({ articles, searchTermsUsed }), error.
+   * @param {Object} topic - { title, subheader, trend, seoBenefit, category }
+   * @param {Object} businessInfo - { businessType, targetAudience }
+   * @param {number} [maxArticles=5]
+   * @returns {Promise<{ connectionId: string, streamUrl: string }>}
+   */
+  async searchNewsArticlesForTopicStream(topic, businessInfo, maxArticles = 5) {
+    const response = await this.makeRequest('/api/v1/news-articles/search-for-topic-stream', {
+      method: 'POST',
+      headers: this._getStreamAuthHeaders(),
+      body: JSON.stringify({
+        topic,
+        businessInfo: businessInfo ?? {},
+        maxArticles,
+      }),
+    });
+    return {
+      connectionId: response.connectionId,
+      streamUrl: response.streamUrl || this.getStreamUrl(response.connectionId),
+    };
+  }
+
+  /**
    * Generate images for a saved blog post
    * Called AFTER blog generation to avoid timeout issues
    * @param {string} blogPostId - The saved blog post ID
