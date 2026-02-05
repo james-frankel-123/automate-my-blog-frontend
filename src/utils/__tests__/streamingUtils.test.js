@@ -196,6 +196,17 @@ describe('streamingUtils', () => {
     });
   });
 
+  describe('extractStreamChunk / tryExtractFromJsonString: never show raw key-value text', () => {
+    it('extracts only content from JSON fragment (key-value string without outer braces)', () => {
+      const fragment = '"title": "Discover platforms", "metaDescription": "Explore resources.", "content": "# Top10 Interactive AI Learning"';
+      expect(extractStreamChunk(fragment)).toBe('# Top10 Interactive AI Learning');
+    });
+    it('returns empty for key-value fragment with no content key (never show raw keys)', () => {
+      const fragment = '"title": "Discover platforms", "metaDescription": "Explore resources."';
+      expect(extractStreamChunk(fragment)).toBe('');
+    });
+  });
+
   describe('normalizeContentString', () => {
     it('returns displayable content for fenced JSON (e.g. final result.content)', () => {
       const raw = '```json\n{"title":"Post","content":"<p>Hi</p>"}\n```';
@@ -211,6 +222,14 @@ describe('streamingUtils', () => {
     it('extracts content body from key-value style (so title/subtitle/content not shown as raw)', () => {
       const raw = 'title\nMy Post\nsubtitle\nSub\ncontent\n<p>Only this</p>';
       expect(normalizeContentString(raw)).toBe('<p>Only this</p>');
+    });
+    it('extracts .content from streamed ```json\\n{ "title", "content" }``` (backend format)', () => {
+      const fenced = '```json\n{\n  "title": "Example Title",\n  "content": "<p>Body to display</p>"\n}\n```';
+      expect(normalizeContentString(fenced)).toBe('<p>Body to display</p>');
+    });
+    it('strips leading "": " and trailing "} from chunk-boundary noise in extracted content', () => {
+      const withNoise = '"": "\n\nThis is the body to display in the Rendered preview.\n\n"}';
+      expect(normalizeContentString(withNoise)).toBe('This is the body to display in the Rendered preview.');
     });
   });
 });

@@ -6,6 +6,7 @@ import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { SystemHintProvider } from './contexts/SystemHintContext';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
+import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import SEOHead from './components/SEOHead';
 import { storeReferralInfo } from './utils/referralUtils';
 import './styles/design-system.css';
@@ -241,6 +242,16 @@ const AppContent = () => {
       }}>
         Loading...
       </div>
+    );
+  }
+
+  // Visual testbed for streaming parser (dev/verification)
+  if (typeof window !== 'undefined' && window.location.pathname === '/streaming-testbed') {
+    return (
+      <SystemHintProvider>
+        <SEOHead />
+        <StreamingTestbed />
+      </SystemHintProvider>
     );
   }
 
