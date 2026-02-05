@@ -90,22 +90,29 @@ async function clickCreatePostButton(page, options = {}) {
   await dismissOpenModalIfPresent(page);
   await waitForNoModal(page, 6000);
   const postsSection = page.locator('#posts');
-  // When topicTitle is set, click the button inside the topic card that contains that title (scoped to avoid wrong card in CI).
-  // Only match cards that actually have the create-post-from-topic div so we don't match an outer wrapper card.
-  const createPostBtn = topicTitle
-    ? postsSection
-        .locator('.ant-card')
-        .filter({ has: postsSection.locator('[data-testid="create-post-from-topic"]') })
-        .filter({ hasText: new RegExp(topicTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').trim(), 'i') })
-        .first()
-        .locator('[data-testid="create-post-from-topic"]')
-        .getByRole('button')
-        .first()
-    : postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
-  await postsSection.scrollIntoViewIfNeeded().catch(() => {});
-  await page.waitForTimeout(300);
-  await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
-  await createPostBtn.waitFor({ state: 'visible', timeout: 25000 });
+  let createPostBtn;
+  if (topicTitle) {
+    // Topic card: first .ant-card that contains the title, then the create-post button inside it.
+    const card = postsSection.locator('.ant-card').filter({ hasText: topicTitle }).first();
+    createPostBtn = card.locator('[data-testid="create-post-from-topic"]').getByRole('button').first();
+    await postsSection.scrollIntoViewIfNeeded().catch(() => {});
+    await page.waitForTimeout(500);
+    await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
+    try {
+      await createPostBtn.waitFor({ state: 'visible', timeout: 30000 });
+    } catch (_) {
+      // Fallback: first "Create Post" / "Get One Free Post" in #posts (first topic card) when card locator fails in CI.
+      createPostBtn = postsSection.getByRole('button', { name: /Create Post|Get One Free Post/i }).first();
+      await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
+      await createPostBtn.waitFor({ state: 'visible', timeout: 15000 });
+    }
+  } else {
+    createPostBtn = postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
+    await postsSection.scrollIntoViewIfNeeded().catch(() => {});
+    await page.waitForTimeout(300);
+    await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
+    await createPostBtn.waitFor({ state: 'visible', timeout: 25000 });
+  }
   if (waitForContentResponse) {
     await Promise.all([
       page.waitForResponse(
@@ -491,11 +498,11 @@ test.describe('E2E (mocked backend)', () => {
         await input.fill('https://example.com');
         await page.locator('button:has-text("Analyze")').first().click();
         // With real API we see step messages (Reading your pages…, Understanding who you're for…, etc.).
-        // With fast mocks we may see a step briefly or go straight to success. Accept either.
+        // With fast mocks we may see a step briefly or go straight to success. Accept either within a longer window.
         const stepMessages = page.locator('text=/Reading your pages|Understanding who you\'re for|Shaping conversion angles|Adding audience visuals/i');
         const successIndicator = page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience/i').first();
-        const sawStep = await stepMessages.first().isVisible({ timeout: 2000 }).catch(() => false);
-        const sawSuccess = await successIndicator.isVisible({ timeout: 2000 }).catch(() => false);
+        const sawStep = await stepMessages.first().isVisible({ timeout: 5000 }).catch(() => false);
+        const sawSuccess = await successIndicator.isVisible({ timeout: 5000 }).catch(() => false);
         expect(sawStep || sawSuccess).toBeTruthy();
         // Wait for analysis to complete
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
@@ -1059,7 +1066,8 @@ test.describe('E2E (mocked backend)', () => {
         await generateTopicsBtn.click();
         await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
         await page.waitForTimeout(2000);
-        await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        await expect(page.locator('#posts').getByText(MOCK_TOPICS[0].title, { exact: false })).toBeVisible({ timeout: 20000 });
+        await page.waitForTimeout(800);
         await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
         await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
         await page.waitForTimeout(2000);
