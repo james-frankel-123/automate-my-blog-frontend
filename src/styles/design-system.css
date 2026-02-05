@@ -1021,6 +1021,23 @@ body {
   color: var(--color-text-primary);
 }
 
+/* Content preview: blockquotes and titles (headings) in dark mode */
+.dark-mode blockquote {
+  color: var(--color-text-secondary);
+  background-color: var(--color-background-elevated);
+  border-left-color: var(--color-primary);
+  border-radius: 4px;
+}
+
+.dark-mode h1,
+.dark-mode h2,
+.dark-mode h3,
+.dark-mode h4,
+.dark-mode h5,
+.dark-mode h6 {
+  color: var(--color-text-primary);
+}
+
 /* Buttons */
 .dark-mode .ant-btn-default {
   background-color: var(--color-background-elevated);

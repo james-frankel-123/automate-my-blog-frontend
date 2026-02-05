@@ -1,6 +1,6 @@
 import React from 'react';
 import DOMPurify from 'dompurify';
-import { colors, typography } from '../DesignSystem/tokens';
+import { typography } from '../DesignSystem/tokens';
 
 function escapeAttr(s) {
   if (typeof s !== 'string') return '';
@@ -153,7 +153,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     fontFamily: bodyFont,
     fontSize: fontSize,
     lineHeight: lineHeight,
-    color: colors.text.primary,
+    color: 'var(--color-text-primary)',
     maxWidth: 'none',
     ...style
   };
@@ -168,7 +168,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             fontFamily: headingFont,
             fontSize: `${fontSize * 2.25}px`,
             fontWeight: typography.fontWeight.bold,
-            color: colors.text.primary,
+            color: 'var(--color-text-primary)',
             margin: `${paragraphSpacing * 1.5}px 0 ${paragraphSpacing}px 0`,
             lineHeight: typography.lineHeight.tight
           },
@@ -176,7 +176,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             fontFamily: headingFont,
             fontSize: `${fontSize * 1.875}px`,
             fontWeight: typography.fontWeight.semibold,
-            color: colors.text.primary,
+            color: 'var(--color-text-primary)',
             margin: `${paragraphSpacing * 1.25}px 0 ${paragraphSpacing * 0.75}px 0`,
             lineHeight: typography.lineHeight.tight
           },
@@ -184,7 +184,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             fontFamily: headingFont,
             fontSize: `${fontSize * 1.5}px`,
             fontWeight: typography.fontWeight.semibold,
-            color: colors.text.primary,
+            color: 'var(--color-text-primary)',
             margin: `${paragraphSpacing}px 0 ${paragraphSpacing * 0.5}px 0`,
             lineHeight: typography.lineHeight.tight
           },
@@ -196,11 +196,11 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           },
           '& strong': {
             fontWeight: typography.fontWeight.semibold,
-            color: colors.text.primary
+            color: 'var(--color-text-primary)'
           },
           '& em': {
             fontStyle: 'italic',
-            color: colors.text.primary
+            color: 'var(--color-text-primary)'
           },
           '& ul, & ol': {
             margin: `${paragraphSpacing}px 0`,
@@ -214,24 +214,24 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             lineHeight: lineHeight
           },
           '& blockquote': {
-            borderLeft: `4px solid ${colors.primary}`,
+            borderLeft: '4px solid var(--color-primary)',
             paddingLeft: `${paragraphSpacing}px`,
             margin: `${paragraphSpacing}px 0`,
             fontStyle: 'italic',
-            color: colors.text.secondary,
-            backgroundColor: colors.background.container,
+            color: 'var(--color-text-secondary)',
+            backgroundColor: 'var(--color-background-container)',
             padding: `${paragraphSpacing * 0.75}px ${paragraphSpacing}px`
           },
           '& code': {
-            backgroundColor: colors.background.container,
+            backgroundColor: 'var(--color-background-container)',
             padding: '2px 6px',
             borderRadius: '4px',
             fontFamily: typography.fontFamily.mono,
             fontSize: `${fontSize * 0.9}px`,
-            color: colors.text.primary
+            color: 'var(--color-text-primary)'
           },
           '& pre': {
-            backgroundColor: colors.background.container,
+            backgroundColor: 'var(--color-background-container)',
             padding: `${paragraphSpacing}px`,
             borderRadius: '8px',
             overflow: 'auto',
@@ -245,7 +245,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           },
           '& hr': {
             border: 'none',
-            borderTop: `1px solid ${colors.border.base}`,
+            borderTop: '1px solid var(--color-border-base)',
             margin: `${paragraphSpacing * 2}px 0`
           }
         }}
@@ -256,7 +256,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-family: ${headingFont};
           font-size: ${fontSize * 2.25}px;
           font-weight: ${typography.fontWeight.bold};
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
           margin: ${paragraphSpacing * 1.5}px 0 ${paragraphSpacing}px 0;
           line-height: ${typography.lineHeight.tight};
         }
@@ -265,7 +265,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-family: ${headingFont};
           font-size: ${fontSize * 1.875}px;
           font-weight: ${typography.fontWeight.semibold};
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
           margin: ${paragraphSpacing * 1.25}px 0 ${paragraphSpacing * 0.75}px 0;
           line-height: ${typography.lineHeight.tight};
         }
@@ -274,7 +274,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-family: ${headingFont};
           font-size: ${fontSize * 1.5}px;
           font-weight: ${typography.fontWeight.semibold};
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
           margin: ${paragraphSpacing}px 0 ${paragraphSpacing * 0.5}px 0;
           line-height: ${typography.lineHeight.tight};
         }
@@ -283,7 +283,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-family: ${headingFont};
           font-size: ${fontSize * 1.25}px;
           font-weight: ${typography.fontWeight.semibold};
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
           margin: ${paragraphSpacing * 0.875}px 0 ${paragraphSpacing * 0.375}px 0;
           line-height: ${typography.lineHeight.tight};
         }
@@ -292,7 +292,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-family: ${headingFont};
           font-size: ${fontSize * 1.125}px;
           font-weight: ${typography.fontWeight.semibold};
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
           margin: ${paragraphSpacing * 0.75}px 0 ${paragraphSpacing * 0.25}px 0;
           line-height: ${typography.lineHeight.tight};
         }
@@ -301,7 +301,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-family: ${headingFont};
           font-size: ${fontSize}px;
           font-weight: ${typography.fontWeight.semibold};
-          color: ${colors.text.secondary};
+          color: var(--color-text-secondary);
           margin: ${paragraphSpacing * 0.625}px 0 ${paragraphSpacing * 0.25}px 0;
           line-height: ${typography.lineHeight.tight};
         }
@@ -315,12 +315,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         
         div strong {
           font-weight: ${typography.fontWeight.semibold};
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
         }
         
         div em {
           font-style: italic;
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
         }
         
         div ul, div ol {
@@ -337,27 +337,27 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         }
         
         div blockquote {
-          border-left: 4px solid ${colors.primary};
+          border-left: 4px solid var(--color-primary);
           padding-left: ${paragraphSpacing}px;
           margin: ${paragraphSpacing}px 0;
           font-style: italic;
-          color: ${colors.text.secondary};
-          background-color: ${colors.background.container};
+          color: var(--color-text-secondary);
+          background-color: var(--color-background-container);
           padding: ${paragraphSpacing * 0.75}px ${paragraphSpacing}px;
           border-radius: 4px;
         }
         
         div code {
-          background-color: ${colors.background.container};
+          background-color: var(--color-background-container);
           padding: 2px 6px;
           border-radius: 4px;
           font-family: ${typography.fontFamily.mono};
           font-size: ${fontSize * 0.9}px;
-          color: ${colors.text.primary};
+          color: var(--color-text-primary);
         }
         
         div pre {
-          background-color: ${colors.background.container};
+          background-color: var(--color-background-container);
           padding: ${paragraphSpacing}px;
           border-radius: 8px;
           overflow: auto;
@@ -373,7 +373,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         
         div hr {
           border: none;
-          border-top: 1px solid ${colors.border.base};
+          border-top: 1px solid var(--color-border-base);
           margin: ${paragraphSpacing * 2}px 0;
         }
 
