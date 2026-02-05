@@ -13,7 +13,8 @@ import {
   TeamOutlined,
   TrophyOutlined,
   CopyOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  PlayCircleOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -37,6 +38,8 @@ import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
 import { replaceArticlePlaceholders } from '../../utils/articlePlaceholders';
+import { replaceTweetPlaceholders } from '../../utils/tweetPlaceholders';
+import { replaceVideoPlaceholders } from '../../utils/videoPlaceholders';
 import ThinkingPanel from '../shared/ThinkingPanel';
 
 // New Enhanced Components
@@ -347,6 +350,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [currentDraft, setCurrentDraft] = useState(null);
   const [relatedTweets, setRelatedTweets] = useState([]); // Fetched in background after stream starts; shown alongside post
   const [relatedArticles, setRelatedArticles] = useState([]); // News articles from search-for-topic-stream; shown alongside post
+  const [relatedVideos, setRelatedVideos] = useState([]); // YouTube videos from search-for-topic-stream; shown alongside post
   const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
   // Editor state for TipTap integration
@@ -747,6 +751,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     setGeneratingContent(true);
     setRelatedTweets([]);
     setRelatedArticles([]);
+    setRelatedVideos([]);
 
     // Add to progressive sticky header
     addStickyWorkflowStep('topicSelection', {
@@ -799,8 +804,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         );
       }
 
-      // Start stream immediately so content populates right away. Fetch tweets via SSE in background
-      // and attach when ready (for display / draft; generation runs without tweet context).
+      // Run tweet search in parallel with blog stream; insert tweets into preview as they arrive via [TWEET:n] placeholders.
       const prefetchedTweets = [];
       api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
         .then(({ connectionId, streamUrl }) => {
@@ -832,6 +836,23 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             onComplete: (data) => {
               const articles = data?.articles || [];
               if (articles.length) setRelatedArticles(articles);
+            },
+            onError: () => {},
+          }, { streamUrl });
+        })
+        .catch(() => {});
+
+      // Run YouTube video search in parallel; show results in Related videos panel.
+      api.searchYouTubeVideosForTopicStream(topic, websiteAnalysisData, 5)
+        .then(({ connectionId, streamUrl }) => {
+          api.connectToStream(connectionId, {
+            onQueriesExtracted: (data) => {
+              const term = data?.searchTermsUsed?.[0];
+              if (term) setHint(`Searching videos: ${term}…`, 'hint', 0);
+            },
+            onComplete: (data) => {
+              const videos = data?.videos || [];
+              if (videos.length) setRelatedVideos(videos);
             },
             onError: () => {},
           }, { streamUrl });
@@ -944,7 +965,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 status: 'draft',
                 createdAt: saveResult.post.created_at ?? new Date().toISOString(),
                 topic: topic,
-                blogPost: result.blogPost
+                blogPost: result.blogPost,
+                relatedTweets: relatedTweets?.length ? relatedTweets : undefined
               });
               setLastSavedContent(result.content);
               setLastSaved(new Date());
@@ -2059,8 +2081,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 
                                 {/* Action Buttons */}
                                 <div style={{ textAlign: 'center', marginTop: '16px' }} data-testid="create-post-from-topic">
-                                  <Button
-                                    type="primary"
+                                  <span data-testid="create-post-from-topic-btn">
+                                    <Button
+                                      type="primary"
                                     size="large"
                                     onClick={() => {
                                       if (user && !hasAvailablePosts) {
@@ -2080,6 +2103,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
                                      user ? (hasAvailablePosts ? 'Create Post' : 'Buy More Posts') : 'Get One Free Post'}
                                   </Button>
+                                  </span>
                                 </div>
                               </Card>
                             </Col>
@@ -2181,6 +2205,61 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               <Text type="secondary" style={{ fontSize: '12px' }}>
                                 {a?.sourceName}
                                 {a?.publishedAt ? ` · ${new Date(a.publishedAt).toLocaleDateString()}` : ''}
+                              </Text>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Related videos (YouTube search stream, in parallel with blog) */}
+                  {relatedVideos?.length > 0 && (
+                    <div style={{
+                      marginBottom: '16px',
+                      padding: '12px',
+                      backgroundColor: 'var(--color-primary-50)',
+                      border: '1px solid var(--color-primary-100)',
+                      borderRadius: '6px'
+                    }}>
+                      <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
+                        <PlayCircleOutlined style={{ marginRight: '6px' }} />
+                        Related videos
+                      </Text>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {relatedVideos.slice(0, 5).map((v, i) => (
+                          <a
+                            key={v?.videoId || i}
+                            href={v?.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '10px',
+                              padding: '8px',
+                              backgroundColor: 'var(--color-background-body)',
+                              borderRadius: '6px',
+                              textDecoration: 'none',
+                              color: 'inherit',
+                              border: '1px solid var(--color-gray-200)'
+                            }}
+                          >
+                            {v?.thumbnailUrl && (
+                              <img
+                                src={v.thumbnailUrl}
+                                alt=""
+                                style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                              />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                                {v?.title || 'Video'}
+                              </Text>
+                              <Text type="secondary" style={{ fontSize: '12px' }}>
+                                {v?.channelTitle}
+                                {v?.viewCount != null ? ` · ${Number(v.viewCount).toLocaleString()} views` : ''}
+                                {v?.duration ? ` · ${v.duration}` : ''}
                               </Text>
                             </div>
                           </a>
@@ -2405,6 +2484,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               setCurrentDraft(null);
                               setRelatedTweets([]);
                               setRelatedArticles([]);
+                              setRelatedVideos([]);
                             }}
                           >
                             Start Over
@@ -2875,8 +2955,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               
                               {/* Action Buttons */}
                               <div style={{ textAlign: 'center', marginTop: '16px' }} data-testid="create-post-from-topic">
-                                <Button
-                                  type="primary"
+                                <span data-testid="create-post-from-topic-btn">
+                                  <Button
+                                    type="primary"
                                   size="large"
                                   onClick={() => {
                                     if (user && !hasAvailablePosts) {
@@ -2902,6 +2983,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                      'Register to claim free post'
                                   }
                                 </Button>
+                                </span>
                               </div>
                             </Card>
                           </Col>
@@ -3161,11 +3243,18 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   minHeight: '320px'
                 }}>
                   <HTMLPreview
-                    content={replaceArticlePlaceholders(
-                      normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : ''),
-                      relatedArticles || []
+                    content={replaceTweetPlaceholders(
+                      replaceVideoPlaceholders(
+                        replaceArticlePlaceholders(
+                          normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : ''),
+                          relatedArticles || []
+                        ),
+                        relatedVideos || []
+                      ),
+                      relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []
                     )}
                     relatedArticles={relatedArticles || []}
+                    relatedVideos={relatedVideos || []}
                     typographySettings={typography}
                     forceMarkdown
                     heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
@@ -3233,6 +3322,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     setCurrentDraft(null);
                     setRelatedTweets([]);
                     setRelatedArticles([]);
+                    setRelatedVideos([]);
                     setContentViewMode('preview');
                   }}
                 >
@@ -3385,6 +3475,61 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   </div>
                 </div>
               )}
+
+              {/* Related videos (YouTube search stream, in parallel with blog) */}
+              {relatedVideos?.length > 0 && (
+                <div style={{
+                  marginBottom: '16px',
+                  padding: '12px',
+                  backgroundColor: 'var(--color-primary-50)',
+                  border: '1px solid var(--color-primary-100)',
+                  borderRadius: '6px'
+                }}>
+                  <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
+                    <PlayCircleOutlined style={{ marginRight: '6px' }} />
+                    Related videos
+                  </Text>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {relatedVideos.slice(0, 5).map((v, i) => (
+                      <a
+                        key={v?.videoId || i}
+                        href={v?.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '10px',
+                          padding: '8px',
+                          backgroundColor: 'var(--color-background-body)',
+                          borderRadius: '6px',
+                          textDecoration: 'none',
+                          color: 'inherit',
+                          border: '1px solid var(--color-gray-200)'
+                        }}
+                      >
+                        {v?.thumbnailUrl && (
+                          <img
+                            src={v.thumbnailUrl}
+                            alt=""
+                            style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
+                          />
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                            {v?.title || 'Video'}
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: '12px' }}>
+                            {v?.channelTitle}
+                            {v?.viewCount != null ? ` · ${Number(v.viewCount).toLocaleString()} views` : ''}
+                            {v?.duration ? ` · ${v.duration}` : ''}
+                          </Text>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               
               {/* SEO Analysis Toggle */}
               {editingContent && editingContent.length >= 200 && (
@@ -3442,11 +3587,18 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     padding: 'var(--space-5)'
                   }}>
                     <HTMLPreview
-                      content={replaceArticlePlaceholders(
-                        editingContent || 'Enter your blog content...',
-                        relatedArticles || []
+                      content={replaceTweetPlaceholders(
+                        replaceVideoPlaceholders(
+                          replaceArticlePlaceholders(
+                            editingContent || 'Enter your blog content...',
+                            relatedArticles || []
+                          ),
+                          relatedVideos || []
+                        ),
+                        relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []
                       )}
                       relatedArticles={relatedArticles || []}
+                      relatedVideos={relatedVideos || []}
                       typographySettings={typography}
                       forceMarkdown
                       heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}

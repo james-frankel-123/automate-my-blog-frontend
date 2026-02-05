@@ -100,6 +100,19 @@ const MOCK_CONTENT_WITH_IMAGES = `
 <p>Key points include setup, authentication, and your first request.</p>
 `.trim();
 
+/** Content with [TWEET:0] placeholder for E2E tweet-insertion tests */
+const MOCK_CONTENT_WITH_TWEET_PLACEHOLDER = `
+<h2>How to Get Started with Example API</h2>
+<p>This is mock AI-generated blog content for E2E testing.</p>
+<p>[TWEET:0]</p>
+<p>Key points include setup, authentication, and your first request.</p>
+`.trim();
+
+/** Sample tweets for E2E (tweet search and placeholder replacement) */
+const MOCK_TWEETS = [
+  { text: 'E2E related tweet: streaming and placeholders work together.' },
+];
+
 /** Default credits payload (frontend receives this as response.data from GET /api/v1/user/credits) */
 const DEFAULT_CREDITS = {
   availableCredits: 10,
@@ -270,8 +283,10 @@ async function installWorkflowMocks(page) {
   return installWorkflowMocksBase(page, {});
 }
 
+const E2E_TWEET_STREAM_ID = 'e2e-tweet-stream';
+
 async function installWorkflowMocksBase(page, options = {}) {
-  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false } = options;
+  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false, contentWithTweetPlaceholder = false, tweetsForTopic = null, tweetStreamResponds = false } = options;
   const creditsPayload = userCredits != null ? userCredits : DEFAULT_CREDITS;
   const patterns = [
     { path: '/api/analyze-website', method: 'POST', body: () => (analysisSyncFails ? json({ success: false, error: 'Scraping failed' }) : json(MOCK_ANALYSIS)) },
@@ -279,15 +294,15 @@ async function installWorkflowMocksBase(page, options = {}) {
     { path: '/api/generate-pitches', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
     { path: '/api/generate-audience-images', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
     { path: '/api/trending-topics', method: 'POST', body: () => json({ topics: MOCK_TOPICS }) },
-    { path: '/api/tweets/search-for-topic', method: 'POST', body: () => json({ tweets: [] }) },
+    { path: '/api/tweets/search-for-topic', method: 'POST', body: () => json({ tweets: tweetsForTopic != null ? tweetsForTopic : [] }) },
     {
       path: '/api/generate-content',
       method: 'POST',
       body: () =>
         json({
           success: true,
-          blogPost: { content: MOCK_CONTENT, title: MOCK_TOPICS[0].title },
-          content: MOCK_CONTENT,
+          blogPost: { content: contentWithTweetPlaceholder ? MOCK_CONTENT_WITH_TWEET_PLACEHOLDER : MOCK_CONTENT, title: MOCK_TOPICS[0].title },
+          content: contentWithTweetPlaceholder ? MOCK_CONTENT_WITH_TWEET_PLACEHOLDER : MOCK_CONTENT,
         }),
     },
     { path: '/api/export', method: 'POST', body: () => json({ success: true }) },
@@ -307,6 +322,23 @@ async function installWorkflowMocksBase(page, options = {}) {
   await page.route('**/*', async (route) => {
     const url = route.request().url();
     const method = route.request().method();
+
+    if (tweetStreamResponds && method === 'POST' && url.includes('tweets/search-for-topic-stream')) {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ connectionId: E2E_TWEET_STREAM_ID, streamUrl: `/api/v1/stream/${E2E_TWEET_STREAM_ID}` }),
+      });
+    }
+    if (tweetStreamResponds && method === 'GET' && url.includes(`/api/v1/stream/${E2E_TWEET_STREAM_ID}`)) {
+      const tweets = tweetsForTopic != null ? tweetsForTopic : MOCK_TWEETS;
+      const sseBody = `event: complete\ndata: ${JSON.stringify({ tweets })}\n\n`;
+      return route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+        body: sseBody,
+      });
+    }
 
     for (const { path, method: m, body } of patterns) {
       const fullPath = path.startsWith('/') ? path : `/${path}`;
@@ -422,6 +454,8 @@ module.exports = {
   MOCK_ANALYSIS,
   MOCK_TOPICS,
   MOCK_CONTENT,
+  MOCK_CONTENT_WITH_TWEET_PLACEHOLDER,
+  MOCK_TWEETS,
   MOCK_SCENARIOS,
   MOCK_POST,
   DEFAULT_CREDITS,

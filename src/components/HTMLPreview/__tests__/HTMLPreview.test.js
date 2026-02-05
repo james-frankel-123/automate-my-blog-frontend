@@ -104,6 +104,14 @@ describe('HTMLPreview', () => {
       expect(screen.getByText(/More\./)).toBeInTheDocument();
     });
 
+    it('replaces video placeholder token with loading UI when relatedVideos missing', () => {
+      const content = 'Intro.\n\n__VIDEO_PLACEHOLDER_0__\n\nMore.';
+      render(<HTMLPreview content={content} forceMarkdown relatedVideos={[]} />);
+      expect(screen.getByText(/Loading video…/)).toBeInTheDocument();
+      expect(screen.getByText(/Intro\./)).toBeInTheDocument();
+      expect(screen.getByText(/More\./)).toBeInTheDocument();
+    });
+
     it('replaces article placeholder token with article card when relatedArticles provided', () => {
       const content = 'Before __ARTICLE_PLACEHOLDER_0__ after.';
       const relatedArticles = [
@@ -114,6 +122,18 @@ describe('HTMLPreview', () => {
       expect(screen.getByText('Test Source')).toBeInTheDocument();
       const link = screen.getByRole('link', { name: /Test Article/i });
       expect(link).toHaveAttribute('href', 'https://example.com/news');
+    });
+
+    it('replaces video placeholder token with video card when relatedVideos provided', () => {
+      const content = 'Before __VIDEO_PLACEHOLDER_0__ after.';
+      const relatedVideos = [
+        { url: 'https://www.youtube.com/watch?v=abc', videoId: 'abc', title: 'Test Video', channelTitle: 'Test Channel' },
+      ];
+      render(<HTMLPreview content={content} forceMarkdown relatedVideos={relatedVideos} />);
+      expect(screen.getByText('Test Video')).toBeInTheDocument();
+      expect(screen.getByText('Test Channel')).toBeInTheDocument();
+      const link = screen.getByRole('link', { name: /Test Video/i });
+      expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc');
     });
   });
 });

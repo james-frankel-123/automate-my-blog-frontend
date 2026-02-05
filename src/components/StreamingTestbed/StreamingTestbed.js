@@ -3,6 +3,8 @@ import { Button, Card, Typography, Space, Divider, Alert, Input, Collapse } from
 import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined } from '@ant-design/icons';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
 import { replaceArticlePlaceholders } from '../../utils/articlePlaceholders';
+import { replaceTweetPlaceholders } from '../../utils/tweetPlaceholders';
+import { replaceVideoPlaceholders } from '../../utils/videoPlaceholders';
 import HTMLPreview from '../HTMLPreview/HTMLPreview';
 
 const { Text } = Typography;
@@ -43,7 +45,8 @@ const LONG_CONTENT_CHUNKS = [
   '- **Item one**: streaming should show markdown as it arrives.\n',
   '- **Item two**: no raw `#` or `**` in the preview.\n',
   '- **Item three**: headings, bold, and links render correctly.\n\n',
-  '[ARTICLE:0]\n\n',
+  '[TWEET:0]\n\n',
+  '[VIDEO:0]\n\n',
   '## Section three\n\n',
   'Paragraph. You can scroll the Rendered preview while the stream is running to verify ',
   'that earlier content is already rendered. [Example link](https://example.com) and more text.\n\n',
@@ -56,7 +59,7 @@ const LONG_CONTENT_CHUNKS = [
   '> Blockquote: The frontend should never show raw JSON or key-value text in the preview.\n\n',
   'After the blockquote, more prose. Nulla facilisi nullam vehicula ipsum a arcu cursus. ',
   'Commodo sed egestas egestas fringilla phasellus faucibus scelerisque eleifend.\n\n',
-  '[ARTICLE:1]\n\n',
+  '[VIDEO:1]\n\n',
   '## Section six\n\n',
   'Second list:\n\n',
   '- Alpha: first item in the list.\n',
@@ -115,6 +118,18 @@ const SAMPLE_HERO_IMAGE_URL = 'https://picsum.photos/800/400';
 const SAMPLE_RELATED_ARTICLES = [
   { url: 'https://example.com/article-1', title: 'Streaming APIs and Real-Time Content', sourceName: 'Tech News', publishedAt: '2024-01-15T12:00:00Z', urlToImage: 'https://picsum.photos/400/225?random=1', description: 'How streaming changes how we build products.' },
   { url: 'https://example.com/article-2', title: 'Frontend Hand-offs for SSE Streams', sourceName: 'Dev Blog', publishedAt: '2024-01-14T09:00:00Z', description: 'Same pattern as tweets, YouTube, and topics.' },
+];
+/** Sample related tweets for testbed (same shape as Posts tab: text or { text, url? }) */
+const SAMPLE_RELATED_TWEETS = [
+  { text: 'Streaming content in real time changes how we build products. Great to see this in action.', url: 'https://twitter.com/i/status/1' },
+  { text: 'The future of content is real-time. Markdown rendering while streaming is exactly right.', url: 'https://twitter.com/i/status/2' },
+  { text: 'Hero images + tweet context in blog generation = better posts. Keep it up.', url: 'https://twitter.com/i/status/3' },
+];
+
+/** Sample related videos for testbed (same shape as YouTube search stream: url, videoId, title, channelTitle, thumbnailUrl, viewCount, duration) */
+const SAMPLE_RELATED_VIDEOS = [
+  { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', videoId: 'dQw4w9WgXcQ', title: 'Streaming APIs in Practice', channelTitle: 'Dev Channel', thumbnailUrl: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/mqdefault.jpg', viewCount: 12000, duration: '5m 30s' },
+  { url: 'https://www.youtube.com/watch?v=abc123', videoId: 'abc123', title: 'Real-time Content Generation', channelTitle: 'Tech Talks', thumbnailUrl: 'https://i.ytimg.com/vi/abc123/mqdefault.jpg', viewCount: 5400, duration: '8m' },
 ];
 
 function StreamingTestbed() {
@@ -210,6 +225,40 @@ function StreamingTestbed() {
               Clear
             </Button>
           </Space>
+        </Card>
+
+        <Space style={{ marginBottom: 16 }}>
+          <Button icon={<ClearOutlined />} onClick={clearAll}>
+            Clear
+          </Button>
+        </Space>
+
+        <Card size="small" title="Related tweets (sample)" style={{ marginBottom: 16 }}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+            In the Posts tab these are searched in parallel; placeholders [TWEET:0], [TWEET:1] in content are replaced when tweets arrive.
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {SAMPLE_RELATED_TWEETS.map((t, i) => (
+              <li key={i} style={{ marginBottom: 6 }}>
+                {typeof t === 'string' ? t : (t?.text || t?.content || '').slice(0, 120)}
+                {(t?.text?.length > 120 || t?.content?.length > 120) ? '…' : ''}
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card size="small" title="Related videos (sample)" style={{ marginBottom: 24 }}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+            [VIDEO:0], [VIDEO:1] in content show animated loading placeholders until videos arrive; then video cards. Different look from tweet placeholders.
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {SAMPLE_RELATED_VIDEOS.map((v, i) => (
+              <li key={v?.videoId || i} style={{ marginBottom: 6 }}>
+                {v?.title} — {v?.channelTitle}
+                {v?.viewCount != null ? ` · ${Number(v.viewCount).toLocaleString()} views` : ''}
+              </li>
+            ))}
+          </ul>
         </Card>
 
         <Collapse
@@ -314,11 +363,18 @@ function StreamingTestbed() {
         <Card size="small" title="Rendered preview" style={{ marginBottom: 16 }}>
           <div style={{ color: '#fff' }}>
             <HTMLPreview
-              content={replaceArticlePlaceholders(
-                normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.'),
-                SAMPLE_RELATED_ARTICLES
+              content={replaceTweetPlaceholders(
+                replaceVideoPlaceholders(
+                  replaceArticlePlaceholders(
+                    normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.'),
+                    SAMPLE_RELATED_ARTICLES
+                  ),
+                  SAMPLE_RELATED_VIDEOS
+                ),
+                SAMPLE_RELATED_TWEETS
               )}
               relatedArticles={SAMPLE_RELATED_ARTICLES}
+              relatedVideos={SAMPLE_RELATED_VIDEOS}
               forceMarkdown={true}
               heroImageUrl={heroImageUrl || undefined}
               style={{ minHeight: 120, color: '#fff' }}
