@@ -6,32 +6,38 @@ import { colors, typography } from '../DesignSystem/tokens';
  * Convert markdown to HTML
  */
 const markdownToHTML = (markdown) => {
+  if (!markdown || typeof markdown !== 'string') return '';
   let html = markdown;
 
-  // Headers
-  html = html.replace(/^#### (.*$)/gim, '<h4>$1</h4>');
-  html = html.replace(/^### (.*$)/gim, '<h3>$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1>$1</h1>');
+  // Headers (multiline: ^ matches start of line)
+  html = html.replace(/^###### (.*)$/gim, '<h6>$1</h6>');
+  html = html.replace(/^##### (.*)$/gim, '<h5>$1</h5>');
+  html = html.replace(/^#### (.*)$/gim, '<h4>$1</h4>');
+  html = html.replace(/^### (.*)$/gim, '<h3>$1</h3>');
+  html = html.replace(/^## (.*)$/gim, '<h2>$1</h2>');
+  html = html.replace(/^# (.*)$/gim, '<h1>$1</h1>');
 
-  // Bold
+  // Blockquote
+  html = html.replace(/^>\s?(.*)$/gim, '<blockquote>$1</blockquote>');
+
+  // Bold (non-greedy for streaming: incomplete ** stays as text)
   html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
 
-  // Italic
+  // Italic (non-greedy)
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
 
   // Links
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/gim, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
 
-  // Code blocks
+  // Code blocks (non-greedy; partial ``` during stream stays as text)
   html = html.replace(/```([\s\S]*?)```/gim, '<pre><code>$1</code></pre>');
 
   // Inline code
   html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
 
-  // Lists (unordered)
-  html = html.replace(/^\* (.*$)/gim, '<li>$1</li>');
-  html = html.replace(/^- (.*$)/gim, '<li>$1</li>');
+  // Lists (unordered; multiline)
+  html = html.replace(/^\* (.*)$/gim, '<li>$1</li>');
+  html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
   html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
   // Paragraphs (split by double newline)
@@ -69,6 +75,7 @@ const markdownToHTML = (markdown) => {
       !line.startsWith('<ul') &&
       !line.startsWith('<li') &&
       !line.startsWith('<pre') &&
+      !line.startsWith('<blockquote') &&
       !line.includes('</ul>') &&
       !line.includes('</pre>')
     ) {
@@ -105,9 +112,10 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {} }) => {
     );
   }
 
-  // Check if content looks like markdown (has markdown syntax)
-  const isMarkdown = /^#{1,6}\s|^\*\*|^\*\s|^-\s|```|\[.*\]\(.*\)/.test(content);
-  const rawHtml = isMarkdown ? markdownToHTML(content) : content;
+  // Treat as Markdown unless content already looks like HTML (e.g. pre-rendered).
+  // Streamed blog content is markdown source; only skip conversion when we have HTML tags.
+  const looksLikeHtml = /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(content);
+  const rawHtml = looksLikeHtml ? content : markdownToHTML(content);
   
   // Sanitize HTML to prevent XSS attacks
   const htmlContent = DOMPurify.sanitize(rawHtml, {
