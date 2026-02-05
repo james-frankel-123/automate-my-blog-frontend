@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Button, Card, Typography, Space, Divider, Alert, Input, Collapse } from 'antd';
-import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined, ApiOutlined, StopOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined, ApiOutlined, StopOutlined, LoginOutlined, LogoutOutlined } from '@ant-design/icons';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
 import api from '../../services/api';
 import { contentAPI } from '../../services/workflowAPI';
+import { useAuth } from '../../contexts/AuthContext';
+import AuthModal from '../Auth/AuthModal';
 import StreamingPreview from './StreamingPreview';
 
 const { Text } = Typography;
@@ -144,6 +146,9 @@ const SAMPLE_RELATED_VIDEOS = [
 const DEFAULT_LIVE_TOPIC_TITLE = 'How to test the streaming API';
 
 function StreamingTestbed() {
+  const { user, logout } = useAuth();
+  const organizationId = user?.organizationId || user?.id;
+
   const [content, setContent] = useState('');
   const [lastChunk, setLastChunk] = useState('');
   const [error, setError] = useState(null);
@@ -157,6 +162,7 @@ function StreamingTestbed() {
   const [liveRelatedArticles, setLiveRelatedArticles] = useState([]);
   const [liveRelatedVideos, setLiveRelatedVideos] = useState([]);
   const streamClosesRef = useRef([]);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const appendChunk = useCallback((data) => {
     setError(null);
@@ -270,13 +276,19 @@ function StreamingTestbed() {
       })
       .catch(() => {});
 
+    if (!organizationId) {
+      setLiveStreamError('Sign in required. The API requires topic, businessInfo, and organizationId.');
+      setLiveStreaming(false);
+      return;
+    }
+
     try {
       const { connectionId } = await contentAPI.startBlogStream(
         topic,
         websiteAnalysisData,
         null,
         {},
-        { prefetchedTweets: [] }
+        { prefetchedTweets: [], organizationId }
       );
       setLastChunk('(streaming…)');
       const { close } = api.connectToStream(connectionId, {
@@ -305,7 +317,7 @@ function StreamingTestbed() {
       setLastChunk('(error)');
       setLiveStreaming(false);
     }
-  }, [liveTopicTitle]);
+  }, [liveTopicTitle, organizationId]);
 
   const stopLiveStream = useCallback(() => {
     streamClosesRef.current.forEach((close) => { if (typeof close === 'function') close(); });
@@ -319,7 +331,7 @@ function StreamingTestbed() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background-body)', padding: 24 }}>
       <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        <Space style={{ marginBottom: 16 }}>
+        <Space style={{ marginBottom: 16 }} wrap>
           <Button
             icon={<ArrowLeftOutlined />}
             type="text"
@@ -327,7 +339,37 @@ function StreamingTestbed() {
           >
             Back to app
           </Button>
+          {user ? (
+            <>
+              <Text type="secondary" style={{ fontSize: 13 }}>{user.email}</Text>
+              <Button
+                type="text"
+                icon={<LogoutOutlined />}
+                onClick={() => logout()}
+              >
+                Sign out
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="primary"
+              ghost
+              icon={<LoginOutlined />}
+              onClick={() => setShowAuthModal(true)}
+            >
+              Sign in
+            </Button>
+          )}
         </Space>
+        {showAuthModal && (
+          <AuthModal
+            open={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            defaultTab="login"
+            context="testbed"
+            onSuccess={() => setShowAuthModal(false)}
+          />
+        )}
 
         <Typography.Title level={3} style={{ marginBottom: 8 }}>
           Streaming parser testbed
@@ -353,8 +395,11 @@ function StreamingTestbed() {
 
         <Card size="small" title="Stream from API" style={{ marginBottom: 24 }}>
           <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-            Same workflow as the Posts tab: contentAPI.startBlogStream (fetches tweets, then blog stream) plus parallel streams for tweets, news articles, and YouTube videos. [TWEET:n], [ARTICLE:n], [VIDEO:n] in the stream resolve as data arrives. Backend: {process.env.REACT_APP_API_URL || 'default'}.
+            Same workflow as the Posts tab: contentAPI.startBlogStream (fetches tweets, then blog stream) plus parallel streams for tweets, news articles, and YouTube videos. [TWEET:n], [ARTICLE:n], [VIDEO:n] in the stream resolve as data arrives. Backend: {process.env.REACT_APP_API_URL || 'default'}. Sign in required (API requires organizationId).
           </Text>
+          {!organizationId && (
+            <Alert type="info" message="Sign in to use Stream from API" description="The blog generate-stream API requires topic, businessInfo, and organizationId. Use the Sign in button above to open the login modal." style={{ marginBottom: 12 }} />
+          )}
           <Space wrap align="center" style={{ marginBottom: 8 }}>
             <Input
               placeholder="Topic title"
@@ -368,6 +413,7 @@ function StreamingTestbed() {
               icon={liveStreaming ? <StopOutlined /> : <ApiOutlined />}
               onClick={liveStreaming ? stopLiveStream : startLiveStream}
               danger={liveStreaming}
+              disabled={!organizationId}
             >
               {liveStreaming ? 'Stop stream' : 'Start live stream'}
             </Button>
