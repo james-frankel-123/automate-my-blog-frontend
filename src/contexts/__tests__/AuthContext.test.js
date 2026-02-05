@@ -23,6 +23,7 @@ const TestAuthConsumer = ({ onAuthState }) => {
         {auth.user ? `Logged in as ${auth.user.email}` : 'Not logged in'}
       </span>
       <span data-testid="loading-status">{auth.loading ? 'Loading' : 'Ready'}</span>
+      <span data-testid="logging-out-status">{auth.isLoggingOut ? 'Logging out' : 'Not logging out'}</span>
       <span data-testid="admin-status">{auth.isAdmin ? 'Admin' : 'Not Admin'}</span>
       <button data-testid="login-btn" onClick={() => auth.login('test@example.com', 'password')}>
         Login
@@ -287,6 +288,41 @@ describe('AuthContext', () => {
       await waitFor(() => {
         expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
       });
+    });
+
+    it('delays clearing user state until after logout animation to prevent UI flash (#186)', async () => {
+      jest.useFakeTimers();
+      const mockUser = createMockUser();
+      autoBlogAPI.login.mockResolvedValueOnce({ success: true, user: mockUser });
+      autoBlogAPI.logout.mockResolvedValueOnce({ success: true });
+
+      renderWithAuthProvider(<TestAuthConsumer />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('loading-status')).toHaveTextContent('Ready');
+      });
+
+      fireEvent.click(screen.getByTestId('login-btn'));
+      await waitFor(() => {
+        expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in');
+      });
+
+      fireEvent.click(screen.getByTestId('logout-btn'));
+
+      // Right after click: isLoggingOut true, user still set (no UI flash)
+      await waitFor(() => {
+        expect(screen.getByTestId('logging-out-status')).toHaveTextContent('Logging out');
+      });
+      expect(screen.getByTestId('user-status')).toHaveTextContent('Logged in');
+
+      // After animation delay: user cleared, isLoggingOut false
+      act(() => {
+        jest.advanceTimersByTime(600);
+      });
+      expect(screen.getByTestId('user-status')).toHaveTextContent('Not logged in');
+      expect(screen.getByTestId('logging-out-status')).toHaveTextContent('Not logging out');
+
+      jest.useRealTimers();
     });
   });
 

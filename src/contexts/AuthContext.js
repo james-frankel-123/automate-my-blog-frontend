@@ -7,6 +7,9 @@ const activeAuthRequests = new Map();
 
 const AuthContext = createContext();
 
+// Duration to keep "logged in" UI during logout so animation can complete (fixes #186)
+const LOGOUT_ANIMATION_MS = 500;
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
@@ -22,6 +25,7 @@ export const AuthProvider = ({ children }) => {
   const [loginContext, setLoginContext] = useState(null); // 'gate' or 'nav'
   const [impersonationData, setImpersonationData] = useState(null); // stores original admin info
   const [isNewRegistration, setIsNewRegistration] = useState(false); // tracks if user just registered
+  const [isLoggingOut, setIsLoggingOut] = useState(false); // true while logout animation runs (fixes #186)
 
   // ROLE-BASED PERMISSIONS: Check user permissions from database
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
@@ -335,6 +339,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Prevent logged-out UI (e.g. website search) from flashing before animation completes (fixes #186)
+    setIsLoggingOut(true);
+
     try {
       // Use new API logout method (handles token cleanup)
       await autoBlogAPI.logout();
@@ -370,11 +377,14 @@ export const AuthProvider = ({ children }) => {
     // Clear all sessionStorage (no need to preserve anything)
     sessionStorage.clear();
 
-    // Clear local state
-    setUser(null);
-    setCurrentOrganization(null);
-    setLoginContext(null);
-    setIsNewRegistration(false);
+    // Delay clearing user state until after logout animation so no UI flash (fixes #186)
+    setTimeout(() => {
+      setUser(null);
+      setCurrentOrganization(null);
+      setLoginContext(null);
+      setIsNewRegistration(false);
+      setIsLoggingOut(false);
+    }, LOGOUT_ANIMATION_MS);
   };
 
   const clearLoginContext = () => {
@@ -491,6 +501,8 @@ export const AuthProvider = ({ children }) => {
     loginContext,
     clearLoginContext,
     setNavContext,
+    // Logout animation (fixes #186)
+    isLoggingOut,
     // Registration tracking
     isNewRegistration,
     clearNewRegistration: () => setIsNewRegistration(false),

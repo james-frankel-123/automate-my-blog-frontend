@@ -194,10 +194,35 @@ test.describe('E2E (mocked backend)', () => {
       const logoutBtn = page.locator('text=/logout|sign out/i').first();
       if (await logoutBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
         await logoutBtn.click();
-        await page.waitForTimeout(500);
+        // Wait for logout animation + state update (fixes #186)
+        await page.waitForTimeout(700);
         const token = await page.evaluate(() => localStorage.getItem('accessToken'));
         expect(token).toBeNull();
       }
+    });
+
+    test('logout does not flash logged-out UI before animation completes (#186)', async ({ page }) => {
+      const userMenu = page.locator('[data-testid="user-menu"], .ant-dropdown-trigger, .ant-avatar').first();
+      const visible = await userMenu.isVisible({ timeout: 5000 }).catch(() => false);
+      if (!visible) {
+        test.skip();
+        return;
+      }
+      await userMenu.click();
+      await page.waitForTimeout(300);
+      const logoutBtn = page.locator('text=/logout|sign out/i').first();
+      await expect(logoutBtn).toBeVisible({ timeout: 2000 });
+      await logoutBtn.click();
+      // Immediately after click, logged-in shell should still be visible (no flash of logged-out content)
+      await page.waitForTimeout(100);
+      const menuStillVisible = await userMenu.isVisible().catch(() => false);
+      expect(menuStillVisible).toBe(true);
+      // After animation completes, we transition to logged-out state
+      await page.waitForTimeout(600);
+      const menuGone = await userMenu.isVisible().catch(() => false);
+      expect(menuGone).toBe(false);
+      const token = await page.evaluate(() => localStorage.getItem('accessToken'));
+      expect(token).toBeNull();
     });
 
     test('logged in: after website analysis, section nav is visible and scroll-to-section works (#168)', async ({ page }) => {
