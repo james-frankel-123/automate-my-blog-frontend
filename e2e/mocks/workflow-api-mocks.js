@@ -196,17 +196,29 @@ const MOCK_CONTENT_WITH_IMAGE_GEN = {
  *   - imageGenerationInBackground: job result includes needsImageGeneration; images API returns content with images (progressive UX)
  */
 async function installWorkflowMocksWithOptions(page, options = {}) {
-  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null } = options;
+  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null, analysisJobFails = false, analysisSyncFails = false } = options;
   const pollCounts = {};
 
   await installWorkflowMocksBase(page, {
     imageGenerationInBackground,
     userCredits,
+    analysisSyncFails,
     jobsStatusHandler: (jobId) => {
       pollCounts[jobId] = (pollCounts[jobId] || 0) + 1;
       const pollNum = pollCounts[jobId];
       const isAnalysis = jobId === E2E_JOB_ANALYSIS;
 
+      if (analysisJobFails && isAnalysis) {
+        return {
+          jobId,
+          status: 'failed',
+          progress: 0,
+          error: 'Scraping failed',
+          result: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+      }
       if (failFirstThenRetry && pollNum === 1) {
         return {
           jobId,
@@ -259,10 +271,10 @@ async function installWorkflowMocks(page) {
 }
 
 async function installWorkflowMocksBase(page, options = {}) {
-  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null } = options;
+  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false } = options;
   const creditsPayload = userCredits != null ? userCredits : DEFAULT_CREDITS;
   const patterns = [
-    { path: '/api/analyze-website', method: 'POST', body: () => json(MOCK_ANALYSIS) },
+    { path: '/api/analyze-website', method: 'POST', body: () => (analysisSyncFails ? json({ success: false, error: 'Scraping failed' }) : json(MOCK_ANALYSIS)) },
     { path: '/api/generate-audiences', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
     { path: '/api/generate-pitches', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
     { path: '/api/generate-audience-images', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
@@ -281,7 +293,7 @@ async function installWorkflowMocksBase(page, options = {}) {
     { path: '/api/export', method: 'POST', body: () => json({ success: true }) },
     { path: '/api/images/generate-for-blog', method: 'POST', body: () => json({ success: true, content: MOCK_CONTENT_WITH_IMAGES, blogPostId: MOCK_POST.id }) },
     { path: '/api/v1/jobs/content-generation', method: 'POST', body: () => ({ status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_CONTENT }) }) },
-    { path: '/api/v1/jobs/website-analysis', method: 'POST', body: () => ({ status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_ANALYSIS }) }) },
+    { path: '/api/v1/jobs/website-analysis', method: 'POST', body: () => (analysisSyncFails ? { status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) } : { status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_ANALYSIS }) }) },
     { path: '/api/v1/session/create', method: 'POST', body: () => json({ session_id: 'e2e-session-id' }) },
     { path: '/api/v1/auth/me', method: 'GET', body: () => json({ success: true, user: MOCK_USER }) },
     { path: '/api/v1/auth/refresh', method: 'POST', body: () => json({ success: true, accessToken: fakeJWT(), refreshToken: fakeJWT() }) },
@@ -416,4 +428,5 @@ module.exports = {
   creditsWithPosts,
   creditsZero,
   creditsUnlimited,
+  E2E_JOB_ANALYSIS,
 };

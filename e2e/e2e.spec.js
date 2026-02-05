@@ -54,6 +54,34 @@ async function waitForNoModal(page, timeoutMs = 6000) {
 }
 
 /**
+ * Run website analysis flow: Create New Post → fill URL → Analyze → wait for completion.
+ * Returns when analysis is complete (Continue to Audience or results visible).
+ */
+async function runWebsiteAnalysisToCompletion(page) {
+  const createBtn = page.locator('button:has-text("Create New Post")').first();
+  if (!(await createBtn.isVisible({ timeout: 5000 }).catch(() => false))) {
+    throw new Error('Create New Post button not visible');
+  }
+  await createBtn.click();
+  await page.waitForTimeout(500);
+  const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+  if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+    throw new Error('Website URL input not visible');
+  }
+  await input.fill('https://example.com');
+  const analyzeBtn = page.locator('button:has-text("Analyze")').first();
+  if (!(await analyzeBtn.isVisible({ timeout: 2000 }).catch(() => false))) {
+    throw new Error('Analyze button not visible');
+  }
+  await analyzeBtn.click();
+  await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+  await page.waitForTimeout(1000);
+  await removeOverlay(page);
+  const continueOrSuccess = page.locator('text=/Continue to Audience|We\'ve got the full picture|Pick your audience|We\'ve got a basic picture/i').first();
+  await expect(continueOrSuccess).toBeVisible({ timeout: 10000 });
+}
+
+/**
  * Click the Create Post / Generate post button (topic → full post).
  * When topicTitle is set, clicks the button inside the topic card with that title so we don't hit the "Generate post" (topics) CTA.
  */
@@ -170,6 +198,72 @@ test.describe('E2E (mocked backend)', () => {
         const token = await page.evaluate(() => localStorage.getItem('accessToken'));
         expect(token).toBeNull();
       }
+    });
+
+    test('logged in: after website analysis, section nav is visible and scroll-to-section works (#168)', async ({ page }) => {
+      test.setTimeout(45000);
+      await runWebsiteAnalysisToCompletion(page);
+      const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+      await expect(nav).toBeVisible({ timeout: 5000 });
+      const targetAudienceNavBtn = nav.locator('[data-testid="analysis-nav-analysis-target-audience"]');
+      await expect(targetAudienceNavBtn).toBeVisible({ timeout: 3000 });
+      await targetAudienceNavBtn.click();
+      await page.waitForTimeout(600);
+      const section = page.locator('#analysis-target-audience');
+      await expect(section).toBeVisible({ timeout: 3000 });
+      const isInViewport = await section.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.top >= 0 && rect.top <= window.innerHeight;
+      });
+      expect(isInViewport).toBeTruthy();
+    });
+
+    test('when website analysis fails, shows informative empty state with Try again and Try a different URL (#185)', async ({ page }) => {
+      test.setTimeout(35000);
+      // Install mocks: job creation 404 so sync flow is used; sync analyze returns failure (Issue #185)
+      await installWorkflowMocksWithOptions(page, { analysisSyncFails: true });
+      await page.goto('/');
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      await removeOverlay(page);
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      await expect(createBtn).toBeVisible({ timeout: 5000 });
+      await createBtn.click();
+      await page.waitForTimeout(500);
+      const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(input).toBeVisible({ timeout: 5000 });
+      await input.fill('https://example.com');
+      const analyzeBtn = page.locator('button:has-text("Analyze")').first();
+      await expect(analyzeBtn).toBeVisible({ timeout: 2000 });
+      await analyzeBtn.click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      const emptyState = page.locator('[data-testid="analysis-failed-empty-state"]');
+      await expect(emptyState).toBeVisible({ timeout: 8000 });
+      await expect(emptyState.locator('text=Try again')).toBeVisible({ timeout: 2000 });
+      await expect(emptyState.locator('text=Try a different URL')).toBeVisible({ timeout: 2000 });
+    });
+
+    test('after website analysis, inline empty states are shown for missing categories (#185)', async ({ page }) => {
+      test.setTimeout(45000);
+      await runWebsiteAnalysisToCompletion(page);
+      const emptyStateIds = [
+        '[data-testid="empty-business-model"]',
+        '[data-testid="empty-website-goals"]',
+        '[data-testid="empty-blog-strategy"]',
+        '[data-testid="empty-keywords"]',
+        '[data-testid="empty-ctas"]',
+      ];
+      let found = false;
+      for (const id of emptyStateIds) {
+        const el = page.locator(id).first();
+        if (await el.isVisible({ timeout: 2000 }).catch(() => false)) {
+          found = true;
+          break;
+        }
+      }
+      expect(found).toBeTruthy();
     });
   });
 
@@ -387,6 +481,66 @@ test.describe('E2E (mocked backend)', () => {
         await expect(hintStrip).toContainText(/We've got your site|Choose your audience|We've got a basic picture|You can continue or try a different URL|Audience strategies ready|Thinking about your audience/i);
       });
 
+      // Issue #168 – Granular website analysis section nav: sticky/horizontal nav, smooth scroll, scroll spy
+      test.describe('Website analysis section nav (#168)', () => {
+        test('after analysis completes, section nav is visible with at least two sections', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(nav).toBeVisible({ timeout: 5000 });
+          const navLinks = nav.locator('[data-testid^="analysis-nav-"]');
+          await expect(navLinks.first()).toBeVisible({ timeout: 3000 });
+          const count = await navLinks.count();
+          expect(count).toBeGreaterThanOrEqual(2);
+        });
+
+        test('section nav includes expected labels from analysis (What They Do, Target Audience, etc.)', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(nav).toBeVisible({ timeout: 5000 });
+          await expect(nav.locator('button:has-text("What They Do")')).toBeVisible({ timeout: 3000 });
+          await expect(nav.locator('button:has-text("Target Audience")')).toBeVisible({ timeout: 3000 });
+        });
+
+        test('section IDs exist in DOM for scroll targets', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const sectionWhatTheyDo = page.locator('#analysis-what-they-do');
+          const sectionTargetAudience = page.locator('#analysis-target-audience');
+          await expect(sectionWhatTheyDo).toBeVisible({ timeout: 5000 });
+          await expect(sectionTargetAudience).toBeVisible({ timeout: 3000 });
+        });
+
+        test('clicking a nav link scrolls to the section and section is visible', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          const nav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(nav).toBeVisible({ timeout: 5000 });
+          const targetAudienceNavBtn = nav.locator('[data-testid="analysis-nav-analysis-target-audience"]');
+          await expect(targetAudienceNavBtn).toBeVisible({ timeout: 3000 });
+          await targetAudienceNavBtn.click();
+          await page.waitForTimeout(600);
+          const section = page.locator('#analysis-target-audience');
+          await expect(section).toBeVisible({ timeout: 3000 });
+          const isInViewport = await section.evaluate((el) => {
+            const rect = el.getBoundingClientRect();
+            return rect.top >= 0 && rect.top <= window.innerHeight;
+          });
+          expect(isInViewport).toBeTruthy();
+        });
+
+        test('Sections label is shown in nav header', async ({ page }) => {
+          await runWebsiteAnalysisToCompletion(page);
+          await expect(page.locator('text=Sections').first()).toBeVisible({ timeout: 5000 });
+        });
+
+        test('mobile viewport: section nav is hidden; analysis content is visible', async ({ page }) => {
+          await page.setViewportSize({ width: 375, height: 667 });
+          await runWebsiteAnalysisToCompletion(page);
+          const sidebarNav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(sidebarNav).toBeHidden();
+          const section = page.locator('#analysis-target-audience');
+          await expect(section).toBeVisible({ timeout: 3000 });
+        });
+      });
+
       // "Why we suggested this" is implemented in PostsTab (data-testid="topic-why-suggested").
       // This test verifies the flow reaches topic load; topic cards with that copy may be replaced by the editor quickly in E2E.
       test('topic generation shows mock topics after audience selection', async ({ page }) => {
@@ -515,6 +669,35 @@ test.describe('E2E (mocked backend)', () => {
           await expect(topicCard).toBeVisible({ timeout: 15000 });
         }
       });
+    });
+
+    // fix/strategy-select-navigate-to-topic: selecting strategy must navigate to topic choice (posts) section
+    test('selecting audience strategy navigates to topic choice section', async ({ page }) => {
+      test.setTimeout(60000);
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      await expect(createBtn).toBeVisible({ timeout: 10000 });
+      await createBtn.click();
+      await page.waitForTimeout(800);
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      await removeOverlay(page);
+      await page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first().click({ force: true });
+      await page.waitForTimeout(800);
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(500);
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario/i }).first();
+      await expect(strategyCard).toBeVisible({ timeout: 10000 });
+      await strategyCard.click();
+      // Navigation must bring us to the topic choice (posts) section
+      const postsSection = page.locator('#posts');
+      await expect(postsSection).toBeVisible({ timeout: 10000 });
+      // Topic-choice content must be visible (Generate post CTA or Generating Topics)
+      const topicChoiceButton = page.locator('#posts').getByRole('button', { name: /Generate post|Generating Topics/i }).first();
+      await expect(topicChoiceButton).toBeVisible({ timeout: 8000 });
     });
 
     // Streaming fallbacks: mocks return 404 for stream endpoints; these tests assert stream or fallback paths.

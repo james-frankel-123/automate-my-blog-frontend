@@ -356,11 +356,9 @@ const OrganizationSettings = () => {
     try {
       setLoading(true);
       const data = await autoBlogAPI.getOrganizationMembers();
-      console.log('Organization API response:', data); // Debug logging
       setOrgData(data);
     } catch (error) {
       console.error('Error loading organization data:', error);
-      console.error('Error details:', error.message); // More detailed error logging
       message.error('Failed to load organization data: ' + error.message);
     } finally {
       setLoading(false);
@@ -887,15 +885,10 @@ const ReferralSettings = () => {
         autoBlogAPI.generateReferralLink(),
         autoBlogAPI.getReferralStats()
       ]);
-      
-      console.log('Referral link data:', linkData); // Debug logging
-      console.log('Referral stats data:', statsData); // Debug logging
-      
       setReferralData(linkData);
       setStats(statsData);
     } catch (error) {
       console.error('Error loading referral data:', error);
-      console.error('Error details:', error.message); // More detailed error logging
       message.error('Failed to load referral data: ' + error.message);
     } finally {
       setLoading(false);

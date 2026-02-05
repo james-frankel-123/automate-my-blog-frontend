@@ -6,8 +6,8 @@ All e2e tests live in **`e2e/e2e.spec.js`** and use a **mocked backend**.
 
 | Workflow | Describe | Notes |
 |----------|----------|-------|
-| **Auth (logged out)** | Auth (logged out) | Login form, sign up form. |
-| **Auth (logged in)** | Auth (logged in) | Persist login, logout. |
+| **Auth (logged out)** | Auth (logged out) | Login form, sign up form, **website analysis section nav (#168)** (granular nav, smooth scroll, scroll spy, mobile horizontal nav). |
+| **Auth (logged in)** | Auth (logged in) | Persist login, logout, **section nav after analysis (#168)**. |
 | **Workflow** | Workflow | Homepage steps, start analysis, results, persistence, **smoke** (analyze → audience → strategy → posts), **full** (analyze → … → export). |
 | **Worker queue & progress** | Worker queue & progress | Content generation progress bar/step label, website analysis progress bar, **503 queue unavailable** (re-enabled), retry modal on job failure, **posts and credits load in parallel** on dashboard mount. Some tests (full workflow to editor, progress bar, retry modal) remain skipped pending topic→content selector stability. |
 | **Dashboard** | Dashboard | Layout, tab nav (Dashboard, Posts, Audience, Analytics, Settings), user menu, workflow indicators, sidebar toggle (mobile). |

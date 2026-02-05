@@ -98,6 +98,82 @@ export const systemVoice = {
     yourBestOpportunities: "Your Best Opportunities",
     audiencesIntro: "Based on what I learned, here are your highest-value audience segments:",
     analysisComplete: "Analysis Complete",
+    // Empty states for failed or missing website analysis data (Issue #185)
+    emptyStates: {
+      scraping_failed: {
+        heading: "Could not analyze website content",
+        reasons: [
+          "The site may block automated access or require login.",
+          "The request may have timed out or the URL might be invalid.",
+          "The server may be temporarily unavailable.",
+        ],
+        primaryAction: "Try again",
+        secondaryAction: "Try a different URL",
+      },
+      business_model_failed: {
+        heading: "Could not determine business model",
+        reasons: [
+          "Website content was unclear or the site is new or minimal.",
+          "The business model may be unique or not clearly described.",
+        ],
+        primaryAction: "Enter manually",
+      },
+      target_audience_failed: {
+        heading: "Could not identify target audience",
+        reasons: [
+          "Website copy may be generic or target multiple audiences.",
+          "B2B2C or indirect audience models can be harder to detect.",
+        ],
+        primaryAction: "Enter manually",
+      },
+      keywords_failed: {
+        heading: "Could not fetch keyword data",
+        reasons: [
+          "API rate limits, or the site is new or not yet indexed.",
+          "We can still suggest topics from the rest of the analysis.",
+        ],
+        primaryAction: "Continue without keywords",
+      },
+      ctas_not_found: {
+        heading: "Could not find call-to-action elements",
+        reasons: [
+          "CTAs may be non-standard or loaded dynamically (e.g. in a SPA).",
+          "The site may be minimal or use images/buttons we don’t detect.",
+        ],
+        primaryAction: "Continue anyway",
+      },
+      brand_analysis_failed: {
+        heading: "Could not analyze brand positioning",
+        reasons: [
+          "Insufficient or inconsistent messaging on the site.",
+          "We’ll use a neutral brand voice unless you edit.",
+        ],
+        primaryAction: "Enter manually",
+      },
+      website_content_failed: {
+        heading: "Could not analyze website content",
+        reasons: [
+          "We couldn’t extract a clear “what they do” from the page.",
+          "You can describe the business yourself below.",
+        ],
+        primaryAction: "Enter manually",
+      },
+      content_focus_failed: {
+        heading: "Could not determine content focus",
+        reasons: ["Website content didn’t reveal a clear content focus. You can add it manually."],
+        primaryAction: "Enter manually",
+      },
+      website_goals_failed: {
+        heading: "Could not determine website goals",
+        reasons: ["We couldn’t infer goals from the content. You can add them manually."],
+        primaryAction: "Enter manually",
+      },
+      blog_strategy_failed: {
+        heading: "Could not determine blog strategy",
+        reasons: ["We couldn’t infer a blog strategy. You can add it manually."],
+        primaryAction: "Enter manually",
+      },
+    },
   },
 
   // ─── Audience strategies (AudienceSegmentsTab) ───

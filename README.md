@@ -27,7 +27,7 @@ AutoBlog transforms content creation from manual work into intelligent automatio
 
 ### Prerequisites
 
-- Node.js 16+ and npm (or yarn)
+- Node.js 18+ and npm (or yarn)
 - A backend API server running (see backend configuration)
 
 ### Installation
@@ -43,10 +43,10 @@ cd automate-my-blog-frontend
 npm install
 ```
 
-3. Set up environment variables:
+3. Set up environment variables (see `.env.example` for `REACT_APP_API_URL` and optional `REACT_APP_STREAMING_ENABLED`):
 ```bash
 cp .env.example .env
-# Edit .env with your API endpoints and configuration
+# Edit .env with your API base URL and options
 ```
 
 4. Start the development server:

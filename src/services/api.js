@@ -37,7 +37,6 @@ class AutoBlogAPI {
     
     const cacheKey = `recentAnalysis_${targetUserId}`;
     sessionStorage.removeItem(cacheKey);
-    console.log(`🧹 Cleared cached analysis for user: ${targetUserId}`);
   }
 
   /**

@@ -9,7 +9,7 @@ The frontend audit and [Frontend UX & Analytics Plan](frontend-ux-analytics-plan
 ## What’s Already Done
 
 ### Infrastructure
-- **AnalyticsContext** – Event batching (5s flush or 10 events), `useAnalytics()` with `trackEvent`, `trackPageView`, `trackClick`, `trackFormSubmit`, `trackFunnelStep`, `trackRevenue`. Sends only when user is authenticated (backend returns 401 otherwise).
+- **AnalyticsContext** – Event batching (5s flush or 10 events), `useAnalytics()` with `trackEvent`, `trackPageView`, `trackClick`, `trackFormSubmit`, `trackFunnelStep`, `trackRevenue`. Sends for **all users** (logged in or out); events include `workflowWebsiteUrl` (URL from first workflow step) when available. Backend should accept unauthenticated requests (no 401). See [issue #202](issues/ISSUE_202_ANALYTICS_TRACK_BY_URL.md).
 - **Backend** – `POST /api/v1/analytics/track` and `track-batch`; high-priority events (purchase, signup, login, payment_success) sent immediately.
 
 ### Events Currently Instrumented

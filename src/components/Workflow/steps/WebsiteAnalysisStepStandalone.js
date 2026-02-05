@@ -13,7 +13,9 @@ import { systemVoice } from '../../../copy/systemVoice';
 import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 import { NarrativeAnalysisDisplay } from '../../Dashboard/NarrativeAnalysisDisplay';
+import AnalysisSectionNav from '../../Dashboard/AnalysisSectionNav';
 import ThinkingPanel from '../../shared/ThinkingPanel';
+import AnalysisEmptyState from '../../EmptyStates/AnalysisEmptyState';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -104,8 +106,12 @@ const WebsiteAnalysisStepStandalone = ({
   const [analysisProgress, setAnalysisProgress] = useState(null);
   // Scrape-phase "thoughts" from job stream (phase, message, url?) for step-by-step log
   const [analysisThoughts, setAnalysisThoughts] = useState([]);
+  // Expand Technical Details collapse when nav links to a subsection (Issue #168)
+  const [technicalDetailsExpanded, setTechnicalDetailsExpanded] = useState(false);
   // Ref to latest analysis results for per-item stream updates (audience-complete, pitch-complete, scenario-image-complete)
   const latestAnalysisRef = useRef(analysisResults);
+  // Last analysis error for informative empty state (Issue #185)
+  const [lastAnalysisError, setLastAnalysisError] = useState(null);
 
   // Use local state if parent doesn't provide state management
   const loading = isLoading !== undefined ? isLoading : localLoading;
@@ -150,8 +156,6 @@ const WebsiteAnalysisStepStandalone = ({
       return;
     }
 
-    console.log('⏳ [NARRATIVE POLL] Starting to poll for narrative:', analysisResults.organizationId);
-
     let pollCount = 0;
     const maxPolls = 120; // Max 2 minutes of polling (increased for queue processing)
 
@@ -159,8 +163,6 @@ const WebsiteAnalysisStepStandalone = ({
       pollCount++;
 
       try {
-        console.log(`📡 [NARRATIVE POLL] Attempt ${pollCount}/${maxPolls}`);
-
         const data = await autoBlogAPI.makeRequest(
           `api/narrative/${analysisResults.organizationId}`
         );
@@ -175,7 +177,6 @@ const WebsiteAnalysisStepStandalone = ({
         }
 
         if (data.ready && data.narrative) {
-          console.log('✅ [NARRATIVE POLL] Narrative ready!');
           clearInterval(pollInterval);
 
           // Update analysisResults with the narrative
@@ -188,7 +189,6 @@ const WebsiteAnalysisStepStandalone = ({
             narrativeJobStatus: 'completed'
           });
         } else if (pollCount >= maxPolls) {
-          console.log('⏱️ [NARRATIVE POLL] Max polls reached, stopping');
           clearInterval(pollInterval);
           // Mark as timeout
           setAnalysisResults(prev => ({
@@ -264,9 +264,7 @@ const WebsiteAnalysisStepStandalone = ({
           
           if (response.success && response.analysis) {
             const cachedAnalysis = response.analysis;
-            
-            console.log('🔄 Loading cached analysis:', cachedAnalysis.websiteUrl);
-            
+
             // Prevent flashing by loading all data simultaneously
             const updates = {};
             if (setWebsiteUrl) updates.websiteUrl = cachedAnalysis.websiteUrl;
@@ -285,8 +283,6 @@ const WebsiteAnalysisStepStandalone = ({
               businessType: cachedAnalysis.businessType || '',
               ...cachedAnalysis
             });
-            
-            console.log('✅ Cached analysis loaded without flashing');
           }
         } catch (error) {
           // Silently fail - user can perform new analysis
@@ -311,7 +307,6 @@ const WebsiteAnalysisStepStandalone = ({
       try {
         const response = await autoBlogAPI.getOrganizationCTAs(orgId);
         setOrganizationCTAs(response.ctas || []);
-        console.log(`✅ Fetched ${response.ctas?.length || 0} CTAs for analysis display`);
       } catch (error) {
         console.error('Failed to fetch CTAs for analysis display:', error);
         setOrganizationCTAs([]);
@@ -348,6 +343,7 @@ const WebsiteAnalysisStepStandalone = ({
       return;
     }
     
+    setLastAnalysisError(null);
     try {
       // Validate URL first
       const validation = workflowUtils.urlUtils.validateWebsiteUrl(websiteUrl);
@@ -518,14 +514,9 @@ const WebsiteAnalysisStepStandalone = ({
           pageUrl: window.location.href
         }).catch(err => console.error('Failed to track scrape_completed:', err));
 
+        setLastAnalysisError(null);
         setHint(systemVoice.toasts.analysisComplete, 'success', 5000);
         message.success(systemVoice.analysis.success);
-
-        console.log('🎯 [CTA DEBUG] WebsiteAnalysisStepStandalone: API result contains CTAs:', {
-          hasCTAs: !!result.ctas,
-          ctaCount: result.ctaCount,
-          ctas: result.ctas
-        });
 
         // Update sticky header with business name after analysis completes
         updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
@@ -547,25 +538,12 @@ const WebsiteAnalysisStepStandalone = ({
 
         return true;
       } else {
-        // Handle error with fallback
-        if (result.fallbackAnalysis) {
-          setAnalysisResults && setAnalysisResults(result.fallbackAnalysis);
-          setAnalysisCompleted && setAnalysisCompleted(true);
-          setHint(systemVoice.analysis.successLimited, 'hint', 5000);
-          message.warning(systemVoice.analysis.successLimited);
-          
-          onAnalysisComplete && onAnalysisComplete({
-            analysis: result.fallbackAnalysis,
-            webSearchInsights: result.webSearchInsights || { researchQuality: 'basic' },
-            websiteUrl: validation.formattedUrl
-          });
-          
-          return true;
-        }
-        throw new Error(result.error);
+        // API returned success: false — show informative empty state (Issue #185) instead of fallback
+        throw new Error(result.error || 'Analysis failed');
       }
     } catch (error) {
       console.error('Website analysis error:', error);
+      setLastAnalysisError({ type: 'scraping_failed', message: error?.message || '' });
       setHint(systemVoice.toasts.analysisFailed, 'error', 8000);
       message.error(systemVoice.analysis.analysisFailed);
       
@@ -617,21 +595,7 @@ const WebsiteAnalysisStepStandalone = ({
       console.error('No analysisResults available for editing');
       return;
     }
-    
-    // Enhanced debug logging to understand data structure
-    console.log('🔍 FULL analysisResults structure:', JSON.stringify(analysisResults, null, 2));
-    console.log('🔍 Available keys:', Object.keys(analysisResults));
-    console.log('🔍 Sample values:', {
-      businessName: analysisResults.businessName,
-      companyName: analysisResults.companyName,
-      name: analysisResults.name,
-      organizationName: analysisResults.organizationName,
-      businessType: analysisResults.businessType,
-      industry: analysisResults.industry,
-      targetAudience: analysisResults.targetAudience,
-      decisionMakers: analysisResults.decisionMakers
-    });
-    
+
     const editData = {
       // Core business information - try multiple field names
       businessName: analysisResults.businessName || analysisResults.companyName || analysisResults.name || analysisResults.organizationName || '',
@@ -658,9 +622,7 @@ const WebsiteAnalysisStepStandalone = ({
       searchBehavior: analysisResults.searchBehavior || '',
       connectionMessage: analysisResults.connectionMessage || ''
     };
-    
-    console.log('✅ Edit data being set:', JSON.stringify(editData, null, 2));
-    
+
     setEditableResults(editData);
     setEditMode(true);
   };
@@ -690,9 +652,7 @@ const WebsiteAnalysisStepStandalone = ({
         // Include website URL if it was edited
         websiteUrl: websiteUrl
       };
-      
-      console.log('💾 Saving edited analysis data:', processedResults);
-      
+
       // Call API to save changes
       const response = await autoBlogAPI.updateAnalysis(processedResults);
       
@@ -724,8 +684,6 @@ const WebsiteAnalysisStepStandalone = ({
         
         // Show success message
         message.success(systemVoice.analysis.updated);
-        
-        console.log('✅ Analysis saved successfully');
       } else {
         throw new Error(response.error || 'Failed to save analysis');
       }
@@ -1001,7 +959,20 @@ const WebsiteAnalysisStepStandalone = ({
       }
     };
 
-    return (
+    // Build granular nav sections for smooth scrolling (Issue #168); include all sections so empty states are reachable (Issue #185)
+    const navSections = [];
+    if (hasNarrative) navSections.push({ id: 'analysis-narrative', label: 'Narrative' });
+    navSections.push({ id: 'analysis-what-they-do', label: 'What They Do' });
+    navSections.push({ id: 'analysis-target-audience', label: 'Target Audience' });
+    navSections.push({ id: 'analysis-brand-voice', label: 'Brand Voice' });
+    navSections.push({ id: 'analysis-content-focus', label: 'Content Focus' });
+    navSections.push({ id: 'analysis-ctas', label: 'Calls-to-Action' });
+    navSections.push({ id: 'analysis-business-model', label: 'Business Model' });
+    navSections.push({ id: 'analysis-website-goals', label: 'Website Goals' });
+    navSections.push({ id: 'analysis-blog-strategy', label: 'Blog Strategy' });
+    navSections.push({ id: 'analysis-keywords', label: 'Key Topics & Keywords' });
+
+    const content = (
       <>
         {/* Narrative Job Status Indicator */}
         {analysis.narrativeGenerating && analysis.narrativeJobStatus && (
@@ -1031,17 +1002,21 @@ const WebsiteAnalysisStepStandalone = ({
 
         {/* Narrative Analysis Card - Primary Display */}
         {hasNarrative && (
-          <NarrativeAnalysisCard
-            narrative={analysis.narrative}
-            confidence={analysis.narrativeConfidence}
-            keyInsights={analysis.keyInsights}
-          />
+          <div id="analysis-narrative" style={{ scrollMarginTop: 100 }}>
+            <NarrativeAnalysisCard
+              narrative={analysis.narrative}
+              confidence={analysis.narrativeConfidence}
+              keyInsights={analysis.keyInsights}
+            />
+          </div>
         )}
 
         {/* Structured Data - Always show, but can be collapsed if narrative exists */}
         {hasNarrative ? (
           <Collapse
             ghost
+            activeKey={technicalDetailsExpanded ? ['1'] : []}
+            onChange={(keys) => setTechnicalDetailsExpanded(keys.includes('1'))}
             style={{ marginBottom: '20px' }}
             items={[
               {
@@ -1063,12 +1038,27 @@ const WebsiteAnalysisStepStandalone = ({
         )}
       </>
     );
+
+    const handleNavSectionClick = (sectionId) => {
+      if (sectionId !== 'analysis-narrative') setTechnicalDetailsExpanded(true);
+    };
+
+    return navSections.length >= 2 ? (
+      <Row gutter={[24, 0]} style={{ alignItems: 'flex-start' }}>
+        <Col xs={0} md={6} style={{ position: 'sticky', top: 88, alignSelf: 'flex-start' }} data-testid="analysis-section-nav-sidebar">
+          <AnalysisSectionNav sections={navSections} onSectionClick={handleNavSectionClick} />
+        </Col>
+        <Col xs={24} md={18}>{content}</Col>
+      </Row>
+    ) : content;
   };
 
   /**
-   * Render structured analysis data (field-by-field)
+   * Render structured analysis data (field-by-field).
+   * Only show per-section "failed" empty states after loading/streaming has finished (Issue: empty states showing too early).
    */
   const renderStructuredAnalysis = (analysis, domain) => {
+    const showSectionEmptyStates = !loading;
     return (
       <Card
         className={showSuccessHighlight ? 'success-highlight' : ''}
@@ -1177,162 +1167,160 @@ const WebsiteAnalysisStepStandalone = ({
         )}
 
 
-        {/* Business Overview Cards — each card pops in only when it has data (or in edit mode) */}
+        {/* Business Overview Cards — show section with data or informative empty state (Issue #185) */}
         <Row gutter={responsive.gutter}>
-          {(editMode || (analysis.description && String(analysis.description).trim())) && (
-            <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
+          <Col xs={24} md={12}>
+            <div id="analysis-what-they-do" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
-                <Text strong style={{
-                  color: 'var(--color-text-primary)',
-                  fontSize: responsive.fontSize.text,
-                  marginBottom: '8px',
-                  display: 'block'
-                }}>
-                  What They Do
+                What They Do
+              </Text>
+              {editMode ? (
+                <Input.TextArea
+                  value={editableResults?.description || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, description: e.target.value })}
+                  rows={3}
+                  placeholder="Describe what the business does..."
+                  style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                />
+              ) : (analysis.description && String(analysis.description).trim()) ? (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.description}
                 </Text>
-                {editMode ? (
-                  <Input.TextArea
-                    value={editableResults?.description || ''}
-                    onChange={(e) => setEditableResults({ ...editableResults, description: e.target.value })}
-                    rows={3}
-                    placeholder="Describe what the business does..."
-                    style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
-                  />
-                ) : (
-                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                    {analysis.description}
-                  </Text>
-                )}
-              </div>
-            </Col>
-          )}
-          {(editMode || (analysis.decisionMakers && String(analysis.decisionMakers).trim()) || (analysis.targetAudience && String(analysis.targetAudience).trim())) && (
-            <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="website_content_failed"
+                  compact
+                  dataTestId="empty-what-they-do"
+                  actions={[{ label: systemVoice.analysis.emptyStates.website_content_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
+          <Col xs={24} md={12}>
+            <div id="analysis-target-audience" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
-                <Text strong style={{
-                  color: 'var(--color-text-primary)',
-                  fontSize: responsive.fontSize.text,
-                  marginBottom: '8px',
-                  display: 'block'
-                }}>
-                  Target Audience
+                Target Audience
+              </Text>
+              {editMode ? (
+                <Input
+                  value={editableResults?.targetAudience || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, targetAudience: e.target.value })}
+                  placeholder="Who is your target audience?"
+                  style={{ fontSize: responsive.fontSize.small }}
+                />
+              ) : (analysis.decisionMakers && String(analysis.decisionMakers).trim()) || (analysis.targetAudience && String(analysis.targetAudience).trim()) ? (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.decisionMakers || analysis.targetAudience}
                 </Text>
-                {editMode ? (
-                  <Input
-                    value={editableResults?.targetAudience || ''}
-                    onChange={(e) => setEditableResults({ ...editableResults, targetAudience: e.target.value })}
-                    placeholder="Who is your target audience?"
-                    style={{ fontSize: responsive.fontSize.small }}
-                  />
-                ) : (
-                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                    {analysis.decisionMakers || analysis.targetAudience}
-                  </Text>
-                )}
-              </div>
-            </Col>
-          )}
-          {(editMode || (analysis.brandVoice && String(analysis.brandVoice).trim())) && (
-            <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="target_audience_failed"
+                  compact
+                  dataTestId="empty-target-audience"
+                  actions={[{ label: systemVoice.analysis.emptyStates.target_audience_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
+          <Col xs={24} md={12}>
+            <div id="analysis-brand-voice" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
-                <Text strong style={{
-                  color: 'var(--color-text-primary)',
-                  fontSize: responsive.fontSize.text,
-                  marginBottom: '8px',
-                  display: 'block'
-                }}>
-                  Brand Voice
+                Brand Voice
+              </Text>
+              {editMode ? (
+                <Input
+                  value={editableResults?.brandVoice || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, brandVoice: e.target.value })}
+                  placeholder="What's your brand voice?"
+                  style={{ fontSize: responsive.fontSize.small }}
+                />
+              ) : (analysis.brandVoice && String(analysis.brandVoice).trim()) ? (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.brandVoice}
                 </Text>
-                {editMode ? (
-                  <Input
-                    value={editableResults?.brandVoice || ''}
-                    onChange={(e) => setEditableResults({ ...editableResults, brandVoice: e.target.value })}
-                    placeholder="What's your brand voice?"
-                    style={{ fontSize: responsive.fontSize.small }}
-                  />
-                ) : (
-                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                    {analysis.brandVoice}
-                  </Text>
-                )}
-              </div>
-            </Col>
-          )}
-          {(editMode || (analysis.contentFocus && String(analysis.contentFocus).trim())) && (
-            <Col xs={24} md={12}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)',
-                height: '100%'
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="brand_analysis_failed"
+                  compact
+                  dataTestId="empty-brand-voice"
+                  actions={[{ label: systemVoice.analysis.emptyStates.brand_analysis_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
+          <Col xs={24} md={12}>
+            <div id="analysis-content-focus" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
               }}>
-                <Text strong style={{
-                  color: 'var(--color-text-primary)',
-                  fontSize: responsive.fontSize.text,
-                  marginBottom: '8px',
-                  display: 'block'
-                }}>
-                  Content Focus
+                Content Focus
+              </Text>
+              {editMode ? (
+                <Input
+                  value={editableResults?.contentFocus || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, contentFocus: e.target.value })}
+                  placeholder="What type of content do you focus on?"
+                  style={{ fontSize: responsive.fontSize.small }}
+                />
+              ) : (analysis.contentFocus && String(analysis.contentFocus).trim()) ? (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.contentFocus}
                 </Text>
-                {editMode ? (
-                  <Input
-                    value={editableResults?.contentFocus || ''}
-                    onChange={(e) => setEditableResults({ ...editableResults, contentFocus: e.target.value })}
-                    placeholder="What type of content do you focus on?"
-                    style={{ fontSize: responsive.fontSize.small }}
-                  />
-                ) : (
-                  <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                    {analysis.contentFocus}
-                  </Text>
-                )}
-              </div>
-            </Col>
-          )}
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="content_focus_failed"
+                  compact
+                  dataTestId="empty-content-focus"
+                  actions={[{ label: systemVoice.analysis.emptyStates.content_focus_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
         </Row>
 
-        {/* CTAs Section - Show if CTAs were found */}
-        {organizationCTAs.length > 0 && (
-          <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
-            <Col xs={24}>
-              <div style={{
-                padding: '16px',
-                backgroundColor: 'var(--color-background-container)',
-                borderRadius: 'var(--radius-lg)',
-                border: '1px solid var(--color-border-base)'
+        {/* CTAs Section - show when CTAs found or informative empty state (Issue #185) */}
+        <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
+          <Col xs={24}>
+            <div id="analysis-ctas" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '12px',
+                display: 'block'
               }}>
-                <Text strong style={{
-                  color: 'var(--color-text-primary)',
-                  fontSize: responsive.fontSize.text,
-                  marginBottom: '12px',
-                  display: 'block'
-                }}>
-                  🚀 Calls-to-Action Found
-                </Text>
-                {ctasLoading ? (
-                  <Spin size="small" />
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {organizationCTAs.slice(0, 5).map((cta, index) => (
+                {organizationCTAs.length > 0 ? '🚀 Calls-to-Action Found' : 'Calls-to-Action'}
+              </Text>
+              {ctasLoading ? (
+                <Spin size="small" />
+              ) : organizationCTAs.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {organizationCTAs.slice(0, 5).map((cta, index) => (
                       <div key={cta.id || index} style={{
                         padding: '12px',
                         backgroundColor: 'var(--color-background-body)',
@@ -1364,161 +1352,170 @@ const WebsiteAnalysisStepStandalone = ({
                       </Text>
                     )}
                   </div>
-                )}
-              </div>
-            </Col>
-          </Row>
-        )}
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="ctas_not_found"
+                  compact
+                  dataTestId="empty-ctas"
+                  actions={[{ label: systemVoice.analysis.emptyStates.ctas_not_found.primaryAction, onClick: () => {}, primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
+        </Row>
 
-        {/* Business Strategy - Show if AI generated these fields OR in edit mode */}
-        {(analysis.businessModel || analysis.websiteGoals || analysis.blogStrategy || editMode) && (
-          <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
-            {(analysis.businessModel || editMode) && (
-              <Col xs={24} lg={8}>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: 'var(--color-background-container)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border-base)',
-                  height: '100%'
-                }}>
-                  <Text strong style={{
-                    color: 'var(--color-text-primary)',
-                    fontSize: responsive.fontSize.text,
-                    marginBottom: '8px',
-                    display: 'block'
-                  }}>
-                    Business Model
-                  </Text>
-                  {editMode ? (
-                    <Input.TextArea
-                      value={editableResults?.businessModel || ''}
-                      onChange={(e) => setEditableResults({ ...editableResults, businessModel: e.target.value })}
-                      rows={3}
-                      placeholder="Describe the business model..."
-                      style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
-                    />
-                  ) : (
-                    <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                      {analysis.businessModel}
-                    </Text>
-                  )}
-                </div>
-              </Col>
-            )}
+        {/* Business Strategy - show sections with data or informative empty state (Issue #185) */}
+        <Row gutter={responsive.gutter} style={{ marginTop: '16px' }}>
+          <Col xs={24} lg={8}>
+            <div id="analysis-business-model" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
+              }}>
+                Business Model
+              </Text>
+              {editMode ? (
+                <Input.TextArea
+                  value={editableResults?.businessModel || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, businessModel: e.target.value })}
+                  rows={3}
+                  placeholder="Describe the business model..."
+                  style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                />
+              ) : (analysis.businessModel && String(analysis.businessModel).trim()) ? (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.businessModel}
+                </Text>
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="business_model_failed"
+                  compact
+                  dataTestId="empty-business-model"
+                  actions={[{ label: systemVoice.analysis.emptyStates.business_model_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
+          <Col xs={24} lg={8}>
+            <div id="analysis-website-goals" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
+              }}>
+                Website Goals
+              </Text>
+              {editMode ? (
+                <Input.TextArea
+                  value={editableResults?.websiteGoals || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, websiteGoals: e.target.value })}
+                  rows={3}
+                  placeholder="What are the website goals?"
+                  style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                />
+              ) : (analysis.websiteGoals && String(analysis.websiteGoals).trim()) ? (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.websiteGoals}
+                </Text>
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="website_goals_failed"
+                  compact
+                  dataTestId="empty-website-goals"
+                  actions={[{ label: systemVoice.analysis.emptyStates.website_goals_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
+          <Col xs={24} lg={8}>
+            <div id="analysis-blog-strategy" style={{ scrollMarginTop: 100, padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-base)', height: '100%' }}>
+              <Text strong style={{
+                color: 'var(--color-text-primary)',
+                fontSize: responsive.fontSize.text,
+                marginBottom: '8px',
+                display: 'block'
+              }}>
+                Blog Strategy
+              </Text>
+              {editMode ? (
+                <Input.TextArea
+                  value={editableResults?.blogStrategy || ''}
+                  onChange={(e) => setEditableResults({ ...editableResults, blogStrategy: e.target.value })}
+                  rows={3}
+                  placeholder="Describe the blog strategy..."
+                  style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+                />
+              ) : (analysis.blogStrategy && String(analysis.blogStrategy).trim()) ? (
+                <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
+                  {analysis.blogStrategy}
+                </Text>
+              ) : showSectionEmptyStates ? (
+                <AnalysisEmptyState
+                  type="blog_strategy_failed"
+                  compact
+                  dataTestId="empty-blog-strategy"
+                  actions={[{ label: systemVoice.analysis.emptyStates.blog_strategy_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
+                />
+              ) : (
+                <Spin size="small" />
+              )}
+            </div>
+          </Col>
+        </Row>
 
-            {(analysis.websiteGoals || editMode) && (
-              <Col xs={24} lg={8}>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: 'var(--color-background-container)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border-base)',
-                  height: '100%'
-                }}>
-                  <Text strong style={{
-                    color: 'var(--color-text-primary)',
-                    fontSize: responsive.fontSize.text,
-                    marginBottom: '8px',
-                    display: 'block'
-                  }}>
-                    Website Goals
-                  </Text>
-                  {editMode ? (
-                    <Input.TextArea
-                      value={editableResults?.websiteGoals || ''}
-                      onChange={(e) => setEditableResults({ ...editableResults, websiteGoals: e.target.value })}
-                      rows={3}
-                      placeholder="What are the website goals?"
-                      style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
-                    />
-                  ) : (
-                    <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                      {analysis.websiteGoals}
-                    </Text>
-                  )}
-                </div>
-              </Col>
-            )}
-
-            {(analysis.blogStrategy || editMode) && (
-              <Col xs={24} lg={8}>
-                <div style={{
-                  padding: '16px',
-                  backgroundColor: 'var(--color-background-container)',
-                  borderRadius: 'var(--radius-lg)',
-                  border: '1px solid var(--color-border-base)',
-                  height: '100%'
-                }}>
-                  <Text strong style={{
-                    color: 'var(--color-text-primary)',
-                    fontSize: responsive.fontSize.text,
-                    marginBottom: '8px',
-                    display: 'block'
-                  }}>
-                    Blog Strategy
-                  </Text>
-                  {editMode ? (
-                    <Input.TextArea
-                      value={editableResults?.blogStrategy || ''}
-                      onChange={(e) => setEditableResults({ ...editableResults, blogStrategy: e.target.value })}
-                      rows={3}
-                      placeholder="Describe the blog strategy..."
-                      style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
-                    />
-                  ) : (
-                    <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
-                      {analysis.blogStrategy}
-                    </Text>
-                  )}
-                </div>
-              </Col>
-            )}
-          </Row>
-        )}
-
-        {/* Keywords if available or in edit mode */}
-        {((analysis.keywords && analysis.keywords.length > 0) || editMode) && (
-          <div style={{
-            marginTop: '20px',
-            padding: '16px',
-            backgroundColor: 'var(--color-background-container)',
-            borderRadius: '8px'
+        {/* Keywords - show section with data or informative empty state (Issue #185) */}
+        <div id="analysis-keywords" style={{ scrollMarginTop: 100, marginTop: '20px', padding: '16px', backgroundColor: 'var(--color-background-container)', borderRadius: '8px' }}>
+          <Text strong style={{
+            color: 'var(--color-text-primary)',
+            fontSize: responsive.fontSize.text,
+            marginBottom: '12px',
+            display: 'block'
           }}>
-            <Text strong style={{
-              color: 'var(--color-text-primary)',
-              fontSize: responsive.fontSize.text,
-              marginBottom: '12px',
-              display: 'block'
-            }}>
-              Key Topics & Keywords
-            </Text>
-            {editMode ? (
-              <Input.TextArea
-                value={editableResults?.keywords || ''}
-                onChange={(e) => setEditableResults({ ...editableResults, keywords: e.target.value })}
-                rows={2}
-                placeholder="Enter keywords separated by commas (e.g., topic 1, topic 2, topic 3)"
-                style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
-              />
-            ) : (
-              <Space wrap>
-                {analysis.keywords.map((keyword, index) => (
-                  <Tag
-                    key={index}
-                    style={{
-                      borderRadius: 'var(--radius-xl)',
-                      fontSize: responsive.fontSize.small,
-                      padding: '4px 8px'
-                    }}
-                  >
-                    {keyword}
-                  </Tag>
-                ))}
-              </Space>
-            )}
-          </div>
-        )}
+            Key Topics & Keywords
+          </Text>
+          {editMode ? (
+            <Input.TextArea
+              value={editableResults?.keywords || ''}
+              onChange={(e) => setEditableResults({ ...editableResults, keywords: e.target.value })}
+              rows={2}
+              placeholder="Enter keywords separated by commas (e.g., topic 1, topic 2, topic 3)"
+              style={{ fontSize: responsive.fontSize.small, resize: 'none' }}
+            />
+          ) : (analysis.keywords && analysis.keywords.length > 0) ? (
+            <Space wrap>
+              {analysis.keywords.map((keyword, index) => (
+                <Tag
+                  key={index}
+                  style={{
+                    borderRadius: 'var(--radius-xl)',
+                    fontSize: responsive.fontSize.small,
+                    padding: '4px 8px'
+                  }}
+                >
+                  {keyword}
+                </Tag>
+              ))}
+            </Space>
+          ) : showSectionEmptyStates ? (
+            <AnalysisEmptyState
+              type="keywords_failed"
+              compact
+              dataTestId="empty-keywords"
+              actions={[{ label: systemVoice.analysis.emptyStates.keywords_failed.primaryAction, onClick: () => {}, primary: true }]}
+            />
+          ) : (
+            <Spin size="small" />
+          )}
+        </div>
 
       </Card>
     );
@@ -1533,6 +1530,18 @@ const WebsiteAnalysisStepStandalone = ({
       <Card style={{ ...cardStyle }}>
         {/* Always show URL input - greyed out when analysis exists and not in edit mode */}
         {renderUrlInput()}
+
+        {/* Informative empty state when analysis failed (Issue #185) */}
+        {lastAnalysisError && !loading && (
+          <AnalysisEmptyState
+            type={lastAnalysisError.type}
+            dataTestId="analysis-failed-empty-state"
+            actions={[
+              { label: systemVoice.analysis.emptyStates.scraping_failed.primaryAction, onClick: () => { setLastAnalysisError(null); handleWebsiteSubmit(); }, primary: true },
+              { label: systemVoice.analysis.emptyStates.scraping_failed.secondaryAction, onClick: () => { setLastAnalysisError(null); setWebsiteUrl && setWebsiteUrl(''); }, primary: false },
+            ]}
+          />
+        )}
 
         {/* Show streaming UI when we have a narrative job (during and after API loading so streamed content persists) */}
         {(loading || analysisJobId) && renderAnalysisLoading()}

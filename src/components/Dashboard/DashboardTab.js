@@ -97,7 +97,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     const handleSessionInitialization = async () => {
       // Only initialize session for anonymous users if session doesn't exist
       if (!user && !sessionId && tabMode.mode === 'focus') {
-        console.log('🆔 DashboardTab: Initializing session for anonymous user');
         try {
           await initializeSession();
         } catch (error) {
@@ -120,20 +119,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     if (stepResults.home.analysisCompleted && hasValidAnalysisData) {
       // Save with a small delay to ensure all React updates are complete
       setTimeout(() => {
-        console.log('💾 Auto-saving workflow state after analysis completion');
-        const saved = saveWorkflowState();
-
-        // Verify what was actually saved
-        const verification = localStorage.getItem('automate-my-blog-workflow-state');
-        if (verification) {
-          const parsedVerification = JSON.parse(verification);
-          console.log('✅ Workflow state saved and verified:', {
-            hasWebsiteUrl: !!parsedVerification.stepResults?.home?.websiteAnalysis?.websiteUrl,
-            websiteUrl: parsedVerification.stepResults?.home?.websiteAnalysis?.websiteUrl
-          });
-        } else {
-          console.error('❌ No data found in localStorage after attempted save!');
-        }
+        saveWorkflowState();
       }, 200); // Slightly longer delay for state propagation
     }
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
@@ -161,11 +147,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
     // Update CTA data if present
     if (data.ctas || data.ctaCount !== undefined) {
-      console.log('🎯 [CTA DEBUG] Dashboard: Storing CTA data:', {
-        ctaCount: data.ctaCount,
-        hasSufficientCTAs: data.hasSufficientCTAs,
-        ctas: data.ctas
-      });
       updateCTAData({
         ctas: data.ctas || [],
         ctaCount: data.ctaCount || 0,

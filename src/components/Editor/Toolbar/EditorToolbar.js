@@ -240,7 +240,7 @@ const EditorToolbar = ({
                 ...(button.isActive && {
                   backgroundColor: colors.primary,
                   borderColor: colors.primary,
-                  color: 'white'
+                  color: 'var(--color-text-on-primary)'
                 })
               }}
             >
@@ -267,7 +267,7 @@ const EditorToolbar = ({
                 ...(button.isActive && {
                   backgroundColor: colors.primary,
                   borderColor: colors.primary,
-                  color: 'white'
+                  color: 'var(--color-text-on-primary)'
                 })
               }}
             >
@@ -293,7 +293,7 @@ const EditorToolbar = ({
                 ...(button.isActive && {
                   backgroundColor: colors.primary,
                   borderColor: colors.primary,
-                  color: 'white'
+                  color: 'var(--color-text-on-primary)'
                 })
               }}
             >
@@ -319,7 +319,7 @@ const EditorToolbar = ({
                 ...(button.isActive && {
                   backgroundColor: colors.primary,
                   borderColor: colors.primary,
-                  color: 'white'
+                  color: 'var(--color-text-on-primary)'
                 })
               }}
             >
