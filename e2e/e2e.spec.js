@@ -101,10 +101,11 @@ async function clickCreatePostButton(page, options = {}) {
     try {
       await createPostBtn.waitFor({ state: 'visible', timeout: 30000 });
     } catch (_) {
-      // Fallback: first "Create Post" / "Get One Free Post" in #posts (first topic card) when card locator fails in CI.
-      createPostBtn = postsSection.getByRole('button', { name: /Create Post|Get One Free Post/i }).first();
+      // Fallback: first topic card's button (by data-testid) when card+title locator fails. Button text can be "Create Post", "Generate post", "Get One Free Post", or "Buy more posts".
+      const fallbackCard = postsSection.locator('.ant-card').filter({ has: postsSection.locator('[data-testid="create-post-from-topic"]') }).first();
+      createPostBtn = fallbackCard.locator('[data-testid="create-post-from-topic"]').getByRole('button').first();
       await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
-      await createPostBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await createPostBtn.waitFor({ state: 'visible', timeout: 20000 });
     }
   } else {
     createPostBtn = postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
