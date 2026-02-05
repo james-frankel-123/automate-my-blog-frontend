@@ -79,5 +79,21 @@ describe('HTMLPreview', () => {
       render(<HTMLPreview content={markdown} forceMarkdown />);
       expect(screen.getByText(/\[IMAGE:hero_image:placeholder\]/)).toBeInTheDocument();
     });
+
+    it('renders actual hero image when heroImageUrl is passed for ![IMAGE:hero_image:...]', () => {
+      const markdown = 'Intro.\n\n![IMAGE:hero_image:Professional photograph of a team.]\n\nMore text.';
+      const heroUrl = 'https://example.com/hero.jpg';
+      render(<HTMLPreview content={markdown} forceMarkdown heroImageUrl={heroUrl} />);
+      const img = screen.getByRole('img', { name: /IMAGE:hero_image/i });
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', heroUrl);
+      expect(img).toHaveClass('hero-image');
+    });
+
+    it('renders placeholder when heroImageUrl is not passed for standalone ![IMAGE:hero_image:...]', () => {
+      const markdown = 'Text ![IMAGE:hero_image:description] end.';
+      render(<HTMLPreview content={markdown} forceMarkdown />);
+      expect(screen.getByText(/\[IMAGE:hero_image:description\]/)).toBeInTheDocument();
+    });
   });
 });
