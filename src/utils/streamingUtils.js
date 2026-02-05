@@ -31,8 +31,7 @@ function looksLikeJsonKeyValue(str) {
 /** Chunks that are only JSON structure/punctuation (backend sometimes streams wrapper JSON as content-chunk). */
 const JSON_STRUCTURE_ONLY = /^[\s\[\]{}\]:,"\\\n\r`]+$/;
 /** Single tokens that are likely wrapper keys streamed as content (e.g. ctaSuggestions, seoOptimizationScore). */
-const STREAMED_JSON_KEY_TOKENS = new Set(['cta', 'seo', 'suggestions', 'optimization', 'score']);
-
+const STREAMED_JSON_KEY_TOKENS = new Set(['cta', 'seo', 'suggestions', 'optimization', 'score', 'json', 'metadescription']);
 /** Return false if chunk should not be appended (JSON structure streamed as "content" instead of body). */
 function isAppendableContentChunk(chunk) {
   if (typeof chunk !== 'string' || !chunk.length) return false;
@@ -42,6 +41,12 @@ function isAppendableContentChunk(chunk) {
   if (JSON_STRUCTURE_ONLY.test(t)) return false;
   if (/^\d+$|^\+$/.test(t)) return false;
   if (t.length <= 20 && STREAMED_JSON_KEY_TOKENS.has(t.toLowerCase())) return false;
+  if (t === 'metaDescription') return false;
+  if (/^#\s|^[-*>\d.]\s/m.test(t)) return true;
+  if (!t.includes('\n') && t.length >= 15 && t.length <= 95 && !t.includes('.')) {
+    const caps = t.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).length;
+    if (caps >= 3) return false;
+  }
   return true;
 }
 
@@ -117,15 +122,14 @@ export function extractStreamCompleteContent(data) {
   const normalized = stripMarkdownCodeFences(content).trim();
   const wasFenced = content.trim().startsWith('```') || content.trim().startsWith('\\`\\`\\`');
 
-  // If content looks like JSON (e.g. full blog object or ProseMirror doc),
-  // parse and extract inner content so we never show raw JSON in the editor.
+  let out = '';
   if (normalized.startsWith('{') || normalized.startsWith('[')) {
-    return tryExtractFromJsonString(normalized);
+    out = tryExtractFromJsonString(normalized) || '';
+  } else {
+    const fromKeyValue = extractContentFromKeyValueText(normalized);
+    out = fromKeyValue ? fromKeyValue : (wasFenced ? normalized : content);
   }
-  // Key-value style (e.g. "title\n...\nsubtitle\n...\ncontent\n<p>...</p>"): show only content body
-  const fromKeyValue = extractContentFromKeyValueText(normalized);
-  if (fromKeyValue) return fromKeyValue;
-  return wasFenced ? normalized : content;
+  return out ? unescapeNewlinesAndTabs(out) : out;
 }
 
 /**
@@ -144,8 +148,18 @@ function stripContentFragmentNoise(str) {
 }
 
 /**
+ * Ensure literal backslash-n and backslash-t in string become real newlines/tabs.
+ * JSON.parse already turns "\n" into newline; this handles double-encoded or raw strings.
+ */
+function unescapeNewlinesAndTabs(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+}
+
+/**
  * Normalize a content string: strip code fences, parse JSON, return .content (or plain text).
  * Use when the backend returns a raw/fenced string (e.g. final job result.content).
+ * Also unescapes literal \n and \t so newlines render correctly in the preview.
  *
  * @param {string} str - Raw content (may be fenced JSON or plain HTML/text)
  * @returns {string} Displayable content, or str if not JSON/fenced
@@ -154,7 +168,7 @@ export function normalizeContentString(str) {
   if (typeof str !== 'string' || !str.trim()) return str;
   const out = extractStreamCompleteContent({ content: str });
   if (out === '') return str;
-  return stripContentFragmentNoise(out);
+  return unescapeNewlinesAndTabs(stripContentFragmentNoise(out));
 }
 
 
