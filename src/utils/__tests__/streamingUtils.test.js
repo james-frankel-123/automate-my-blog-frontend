@@ -50,6 +50,31 @@ describe('streamingUtils', () => {
       expect(extractStreamChunk({ content: 'title' })).toBe('');
       expect(extractStreamChunk({ content: 'content:' })).toBe('');
     });
+
+    it('extracts .content from content-chunk payloads (field + content)', () => {
+      // Backend sends content-chunk events: { "field": "content", "content": "," } etc.
+      expect(extractStreamChunk({ field: 'content', content: ',' })).toBe(',');
+      expect(extractStreamChunk({ field: 'content', content: ' selecting' })).toBe(' selecting');
+      expect(extractStreamChunk({ field: 'content', content: ' the' })).toBe(' the');
+      expect(extractStreamChunk({ field: 'content', content: ' right' })).toBe(' right');
+      expect(extractStreamChunk({ field: 'content', content: ' AI' })).toBe(' AI');
+    });
+
+    it('accumulates content-chunk stream into full text', () => {
+      const chunks = [
+        { field: 'content', content: ',' },
+        { field: 'content', content: ' selecting' },
+        { field: 'content', content: ' the' },
+        { field: 'content', content: ' right' },
+        { field: 'content', content: ' AI' },
+        { field: 'content', content: ' consulting' },
+        { field: 'content', content: ' service' },
+        { field: 'content', content: ' is' },
+        { field: 'content', content: ' crucial' }
+      ];
+      const accumulated = chunks.map((data) => extractStreamChunk(data)).join('');
+      expect(accumulated).toBe(', selecting the right AI consulting service is crucial');
+    });
   });
 
   describe('extractStreamCompleteContent', () => {
@@ -145,6 +170,21 @@ describe('streamingUtils', () => {
       const keyValue = 'title\nPost\ncontent:\n<p>Body</p>';
       expect(extractStreamCompleteContent({ content: keyValue })).toBe(
         '<p>Body</p>'
+      );
+    });
+
+    it('strips backtick-escaped fences and returns only .content (title/subtitle/content JSON)', () => {
+      // Backend sends \`\`\`json\n{...}\n\`\`\` (backslash-backtick escaped)
+      const escapedFence = '\\`\\`\\`json\n{"title":"My Post","subtitle":"A sub","content":"<p>Body</p>"}\n\\`\\`\\`';
+      expect(extractStreamCompleteContent({ content: escapedFence })).toBe(
+        '<p>Body</p>'
+      );
+    });
+
+    it('extracts .content from backtick-wrapped JSON with title, subtitle, content keys', () => {
+      const fenced = '```json\n{"title":"T","subtitle":"S","content":"<p>Only this</p>"}\n```';
+      expect(extractStreamCompleteContent({ content: fenced })).toBe(
+        '<p>Only this</p>'
       );
     });
   });

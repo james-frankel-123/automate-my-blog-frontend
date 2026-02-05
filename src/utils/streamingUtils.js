@@ -75,9 +75,9 @@ export function extractStreamCompleteContent(data) {
     if (typeof content !== 'string') return '';
   }
 
-  // Backend may wrap payload in markdown code fences (```json ... ```); strip first.
+  // Backend may wrap payload in markdown code fences (``` or backtick-escaped \`\`\`); strip first.
   const normalized = stripMarkdownCodeFences(content).trim();
-  const wasFenced = content.trim().startsWith('```');
+  const wasFenced = content.trim().startsWith('```') || content.trim().startsWith('\\`\\`\\`');
 
   // If content looks like JSON (e.g. full blog object or ProseMirror doc),
   // parse and extract inner content so we never show raw JSON in the editor.
@@ -106,15 +106,19 @@ export function normalizeContentString(str) {
 
 /**
  * Strip markdown code fences (``` or ```json etc.) from a string.
- * Backend may wrap JSON or content in code blocks; we unwrap so we can parse or display inner content.
+ * Backend may send backtick-escaped JSON (e.g. \`\`\`json ... \`\`\` or literal ```).
+ * We unwrap so we can parse and display only the .content field (title/subtitle/content structure).
  *
- * @param {string} str - Possibly fenced string
+ * @param {string} str - Possibly fenced string (may use escaped backticks \`)
  * @returns {string} Inner content or original string if no fences
  */
 function stripMarkdownCodeFences(str) {
   if (typeof str !== 'string' || !str.trim()) return str;
   const trimmed = str.trim();
-  const open = '```';
+  const openLiteral = '```';
+  const openEscaped = '\\`\\`\\`'; // backslash-backtick repeated 3 times
+  const isEscapedFence = trimmed.startsWith(openEscaped);
+  const open = isEscapedFence ? openEscaped : openLiteral;
   if (!trimmed.startsWith(open)) return str;
   const afterOpen = trimmed.slice(open.length);
   const firstNewline = afterOpen.indexOf('\n');
