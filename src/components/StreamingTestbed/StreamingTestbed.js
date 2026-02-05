@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Button, Card, Typography, Space, Divider, Alert, Input, Collapse } from 'antd';
 import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined } from '@ant-design/icons';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
+import { replaceArticlePlaceholders } from '../../utils/articlePlaceholders';
 import HTMLPreview from '../HTMLPreview/HTMLPreview';
 
 const { Text } = Typography;
@@ -42,6 +43,7 @@ const LONG_CONTENT_CHUNKS = [
   '- **Item one**: streaming should show markdown as it arrives.\n',
   '- **Item two**: no raw `#` or `**` in the preview.\n',
   '- **Item three**: headings, bold, and links render correctly.\n\n',
+  '[ARTICLE:0]\n\n',
   '## Section three\n\n',
   'Paragraph. You can scroll the Rendered preview while the stream is running to verify ',
   'that earlier content is already rendered. [Example link](https://example.com) and more text.\n\n',
@@ -54,6 +56,7 @@ const LONG_CONTENT_CHUNKS = [
   '> Blockquote: The frontend should never show raw JSON or key-value text in the preview.\n\n',
   'After the blockquote, more prose. Nulla facilisi nullam vehicula ipsum a arcu cursus. ',
   'Commodo sed egestas egestas fringilla phasellus faucibus scelerisque eleifend.\n\n',
+  '[ARTICLE:1]\n\n',
   '## Section six\n\n',
   'Second list:\n\n',
   '- Alpha: first item in the list.\n',
@@ -107,6 +110,12 @@ const SIMULATED_STREAM = [
 
 /** Sample image URL for testing hero image placeholder → image swap in the testbed */
 const SAMPLE_HERO_IMAGE_URL = 'https://picsum.photos/800/400';
+
+/** Sample related articles for testbed (same shape as news search stream: url, title, sourceName, publishedAt, urlToImage, description) */
+const SAMPLE_RELATED_ARTICLES = [
+  { url: 'https://example.com/article-1', title: 'Streaming APIs and Real-Time Content', sourceName: 'Tech News', publishedAt: '2024-01-15T12:00:00Z', urlToImage: 'https://picsum.photos/400/225?random=1', description: 'How streaming changes how we build products.' },
+  { url: 'https://example.com/article-2', title: 'Frontend Hand-offs for SSE Streams', sourceName: 'Dev Blog', publishedAt: '2024-01-14T09:00:00Z', description: 'Same pattern as tweets, YouTube, and topics.' },
+];
 
 function StreamingTestbed() {
   const [content, setContent] = useState('');
@@ -288,10 +297,28 @@ function StreamingTestbed() {
 
         <Divider>Results</Divider>
 
+        <Card size="small" title="Related articles (sample)" style={{ marginBottom: 16 }}>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 8 }}>
+            [ARTICLE:0], [ARTICLE:1] in content show animated loading placeholders until articles arrive; then article cards.
+          </Text>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: 'var(--color-text-secondary)' }}>
+            {SAMPLE_RELATED_ARTICLES.map((a, i) => (
+              <li key={a?.url || i} style={{ marginBottom: 6 }}>
+                {a?.title} — {a?.sourceName}
+                {a?.publishedAt ? ` · ${new Date(a.publishedAt).toLocaleDateString()}` : ''}
+              </li>
+            ))}
+          </ul>
+        </Card>
+
         <Card size="small" title="Rendered preview" style={{ marginBottom: 16 }}>
           <div style={{ color: '#fff' }}>
             <HTMLPreview
-              content={normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.')}
+              content={replaceArticlePlaceholders(
+                normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.'),
+                SAMPLE_RELATED_ARTICLES
+              )}
+              relatedArticles={SAMPLE_RELATED_ARTICLES}
               forceMarkdown={true}
               heroImageUrl={heroImageUrl || undefined}
               style={{ minHeight: 120, color: '#fff' }}

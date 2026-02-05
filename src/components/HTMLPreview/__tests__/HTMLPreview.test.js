@@ -95,5 +95,25 @@ describe('HTMLPreview', () => {
       render(<HTMLPreview content={markdown} forceMarkdown />);
       expect(screen.getByText(/\[IMAGE:hero_image:description\]/)).toBeInTheDocument();
     });
+
+    it('replaces article placeholder token with loading UI when relatedArticles missing', () => {
+      const content = 'Intro.\n\n__ARTICLE_PLACEHOLDER_0__\n\nMore.';
+      render(<HTMLPreview content={content} forceMarkdown relatedArticles={[]} />);
+      expect(screen.getByText(/Loading article…/)).toBeInTheDocument();
+      expect(screen.getByText(/Intro\./)).toBeInTheDocument();
+      expect(screen.getByText(/More\./)).toBeInTheDocument();
+    });
+
+    it('replaces article placeholder token with article card when relatedArticles provided', () => {
+      const content = 'Before __ARTICLE_PLACEHOLDER_0__ after.';
+      const relatedArticles = [
+        { url: 'https://example.com/news', title: 'Test Article', sourceName: 'Test Source' },
+      ];
+      render(<HTMLPreview content={content} forceMarkdown relatedArticles={relatedArticles} />);
+      expect(screen.getByText('Test Article')).toBeInTheDocument();
+      expect(screen.getByText('Test Source')).toBeInTheDocument();
+      const link = screen.getByRole('link', { name: /Test Article/i });
+      expect(link).toHaveAttribute('href', 'https://example.com/news');
+    });
   });
 });

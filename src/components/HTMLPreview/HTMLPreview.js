@@ -216,13 +216,52 @@ const markdownToHTML = (markdown, options = {}) => {
   return result.join('\n');
 };
 
+const ARTICLE_PLACEHOLDER_TOKEN_REGEX = /__ARTICLE_PLACEHOLDER_(\d+)__/g;
+
+/**
+ * Build HTML for an article placeholder slot: animated loading box or article card.
+ * @param {number} index - Placeholder index
+ * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string, urlToImage?: string }>} relatedArticles
+ * @returns {string} Safe HTML string
+ */
+function getArticlePlaceholderHtml(index, relatedArticles = []) {
+  const articles = Array.isArray(relatedArticles) ? relatedArticles : [];
+  const article = articles[index];
+  const safeTitle = (s) => escapeAttr(String(s ?? '').slice(0, 200));
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u ?? '')) ? escapeAttr(u) : '');
+  if (article && (article.url || article.title)) {
+    const url = article.url || '#';
+    const title = safeTitle(article.title) || 'Article';
+    const source = safeTitle(article.sourceName);
+    const meta = [source, article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''].filter(Boolean).join(' · ');
+    const img = article.urlToImage && /^https?:\/\//i.test(article.urlToImage) ? escapeAttr(article.urlToImage) : '';
+    return (
+      '<div class="markdown-article-card">' +
+      (img ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-link">` +
+        `<img src="${img}" alt="" class="markdown-article-card-thumb" />` + '</a>' : '') +
+      '<div class="markdown-article-card-body">' +
+      `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-title">${title}</a>` +
+      (meta ? `<span class="markdown-article-card-meta">${escapeAttr(meta)}</span>` : '') +
+      (article.description ? `<span class="markdown-article-card-desc">${escapeAttr(String(article.description).slice(0, 200))}${String(article.description).length > 200 ? '…' : ''}</span>` : '') +
+      '</div></div>'
+    );
+  }
+  return (
+    '<div class="markdown-article-placeholder" title="Loading article…">' +
+    '<span class="markdown-article-placeholder-icon" aria-hidden="true">📰</span>' +
+    '<span class="markdown-article-placeholder-text">Loading article…</span>' +
+    '</div>'
+  );
+}
+
 /**
  * HTML Preview Component
  * Renders HTML content with proper styling and typography settings.
  * When forceMarkdown is true (e.g. streamed blog content), always parses as Markdown.
  * Otherwise converts markdown to HTML only when content does not look like pre-rendered HTML.
+ * Optional relatedArticles: used to replace __ARTICLE_PLACEHOLDER_n__ tokens with article cards or loading UI.
  */
-const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl }) => {
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles }) => {
   if (!content || !content.trim()) {
     return (
       <div style={{
@@ -239,14 +278,22 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
 
   // Streamed blog content: always treat as Markdown. Otherwise skip conversion only when content looks like HTML.
   const looksLikeHtml = !forceMarkdown && /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(content);
-  const rawHtml = looksLikeHtml ? content : markdownToHTML(content, { heroImageUrl });
-  
+  let rawHtml = looksLikeHtml ? content : markdownToHTML(content, { heroImageUrl });
+
+  // Replace article placeholder tokens with loading box or article card HTML
+  if (rawHtml.includes('__ARTICLE_PLACEHOLDER_')) {
+    rawHtml = rawHtml.replace(ARTICLE_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
+      const index = parseInt(indexStr, 10);
+      return Number.isNaN(index) || index < 0 ? '' : getArticlePlaceholderHtml(index, relatedArticles);
+    });
+  }
+
   // Sanitize HTML to prevent XSS attacks
   const htmlContent = DOMPurify.sanitize(rawHtml, {
-    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 
-                   'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'div', 'span', 
+    ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
+                   'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'div', 'span',
                    'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id', 'title', 'aria-hidden'],
     ALLOW_DATA_ATTR: false
   });
 
@@ -582,6 +629,84 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         @keyframes hero-shimmer {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
+        }
+
+        /* Article placeholder: loading state (distinct from hero/video) */
+        div :global(.markdown-article-placeholder) {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          min-height: 88px;
+          margin: ${paragraphSpacing}px 0;
+          padding: 16px 20px;
+          border-radius: 8px;
+          border: 1px dashed var(--color-gray-300);
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.08) 100%);
+          animation: articlePlaceholderPulse 1.8s ease-in-out infinite;
+          color: var(--color-text-tertiary);
+        }
+        div :global(.markdown-article-placeholder-icon) {
+          font-size: 22px;
+          opacity: 0.8;
+          animation: articlePlaceholderIconPulse 1.2s ease-in-out infinite;
+        }
+        div :global(.markdown-article-placeholder-text) {
+          font-size: 13px;
+          font-style: italic;
+        }
+        @keyframes articlePlaceholderPulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.92; }
+        }
+        @keyframes articlePlaceholderIconPulse {
+          0%, 100% { opacity: 0.8; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.06); }
+        }
+
+        /* Article card (loaded) */
+        div :global(.markdown-article-card) {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          margin: ${paragraphSpacing}px 0;
+          padding: 12px;
+          border-radius: 8px;
+          border: 1px solid var(--color-gray-200);
+          background: var(--color-background-container);
+          transition: box-shadow 0.2s ease;
+        }
+        div :global(.markdown-article-card:hover) {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        div :global(.markdown-article-card-thumb) {
+          width: 100px;
+          height: 68px;
+          object-fit: cover;
+          border-radius: 6px;
+          flex-shrink: 0;
+        }
+        div :global(.markdown-article-card-body) {
+          flex: 1;
+          min-width: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        div :global(.markdown-article-card-title) {
+          font-weight: 600;
+          font-size: 13px;
+          color: var(--color-primary);
+          text-decoration: none;
+          display: block;
+        }
+        div :global(.markdown-article-card-title:hover) {
+          text-decoration: underline;
+        }
+        div :global(.markdown-article-card-meta),
+        div :global(.markdown-article-card-desc) {
+          font-size: 12px;
+          color: var(--color-text-tertiary);
         }
       `}</style>
     </div>
