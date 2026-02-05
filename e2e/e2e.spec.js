@@ -695,6 +695,13 @@ test.describe('E2E (mocked backend)', () => {
       // Navigation must bring us to the topic choice (posts) section
       const postsSection = page.locator('#posts');
       await expect(postsSection).toBeVisible({ timeout: 10000 });
+      // Assert posts section is in viewport (scroll-to-section actually happened)
+      await page.waitForTimeout(800);
+      const postsInViewport = await postsSection.evaluate((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.top >= 0 && rect.top < window.innerHeight;
+      });
+      expect(postsInViewport).toBe(true);
       // Topic-choice content must be visible (Generate post CTA or Generating Topics)
       const topicChoiceButton = page.locator('#posts').getByRole('button', { name: /Generate post|Generating Topics/i }).first();
       await expect(topicChoiceButton).toBeVisible({ timeout: 8000 });

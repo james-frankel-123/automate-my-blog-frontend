@@ -487,6 +487,20 @@ const DashboardLayout = ({
     }
   };
 
+  // Scroll to section with retries so we don't scroll before React has mounted the section (e.g. after adding to visibleSections)
+  const scrollToSectionWhenReady = (sectionId, delaysMs = [50, 150, 300, 500]) => {
+    let scrolled = false;
+    const tryScroll = () => {
+      if (scrolled) return;
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        scrolled = true;
+      }
+    };
+    delaysMs.forEach((delay) => setTimeout(tryScroll, delay));
+  };
+
   const advanceToNextStep = () => {
     const nextStep = currentStep + 1;
     if (nextStep <= 4) { // Max 5 steps (0-4)
@@ -503,13 +517,8 @@ const DashboardLayout = ({
       // Complete current step
       completeStep(currentStep);
       
-      // Scroll to next section
-      setTimeout(() => {
-        const section = document.getElementById(nextSection);
-        if (section) {
-          section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
+      // Scroll to next section when it's in the DOM (retry so we don't run before React has mounted it)
+      scrollToSectionWhenReady(nextSection);
     }
   };
 
