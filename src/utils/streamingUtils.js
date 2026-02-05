@@ -18,10 +18,31 @@
 /** Known keys that should not be appended as raw text when streamed (title, subtitle, content as labels). */
 const STREAM_KEY_LABELS = /^(?:title|subtitle|content)\s*:?\s*$/i;
 
+/** Backend may send { field: "title", content: "..." } or { field: "content", content: "..." }. Only append when field is "content" or missing. */
+const STREAM_FIELD_BODY_ONLY = /^(?:content|text|body)$/i;
+const STREAM_FIELD_META = /^(?:title|metaDescription|subtitle|description)$/i;
+
 /** True if string looks like JSON key-value pairs (so we never show it as raw text). */
 function looksLikeJsonKeyValue(str) {
   if (typeof str !== 'string' || str.length < 5) return false;
   return /"[^"]*"\s*:\s*"/.test(str) || /"[^"]*"\s*:\s*\[/.test(str);
+}
+
+/** Chunks that are only JSON structure/punctuation (backend sometimes streams wrapper JSON as content-chunk). */
+const JSON_STRUCTURE_ONLY = /^[\s\[\]{}\]:,"\\\n\r`]+$/;
+/** Single tokens that are likely wrapper keys streamed as content (e.g. ctaSuggestions, seoOptimizationScore). */
+const STREAMED_JSON_KEY_TOKENS = new Set(['cta', 'seo', 'suggestions', 'optimization', 'score']);
+
+/** Return false if chunk should not be appended (JSON structure streamed as "content" instead of body). */
+function isAppendableContentChunk(chunk) {
+  if (typeof chunk !== 'string' || !chunk.length) return false;
+  const t = chunk.trim();
+  if (!t.length) return false;
+  if (t === ',' || t === ' ' || t === '.') return true;
+  if (JSON_STRUCTURE_ONLY.test(t)) return false;
+  if (/^\d+$|^\+$/.test(t)) return false;
+  if (t.length <= 20 && STREAMED_JSON_KEY_TOKENS.has(t.toLowerCase())) return false;
+  return true;
 }
 
 export function extractStreamChunk(data) {
@@ -34,6 +55,14 @@ export function extractStreamChunk(data) {
     return tryExtractFromJsonString(data);
   }
 
+  // Object: if backend sends field-scoped chunks, only append body (content/text/body), not title/metaDescription/etc.
+  const field = data.field;
+  if (typeof field === 'string' && field.trim()) {
+    const f = field.trim();
+    if (STREAM_FIELD_META.test(f)) return '';
+    if (!STREAM_FIELD_BODY_ONLY.test(f)) return '';
+  }
+
   // Object: check common fields in order
   const content = data.content ?? data.text ?? data.delta ?? (typeof data.blogPost === 'object' && data.blogPost !== null ? data.blogPost.content : undefined);
   if (typeof content === 'string' && content.trim()) {
@@ -41,7 +70,10 @@ export function extractStreamChunk(data) {
     if (STREAM_KEY_LABELS.test(trimmed)) return '';
     // Content may be a JSON string (e.g. full blog object) - extract displayable text, never append raw JSON
     const extracted = tryExtractFromJsonString(content);
-    return extracted !== '' ? extracted : content.startsWith('{') || looksLikeJsonKeyValue(content) ? '' : content;
+    const out = extracted !== '' ? extracted : content.startsWith('{') || looksLikeJsonKeyValue(content) ? '' : content;
+    // Backend may stream wrapper JSON as content-chunk (e.g. "cta", "seo", "Score", " }\n"); don't append those
+    if (out && !isAppendableContentChunk(out)) return '';
+    return out;
   }
 
   // OpenAI-style: choices[0].delta.content
