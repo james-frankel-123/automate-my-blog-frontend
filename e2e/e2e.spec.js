@@ -483,16 +483,11 @@ test.describe('E2E (mocked backend)', () => {
           await expect(page.locator('text=Sections').first()).toBeVisible({ timeout: 5000 });
         });
 
-        test('mobile viewport: horizontal section nav is visible and clickable', async ({ page }) => {
+        test('mobile viewport: section nav is hidden; analysis content is visible', async ({ page }) => {
           await page.setViewportSize({ width: 375, height: 667 });
           await runWebsiteAnalysisToCompletion(page);
-          const nav = page.locator('[data-testid="analysis-section-nav-mobile"]');
-          await expect(nav).toBeVisible({ timeout: 5000 });
-          const navLinks = nav.locator('[data-testid^="analysis-nav-"]');
-          await expect(navLinks.first()).toBeVisible({ timeout: 3000 });
-          const targetAudienceNavBtn = nav.locator('[data-testid="analysis-nav-analysis-target-audience"]');
-          await targetAudienceNavBtn.click();
-          await page.waitForTimeout(600);
+          const sidebarNav = page.locator('[data-testid="analysis-section-nav-sidebar"]');
+          await expect(sidebarNav).toBeHidden();
           const section = page.locator('#analysis-target-audience');
           await expect(section).toBeVisible({ timeout: 3000 });
         });
