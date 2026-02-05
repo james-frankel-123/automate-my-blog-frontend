@@ -260,6 +260,10 @@ describe('streamingUtils', () => {
       const withNoise = '"": "\n\nThis is the body to display in the Rendered preview.\n\n"}';
       expect(normalizeContentString(withNoise)).toBe('This is the body to display in the Rendered preview.');
     });
+    it('unescapes literal \\n and \\t so newlines render correctly in preview', () => {
+      expect(extractStreamCompleteContent({ content: 'First line\\nSecond line' })).toBe('First line\nSecond line');
+      expect(extractStreamCompleteContent({ content: 'Col1\\tCol2' })).toBe('Col1\tCol2');
+    });
     it('extracts partial content during streaming (no closing quote yet)', () => {
       const partial = '```json\n{\n  "title": "Example",\n  "content": "# Example\n\nThis is the **body**';
       expect(normalizeContentString(partial)).toBe('# Example\n\nThis is the **body**');

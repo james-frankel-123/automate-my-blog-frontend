@@ -122,15 +122,14 @@ export function extractStreamCompleteContent(data) {
   const normalized = stripMarkdownCodeFences(content).trim();
   const wasFenced = content.trim().startsWith('```') || content.trim().startsWith('\\`\\`\\`');
 
-  // If content looks like JSON (e.g. full blog object or ProseMirror doc),
-  // parse and extract inner content so we never show raw JSON in the editor.
+  let out = '';
   if (normalized.startsWith('{') || normalized.startsWith('[')) {
-    return tryExtractFromJsonString(normalized);
+    out = tryExtractFromJsonString(normalized) || '';
+  } else {
+    const fromKeyValue = extractContentFromKeyValueText(normalized);
+    out = fromKeyValue ? fromKeyValue : (wasFenced ? normalized : content);
   }
-  // Key-value style (e.g. "title\n...\nsubtitle\n...\ncontent\n<p>...</p>"): show only content body
-  const fromKeyValue = extractContentFromKeyValueText(normalized);
-  if (fromKeyValue) return fromKeyValue;
-  return wasFenced ? normalized : content;
+  return out ? unescapeNewlinesAndTabs(out) : out;
 }
 
 /**
@@ -149,8 +148,18 @@ function stripContentFragmentNoise(str) {
 }
 
 /**
+ * Ensure literal backslash-n and backslash-t in string become real newlines/tabs.
+ * JSON.parse already turns "\n" into newline; this handles double-encoded or raw strings.
+ */
+function unescapeNewlinesAndTabs(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/\\n/g, '\n').replace(/\\t/g, '\t');
+}
+
+/**
  * Normalize a content string: strip code fences, parse JSON, return .content (or plain text).
  * Use when the backend returns a raw/fenced string (e.g. final job result.content).
+ * Also unescapes literal \n and \t so newlines render correctly in the preview.
  *
  * @param {string} str - Raw content (may be fenced JSON or plain HTML/text)
  * @returns {string} Displayable content, or str if not JSON/fenced
@@ -159,7 +168,7 @@ export function normalizeContentString(str) {
   if (typeof str !== 'string' || !str.trim()) return str;
   const out = extractStreamCompleteContent({ content: str });
   if (out === '') return str;
-  return stripContentFragmentNoise(out);
+  return unescapeNewlinesAndTabs(stripContentFragmentNoise(out));
 }
 
 
