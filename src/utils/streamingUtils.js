@@ -31,8 +31,7 @@ function looksLikeJsonKeyValue(str) {
 /** Chunks that are only JSON structure/punctuation (backend sometimes streams wrapper JSON as content-chunk). */
 const JSON_STRUCTURE_ONLY = /^[\s\[\]{}\]:,"\\\n\r`]+$/;
 /** Single tokens that are likely wrapper keys streamed as content (e.g. ctaSuggestions, seoOptimizationScore). */
-const STREAMED_JSON_KEY_TOKENS = new Set(['cta', 'seo', 'suggestions', 'optimization', 'score']);
-
+const STREAMED_JSON_KEY_TOKENS = new Set(['cta', 'seo', 'suggestions', 'optimization', 'score', 'json', 'metadescription']);
 /** Return false if chunk should not be appended (JSON structure streamed as "content" instead of body). */
 function isAppendableContentChunk(chunk) {
   if (typeof chunk !== 'string' || !chunk.length) return false;
@@ -42,6 +41,12 @@ function isAppendableContentChunk(chunk) {
   if (JSON_STRUCTURE_ONLY.test(t)) return false;
   if (/^\d+$|^\+$/.test(t)) return false;
   if (t.length <= 20 && STREAMED_JSON_KEY_TOKENS.has(t.toLowerCase())) return false;
+  if (t === 'metaDescription') return false;
+  if (/^#\s|^[-*>\d.]\s/m.test(t)) return true;
+  if (!t.includes('\n') && t.length >= 15 && t.length <= 95 && !t.includes('.')) {
+    const caps = t.split(/\s+/).filter((w) => /^[A-Z]/.test(w)).length;
+    if (caps >= 3) return false;
+  }
   return true;
 }
 

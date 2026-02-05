@@ -96,6 +96,14 @@ describe('streamingUtils', () => {
       expect(extractStreamChunk({ field: 'content', content: '+' })).toBe('');
       expect(extractStreamChunk({ field: 'content', content: '# How to Test' })).toBe('# How to Test');
     });
+
+    it('does not append key names or title/subtitle-value chunks streamed as content', () => {
+      expect(extractStreamChunk({ field: 'content', content: 'json' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'metaDescription' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'Mastering Streaming API Testing A Comprehensive Guide' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'Ensure Seamless Data Flow with Effective API Testing' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'Learn how to test streaming APIs effectively.' })).toBe('Learn how to test streaming APIs effectively.');
+    });
   });
 
   describe('extractStreamCompleteContent', () => {
