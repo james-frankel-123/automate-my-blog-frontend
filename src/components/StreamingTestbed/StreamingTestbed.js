@@ -22,8 +22,57 @@ const PRESETS = {
 };
 
 /**
+ * Long markdown body for full streaming test (headings, paragraphs, lists, bold, links).
+ * Split into chunks so the stream builds up over time.
+ */
+const LONG_CONTENT_CHUNKS = [
+  '# Streaming test article\n\n',
+  'This is a **longer** body so you can fully test the streaming preview. ',
+  'The content should render as markdown *while* it streams, not as raw text.\n\n',
+  '## Section one\n\n',
+  'First paragraph: Lorem ipsum dolor sit amet, consectetur adipiscing elit. ',
+  'Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ',
+  'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.\n\n',
+  'Second paragraph: Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore. ',
+  'Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim.\n\n',
+  '## Section two\n\n',
+  'Here is a list:\n\n',
+  '- **Item one**: streaming should show markdown as it arrives.\n',
+  '- **Item two**: no raw `#` or `**` in the preview.\n',
+  '- **Item three**: headings, bold, and links render correctly.\n\n',
+  '## Section three\n\n',
+  'Paragraph. You can scroll the Rendered preview while the stream is running to verify ',
+  'that earlier content is already rendered. [Example link](https://example.com) and more text.\n\n',
+  '## Section four\n\n',
+  'More filler: Pellentesque habitant morbi tristique senectus et netus et malesuada fames. ',
+  'Turpis egestas maecenas pharetra convallis posuere. Nisl purus in mollis nunc sed id semper.\n\n',
+  'Another paragraph: Arcu dictum varius duis at consectetur lorem donec massa. ',
+  'Risus pretium quam vulputate dignissim suspendisse in est ante in.\n\n',
+  '## Section five\n\n',
+  '> Blockquote: The frontend should never show raw JSON or key-value text in the preview.\n\n',
+  'After the blockquote, more prose. Nulla facilisi nullam vehicula ipsum a arcu cursus. ',
+  'Commodo sed egestas egestas fringilla phasellus faucibus scelerisque eleifend.\n\n',
+  '## Section six\n\n',
+  'Second list:\n\n',
+  '- Alpha: first item in the list.\n',
+  '- Beta: second item with **emphasis**.\n',
+  '- Gamma: third item.\n',
+  '- Delta: fourth item for extra length.\n\n',
+  '## Section seven\n\n',
+  'Long paragraph: At volutpat diam ut venenatis tellus in metus vulputate. ',
+  'Eu scelerisque felis imperdiet proin fermentum leo vel. ',
+  'Magna fringilla urna porttitor rhoncus dolor purus non enim. ',
+  'Risus at ultrices mi tempus imperdiet nulla malesuada pellentesque elit.\n\n',
+  '## Section eight\n\n',
+  'Final section. You can scroll the Rendered preview while the stream is running to verify ',
+  'that earlier content is already rendered and that markdown (headings, lists, bold, links) ',
+  'appears correctly throughout. [Another link](https://example.com) and more text. ',
+  'End of test content.',
+];
+
+/**
  * Example event stream: backend streams ``` then "json" then newline then {
- * then newline then keys (title, meta, …) then "content" and its value.
+ * then newline then keys (title, meta, …) then "content" and its value (many chunks).
  * We append all chunks; display = normalizeContentString(accumulated) → only .content.
  */
 const SIMULATED_STREAM = [
@@ -46,7 +95,7 @@ const SIMULATED_STREAM = [
   { field: 'content', content: '"' },
   { field: 'content', content: ': ' },
   { field: 'content', content: '"' },
-  { field: 'content', content: '# Example\n\nThis is the **body** to display in the Rendered preview.' },
+  ...LONG_CONTENT_CHUNKS.map((chunk) => ({ field: 'content', content: chunk })),
   { field: 'content', content: '"' },
   { field: 'content', content: '\n' },
   { field: 'content', content: '}' },
@@ -110,7 +159,8 @@ function StreamingTestbed() {
     setStreamChunks([]);
   }, []);
 
-  const normalizedForPreview = normalizeContentString(content) || content;
+  // Always show only extracted .content (never raw accumulated string) so markdown renders during stream
+  const normalizedForPreview = normalizeContentString(content);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-background-body)', padding: 24 }}>
@@ -225,7 +275,7 @@ function StreamingTestbed() {
         <Card size="small" title="Rendered preview" style={{ marginBottom: 16 }}>
           <div style={{ color: '#fff' }}>
             <HTMLPreview
-              content={normalizedForPreview || 'Stream content above to see preview.'}
+              content={normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.')}
               forceMarkdown={true}
               style={{ minHeight: 120, color: '#fff' }}
             />

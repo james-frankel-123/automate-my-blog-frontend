@@ -3085,7 +3085,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   minHeight: '320px'
                 }}>
                   <HTMLPreview
-                    content={normalizeContentString(editingContent) || editingContent || (generatingContent ? 'Waiting for content…' : '')}
+                    content={normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : '')}
                     typographySettings={typography}
                     forceMarkdown
                     style={{

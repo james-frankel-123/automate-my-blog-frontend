@@ -170,6 +170,19 @@ function extractContentFromKeyValueText(str) {
   // JSON-style key "content": "value" (partial OK for streaming)
   const jsonContentMatch = s.match(/"content"\s*:\s*"((?:[^"\\]|\\.)*)"?\s*[,}\s]*/);
   if (jsonContentMatch) return jsonContentMatch[1].replace(/\\"/g, '"').trim();
+  // Partial stream: "content": " is present but value not closed yet; take rest as display value
+  // so we can render markdown during streaming instead of showing raw accumulated string
+  const contentKeyStart = s.indexOf('"content"');
+  if (contentKeyStart !== -1) {
+    const afterKey = s.slice(contentKeyStart + 9); // after "content"
+    const valueStartMatch = afterKey.match(/\s*:\s*"/);
+    if (valueStartMatch) {
+      const valueStart = contentKeyStart + 9 + valueStartMatch.index + valueStartMatch[0].length;
+      let partial = s.slice(valueStart).replace(/\\"/g, '"');
+      partial = partial.replace(/"\s*[}\],]\s*\r?\n?\s*$/, '').trim();
+      if (partial.length > 0) return partial;
+    }
+  }
   return '';
 }
 
