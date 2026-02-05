@@ -83,37 +83,21 @@ async function runWebsiteAnalysisToCompletion(page) {
 
 /**
  * Click the Create Post / Generate post button (topic → full post).
- * When topicTitle is set, clicks the button inside the topic card with that title so we don't hit the "Generate post" (topics) CTA.
+ * When topicTitle is set, clicks the first topic card's CTA (first button inside [data-testid="create-post-from-topic"] in #posts).
+ * Otherwise clicks the main "Create Post" / "Generate post" button.
  */
 async function clickCreatePostButton(page, options = {}) {
   const { waitForContentResponse = true, topicTitle = null } = options;
   await dismissOpenModalIfPresent(page);
   await waitForNoModal(page, 6000);
   const postsSection = page.locator('#posts');
-  let createPostBtn;
-  if (topicTitle) {
-    // Topic card: first .ant-card that contains the title, then the create-post button inside it.
-    const card = postsSection.locator('.ant-card').filter({ hasText: topicTitle }).first();
-    createPostBtn = card.locator('[data-testid="create-post-from-topic"]').getByRole('button').first();
-    await postsSection.scrollIntoViewIfNeeded().catch(() => {});
-    await page.waitForTimeout(500);
-    await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
-    try {
-      await createPostBtn.waitFor({ state: 'visible', timeout: 30000 });
-    } catch (_) {
-      // Fallback: first topic card's button (by data-testid) when card+title locator fails. Button text can be "Create Post", "Generate post", "Get One Free Post", or "Buy more posts".
-      const fallbackCard = postsSection.locator('.ant-card').filter({ has: postsSection.locator('[data-testid="create-post-from-topic"]') }).first();
-      createPostBtn = fallbackCard.locator('[data-testid="create-post-from-topic"]').getByRole('button').first();
-      await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
-      await createPostBtn.waitFor({ state: 'visible', timeout: 20000 });
-    }
-  } else {
-    createPostBtn = postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
-    await postsSection.scrollIntoViewIfNeeded().catch(() => {});
-    await page.waitForTimeout(300);
-    await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
-    await createPostBtn.waitFor({ state: 'visible', timeout: 25000 });
-  }
+  const createPostBtn = topicTitle
+    ? postsSection.locator('[data-testid="create-post-from-topic"]').getByRole('button').first()
+    : postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
+  await postsSection.scrollIntoViewIfNeeded().catch(() => {});
+  await page.waitForTimeout(500);
+  await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
+  await createPostBtn.waitFor({ state: 'visible', timeout: 35000 });
   if (waitForContentResponse) {
     await Promise.all([
       page.waitForResponse(
