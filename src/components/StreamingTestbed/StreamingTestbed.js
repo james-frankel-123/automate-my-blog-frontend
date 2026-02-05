@@ -2,10 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { Button, Card, Typography, Space, Divider, Alert, Input, Collapse } from 'antd';
 import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined } from '@ant-design/icons';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
-import { replaceArticlePlaceholders } from '../../utils/articlePlaceholders';
-import { replaceTweetPlaceholders } from '../../utils/tweetPlaceholders';
-import { replaceVideoPlaceholders } from '../../utils/videoPlaceholders';
-import HTMLPreview from '../HTMLPreview/HTMLPreview';
+import StreamingPreview from './StreamingPreview';
 
 const { Text } = Typography;
 
@@ -362,20 +359,11 @@ function StreamingTestbed() {
 
         <Card size="small" title="Rendered preview" style={{ marginBottom: 16 }}>
           <div style={{ color: '#fff' }}>
-            <HTMLPreview
-              content={replaceTweetPlaceholders(
-                replaceVideoPlaceholders(
-                  replaceArticlePlaceholders(
-                    normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.'),
-                    SAMPLE_RELATED_ARTICLES
-                  ),
-                  SAMPLE_RELATED_VIDEOS
-                ),
-                SAMPLE_RELATED_TWEETS
-              )}
+            <StreamingPreview
+              content={normalizedForPreview || (content ? 'Streaming…' : 'Stream content above to see preview.')}
               relatedArticles={SAMPLE_RELATED_ARTICLES}
               relatedVideos={SAMPLE_RELATED_VIDEOS}
-              forceMarkdown={true}
+              relatedTweets={SAMPLE_RELATED_TWEETS}
               heroImageUrl={heroImageUrl || undefined}
               style={{ minHeight: 120, color: '#fff' }}
             />
