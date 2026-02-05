@@ -1297,72 +1297,108 @@ body {
   color: var(--color-primary);
 }
 
-/* Message (toast) - portaled to body, so .dark-mode is on html */
+/* Cursor-prompt / top toast messages - fix white-on-white in dark mode */
+html.dark-mode .ant-cursor-prompt,
+.dark-mode .ant-cursor-prompt,
+:root:not(.light-mode) .ant-cursor-prompt {
+  background-color: var(--color-background-elevated) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-base) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+html.dark-mode .ant-cursor-prompt *,
+.dark-mode .ant-cursor-prompt *,
+:root:not(.light-mode) .ant-cursor-prompt * {
+  color: var(--color-text-primary) !important;
+}
+
+/* Message (toast) - portaled to body; use html.dark-mode and !important to override Ant Design tokens */
+/* System dark fallback (vars already set in :root by prefers-color-scheme block) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-mode) .ant-message-notice-content {
+    background-color: var(--color-background-elevated) !important;
+    color: var(--color-text-primary) !important;
+    border: 1px solid var(--color-border-base) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+  :root:not(.light-mode) .ant-message-notice-content span,
+  :root:not(.light-mode) .ant-message-notice-content .anticon {
+    color: var(--color-text-primary) !important;
+  }
+}
+html.dark-mode .ant-message .ant-message-notice-content,
+.dark-mode .ant-message .ant-message-notice-content,
 .dark-mode .ant-message-notice-content {
-  background-color: var(--color-background-elevated);
-  color: var(--color-text-primary);
-  border: 1px solid var(--color-border-base);
-  box-shadow: var(--shadow-md);
+  background-color: var(--color-background-elevated) !important;
+  color: var(--color-text-primary) !important;
+  border: 1px solid var(--color-border-base) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+.dark-mode .ant-message-notice-content span,
+.dark-mode .ant-message-notice-content .anticon {
+  color: var(--color-text-primary) !important;
 }
 
 /* Message type variants (type class can be on content or parent) */
 .dark-mode .ant-message-success .ant-message-notice-content,
 .dark-mode .ant-message-notice-content.ant-message-success {
-  background-color: var(--color-success-bg);
-  border-color: var(--color-success-border);
+  background-color: var(--color-success-bg) !important;
+  border-color: var(--color-success-border) !important;
 }
 
 .dark-mode .ant-message-success .ant-message-notice-content span,
 .dark-mode .ant-message-success .ant-message-notice-content .anticon,
 .dark-mode .ant-message-notice-content.ant-message-success span,
 .dark-mode .ant-message-notice-content.ant-message-success .anticon {
-  color: var(--color-success-dark);
+  color: var(--color-success-dark) !important;
 }
 
 .dark-mode .ant-message-error .ant-message-notice-content,
 .dark-mode .ant-message-notice-content.ant-message-error {
-  background-color: var(--color-error-bg);
-  border-color: var(--color-error-border);
+  background-color: var(--color-error-bg) !important;
+  border-color: var(--color-error-border) !important;
 }
 
 .dark-mode .ant-message-error .ant-message-notice-content span,
 .dark-mode .ant-message-error .ant-message-notice-content .anticon,
 .dark-mode .ant-message-notice-content.ant-message-error span,
 .dark-mode .ant-message-notice-content.ant-message-error .anticon {
-  color: var(--color-error);
+  color: var(--color-error) !important;
 }
 
 .dark-mode .ant-message-warning .ant-message-notice-content,
 .dark-mode .ant-message-notice-content.ant-message-warning {
-  background-color: var(--color-warning-bg);
-  border-color: var(--color-warning-border);
+  background-color: var(--color-warning-bg) !important;
+  border-color: var(--color-warning-border) !important;
 }
 
 .dark-mode .ant-message-warning .ant-message-notice-content span,
 .dark-mode .ant-message-warning .ant-message-notice-content .anticon,
 .dark-mode .ant-message-notice-content.ant-message-warning span,
 .dark-mode .ant-message-notice-content.ant-message-warning .anticon {
-  color: var(--color-warning);
+  color: var(--color-warning) !important;
 }
 
 .dark-mode .ant-message-info .ant-message-notice-content,
 .dark-mode .ant-message-notice-content.ant-message-info {
-  background-color: var(--color-info-bg);
-  border-color: var(--color-info-border);
+  background-color: var(--color-info-bg) !important;
+  border-color: var(--color-info-border) !important;
 }
 
 .dark-mode .ant-message-info .ant-message-notice-content span,
 .dark-mode .ant-message-info .ant-message-notice-content .anticon,
 .dark-mode .ant-message-notice-content.ant-message-info span,
 .dark-mode .ant-message-notice-content.ant-message-info .anticon {
-  color: var(--color-primary);
+  color: var(--color-primary) !important;
 }
 
 .dark-mode .ant-message-loading .ant-message-notice-content span,
 .dark-mode .ant-message-loading .ant-message-notice-content .anticon,
 .dark-mode .ant-message-notice-content.ant-message-loading span,
 .dark-mode .ant-message-notice-content.ant-message-loading .anticon {
-  color: var(--color-text-primary);
+  color: var(--color-text-primary) !important;
 }
 
 /* Notification */
