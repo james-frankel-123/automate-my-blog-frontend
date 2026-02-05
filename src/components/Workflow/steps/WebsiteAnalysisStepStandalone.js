@@ -13,7 +13,7 @@ import { systemVoice } from '../../../copy/systemVoice';
 import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 import { NarrativeAnalysisDisplay } from '../../Dashboard/NarrativeAnalysisDisplay';
-import AnalysisSectionNav, { AnalysisSectionNavHorizontal } from '../../Dashboard/AnalysisSectionNav';
+import AnalysisSectionNav from '../../Dashboard/AnalysisSectionNav';
 import ThinkingPanel from '../../shared/ThinkingPanel';
 import AnalysisEmptyState from '../../EmptyStates/AnalysisEmptyState';
 
@@ -1082,10 +1082,7 @@ const WebsiteAnalysisStepStandalone = ({
 
     return navSections.length >= 2 ? (
       <Row gutter={[24, 0]} style={{ alignItems: 'flex-start' }}>
-        <Col xs={24} md={0} style={{ marginBottom: 8 }} data-testid="analysis-section-nav-mobile">
-          <AnalysisSectionNavHorizontal sections={navSections} onSectionClick={handleNavSectionClick} />
-        </Col>
-        <Col xs={0} md={6} style={{ position: 'sticky', top: 88 }} data-testid="analysis-section-nav-sidebar">
+        <Col xs={0} md={6} style={{ position: 'sticky', top: 88, alignSelf: 'flex-start' }} data-testid="analysis-section-nav-sidebar">
           <AnalysisSectionNav sections={navSections} onSectionClick={handleNavSectionClick} />
         </Col>
         <Col xs={24} md={18}>{content}</Col>
