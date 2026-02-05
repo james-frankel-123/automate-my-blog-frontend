@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse, Space } from 'antd';
-import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined, TeamOutlined } from '@ant-design/icons';
+import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse, Space, Spin } from 'antd';
+import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined, TeamOutlined, LoadingOutlined } from '@ant-design/icons';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -1591,12 +1591,16 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                       </Text>
                     </div>
                   ) : generatingStrategies ? (
-                    <div style={{ textAlign: 'center', padding: '40px' }}>
-                      <div style={{ fontSize: '24px', marginBottom: '16px' }}>🎯</div>
-                      <Title level={4} style={{ color: 'var(--color-primary)' }}>
+                    <div style={{ textAlign: 'center', padding: '48px 40px' }}>
+                      <Spin
+                        size="large"
+                        indicator={<LoadingOutlined style={{ fontSize: 40 }} spin />}
+                        style={{ marginBottom: '20px', display: 'block' }}
+                      />
+                      <Title level={4} style={{ color: 'var(--color-primary)', marginTop: '16px' }}>
                         {systemVoice.audience.generatingStrategies}
                       </Title>
-                      <Text style={{ color: 'var(--color-text-secondary)' }}>
+                      <Text style={{ color: 'var(--color-text-secondary)', display: 'block', marginTop: '8px' }}>
                         {systemVoice.audience.generatingStrategiesWithTime}
                       </Text>
                     </div>
@@ -1939,6 +1943,21 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
         {/* Strategy Selection Cards */}
         {strategies.length === 0 ? (
+          generatingStrategies ? (
+            <div style={{ textAlign: 'center', padding: '48px 40px' }}>
+              <Spin
+                size="large"
+                indicator={<LoadingOutlined style={{ fontSize: 40 }} spin />}
+                style={{ marginBottom: '20px', display: 'block' }}
+              />
+              <Title level={4} style={{ color: 'var(--color-primary)', marginTop: '16px' }}>
+                {systemVoice.audience.generatingStrategies}
+              </Title>
+              <Text style={{ color: 'var(--color-text-secondary)', display: 'block', marginTop: '8px' }}>
+                {systemVoice.audience.generatingStrategiesWithTime}
+              </Text>
+            </div>
+          ) : (
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--color-text-secondary)' }}>
             <DatabaseOutlined style={{ fontSize: '48px', color: 'var(--color-gray-300)', marginBottom: '16px' }} />
             <Title level={4} style={{ color: 'var(--color-text-tertiary)' }}>No Customer Strategies Found</Title>
@@ -1960,6 +1979,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               Run Website Analysis
             </Button>
           </div>
+          )
         ) : (
           <div>
             <div style={{ position: 'relative' }}>
