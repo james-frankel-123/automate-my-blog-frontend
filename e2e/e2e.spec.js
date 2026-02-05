@@ -83,7 +83,7 @@ async function runWebsiteAnalysisToCompletion(page) {
 
 /**
  * Click the Create Post / Generate post button (topic → full post).
- * When topicTitle is set, clicks the first topic card's CTA (first button inside [data-testid="create-post-from-topic"] in #posts).
+ * When topicTitle is set, clicks the first topic card's CTA (button with data-testid="create-post-from-topic-btn" in #posts).
  * Otherwise clicks the main "Create Post" / "Generate post" button.
  */
 async function clickCreatePostButton(page, options = {}) {
@@ -92,12 +92,13 @@ async function clickCreatePostButton(page, options = {}) {
   await waitForNoModal(page, 6000);
   const postsSection = page.locator('#posts');
   const createPostBtn = topicTitle
-    ? postsSection.locator('[data-testid="create-post-from-topic"]').getByRole('button').first()
+    ? postsSection.getByTestId('create-post-from-topic-btn').first().getByRole('button')
     : postsSection.getByRole('button', { name: /Create Post|Generate post/i }).first();
   await postsSection.scrollIntoViewIfNeeded().catch(() => {});
   await page.waitForTimeout(500);
   await createPostBtn.scrollIntoViewIfNeeded().catch(() => {});
-  await createPostBtn.waitFor({ state: 'visible', timeout: 35000 });
+  await createPostBtn.waitFor({ state: 'attached', timeout: 15000 });
+  await createPostBtn.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
   if (waitForContentResponse) {
     await Promise.all([
       page.waitForResponse(
@@ -112,10 +113,10 @@ async function clickCreatePostButton(page, options = {}) {
         },
         { timeout: 45000 }
       ).catch(() => null),
-      createPostBtn.evaluate((el) => el.click()),
+      createPostBtn.click({ force: true }),
     ]);
   } else {
-    await createPostBtn.evaluate((el) => el.click());
+    await createPostBtn.click({ force: true });
   }
 }
 

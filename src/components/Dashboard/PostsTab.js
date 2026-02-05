@@ -2081,8 +2081,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                 
                                 {/* Action Buttons */}
                                 <div style={{ textAlign: 'center', marginTop: '16px' }} data-testid="create-post-from-topic">
-                                  <Button
-                                    type="primary"
+                                  <span data-testid="create-post-from-topic-btn">
+                                    <Button
+                                      type="primary"
                                     size="large"
                                     onClick={() => {
                                       if (user && !hasAvailablePosts) {
@@ -2102,6 +2103,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
                                      user ? (hasAvailablePosts ? 'Create Post' : 'Buy More Posts') : 'Get One Free Post'}
                                   </Button>
+                                  </span>
                                 </div>
                               </Card>
                             </Col>
@@ -2953,8 +2955,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               
                               {/* Action Buttons */}
                               <div style={{ textAlign: 'center', marginTop: '16px' }} data-testid="create-post-from-topic">
-                                <Button
-                                  type="primary"
+                                <span data-testid="create-post-from-topic-btn">
+                                  <Button
+                                    type="primary"
                                   size="large"
                                   onClick={() => {
                                     if (user && !hasAvailablePosts) {
@@ -2980,6 +2983,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                      'Register to claim free post'
                                   }
                                 </Button>
+                                </span>
                               </div>
                             </Card>
                           </Col>
