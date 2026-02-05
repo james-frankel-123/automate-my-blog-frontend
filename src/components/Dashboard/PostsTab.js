@@ -30,16 +30,13 @@ import SchedulingModal from '../Modals/SchedulingModal';
 import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
 import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
-import HTMLPreview from '../HTMLPreview/HTMLPreview';
+import StreamingPreview from '../StreamingTestbed/StreamingPreview';
 import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
-import { replaceArticlePlaceholders } from '../../utils/articlePlaceholders';
-import { replaceTweetPlaceholders } from '../../utils/tweetPlaceholders';
-import { replaceVideoPlaceholders } from '../../utils/videoPlaceholders';
 import ThinkingPanel from '../shared/ThinkingPanel';
 
 // New Enhanced Components
@@ -3242,21 +3239,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   padding: 'var(--space-5)',
                   minHeight: '320px'
                 }}>
-                  <HTMLPreview
-                    content={replaceTweetPlaceholders(
-                      replaceVideoPlaceholders(
-                        replaceArticlePlaceholders(
-                          normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : ''),
-                          relatedArticles || []
-                        ),
-                        relatedVideos || []
-                      ),
-                      relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []
-                    )}
+                  <StreamingPreview
+                    content={normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : '')}
                     relatedArticles={relatedArticles || []}
                     relatedVideos={relatedVideos || []}
-                    typographySettings={typography}
-                    forceMarkdown
+                    relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                     heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
                     style={{
                       minHeight: '300px',
@@ -3586,21 +3573,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     backgroundColor: 'var(--color-background-body)',
                     padding: 'var(--space-5)'
                   }}>
-                    <HTMLPreview
-                      content={replaceTweetPlaceholders(
-                        replaceVideoPlaceholders(
-                          replaceArticlePlaceholders(
-                            editingContent || 'Enter your blog content...',
-                            relatedArticles || []
-                          ),
-                          relatedVideos || []
-                        ),
-                        relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []
-                      )}
+                    <StreamingPreview
+                      content={editingContent || 'Enter your blog content...'}
                       relatedArticles={relatedArticles || []}
                       relatedVideos={relatedVideos || []}
-                      typographySettings={typography}
-                      forceMarkdown
+                      relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                       heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
                       style={{
                         minHeight: '400px',

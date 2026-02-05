@@ -257,7 +257,8 @@ function getArticlePlaceholderHtml(index, relatedArticles = []) {
 const VIDEO_PLACEHOLDER_TOKEN_REGEX = /__VIDEO_PLACEHOLDER_(\d+)__/g;
 
 /**
- * Build HTML for a video placeholder slot: animated loading box or video card.
+ * Build HTML for a video placeholder slot: animated loading box or inline YouTube embed.
+ * Videos embed and play inline (iframe) rather than linking to a new tab.
  * @param {number} index - Placeholder index
  * @param {Array<{ url?: string, videoId?: string, title?: string, channelTitle?: string, thumbnailUrl?: string, viewCount?: number, duration?: string }>} relatedVideos
  * @returns {string} Safe HTML string
@@ -266,19 +267,29 @@ function getVideoPlaceholderHtml(index, relatedVideos = []) {
   const videos = Array.isArray(relatedVideos) ? relatedVideos : [];
   const video = videos[index];
   const safeTitle = (s) => escapeAttr(String(s ?? '').slice(0, 200));
-  const safeUrl = (u) => (/^https?:\/\//i.test(String(u ?? '')) ? escapeAttr(u) : '');
   if (video && (video.url || video.videoId)) {
-    const url = video.url || `https://www.youtube.com/watch?v=${escapeAttr(video.videoId || '')}`;
-    const thumb = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl) ? escapeAttr(video.thumbnailUrl) : '';
+    const videoId = (video.videoId || (video.url && video.url.match(/(?:v=|\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1]) || '').slice(0, 20);
+    const embedUrl = videoId ? `https://www.youtube.com/embed/${escapeAttr(videoId)}` : '';
     const title = safeTitle(video.title) || 'Video';
     const channel = safeTitle(video.channelTitle);
     const meta = [channel, video.viewCount != null ? `${Number(video.viewCount).toLocaleString()} views` : '', video.duration].filter(Boolean).join(' · ');
+    if (!embedUrl) {
+      return (
+        '<div class="markdown-video-card markdown-video-embed">' +
+        '<div class="markdown-video-card-body">' +
+        `<span class="markdown-video-card-title">${title}</span>` +
+        (meta ? `<span class="markdown-video-card-meta">${escapeAttr(meta)}</span>` : '') +
+        '</div></div>'
+      );
+    }
+    const allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
     return (
-      '<div class="markdown-video-card">' +
-      (thumb ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-link">` +
-        `<img src="${thumb}" alt="" class="markdown-video-card-thumb" />` + '</a>' : '') +
+      '<div class="markdown-video-card markdown-video-embed">' +
+      '<div class="markdown-video-embed-wrapper">' +
+      `<iframe src="${embedUrl}" title="${title}" allow="${escapeAttr(allow)}" allowfullscreen frameborder="0"></iframe>` +
+      '</div>' +
       '<div class="markdown-video-card-body">' +
-      `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-title">${title}</a>` +
+      `<span class="markdown-video-card-title">${title}</span>` +
       (meta ? `<span class="markdown-video-card-meta">${escapeAttr(meta)}</span>` : '') +
       '</div></div>'
     );
@@ -333,12 +344,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     });
   }
 
-  // Sanitize HTML to prevent XSS attacks
+  // Sanitize HTML to prevent XSS attacks (iframe allowed for inline YouTube embeds)
   const htmlContent = DOMPurify.sanitize(rawHtml, {
     ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
                    'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'div', 'span',
-                   'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td'],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id', 'title', 'aria-hidden'],
+                   'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'iframe'],
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id', 'title', 'aria-hidden',
+                   'allow', 'allowfullscreen', 'frameborder', 'width', 'height'],
     ALLOW_DATA_ATTR: false
   });
 
@@ -721,6 +733,27 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           transition: box-shadow 0.2s ease;
         }
 
+        div :global(.markdown-video-card.markdown-video-embed) {
+          flex-direction: column;
+        }
+
+        div :global(.markdown-video-embed-wrapper) {
+          position: relative;
+          width: 100%;
+          padding-bottom: 56.25%;
+          border-radius: 8px;
+          overflow: hidden;
+          background: #000;
+        }
+
+        div :global(.markdown-video-embed-wrapper iframe) {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+
         div :global(.markdown-video-card:hover) {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
@@ -747,6 +780,10 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           color: var(--color-primary);
           text-decoration: none;
           display: block;
+        }
+
+        div :global(.markdown-video-card.markdown-video-embed .markdown-video-card-title) {
+          color: var(--color-text-primary);
         }
 
         div :global(.markdown-video-card-title:hover) {
