@@ -60,6 +60,13 @@ describe('streamingUtils', () => {
       expect(extractStreamChunk({ field: 'content', content: ' AI' })).toBe(' AI');
     });
 
+    it('does not append title/metaDescription/subtitle field chunks (preview shows only body)', () => {
+      expect(extractStreamChunk({ field: 'title', content: 'Unlock the Full Potential of Your Streaming API' })).toBe('');
+      expect(extractStreamChunk({ field: 'metaDescription', content: 'Learn how to effectively test streaming APIs.' })).toBe('');
+      expect(extractStreamChunk({ field: 'subtitle', content: 'A subtitle' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: '# How to Test the Streaming API' })).toBe('# How to Test the Streaming API');
+    });
+
     it('accumulates content-chunk stream into full text', () => {
       const chunks = [
         { field: 'content', content: ',' },
@@ -74,6 +81,20 @@ describe('streamingUtils', () => {
       ];
       const accumulated = chunks.map((data) => extractStreamChunk(data)).join('');
       expect(accumulated).toBe(', selecting the right AI consulting service is crucial');
+    });
+
+    it('does not append chunks that are streamed JSON structure (wrapper keys/punctuation)', () => {
+      expect(extractStreamChunk({ field: 'content', content: 'cta' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'seo' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'Suggestions' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'Optimization' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: 'Score' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: '\":' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: ' []\n' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: '}\n' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: '95' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: '+' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: '# How to Test' })).toBe('# How to Test');
     });
   });
 
