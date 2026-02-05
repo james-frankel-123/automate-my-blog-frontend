@@ -42,6 +42,14 @@ describe('streamingUtils', () => {
       expect(extractStreamChunk(null)).toBe('');
       expect(extractStreamChunk(undefined)).toBe('');
     });
+
+    it('does not append bare "title", "subtitle", "content" key labels as raw text', () => {
+      expect(extractStreamChunk('title')).toBe('');
+      expect(extractStreamChunk('subtitle')).toBe('');
+      expect(extractStreamChunk('content')).toBe('');
+      expect(extractStreamChunk({ content: 'title' })).toBe('');
+      expect(extractStreamChunk({ content: 'content:' })).toBe('');
+    });
   });
 
   describe('extractStreamCompleteContent', () => {
@@ -125,6 +133,20 @@ describe('streamingUtils', () => {
         'Just plain text here'
       );
     });
+
+    it('extracts content body from key-value style text (title/subtitle/content as raw keys)', () => {
+      const keyValue = 'title\nMy Post\nsubtitle\nA subtitle\ncontent\n<p>Hello world</p>';
+      expect(extractStreamCompleteContent({ content: keyValue })).toBe(
+        '<p>Hello world</p>'
+      );
+    });
+
+    it('extracts content when key-value has "content:" line', () => {
+      const keyValue = 'title\nPost\ncontent:\n<p>Body</p>';
+      expect(extractStreamCompleteContent({ content: keyValue })).toBe(
+        '<p>Body</p>'
+      );
+    });
   });
 
   describe('extractStreamChunk with code fences', () => {
@@ -145,6 +167,10 @@ describe('streamingUtils', () => {
     });
     it('returns empty string as-is', () => {
       expect(normalizeContentString('')).toBe('');
+    });
+    it('extracts content body from key-value style (so title/subtitle/content not shown as raw)', () => {
+      const raw = 'title\nMy Post\nsubtitle\nSub\ncontent\n<p>Only this</p>';
+      expect(normalizeContentString(raw)).toBe('<p>Only this</p>');
     });
   });
 });
