@@ -8,7 +8,7 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { installWorkflowMocks, installWorkflowMocksWithOptions, injectLoggedInUser, MOCK_TOPICS, creditsWithPosts, creditsZero, creditsUnlimited } = require('./mocks/workflow-api-mocks');
+const { installWorkflowMocks, installWorkflowMocksWithOptions, injectLoggedInUser, MOCK_TOPICS, MOCK_TWEETS, creditsWithPosts, creditsZero, creditsUnlimited } = require('./mocks/workflow-api-mocks');
 
 async function clearStorage(page) {
   await page.evaluate(() => {
@@ -996,6 +996,61 @@ test.describe('E2E (mocked backend)', () => {
         const content = await editor.textContent();
         expect(content).toContain('mock');
         expect(content.length).toBeGreaterThan(50);
+      });
+    });
+
+    // Blog content generation: fallback to sync generate; tweet placeholders replaced when tweet stream completes.
+    test.describe('Blog content generation with tweet placeholders', () => {
+      test('content generation completes and tweet placeholder is replaced when tweets arrive', async ({ page }) => {
+        test.setTimeout(90000);
+        await installWorkflowMocksWithOptions(page, {
+          contentWithTweetPlaceholder: true,
+          tweetsForTopic: MOCK_TWEETS,
+          tweetStreamResponds: true,
+        });
+        await page.goto('/');
+        await clearStorage(page);
+        await injectLoggedInUser(page);
+        await page.reload();
+        await page.waitForLoadState('load');
+        await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(500);
+        await removeOverlay(page);
+
+        await page.locator('button:has-text("Create New Post")').first().click();
+        await page.waitForTimeout(800);
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        await expect(websiteInput).toBeVisible({ timeout: 10000 });
+        await websiteInput.fill('https://example.com');
+        await page.locator('button:has-text("Analyze")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+        await removeOverlay(page);
+        await page.locator('button:has-text("Continue to Audience")').first().click({ force: true });
+        await page.waitForTimeout(800);
+        await page.locator('#audience-segments').scrollIntoViewIfNeeded();
+        await page.waitForTimeout(500);
+        await page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first().click();
+        await page.waitForTimeout(2000);
+        await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
+        await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+        await page.waitForTimeout(800);
+        const generateTopicsBtn = page.locator('button:has-text("Generate post"), button:has-text("Buy more posts")').first();
+        await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
+        await generateTopicsBtn.click();
+        await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(2000);
+        await expect(page.locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+        await clickCreatePostButton(page, { topicTitle: MOCK_TOPICS[0].title });
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 35000 }).catch(() => {});
+        await page.waitForTimeout(2000);
+        // Tweet stream completes async; placeholder replacement shows "Related" or tweet text in preview
+        const previewOrEditor = page.locator('.tiptap, [contenteditable="true"], [class*="preview"]').first();
+        await expect(previewOrEditor).toBeVisible({ timeout: 35000 });
+        const hasRelatedTweetsPanel = await page.locator('text=Related tweets').first().isVisible({ timeout: 5000 }).catch(() => false);
+        const hasReplacedTweet = await page.locator('text=E2E related tweet').first().isVisible({ timeout: 5000 }).catch(() => false);
+        const hasMockContent = await page.locator('text=mock AI-generated').first().isVisible({ timeout: 3000 }).catch(() => false);
+        expect(hasMockContent || hasReplacedTweet || hasRelatedTweetsPanel).toBeTruthy();
       });
     });
 

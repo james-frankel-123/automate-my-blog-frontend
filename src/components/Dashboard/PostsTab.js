@@ -37,6 +37,7 @@ import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
 import { replaceArticlePlaceholders } from '../../utils/articlePlaceholders';
+import { replaceTweetPlaceholders } from '../../utils/tweetPlaceholders';
 import ThinkingPanel from '../shared/ThinkingPanel';
 
 // New Enhanced Components
@@ -799,8 +800,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         );
       }
 
-      // Start stream immediately so content populates right away. Fetch tweets via SSE in background
-      // and attach when ready (for display / draft; generation runs without tweet context).
+      // Run tweet search in parallel with blog stream; insert tweets into preview as they arrive via [TWEET:n] placeholders.
       const prefetchedTweets = [];
       api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
         .then(({ connectionId, streamUrl }) => {
@@ -944,7 +944,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 status: 'draft',
                 createdAt: saveResult.post.created_at ?? new Date().toISOString(),
                 topic: topic,
-                blogPost: result.blogPost
+                blogPost: result.blogPost,
+                relatedTweets: relatedTweets?.length ? relatedTweets : undefined
               });
               setLastSavedContent(result.content);
               setLastSaved(new Date());
@@ -3161,9 +3162,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   minHeight: '320px'
                 }}>
                   <HTMLPreview
-                    content={replaceArticlePlaceholders(
-                      normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : ''),
-                      relatedArticles || []
+                    content={replaceTweetPlaceholders(
+                      replaceArticlePlaceholders(
+                        normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : ''),
+                        relatedArticles || []
+                      ),
+                      relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []
                     )}
                     relatedArticles={relatedArticles || []}
                     typographySettings={typography}
@@ -3442,9 +3446,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     padding: 'var(--space-5)'
                   }}>
                     <HTMLPreview
-                      content={replaceArticlePlaceholders(
-                        editingContent || 'Enter your blog content...',
-                        relatedArticles || []
+                      content={replaceTweetPlaceholders(
+                        replaceArticlePlaceholders(
+                          editingContent || 'Enter your blog content...',
+                          relatedArticles || []
+                        ),
+                        relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []
                       )}
                       relatedArticles={relatedArticles || []}
                       typographySettings={typography}
