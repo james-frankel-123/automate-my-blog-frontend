@@ -842,7 +842,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
       // Advance workflow to next section (topic choice / content creation)
       setStrategySelectionCompleted(true);
-      navigateToNextStep();
+      // Prefer layout's onNextStep (advanceToNextStep) so visibleSections updates and we scroll to posts; fallback to context for tab-based flow
+      if (onNextStep) {
+        onNextStep();
+      } else {
+        navigateToNextStep();
+      }
     }
   };
 
