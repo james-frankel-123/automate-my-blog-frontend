@@ -18,6 +18,12 @@
 /** Known keys that should not be appended as raw text when streamed (title, subtitle, content as labels). */
 const STREAM_KEY_LABELS = /^(?:title|subtitle|content)\s*:?\s*$/i;
 
+/** True if string looks like JSON key-value pairs (so we never show it as raw text). */
+function looksLikeJsonKeyValue(str) {
+  if (typeof str !== 'string' || str.length < 5) return false;
+  return /"[^"]*"\s*:\s*"/.test(str) || /"[^"]*"\s*:\s*\[/.test(str);
+}
+
 export function extractStreamChunk(data) {
   if (data == null) return '';
 
@@ -29,13 +35,13 @@ export function extractStreamChunk(data) {
   }
 
   // Object: check common fields in order
-  const content = data.content ?? data.text ?? data.delta;
+  const content = data.content ?? data.text ?? data.delta ?? (typeof data.blogPost === 'object' && data.blogPost !== null ? data.blogPost.content : undefined);
   if (typeof content === 'string' && content.trim()) {
     const trimmed = content.trim();
     if (STREAM_KEY_LABELS.test(trimmed)) return '';
-    // Content may be a JSON string (e.g. ProseMirror doc) - extract displayable text, never append raw JSON
+    // Content may be a JSON string (e.g. full blog object) - extract displayable text, never append raw JSON
     const extracted = tryExtractFromJsonString(content);
-    return extracted !== '' ? extracted : content.startsWith('{') ? '' : content;
+    return extracted !== '' ? extracted : content.startsWith('{') || looksLikeJsonKeyValue(content) ? '' : content;
   }
 
   // OpenAI-style: choices[0].delta.content
@@ -192,10 +198,26 @@ function tryExtractFromJsonString(str) {
     // Not valid JSON (e.g. partial stream) - try key-value extraction below
   }
 
-  // Key-value or partial JSON: extract "content" so title/subtitle/content don't show as raw text
+  // Key-value or partial JSON: extract "content" so title/metaDescription don't show as raw text
   const fromKeyValue = extractContentFromKeyValueText(str);
   if (fromKeyValue) return fromKeyValue;
 
+  // Fragment that looks like JSON key-value but missing outer braces (our parsing strips keys;
+  // if we ever output key-value text, it must not be shown). Try wrapping in {} and parse.
+  if (!isJsonLike && looksLikeJsonKeyValue(str)) {
+    try {
+      const wrapped = str.trim();
+      const toParse = (wrapped.startsWith('{') ? wrapped : `{${wrapped}}`);
+      const parsed = JSON.parse(toParse);
+      if (parsed && typeof parsed === 'object') {
+        const extracted = parsed.content ?? parsed.text ?? parsed.delta ?? parsed.message;
+        if (typeof extracted === 'string') return extracted;
+      }
+    } catch {
+      // Unparseable fragment: never show raw key-value text
+    }
+    return '';
+  }
   if (!isJsonLike) return str; // Plain text, not JSON
   return ''; // JSON-like but unparseable and no content key - don't show raw
 }

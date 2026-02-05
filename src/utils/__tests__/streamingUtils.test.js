@@ -196,6 +196,17 @@ describe('streamingUtils', () => {
     });
   });
 
+  describe('extractStreamChunk / tryExtractFromJsonString: never show raw key-value text', () => {
+    it('extracts only content from JSON fragment (key-value string without outer braces)', () => {
+      const fragment = '"title": "Discover platforms", "metaDescription": "Explore resources.", "content": "# Top10 Interactive AI Learning"';
+      expect(extractStreamChunk(fragment)).toBe('# Top10 Interactive AI Learning');
+    });
+    it('returns empty for key-value fragment with no content key (never show raw keys)', () => {
+      const fragment = '"title": "Discover platforms", "metaDescription": "Explore resources."';
+      expect(extractStreamChunk(fragment)).toBe('');
+    });
+  });
+
   describe('normalizeContentString', () => {
     it('returns displayable content for fenced JSON (e.g. final result.content)', () => {
       const raw = '```json\n{"title":"Post","content":"<p>Hi</p>"}\n```';
