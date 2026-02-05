@@ -1091,9 +1091,11 @@ const WebsiteAnalysisStepStandalone = ({
   };
 
   /**
-   * Render structured analysis data (field-by-field)
+   * Render structured analysis data (field-by-field).
+   * Only show per-section "failed" empty states after loading/streaming has finished (Issue: empty states showing too early).
    */
   const renderStructuredAnalysis = (analysis, domain) => {
+    const showSectionEmptyStates = !loading;
     return (
       <Card
         className={showSuccessHighlight ? 'success-highlight' : ''}
@@ -1226,13 +1228,15 @@ const WebsiteAnalysisStepStandalone = ({
                 <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
                   {analysis.description}
                 </Text>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="website_content_failed"
                   compact
                   dataTestId="empty-what-they-do"
                   actions={[{ label: systemVoice.analysis.emptyStates.website_content_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1257,13 +1261,15 @@ const WebsiteAnalysisStepStandalone = ({
                 <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
                   {analysis.decisionMakers || analysis.targetAudience}
                 </Text>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="target_audience_failed"
                   compact
                   dataTestId="empty-target-audience"
                   actions={[{ label: systemVoice.analysis.emptyStates.target_audience_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1288,13 +1294,15 @@ const WebsiteAnalysisStepStandalone = ({
                 <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
                   {analysis.brandVoice}
                 </Text>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="brand_analysis_failed"
                   compact
                   dataTestId="empty-brand-voice"
                   actions={[{ label: systemVoice.analysis.emptyStates.brand_analysis_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1319,13 +1327,15 @@ const WebsiteAnalysisStepStandalone = ({
                 <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
                   {analysis.contentFocus}
                 </Text>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="content_focus_failed"
                   compact
                   dataTestId="empty-content-focus"
                   actions={[{ label: systemVoice.analysis.emptyStates.content_focus_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1379,13 +1389,15 @@ const WebsiteAnalysisStepStandalone = ({
                       </Text>
                     )}
                   </div>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="ctas_not_found"
                   compact
                   dataTestId="empty-ctas"
                   actions={[{ label: systemVoice.analysis.emptyStates.ctas_not_found.primaryAction, onClick: () => {}, primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1415,13 +1427,15 @@ const WebsiteAnalysisStepStandalone = ({
                 <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
                   {analysis.businessModel}
                 </Text>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="business_model_failed"
                   compact
                   dataTestId="empty-business-model"
                   actions={[{ label: systemVoice.analysis.emptyStates.business_model_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1447,13 +1461,15 @@ const WebsiteAnalysisStepStandalone = ({
                 <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
                   {analysis.websiteGoals}
                 </Text>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="website_goals_failed"
                   compact
                   dataTestId="empty-website-goals"
                   actions={[{ label: systemVoice.analysis.emptyStates.website_goals_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1479,13 +1495,15 @@ const WebsiteAnalysisStepStandalone = ({
                 <Text style={{ fontSize: responsive.fontSize.small, lineHeight: '1.5' }}>
                   {analysis.blogStrategy}
                 </Text>
-              ) : (
+              ) : showSectionEmptyStates ? (
                 <AnalysisEmptyState
                   type="blog_strategy_failed"
                   compact
                   dataTestId="empty-blog-strategy"
                   actions={[{ label: systemVoice.analysis.emptyStates.blog_strategy_failed.primaryAction, onClick: () => setEditMode(true), primary: true }]}
                 />
+              ) : (
+                <Spin size="small" />
               )}
             </div>
           </Col>
@@ -1524,13 +1542,15 @@ const WebsiteAnalysisStepStandalone = ({
                 </Tag>
               ))}
             </Space>
-          ) : (
+          ) : showSectionEmptyStates ? (
             <AnalysisEmptyState
               type="keywords_failed"
               compact
               dataTestId="empty-keywords"
               actions={[{ label: systemVoice.analysis.emptyStates.keywords_failed.primaryAction, onClick: () => {}, primary: true }]}
             />
+          ) : (
+            <Spin size="small" />
           )}
         </div>
 
