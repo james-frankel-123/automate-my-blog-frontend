@@ -143,6 +143,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           });
           openAIStrategies.sort((a, b) => (a.businessValue.priority || 999) - (b.businessValue.priority || 999));
           setStrategies(openAIStrategies);
+          setGeneratingStrategies(false); // Clear loading so "Choose Your SEO Strategy" shows strategies, not spinner
           if (generationKey) {
             generatedStrategiesCache.add(generationKey);
             if (sessionStorageKey) sessionStorage.setItem(sessionStorageKey, 'true');
@@ -206,6 +207,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           });
           
           setStrategies(persistentStrategies);
+          setGeneratingStrategies(false); // Clear loading so "Choose Your SEO Strategy" shows strategies, not spinner
 
           if (user) {
             message.success(`Loaded ${persistentStrategies.length} saved audience strategies`);
