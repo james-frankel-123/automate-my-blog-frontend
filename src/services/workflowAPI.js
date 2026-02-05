@@ -294,9 +294,6 @@ export const topicAPI = {
 
     const businessType = analysisData.businessType || analysisData.businessName || 'Business';
 
-    console.log('Generating topics for:', targetAudience);
-    console.log('Content focus:', contentFocus);
-
     const mapTopic = (topic, index) => ({
       ...topic,
       scenario: selectedStrategy || (analysisData.scenarios && analysisData.scenarios[index] ? analysisData.scenarios[index] : null),
@@ -442,24 +439,17 @@ export const contentAPI = {
       let tweets = [];
       if (enhancementOptions.prefetchedTweets !== undefined) {
         tweets = enhancementOptions.prefetchedTweets || [];
-        console.log(`✅ Using ${tweets.length} prefetched tweets for topic`);
       } else {
-        console.log('🐦 Searching for tweets for selected topic...');
         const tweetSearchResult = await autoBlogAPI.searchTweetsForTopic(
           selectedTopic,
           analysisData,
           3  // maxTweets
         );
         tweets = tweetSearchResult.tweets || [];
-        console.log(`✅ Found ${tweets.length} tweets for topic`);
       }
 
       // Check if enhanced content generation is requested
       if (enhancementOptions.useEnhancedGeneration) {
-        console.log('🚀 Using enhanced content generation with comprehensive context');
-        console.log('🔍 Enhancement options:', enhancementOptions);
-        console.log('🎯 Strategy provided:', !!selectedStrategy);
-
         const { prefetchedTweets: _, ...restOptions } = enhancementOptions;
         const enhancedResult = await enhancedContentAPI.generateEnhancedContent(
           selectedTopic,
@@ -507,8 +497,7 @@ export const contentAPI = {
           };
         }
         if (enhancedResult.fallbackAvailable) {
-          console.log('⚠️ Enhanced generation failed, falling back to standard generation');
-          console.log('📝 Fallback reason:', enhancedResult.error);
+          // Fall through to standard generation
         } else {
           return enhancedResult;
         }

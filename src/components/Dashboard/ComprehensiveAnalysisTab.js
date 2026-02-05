@@ -37,9 +37,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
 const ComprehensiveAnalysisTab = () => {
-  console.log('🔍 ComprehensiveAnalysisTab component is rendering!');
   const { user, currentOrganization } = useAuth();
-  console.log('🔍 ComprehensiveAnalysisTab - user:', user?.email, 'org:', currentOrganization?.id);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
@@ -109,9 +107,6 @@ const ComprehensiveAnalysisTab = () => {
   };
 
   const forceReanalyze = async () => {
-    console.log('🔍 Debug currentOrganization:', currentOrganization);
-    console.log('🔍 Debug comprehensiveResults:', comprehensiveResults);
-    
     // Try to get website URL from multiple sources
     let websiteUrl = currentOrganization?.websiteUrl || 
                      currentOrganization?.website_url ||
@@ -128,18 +123,7 @@ const ComprehensiveAnalysisTab = () => {
     
     setReanalyzing(true);
     try {
-      console.log('🔍 Triggering force re-analysis for:', websiteUrl);
-      const analysisResult = await autoBlogAPI.triggerComprehensiveAnalysis(websiteUrl);
-      console.log('📋 Analysis result details:', analysisResult);
-      
-      // Log specific analysis details if available
-      if (analysisResult.analysis) {
-        console.log('📊 Blog content found:', analysisResult.analysis.blogContentFound);
-        console.log('📄 Total posts discovered:', analysisResult.analysis.totalPostsDiscovered);
-        console.log('🎯 CTA strategy:', analysisResult.analysis.ctaStrategy);
-        console.log('🔗 Linking strategy:', analysisResult.analysis.linkingStrategy);
-      }
-      
+      await autoBlogAPI.triggerComprehensiveAnalysis(websiteUrl);
       // Wait a moment then reload data
       setTimeout(() => {
         loadAnalysisData();
@@ -378,11 +362,8 @@ const ComprehensiveAnalysisTab = () => {
 
 
   const hasData = blogContent.length > 0 || ctaAnalysis.length > 0 || linkingAnalysis.length > 0;
-  
-  console.log('🔍 ComprehensiveAnalysisTab render state:', { loading, hasData, blogContentLength: blogContent.length, ctaLength: ctaAnalysis.length });
 
   if (loading) {
-    console.log('🔍 ComprehensiveAnalysisTab: Showing loading state');
     return (
       <div style={{ textAlign: 'center', padding: '60px' }}>
         <Spin size="large" />

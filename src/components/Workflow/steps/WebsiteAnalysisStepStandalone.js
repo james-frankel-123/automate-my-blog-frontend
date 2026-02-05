@@ -156,8 +156,6 @@ const WebsiteAnalysisStepStandalone = ({
       return;
     }
 
-    console.log('⏳ [NARRATIVE POLL] Starting to poll for narrative:', analysisResults.organizationId);
-
     let pollCount = 0;
     const maxPolls = 120; // Max 2 minutes of polling (increased for queue processing)
 
@@ -165,8 +163,6 @@ const WebsiteAnalysisStepStandalone = ({
       pollCount++;
 
       try {
-        console.log(`📡 [NARRATIVE POLL] Attempt ${pollCount}/${maxPolls}`);
-
         const data = await autoBlogAPI.makeRequest(
           `api/narrative/${analysisResults.organizationId}`
         );
@@ -181,7 +177,6 @@ const WebsiteAnalysisStepStandalone = ({
         }
 
         if (data.ready && data.narrative) {
-          console.log('✅ [NARRATIVE POLL] Narrative ready!');
           clearInterval(pollInterval);
 
           // Update analysisResults with the narrative
@@ -194,7 +189,6 @@ const WebsiteAnalysisStepStandalone = ({
             narrativeJobStatus: 'completed'
           });
         } else if (pollCount >= maxPolls) {
-          console.log('⏱️ [NARRATIVE POLL] Max polls reached, stopping');
           clearInterval(pollInterval);
           // Mark as timeout
           setAnalysisResults(prev => ({
@@ -270,9 +264,7 @@ const WebsiteAnalysisStepStandalone = ({
           
           if (response.success && response.analysis) {
             const cachedAnalysis = response.analysis;
-            
-            console.log('🔄 Loading cached analysis:', cachedAnalysis.websiteUrl);
-            
+
             // Prevent flashing by loading all data simultaneously
             const updates = {};
             if (setWebsiteUrl) updates.websiteUrl = cachedAnalysis.websiteUrl;
@@ -291,8 +283,6 @@ const WebsiteAnalysisStepStandalone = ({
               businessType: cachedAnalysis.businessType || '',
               ...cachedAnalysis
             });
-            
-            console.log('✅ Cached analysis loaded without flashing');
           }
         } catch (error) {
           // Silently fail - user can perform new analysis
@@ -317,7 +307,6 @@ const WebsiteAnalysisStepStandalone = ({
       try {
         const response = await autoBlogAPI.getOrganizationCTAs(orgId);
         setOrganizationCTAs(response.ctas || []);
-        console.log(`✅ Fetched ${response.ctas?.length || 0} CTAs for analysis display`);
       } catch (error) {
         console.error('Failed to fetch CTAs for analysis display:', error);
         setOrganizationCTAs([]);
@@ -529,12 +518,6 @@ const WebsiteAnalysisStepStandalone = ({
         setHint(systemVoice.toasts.analysisComplete, 'success', 5000);
         message.success(systemVoice.analysis.success);
 
-        console.log('🎯 [CTA DEBUG] WebsiteAnalysisStepStandalone: API result contains CTAs:', {
-          hasCTAs: !!result.ctas,
-          ctaCount: result.ctaCount,
-          ctas: result.ctas
-        });
-
         // Update sticky header with business name after analysis completes
         updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
           websiteUrl: validation.formattedUrl,
@@ -612,21 +595,7 @@ const WebsiteAnalysisStepStandalone = ({
       console.error('No analysisResults available for editing');
       return;
     }
-    
-    // Enhanced debug logging to understand data structure
-    console.log('🔍 FULL analysisResults structure:', JSON.stringify(analysisResults, null, 2));
-    console.log('🔍 Available keys:', Object.keys(analysisResults));
-    console.log('🔍 Sample values:', {
-      businessName: analysisResults.businessName,
-      companyName: analysisResults.companyName,
-      name: analysisResults.name,
-      organizationName: analysisResults.organizationName,
-      businessType: analysisResults.businessType,
-      industry: analysisResults.industry,
-      targetAudience: analysisResults.targetAudience,
-      decisionMakers: analysisResults.decisionMakers
-    });
-    
+
     const editData = {
       // Core business information - try multiple field names
       businessName: analysisResults.businessName || analysisResults.companyName || analysisResults.name || analysisResults.organizationName || '',
@@ -653,9 +622,7 @@ const WebsiteAnalysisStepStandalone = ({
       searchBehavior: analysisResults.searchBehavior || '',
       connectionMessage: analysisResults.connectionMessage || ''
     };
-    
-    console.log('✅ Edit data being set:', JSON.stringify(editData, null, 2));
-    
+
     setEditableResults(editData);
     setEditMode(true);
   };
@@ -685,9 +652,7 @@ const WebsiteAnalysisStepStandalone = ({
         // Include website URL if it was edited
         websiteUrl: websiteUrl
       };
-      
-      console.log('💾 Saving edited analysis data:', processedResults);
-      
+
       // Call API to save changes
       const response = await autoBlogAPI.updateAnalysis(processedResults);
       
@@ -719,8 +684,6 @@ const WebsiteAnalysisStepStandalone = ({
         
         // Show success message
         message.success(systemVoice.analysis.updated);
-        
-        console.log('✅ Analysis saved successfully');
       } else {
         throw new Error(response.error || 'Failed to save analysis');
       }

@@ -24,51 +24,22 @@ const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = n
       try {
         // Check for workflow state data
         const workflowState = localStorage.getItem('automate-my-blog-workflow-state');
-
-        console.log('🔍 RegisterModal: Checking localStorage for workflow state');
-
-        if (!workflowState) {
-          console.log('❌ No workflow state found in localStorage');
-          return;
-        }
+        if (!workflowState) return;
 
         const parsed = JSON.parse(workflowState);
-        console.log('📦 Workflow state found:', {
-          hasStepResults: !!parsed.stepResults,
-          hasHome: !!parsed.stepResults?.home,
-          hasWebsiteAnalysis: !!parsed.stepResults?.home?.websiteAnalysis,
-          stepResultsKeys: parsed.stepResults ? Object.keys(parsed.stepResults) : []
-        });
-
-        // Look for website analysis data in stepResults.home.websiteAnalysis
         const analysis = parsed.stepResults?.home?.websiteAnalysis;
 
         if (analysis) {
-          console.log('📊 Website analysis found:', {
-            websiteUrl: analysis.websiteUrl,
-            url: analysis.url,
-            businessName: analysis.businessName,
-            companyName: analysis.companyName
-          });
-
           const detectedInfo = {
             websiteUrl: analysis.websiteUrl || analysis.url || '',
             businessName: analysis.businessName || analysis.companyName || '',
             autoDetected: true
           };
-
-          console.log('📝 Prepopulating registration with website:', detectedInfo.websiteUrl);
-
           if (detectedInfo.websiteUrl) {
-            // Prepopulate form fields
             form.setFieldsValue({
               websiteUrl: detectedInfo.websiteUrl
             });
-          } else {
-            console.log('⚠️ Website URL is empty in analysis data');
           }
-        } else {
-          console.log('❌ No website analysis found in stepResults.home');
         }
       } catch (error) {
         console.error('❌ Error extracting workflow data:', error);

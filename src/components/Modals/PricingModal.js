@@ -170,14 +170,10 @@ const PricingModal = ({
         throw new Error('Invalid plan selected');
       }
 
-      console.log(`Creating checkout session for ${plan.name}, priceId: ${priceId}, planType: ${plan.planType}`);
-
       // Create checkout session
       const response = await api.createCheckoutSession(priceId, plan.planType);
 
       if (response.success && response.url) {
-        console.log('✅ Checkout session created, redirecting to:', response.url);
-
         // Track successful checkout redirect
         trackFunnelStep('checkout_redirect', {
           planId: plan.id,

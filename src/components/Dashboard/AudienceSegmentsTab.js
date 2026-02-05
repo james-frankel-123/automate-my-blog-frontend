@@ -27,7 +27,6 @@ export const clearAudienceStrategiesCache = () => {
       sessionStorage.removeItem(key);
     }
   });
-  console.log('🧹 Cleared audience strategies generation cache');
 };
 
 // Issue #65: Transform a single streamed audience to strategy card format (progressive reveal)
@@ -103,13 +102,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     const loadPersistentAudiences = async () => {
       // PRIORITY 1: Check for fresh analysis FIRST - this should take precedence over everything
       const hasFreshAnalysisWithScenarios = stepResults?.home?.websiteAnalysis?.scenarios?.length > 0;
-      console.log('🔍 Persistence Loader - Fresh Analysis Check (PRIORITY):', {
-        hasWebsiteAnalysis: !!stepResults?.home?.websiteAnalysis,
-        scenariosCount: stepResults?.home?.websiteAnalysis?.scenarios?.length || 0,
-        hasFreshAnalysis: hasFreshAnalysisWithScenarios,
-        currentStrategiesCount: strategies.length,
-        willSkip: hasFreshAnalysisWithScenarios
-      });
 
       if (hasFreshAnalysisWithScenarios) {
         const analysis = stepResults?.home?.websiteAnalysis;
@@ -122,7 +114,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
         // If strategies already in state for this analysis, keep them (no clear)
         if (strategies.length > 0 && (alreadyGenerated || alreadyGeneratedInModule)) {
-          console.log('🚫 Skipping persistence - strategies already shown for this analysis');
           return;
         }
 
@@ -156,7 +147,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             generatedStrategiesCache.add(generationKey);
             if (sessionStorageKey) sessionStorage.setItem(sessionStorageKey, 'true');
           }
-          console.log('✅ Populated strategies from analysis scenarios (no refresh needed):', openAIStrategies.length);
         } else {
           // No scenarios: clear so main generator or API load can run
           if (strategies.length > 0) {
@@ -172,29 +162,15 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
       // PRIORITY 2: Skip if strategies already loaded or currently generating
       if (strategies.length > 0 || generatingStrategies) {
-        console.log('🚫 Skipping audience load - strategies exist or generating');
         return;
       }
 
-      console.log('🔍 AudienceSegmentsTab Persistence Loader Debug:', {
-        user: !!user,
-        tabMode: tabMode.mode,
-        forceWorkflowMode,
-        strategiesLength: strategies.length
-      });
-      
       try {
         // Load audiences from database/session
         const response = await autoBlogAPI.getUserAudiences({
           limit: 10 // Load up to 10 recent audience strategies
         });
-        
-        console.log('🔍 Persistence Loader Response:', {
-          success: response.success,
-          audiencesCount: response.audiences?.length || 0,
-          audiences: response.audiences
-        });
-        
+
         if (response.success && response.audiences && response.audiences.length > 0) {
           // Transform database audiences to component format
           const persistentStrategies = response.audiences.map((audience, index) => ({
@@ -230,21 +206,15 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           });
           
           setStrategies(persistentStrategies);
-          console.log('✅ Loaded Persistent Strategies:', persistentStrategies.length);
-          
+
           if (user) {
             message.success(`Loaded ${persistentStrategies.length} saved audience strategies`);
           } else {
             message.success(`Restored ${persistentStrategies.length} audience strategies from your session`);
           }
         } else {
-          console.log('📝 No persistent audiences found - will generate new ones if analysis exists');
-          // IMPORTANT: Don't clear existing strategies when API returns empty during state transitions
-          // Only proceed if we currently have no strategies
-          if (strategies.length === 0) {
-            console.log('💭 No existing strategies, continuing with empty state');
-          } else {
-            console.log('🛡️ Preserving existing strategies during state transition');
+          // Don't clear existing strategies when API returns empty during state transitions
+          if (strategies.length > 0) {
             return; // Don't overwrite existing data
           }
         }
@@ -403,12 +373,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Fetch bundle pricing when strategies are loaded (2+ strategies required)
   useEffect(() => {
-    console.log('🎁 Bundle pricing effect:', {
-      hasUser: !!user,
-      strategiesLength: strategies.length,
-      shouldFetch: user && strategies.length >= 2
-    });
-
     if (!user || strategies.length < 2) {
       setBundlePricing(null);
       return;
@@ -419,7 +383,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       setStreamingOverview('');
       setIsStreamingOverview(false);
       try {
-        console.log('🎁 Fetching bundle pricing...');
         // Issue #65: Try streaming bundle overview first
         try {
           const streamResponse = await autoBlogAPI.calculateBundlePriceStream();
@@ -463,12 +426,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           setBundleOverview(response.bundleOverview);
         }
 
-        console.log('🎁 Bundle overview state:', {
-          hasBundleOverview: !!bundleOverview,
-          hasOverviewText: !!bundleOverview?.overview,
-          isStreamingOverview
-        });
-
         // Check if user has a bundle subscription
         const subscriptionsResponse = await autoBlogAPI.getBundleSubscription();
         setHasBundleSubscription(!!subscriptionsResponse.bundleSubscription);
@@ -488,36 +445,13 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
   useEffect(() => {
-    // DEBUG: Log current state for troubleshooting
-    console.log('🔍 AudienceSegmentsTab Main Generator Debug:', {
-      strategiesLength: strategies.length,
-      generatingStrategies,
-      tabMode: tabMode.mode,
-      forceWorkflowMode,
-      hasWebsiteAnalysis: !!stepResults.home.websiteAnalysis,
-      scenariosCount: stepResults.home.websiteAnalysis?.scenarios?.length || 0,
-      hasAnalysisData: stepResults.home.websiteAnalysis &&
-                      (stepResults.home.websiteAnalysis.targetAudience ||
-                       stepResults.home.websiteAnalysis.businessName !== 'None'),
-      analysisCompleted: stepResults.home.analysisCompleted
-    });
-
-    // Prevent duplicate strategy generation if strategies already exist or generating
     if (strategies.length > 0 || generatingStrategies) {
-      console.log('🚫 Skipping main generator - strategies exist or generating');
       return;
     }
 
     const hasAnalysisData = stepResults.home.websiteAnalysis &&
                            (stepResults.home.websiteAnalysis.targetAudience ||
                             stepResults.home.websiteAnalysis.businessName !== 'None');
-
-    console.log('🔍 Main Generator Condition Check:', {
-      condition1: (tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis,
-      condition2: hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode,
-      willExecute: ((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
-                   (hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode)
-    });
 
     if (((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
         (hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode)) {
@@ -566,25 +500,14 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           };
         });
 
-        console.log('🎨 Transformed strategies with images:', openAIStrategies.map(s => ({
-          id: s.id,
-          demographics: s.targetSegment?.demographics,
-          hasImage: !!s.imageUrl,
-          imageUrl: s.imageUrl?.substring(0, 100) + '...'
-        })));
-
-        console.log('📍 About to set strategies with count:', openAIStrategies.length);
-
         // Sort by business value priority
         openAIStrategies.sort((a, b) => (a.businessValue.priority || 999) - (b.businessValue.priority || 999));
-        
+
         setTimeout(async () => {
-          console.log('✅ Setting strategies in state:', openAIStrategies.length);
           setStrategies(openAIStrategies);
           generatedStrategiesCache.add(generationKey);
           sessionStorage.setItem(sessionStorageKey, 'true');
           setGeneratingStrategies(false);
-          console.log('✅ Strategies set in state');
 
           // Track previews viewed (user sees audience options)
           autoBlogAPI.trackLeadConversion('previews_viewed', {
@@ -595,12 +518,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
           // Save generated strategies to database for persistence
           try {
-            console.log('💾 Saving strategies to database with images:', openAIStrategies.map(s => ({
-              demographics: s.targetSegment?.demographics,
-              hasImageUrl: !!s.imageUrl,
-              imageUrl: s.imageUrl
-            })));
-
             const savedStrategies = await Promise.all(
               openAIStrategies.map(async (strategy) => {
                 const audienceData = {
@@ -614,19 +531,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   priority: strategy.businessValue?.priority || 1
                 };
 
-                console.log('💾 Saving audience with image_url:', {
-                  demographics: strategy.targetSegment?.demographics,
-                  image_url: audienceData.image_url
-                });
-
                 const response = await autoBlogAPI.createAudience(audienceData);
 
-                console.log('✅ Saved audience response:', {
-                  id: response.audience?.id,
-                  has_image_url: !!response.audience?.image_url,
-                  image_url: response.audience?.image_url
-                });
-                
                 // Save keywords if they exist
                 if (strategy.seoKeywords && strategy.seoKeywords.length > 0) {
                   const keywords = strategy.seoKeywords.map(keyword => ({
@@ -649,8 +555,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             
             // Update strategies with database IDs
             setStrategies(savedStrategies);
-            console.log('✅ Saved generated strategies to database:', savedStrategies.length);
-            
+
           } catch (error) {
             console.error('⚠️ Failed to save some strategies to database:', error);
             // Don't show error to user - strategies are still functional
@@ -761,8 +666,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
             
             // Update strategies with database IDs
             setStrategies(savedStrategies);
-            console.log('✅ Saved fallback strategies to database:', savedStrategies.length);
-            
+
           } catch (error) {
             console.error('⚠️ Failed to save fallback strategies to database:', error);
             // Don't show error to user - strategies are still functional
@@ -853,8 +757,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Navigate to dashboard and scroll to website analysis
   const handleRunAnalysis = () => {
-    console.log('🚀 Navigate to website analysis triggered from audience tab');
-    
     // Switch to dashboard tab
     if (tabMode.mode !== 'focus') {
       tabMode.enterFocusMode();
@@ -865,7 +767,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       // Try to find the dashboard tab button and click it
       const dashboardButton = document.querySelector('[data-testid="dashboard-tab"], .ant-tabs-tab:first-child, .ant-menu-item:first-child');
       if (dashboardButton) {
-        console.log('✅ Found dashboard tab, clicking...');
         dashboardButton.click();
         
         // Wait for tab content to load, then scroll to analysis
@@ -896,8 +797,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     }
     
     if (analysisElement) {
-      console.log('✅ Found analysis element, scrolling and focusing...');
-      
       // Scroll to the element
       analysisElement.scrollIntoView({ 
         behavior: 'smooth', 
@@ -952,11 +851,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   // Bundle subscription handler
   const handleSubscribeToBundle = async (billingInterval) => {
     try {
-      console.log('🎫 [FRONTEND] Starting checkout:', { billingInterval });
       message.loading({ content: 'Redirecting to checkout...', key: 'bundle-subscribe' });
 
       const response = await autoBlogAPI.subscribeToAllStrategies(billingInterval);
-      console.log('🎫 [FRONTEND] API response:', response);
 
       if (response.url || response.sessionUrl) {
         // Redirect to Stripe checkout
@@ -1120,9 +1017,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                     const placeholder = e.target.nextSibling;
                     if (placeholder) placeholder.style.display = 'flex';
                   }}
-                  onLoad={() => {
-                    console.log('Image loaded successfully:', strategy.imageUrl);
-                  }}
+                  onLoad={() => {}}
                 />
               ) : null}
               {/* Placeholder when no image or image fails to load */}

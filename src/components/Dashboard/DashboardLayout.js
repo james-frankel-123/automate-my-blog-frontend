@@ -172,7 +172,6 @@ const DashboardLayout = ({
   useEffect(() => {
     const handleFocus = () => {
       if (user) {
-        console.log('👀 Window focused - refreshing credits...');
         refreshQuota();
       }
     };
@@ -198,17 +197,8 @@ const DashboardLayout = ({
       return;
     }
 
-    console.log('💳 Payment redirect detected:', {
-      status: paymentStatus,
-      hasUser: !!user,
-      loading: loading,
-      hasAccessToken: !!localStorage.getItem('accessToken'),
-      hasRefreshToken: !!localStorage.getItem('refreshToken')
-    });
-
     // If auth is still loading, wait for it
     if (loading) {
-      console.log('⏳ Auth still loading, waiting for user to be set...');
       return; // Exit and wait for next render when user is loaded
     }
 
@@ -227,28 +217,13 @@ const DashboardLayout = ({
       if (user) {
         message.success('Payment successful! Your credits are being added...');
 
-        console.log('🔄 Starting credit refresh sequence...');
-
         // Immediate refresh
         refreshQuota();
 
-        // Retry after 2 seconds in case webhook hasn't processed yet
-        const retryTimeout1 = setTimeout(() => {
-          console.log('🔄 Retrying credit refresh (2s delay)...');
-          refreshQuota();
-        }, 2000);
-
-        // Retry after 5 seconds
-        const retryTimeout2 = setTimeout(() => {
-          console.log('🔄 Retrying credit refresh (5s delay)...');
-          refreshQuota();
-        }, 5000);
-
-        // Final retry after 10 seconds for very slow webhooks
-        const retryTimeout3 = setTimeout(() => {
-          console.log('🔄 Final credit refresh (10s delay)...');
-          refreshQuota();
-        }, 10000);
+        // Retry after 2s, 5s, 10s in case webhook hasn't processed yet
+        const retryTimeout1 = setTimeout(() => refreshQuota(), 2000);
+        const retryTimeout2 = setTimeout(() => refreshQuota(), 5000);
+        const retryTimeout3 = setTimeout(() => refreshQuota(), 10000);
 
         // Cleanup timeouts
         return () => {
@@ -641,14 +616,12 @@ const DashboardLayout = ({
   ];
 
   const renderContent = () => {
-    console.log('🔍 DashboardLayout renderContent - activeTab:', activeTab);
     // Special tabs that don't use scrollable layout
     if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
         case 'comprehensive-analysis':
-          console.log('🎯 Rendering ComprehensiveAnalysisTab component');
           return <ComprehensiveAnalysisTab />;
         case 'admin-users':
           return <AdminUsersTab />;
@@ -1357,9 +1330,7 @@ const DashboardLayout = ({
           setShowAuthModal(true);
           setAuthContext('register');
         }}
-        onSelectPlan={(planId) => {
-          console.log('Plan selected:', planId);
-        }}
+        onSelectPlan={() => {}}
       />
     </>
   );
