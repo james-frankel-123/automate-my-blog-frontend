@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import { typography } from '../DesignSystem/tokens';
 
@@ -7,11 +7,109 @@ function escapeAttr(s) {
   return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+const HERO_IMAGE_SENTINEL = '__HERO_IMAGE__';
+
+/** Minimum time (ms) to show the shimmer placeholder so users see the loading state. */
+const HERO_PLACEHOLDER_MIN_MS = 2500;
+
+/**
+ * Hero image with animated placeholder until loaded, then swaps in the image.
+ * Keeps the placeholder visible for at least HERO_PLACEHOLDER_MIN_MS so the shimmer is visible
+ * even when the image loads quickly (e.g. from cache).
+ * Uses inline styles + a scoped style tag so the placeholder is always visible (no dependency on parent styled-jsx).
+ */
+function HeroImage({ src, alt, paragraphSpacing = 16 }) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMinTimeElapsed(true), HERO_PLACEHOLDER_MIN_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  const showImage = imageLoaded && minTimeElapsed;
+
+  const wrapperStyle = {
+    position: 'relative',
+    minHeight: 240,
+    margin: `${paragraphSpacing}px 0`,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'var(--color-background-container)'
+  };
+
+  const placeholderStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(135deg, var(--color-background-container) 0%, var(--color-background-alt) 50%, var(--color-background-container) 100%)',
+    backgroundSize: '400% 400%',
+    animation: 'hero-placeholder-gentle 6s ease-in-out infinite',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
+  const messageStyle = {
+    color: 'var(--color-text-tertiary)',
+    fontSize: 15,
+    fontWeight: 500,
+    letterSpacing: '0.02em'
+  };
+
+  return (
+    <div className="hero-image-wrapper" style={wrapperStyle}>
+      <style dangerouslySetInnerHTML={{
+        __html: `@keyframes hero-placeholder-gentle { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`
+      }} />
+      {!showImage && (
+        <div
+          className="hero-image-placeholder"
+          aria-hidden="true"
+          role="presentation"
+          style={placeholderStyle}
+        >
+          <span style={messageStyle}>Waiting for image…</span>
+        </div>
+      )}
+      <img
+        src={src}
+        alt={alt || 'Hero image'}
+        loading="lazy"
+        className="hero-image"
+        style={{
+          width: '100%',
+          maxWidth: '100%',
+          height: 'auto',
+          borderRadius: '8px',
+          margin: 0,
+          opacity: showImage ? 1 : 0,
+          position: showImage ? 'relative' : 'absolute',
+          top: showImage ? undefined : 0,
+          left: showImage ? undefined : 0,
+          transition: 'opacity 0.25s ease-in',
+          pointerEvents: showImage ? undefined : 'none'
+        }}
+        onLoad={() => setImageLoaded(true)}
+      />
+    </div>
+  );
+}
+
+function isHeroImagePlaceholder(alt) {
+  return typeof alt === 'string' && /^IMAGE:hero_image:/i.test(alt.trim());
+}
+
 /**
  * Convert markdown to HTML
+ * @param {string} markdown
+ * @param {{ heroImageUrl?: string }} [options] - When set, ![IMAGE:hero_image:...] is rendered as <img src={heroImageUrl} />
  */
-const markdownToHTML = (markdown) => {
+const markdownToHTML = (markdown, options = {}) => {
   if (!markdown || typeof markdown !== 'string') return '';
+  const { heroImageUrl } = options;
   let html = markdown;
 
   // Headers (multiline: ^ matches start of line)
@@ -31,13 +129,25 @@ const markdownToHTML = (markdown) => {
   // Italic (non-greedy)
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
 
-  // Images ![alt](url) — before links so ![...](...) is not treated as link; placeholders get span
+  // Images ![alt](url) — before links so ![...](...) is not treated as link; placeholders get span (or hero sentinel if URL provided)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, (_, alt, url) => {
     const u = url.trim();
     const isPlaceholder = /^[a-z]+:[^:]+:?/i.test(u) || !/^https?:\/\//i.test(u);
     const safeAlt = String(alt || 'Image').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+    if (isPlaceholder && isHeroImagePlaceholder(alt) && heroImageUrl) {
+      return HERO_IMAGE_SENTINEL;
+    }
     if (isPlaceholder) return `<span class="markdown-image-placeholder" title="${escapeAttr(alt || u)}">[${safeAlt}]</span>`;
     return `<img src="${escapeAttr(u)}" alt="${escapeAttr(alt)}" loading="lazy" />`;
+  });
+
+  // Standalone image placeholder with no URL: ![IMAGE:hero_image:description] → sentinel if heroImageUrl, else placeholder span
+  html = html.replace(/!\[([^\]]*)\](?!\()/gim, (_, alt) => {
+    const safeAlt = String(alt || 'Image').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
+    if (isHeroImagePlaceholder(alt) && heroImageUrl) {
+      return HERO_IMAGE_SENTINEL;
+    }
+    return `<span class="markdown-image-placeholder" title="${escapeAttr(alt)}">[${safeAlt}]</span>`;
   });
 
   // Links [text](url)
@@ -112,7 +222,7 @@ const markdownToHTML = (markdown) => {
  * When forceMarkdown is true (e.g. streamed blog content), always parses as Markdown.
  * Otherwise converts markdown to HTML only when content does not look like pre-rendered HTML.
  */
-const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false }) => {
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl }) => {
   if (!content || !content.trim()) {
     return (
       <div style={{
@@ -129,7 +239,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
 
   // Streamed blog content: always treat as Markdown. Otherwise skip conversion only when content looks like HTML.
   const looksLikeHtml = !forceMarkdown && /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(content);
-  const rawHtml = looksLikeHtml ? content : markdownToHTML(content);
+  const rawHtml = looksLikeHtml ? content : markdownToHTML(content, { heroImageUrl });
   
   // Sanitize HTML to prevent XSS attacks
   const htmlContent = DOMPurify.sanitize(rawHtml, {
@@ -158,8 +268,31 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     ...style
   };
 
+  // Hero image: extract alt from first ![IMAGE:hero_image:...] and split content to inject HeroImage with animated placeholder
+  const heroAltMatch = content.match(/!\[(IMAGE:hero_image:[^\]]*)\]/);
+  const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
+  const useHeroComponent = Boolean(heroImageUrl && htmlContent.includes(HERO_IMAGE_SENTINEL));
+  const contentParts = useHeroComponent ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+
   return (
     <div style={previewStyles}>
+      {contentParts && contentParts.length > 1 ? (
+        <>
+          {contentParts.map((part, i) => (
+            <React.Fragment key={i}>
+              <div dangerouslySetInnerHTML={{ __html: part }} />
+              {i < contentParts.length - 1 && (
+                <HeroImage
+                  src={heroImageUrl}
+                  alt={heroImageAlt}
+                  paragraphSpacing={paragraphSpacing}
+                />
+              )}
+            </React.Fragment>
+          ))}
+        </>
+      ) : (
+        <>
       <div
         dangerouslySetInnerHTML={{ __html: htmlContent }}
         style={{
@@ -377,6 +510,18 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           margin: ${paragraphSpacing * 2}px 0;
         }
 
+        div img {
+          max-width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        div img.hero-image {
+          width: 100%;
+          border-radius: 8px;
+          margin: ${paragraphSpacing}px 0;
+        }
+
         /* Tweet Card Styling */
         div :global(.tweet-card) {
           transition: box-shadow 0.2s ease;
@@ -409,6 +554,34 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
 
         div :global(.tweet-fallback:hover) {
           background-color: var(--color-primary-50) !important;
+        }
+      `}</style>
+        </>
+      )}
+      <style jsx>{`
+        div :global(.hero-image-wrapper) {
+          position: relative;
+          min-height: 240px;
+          margin: ${paragraphSpacing}px 0;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+        div :global(.hero-image-placeholder) {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            90deg,
+            var(--color-background-container) 0%,
+            var(--color-background-alt) 40%,
+            var(--color-background-container) 60%,
+            var(--color-background-alt) 100%
+          );
+          background-size: 200% 100%;
+          animation: hero-shimmer 1.5s ease-in-out infinite;
+        }
+        @keyframes hero-shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
         }
       `}</style>
     </div>

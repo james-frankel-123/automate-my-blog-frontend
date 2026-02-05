@@ -3088,6 +3088,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     content={normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : '')}
                     typographySettings={typography}
                     forceMarkdown
+                    heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
                     style={{
                       minHeight: '300px',
                       padding: '20px',
@@ -3309,6 +3310,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       content={editingContent || 'Enter your blog content...'}
                       typographySettings={typography}
                       forceMarkdown
+                      heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
                       style={{
                         minHeight: '400px',
                         padding: '20px',
