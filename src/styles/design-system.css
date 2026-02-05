@@ -1143,7 +1143,7 @@ body {
 }
 
 .dark-mode .ant-pagination-item-active a {
-  color: white;
+  color: var(--color-text-on-primary);
 }
 
 /* Modal */
@@ -1407,7 +1407,7 @@ body {
 /* Badge */
 .dark-mode .ant-badge-count {
   background-color: var(--color-primary);
-  color: white;
+  color: var(--color-text-on-primary);
 }
 
 /* Divider */

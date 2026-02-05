@@ -59,7 +59,7 @@ const InlineToolbar = ({ editor, visible = false, position = { top: 0, left: 0 }
     border: 'none',
     borderRadius: borderRadius.sm,
     backgroundColor: 'transparent',
-    color: 'white',
+    color: 'var(--color-text-on-primary)',
     fontSize: '14px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -72,6 +72,7 @@ const InlineToolbar = ({ editor, visible = false, position = { top: 0, left: 0 }
   const activeButtonStyles = {
     ...buttonStyles,
     backgroundColor: colors.primary,
+    color: 'var(--color-text-on-primary)',
   };
 
   const getButtonStyle = (isActive) => isActive ? activeButtonStyles : buttonStyles;
