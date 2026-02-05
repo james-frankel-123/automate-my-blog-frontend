@@ -671,6 +671,35 @@ test.describe('E2E (mocked backend)', () => {
       });
     });
 
+    // fix/strategy-select-navigate-to-topic: selecting strategy must navigate to topic choice (posts) section
+    test('selecting audience strategy navigates to topic choice section', async ({ page }) => {
+      test.setTimeout(60000);
+      const createBtn = page.locator('button:has-text("Create New Post")').first();
+      await expect(createBtn).toBeVisible({ timeout: 10000 });
+      await createBtn.click();
+      await page.waitForTimeout(800);
+      const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+      await expect(websiteInput).toBeVisible({ timeout: 10000 });
+      await websiteInput.fill('https://example.com');
+      await page.locator('button:has-text("Analyze")').first().click();
+      await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1000);
+      await removeOverlay(page);
+      await page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first().click({ force: true });
+      await page.waitForTimeout(800);
+      await page.locator('#audience-segments').scrollIntoViewIfNeeded().catch(() => {});
+      await page.waitForTimeout(500);
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario/i }).first();
+      await expect(strategyCard).toBeVisible({ timeout: 10000 });
+      await strategyCard.click();
+      // Navigation must bring us to the topic choice (posts) section
+      const postsSection = page.locator('#posts');
+      await expect(postsSection).toBeVisible({ timeout: 10000 });
+      // Topic-choice content must be visible (Generate post CTA or Generating Topics)
+      const topicChoiceButton = page.locator('#posts').getByRole('button', { name: /Generate post|Generating Topics/i }).first();
+      await expect(topicChoiceButton).toBeVisible({ timeout: 8000 });
+    });
+
     // Streaming fallbacks: mocks return 404 for stream endpoints; these tests assert stream or fallback paths.
     // PR 102 – Audience streaming
     test.describe('PR 102 – Audience streaming', () => {

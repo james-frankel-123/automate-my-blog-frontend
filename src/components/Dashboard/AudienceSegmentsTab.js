@@ -61,9 +61,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   const tabMode = useTabMode('audience-segments');
   const { 
     setSelectedCustomerStrategy,
+    setStrategySelectionCompleted,
     updateCustomerStrategy,
     stepResults,
-    addStickyWorkflowStep 
+    addStickyWorkflowStep,
+    navigateToNextStep
   } = useWorkflowMode();
   const { setHint } = useSystemHint();
   const [selectedStrategy, setSelectedStrategy] = useState(null);
@@ -837,6 +839,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       }).catch(err => console.error('Failed to track audience_selected:', err));
 
       message.success(`Selected audience strategy: ${strategy.targetSegment.demographics.split(' ')[0]}...`);
+
+      // Advance workflow to next section (topic choice / content creation)
+      setStrategySelectionCompleted(true);
+      navigateToNextStep();
     }
   };
 
