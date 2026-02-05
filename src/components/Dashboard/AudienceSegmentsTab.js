@@ -682,10 +682,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         };
 
         const tryStreaming = async () => {
+          let streamTimeoutId = null;
           try {
             const { connectionId } = await autoBlogAPI.generateAudiencesStream(analysis, []);
             setStrategies([]);
-            autoBlogAPI.connectToStream(connectionId, {
+            const streamHandle = autoBlogAPI.connectToStream(connectionId, {
               onAudienceComplete: (data) => {
                 const audience = data?.audience;
                 if (!audience) return;
@@ -695,14 +696,24 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 });
               },
               onComplete: () => {
+                if (streamTimeoutId) clearTimeout(streamTimeoutId);
                 setGeneratingStrategies(false);
                 setHint(systemVoice.audience.audienceReady, 'success', 5000);
               },
               onError: () => {
+                if (streamTimeoutId) clearTimeout(streamTimeoutId);
                 setGeneratingStrategies(false);
                 runFallback();
               }
             });
+            // If stream never sends complete/error (e.g. connection closes without event), stop "Thinking about your audience" and show fallback
+            const AUDIENCE_STREAM_TIMEOUT_MS = 12000;
+            streamTimeoutId = setTimeout(() => {
+              streamTimeoutId = null;
+              setGeneratingStrategies(false);
+              runFallback();
+              if (streamHandle && typeof streamHandle.close === 'function') streamHandle.close();
+            }, AUDIENCE_STREAM_TIMEOUT_MS);
           } catch (e) {
             console.warn('Audience stream not available, using template strategies:', e?.message);
             runFallback();
