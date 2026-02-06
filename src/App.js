@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { SystemHintProvider } from './contexts/SystemHintContext';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import SEOHead from './components/SEOHead';
@@ -279,13 +280,15 @@ const App = () => {
   return (
     <ConfigProvider theme={getAntdTheme(isDarkMode)}>
       <HelmetProvider>
-        <AuthProvider>
-          <WorkflowModeProvider>
-            <AnalyticsProvider>
-              <AppContent />
-            </AnalyticsProvider>
-          </WorkflowModeProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <WorkflowModeProvider>
+              <AnalyticsProvider>
+                <AppContent />
+              </AnalyticsProvider>
+            </WorkflowModeProvider>
+          </AuthProvider>
+        </ErrorBoundary>
       </HelmetProvider>
     </ConfigProvider>
   );

@@ -12,7 +12,8 @@ import {
   Progress, 
   Empty,
   Spin,
-  Tabs
+  Tabs,
+  message
 } from 'antd';
 import { 
   BookOutlined, 
@@ -95,6 +96,7 @@ const ComprehensiveAnalysisTab = () => {
       }
     } catch (error) {
       console.error('Failed to load analysis data:', error);
+      message.error(`Failed to load analysis: ${error?.message || 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -114,10 +116,7 @@ const ComprehensiveAnalysisTab = () => {
                      comprehensiveResults?.organization?.website_url;
     
     if (!websiteUrl) {
-      console.error('No website URL found for comprehensive analysis. Available data:', {
-        currentOrganization,
-        comprehensiveResults: comprehensiveResults?.organization
-      });
+      message.error('No website URL found. Run website analysis first.');
       return;
     }
     
@@ -130,6 +129,7 @@ const ComprehensiveAnalysisTab = () => {
       }, 2000);
     } catch (error) {
       console.error('Force re-analysis failed:', error);
+      message.error(`Re-analysis failed: ${error?.message || 'Please try again.'}`);
     } finally {
       setReanalyzing(false);
     }
