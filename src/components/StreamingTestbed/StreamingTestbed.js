@@ -255,38 +255,30 @@ function StreamingTestbed() {
     ];
     setRelatedContentSteps(fetchSteps);
 
-    const runTweetStream = () =>
-      api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
-        .then(({ connectionId, streamUrl }) =>
-          new Promise((resolve) => {
-            setRelatedContentSteps((prev) =>
-              prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
-            );
-            const { close } = api.connectToStream(connectionId, {
-              onComplete: (data) => {
-                const tweets = data?.tweets ?? data?.data?.tweets ?? [];
-                const arr = Array.isArray(tweets) ? tweets : [];
-                setLiveRelatedTweets(arr);
-                setRelatedContentSteps((prev) =>
-                  prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
-                );
-                resolve(arr);
-              },
-              onError: () => {
-                setRelatedContentSteps((prev) =>
-                  prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
-                );
-                resolve([]);
-              },
-            }, { streamUrl });
-            streamClosesRef.current.push(close);
-          })
-        )
+    // Use combined tweets+videos endpoint (backend PR #178) for speed
+    const runTweetsAndVideos = () =>
+      api.fetchRelatedContent(topic, websiteAnalysisData, { maxTweets: 3, maxVideos: 5 })
+        .then(({ tweets: tweetsData, videos: videosData }) => {
+          const tweetsArr = Array.isArray(tweetsData) ? tweetsData : [];
+          const videosArr = Array.isArray(videosData) ? videosData : [];
+          setLiveRelatedTweets(tweetsArr);
+          setLiveRelatedVideos(videosArr);
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => {
+              if (s.id === 'tweets') return { ...s, status: RelatedContentStepStatus.DONE, count: tweetsArr.length };
+              if (s.id === 'videos') return { ...s, status: RelatedContentStepStatus.DONE, count: videosArr.length };
+              return s;
+            })
+          );
+          return [tweetsArr, videosArr];
+        })
         .catch(() => {
           setRelatedContentSteps((prev) =>
-            prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+            prev.map((s) =>
+              s.id === 'tweets' || s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s
+            )
           );
-          return [];
+          return [[], []];
         });
 
     const runArticleStream = () =>
@@ -323,45 +315,16 @@ function StreamingTestbed() {
           return [];
         });
 
-    const runVideoStream = () =>
-      api.searchYouTubeVideosForTopicStream(topic, websiteAnalysisData, 5)
-        .then(({ connectionId, streamUrl }) =>
-          new Promise((resolve) => {
-            setRelatedContentSteps((prev) =>
-              prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
-            );
-            const { close } = api.connectToStream(connectionId, {
-              onComplete: (data) => {
-                const videos = data?.videos ?? data?.data?.videos ?? [];
-                const arr = Array.isArray(videos) ? videos : [];
-                setLiveRelatedVideos(arr);
-                setRelatedContentSteps((prev) =>
-                  prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
-                );
-                resolve(arr);
-              },
-              onError: () => {
-                setRelatedContentSteps((prev) =>
-                  prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
-                );
-                resolve([]);
-              },
-            }, { streamUrl });
-            streamClosesRef.current.push(close);
-          })
-        )
-        .catch(() => {
-          setRelatedContentSteps((prev) =>
-            prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
-          );
-          return [];
-        });
+    setRelatedContentSteps((prev) =>
+      prev.map((s) =>
+        s.id === 'tweets' || s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s
+      )
+    );
 
     try {
-      const [preloadedTweets, preloadedArticles, preloadedVideos] = await Promise.all([
-        runTweetStream(),
+      const [[preloadedTweets, preloadedVideos], preloadedArticles] = await Promise.all([
+        runTweetsAndVideos(),
         runArticleStream(),
-        runVideoStream(),
       ]);
 
       setRelatedContentSteps([]);

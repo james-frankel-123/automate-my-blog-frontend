@@ -375,6 +375,36 @@ class AutoBlogAPI {
   }
 
   /**
+   * Fetch related tweets and videos in one request (backend PR #178).
+   * Use when both tweets and videos are needed; faster than two separate streams.
+   * @param {Object} topic - { title, subheader?, trend?, seoBenefit?, category? }
+   * @param {Object} businessInfo - { businessType, targetAudience } (from website analysis)
+   * @param {{ maxTweets?: number, maxVideos?: number }} [options]
+   * @returns {Promise<{ tweets: Array, videos: Array, searchTermsUsed?: { tweets?: string[], videos?: string[] } }>}
+   */
+  async fetchRelatedContent(topic, businessInfo, options = {}) {
+    const { maxTweets = 3, maxVideos = 5 } = options;
+    const payload = {
+      topic: topic ?? {},
+      businessInfo: {
+        businessType: businessInfo?.businessType ?? 'Business',
+        targetAudience: businessInfo?.targetAudience ?? 'General Audience',
+      },
+      maxTweets,
+      maxVideos,
+    };
+    const response = await this.makeRequest('/api/v1/enhanced-blog-generation/related-content', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return {
+      tweets: response.tweets ?? [],
+      videos: response.videos ?? [],
+      searchTermsUsed: response.searchTermsUsed ?? {},
+    };
+  }
+
+  /**
    * Start news article search stream. Connect with connectToStream(connectionId, handlers, { streamUrl }).
    * Events: connected, queries-extracted ({ searchTermsUsed }), complete ({ articles, searchTermsUsed }), error.
    * @param {Object} topic - { title, subheader, trend, seoBenefit, category }
