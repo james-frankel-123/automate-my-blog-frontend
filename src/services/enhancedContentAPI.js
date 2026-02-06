@@ -30,6 +30,10 @@ export class EnhancedContentAPI {
       enhancementOptions.goal
     );
 
+    const preloadedTweets = enhancementOptions.preloadedTweets ?? enhancementOptions.tweets ?? [];
+    const preloadedArticles = enhancementOptions.preloadedArticles ?? [];
+    const preloadedVideos = enhancementOptions.preloadedVideos ?? [];
+
     return {
       topic: selectedTopic,
       businessInfo: analysisData || {},
@@ -38,7 +42,10 @@ export class EnhancedContentAPI {
       options: {
         autoSave: true,
         status: enhancementOptions.status || 'draft',
-        includeVisuals: !!enhancementOptions.includeVisuals
+        includeVisuals: !!enhancementOptions.includeVisuals,
+        preloadedTweets: Array.isArray(preloadedTweets) ? preloadedTweets : [],
+        preloadedArticles: Array.isArray(preloadedArticles) ? preloadedArticles : [],
+        preloadedVideos: Array.isArray(preloadedVideos) ? preloadedVideos : [],
       },
       comprehensiveContext: comprehensivePrompt,
       strategicCTAs,
@@ -47,7 +54,7 @@ export class EnhancedContentAPI {
       organizationName: enhancementOptions.organizationName,
       targetSEOScore: enhancementOptions.targetSEOScore,
       websiteAnalysis: analysisData || enhancementOptions.websiteAnalysis || enhancementOptions.comprehensiveContext?.websiteAnalysis,
-      tweets: enhancementOptions.tweets
+      tweets: Array.isArray(preloadedTweets) ? preloadedTweets : []
     };
   }
 

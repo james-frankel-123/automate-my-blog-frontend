@@ -435,27 +435,20 @@ export const contentAPI = {
    */
   async generateContent(selectedTopic, analysisData, selectedStrategy = null, webSearchInsights = {}, enhancementOptions = {}) {
     try {
-      // Step 1: Get tweets (use prefetched if provided for parallel UX with credits check)
-      let tweets = [];
-      if (enhancementOptions.prefetchedTweets !== undefined) {
-        tweets = enhancementOptions.prefetchedTweets || [];
-      } else {
-        const tweetSearchResult = await autoBlogAPI.searchTweetsForTopic(
-          selectedTopic,
-          analysisData,
-          3  // maxTweets
-        );
-        tweets = tweetSearchResult.tweets || [];
-      }
+      // Use preloaded data from fetch steps (tweets, articles, videos) when provided
+      const preloadedTweets = enhancementOptions.preloadedTweets ?? enhancementOptions.prefetchedTweets ?? [];
+      const preloadedArticles = enhancementOptions.preloadedArticles ?? [];
+      const preloadedVideos = enhancementOptions.preloadedVideos ?? [];
+      const tweets = Array.isArray(preloadedTweets) ? preloadedTweets : [];
 
       // Check if enhanced content generation is requested
       if (enhancementOptions.useEnhancedGeneration) {
-        const { prefetchedTweets: _, ...restOptions } = enhancementOptions;
+        const { prefetchedTweets: _pft, preloadedTweets: _plt, preloadedArticles: _pla, preloadedVideos: _plv, ...restOptions } = enhancementOptions;
         const enhancedResult = await enhancedContentAPI.generateEnhancedContent(
           selectedTopic,
           analysisData,
           selectedStrategy,
-          { ...restOptions, tweets }  // Pass tweets to enhanced generation (exclude prefetchedTweets)
+          { ...restOptions, preloadedTweets: tweets, preloadedArticles, preloadedVideos }
         );
         
         if (enhancedResult.success) {
@@ -569,13 +562,11 @@ export const contentAPI = {
    * @returns {Promise<{ connectionId: string }>} Stream connection ID
    */
   async startBlogStream(selectedTopic, analysisData, selectedStrategy = null, webSearchInsights = {}, enhancementOptions = {}) {
-    let tweets = [];
-    if (enhancementOptions.prefetchedTweets !== undefined) {
-      tweets = enhancementOptions.prefetchedTweets || [];
-    } else {
-      const tweetSearchResult = await autoBlogAPI.searchTweetsForTopic(selectedTopic, analysisData, 3);
-      tweets = tweetSearchResult.tweets || [];
-    }
+    const preloadedTweets = enhancementOptions.preloadedTweets ?? enhancementOptions.prefetchedTweets ?? [];
+    const preloadedArticles = enhancementOptions.preloadedArticles ?? [];
+    const preloadedVideos = enhancementOptions.preloadedVideos ?? [];
+    const tweets = Array.isArray(preloadedTweets) ? preloadedTweets : [];
+
     const contextPrompt = selectedStrategy
       ? `Focus on ${selectedStrategy.customerProblem}. Target customers who search for: ${selectedStrategy.customerLanguage?.join(', ') || 'relevant terms'}. Make this content align with the business goal: ${selectedStrategy.conversionPath}. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including competitive analysis and current market keywords.' : ''}`
       : `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
@@ -586,7 +577,12 @@ export const contentAPI = {
       businessInfo: analysisData ?? {},
       organizationId,
       additionalInstructions: contextPrompt,
-      tweets: tweets.length ? tweets : undefined
+      tweets: tweets.length ? tweets : undefined,
+      options: {
+        preloadedTweets: tweets,
+        preloadedArticles,
+        preloadedVideos,
+      }
     });
     return { connectionId };
   }

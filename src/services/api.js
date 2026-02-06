@@ -3836,16 +3836,18 @@ Please provide analysis in this JSON format:
    * @returns {Promise<{ connectionId: string, streamUrl?: string }>}
    */
   async generateBlogStream(payload) {
+    const body = {
+      topic: payload.topic,
+      businessInfo: payload.businessInfo ?? {},
+      organizationId: payload.organizationId,
+      additionalInstructions: payload.additionalInstructions || '',
+      ...(payload.tweets?.length ? { tweets: payload.tweets } : {}),
+      ...(payload.options && typeof payload.options === 'object' ? { options: payload.options } : {})
+    };
     const response = await this.makeRequest('/api/v1/blog/generate-stream', {
       method: 'POST',
       headers: this._getStreamAuthHeaders(),
-      body: JSON.stringify({
-        topic: payload.topic,
-        businessInfo: payload.businessInfo ?? {},
-        organizationId: payload.organizationId,
-        additionalInstructions: payload.additionalInstructions || '',
-        ...(payload.tweets?.length ? { tweets: payload.tweets } : {})
-      })
+      body: JSON.stringify(body)
     });
     this._handleGenerateStreamResponse(response);
     return {

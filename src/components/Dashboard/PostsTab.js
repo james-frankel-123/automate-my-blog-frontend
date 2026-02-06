@@ -42,6 +42,7 @@ import {
   normalizeContentString
 } from '../../utils/streamingUtils';
 import ThinkingPanel from '../shared/ThinkingPanel';
+import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
@@ -327,6 +328,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [generatingContent, setGeneratingContent] = useState(false);
   const [generatingImages, setGeneratingImages] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(null); // { progress, currentStep, status } from job polling
+  const [relatedContentSteps, setRelatedContentSteps] = useState([]); // [{ id, label, status, count? }] for fetch steps UI
   const [availableTopics, setAvailableTopics] = useState([]);
   const [topicImageGeneratingIndex, setTopicImageGeneratingIndex] = useState(null); // index when DALL·E started for a topic (for "Generating image for topic N…")
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -805,60 +807,134 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         );
       }
 
-      // Run tweet search in parallel with blog stream; insert tweets into preview as they arrive via [TWEET:n] placeholders.
-      const prefetchedTweets = [];
-      api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
-        .then(({ connectionId, streamUrl }) => {
-          api.connectToStream(connectionId, {
-            onQueriesExtracted: (data) => {
-              const term = data?.searchTermsUsed?.[0];
-              if (term) setHint(`Searching for: ${term}…`, 'hint', 0);
-            },
-            onComplete: (data) => {
-              const tweets = data?.tweets ?? data?.data?.tweets ?? [];
-              if (Array.isArray(tweets) && tweets.length) {
-                setRelatedTweets(tweets);
-                setCurrentDraft((prev) => (prev ? { ...prev, relatedTweets: tweets } : prev));
-              }
-            },
-            onError: () => {},
-          }, { streamUrl });
-        })
-        .catch(() => {});
+      // Step 1: Fetch related content (tweets, articles, videos) with visible steps before blog generation
+      const fetchSteps = [
+        { id: 'tweets', label: systemVoice.content.fetchTweets, status: RelatedContentStepStatus.PENDING },
+        { id: 'articles', label: systemVoice.content.fetchArticles, status: RelatedContentStepStatus.PENDING },
+        { id: 'videos', label: systemVoice.content.fetchVideos, status: RelatedContentStepStatus.PENDING },
+      ];
+      setRelatedContentSteps(fetchSteps);
 
-      // Run news article search in parallel; show results in Related articles panel.
-      api.searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
-        .then(({ connectionId, streamUrl }) => {
-          api.connectToStream(connectionId, {
-            onQueriesExtracted: (data) => {
-              const term = data?.searchTermsUsed?.[0];
-              if (term) setHint(`Searching articles: ${term}…`, 'hint', 0);
-            },
-            onComplete: (data) => {
-              const articles = data?.articles ?? data?.data?.articles ?? [];
-              if (Array.isArray(articles) && articles.length) setRelatedArticles(articles);
-            },
-            onError: () => {},
-          }, { streamUrl });
-        })
-        .catch(() => {});
+      const runTweetStream = () =>
+        api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
+          .then(({ connectionId, streamUrl }) =>
+            new Promise((resolve) => {
+              setRelatedContentSteps((prev) =>
+                prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+              );
+              api.connectToStream(connectionId, {
+                onQueriesExtracted: (data) => {
+                  const term = data?.searchTermsUsed?.[0];
+                  if (term) setHint(`Searching for: ${term}…`, 'hint', 0);
+                },
+                onComplete: (data) => {
+                  const tweets = data?.tweets ?? data?.data?.tweets ?? [];
+                  const arr = Array.isArray(tweets) ? tweets : [];
+                  setRelatedTweets(arr);
+                  setRelatedContentSteps((prev) =>
+                    prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                  );
+                  resolve(arr);
+                },
+                onError: () => {
+                  setRelatedContentSteps((prev) =>
+                    prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                  );
+                  resolve([]);
+                },
+              }, { streamUrl });
+            })
+          )
+          .catch(() => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+            );
+            return [];
+          });
 
-      // Run YouTube video search in parallel; show results in Related videos panel.
-      api.searchYouTubeVideosForTopicStream(topic, websiteAnalysisData, 5)
-        .then(({ connectionId, streamUrl }) => {
-          api.connectToStream(connectionId, {
-            onQueriesExtracted: (data) => {
-              const term = data?.searchTermsUsed?.[0];
-              if (term) setHint(`Searching videos: ${term}…`, 'hint', 0);
-            },
-            onComplete: (data) => {
-              const videos = data?.videos ?? data?.data?.videos ?? [];
-              if (Array.isArray(videos) && videos.length) setRelatedVideos(videos);
-            },
-            onError: () => {},
-          }, { streamUrl });
-        })
-        .catch(() => {});
+      const runArticleStream = () =>
+        api.searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
+          .then(({ connectionId, streamUrl }) =>
+            new Promise((resolve) => {
+              setRelatedContentSteps((prev) =>
+                prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+              );
+              api.connectToStream(connectionId, {
+                onQueriesExtracted: (data) => {
+                  const term = data?.searchTermsUsed?.[0];
+                  if (term) setHint(`Searching articles: ${term}…`, 'hint', 0);
+                },
+                onComplete: (data) => {
+                  const articles = data?.articles ?? data?.data?.articles ?? [];
+                  const arr = Array.isArray(articles) ? articles : [];
+                  setRelatedArticles(arr);
+                  setRelatedContentSteps((prev) =>
+                    prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                  );
+                  resolve(arr);
+                },
+                onError: () => {
+                  setRelatedContentSteps((prev) =>
+                    prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                  );
+                  resolve([]);
+                },
+              }, { streamUrl });
+            })
+          )
+          .catch(() => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+            );
+            return [];
+          });
+
+      const runVideoStream = () =>
+        api.searchYouTubeVideosForTopicStream(topic, websiteAnalysisData, 5)
+          .then(({ connectionId, streamUrl }) =>
+            new Promise((resolve) => {
+              setRelatedContentSteps((prev) =>
+                prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+              );
+              api.connectToStream(connectionId, {
+                onQueriesExtracted: (data) => {
+                  const term = data?.searchTermsUsed?.[0];
+                  if (term) setHint(`Searching videos: ${term}…`, 'hint', 0);
+                },
+                onComplete: (data) => {
+                  const videos = data?.videos ?? data?.data?.videos ?? [];
+                  const arr = Array.isArray(videos) ? videos : [];
+                  setRelatedVideos(arr);
+                  setRelatedContentSteps((prev) =>
+                    prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                  );
+                  resolve(arr);
+                },
+                onError: () => {
+                  setRelatedContentSteps((prev) =>
+                    prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                  );
+                  resolve([]);
+                },
+              }, { streamUrl });
+            })
+          )
+          .catch(() => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+            );
+            return [];
+          });
+
+      // Run all three streams in parallel; wait for all to complete before starting blog generation
+      const [preloadedTweets, preloadedArticles, preloadedVideos] = await Promise.all([
+        runTweetStream(),
+        runArticleStream(),
+        runVideoStream(),
+      ]);
+
+      // Clear fetch steps before content generation (ThinkingPanel will show)
+      setRelatedContentSteps([]);
 
       // Determine if enhanced generation should be used based on available organization data
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
@@ -876,7 +952,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       const enhancementOptions = {
         useEnhancedGeneration: shouldUseEnhancement,
-        prefetchedTweets,
+        preloadedTweets: preloadedTweets,
+        preloadedArticles: preloadedArticles,
+        preloadedVideos: preloadedVideos,
         goal: contentStrategy.goal,
         voice: contentStrategy.voice,
         template: contentStrategy.template,
@@ -1962,7 +2040,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         }
                       </Paragraph>
 
-                      {generatingContent && (
+                      {generatingContent && relatedContentSteps.length > 0 && (
+                        <RelatedContentStepsPanel
+                          steps={relatedContentSteps}
+                          title="Preparing related content"
+                        />
+                      )}
+                      {generatingContent && relatedContentSteps.length === 0 && (
                         <ThinkingPanel
                           isActive={generatingContent}
                           currentStep={generationProgress?.currentStep}
@@ -2836,7 +2920,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       }
                     </Paragraph>
 
-                    {generatingContent && (
+                    {generatingContent && relatedContentSteps.length > 0 && (
+                      <RelatedContentStepsPanel
+                        steps={relatedContentSteps}
+                        title="Preparing related content"
+                      />
+                    )}
+                    {generatingContent && relatedContentSteps.length === 0 && (
                       <ThinkingPanel
                         isActive={generatingContent}
                         currentStep={generationProgress?.currentStep}
