@@ -154,6 +154,8 @@ const autoBlogAPI = {
     streamUrl: 'https://api.example.com/api/v1/stream/mock-connection-id?token=mock',
   }),
 
+  fetchRelatedContent: jest.fn().mockResolvedValue({ tweets: [], videos: [], searchTermsUsed: {} }),
+
   searchNewsArticlesForTopicStream: jest.fn().mockResolvedValue({
     connectionId: 'mock-news-connection-id',
     streamUrl: 'https://api.example.com/api/v1/stream/mock-news-connection-id?token=mock',
