@@ -3671,12 +3671,21 @@ Please provide analysis in this JSON format:
       }
     };
 
+    /** For content-only streams: if event.data is a non-JSON string, pass it through as the payload. */
+    const parseChunkOrContent = (event) => {
+      const raw = event.data;
+      if (typeof raw === 'string' && raw.trim() && !raw.trim().startsWith('{') && !raw.trim().startsWith('[')) {
+        return raw;
+      }
+      return parseData(event);
+    };
+
     // Backend may send named SSE events (event: content-chunk, event: complete, etc.) — only named listeners receive them
     eventSource.addEventListener('connected', (event) => {
       if (handlers.onConnected) handlers.onConnected(parseData(event));
     });
     eventSource.addEventListener('content-chunk', (event) => {
-      const data = parseData(event);
+      const data = parseChunkOrContent(event);
       if (handlers.onChunk) handlers.onChunk(data);
     });
     eventSource.addEventListener('audience-complete', (event) => {
@@ -3700,7 +3709,7 @@ Please provide analysis in this JSON format:
       if (handlers.onQueriesExtracted) handlers.onQueriesExtracted(data);
     });
     eventSource.addEventListener('complete', (event) => {
-      const data = parseData(event);
+      const data = parseChunkOrContent(event);
       if (handlers.onComplete) handlers.onComplete(data);
       close();
     });

@@ -36,7 +36,12 @@ import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
-import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
+import {
+  getStreamChunkContentOnly,
+  getStreamCompleteContentOnly,
+  extractStreamCompleteContent,
+  normalizeContentString
+} from '../../utils/streamingUtils';
 import ThinkingPanel from '../shared/ThinkingPanel';
 
 // New Enhanced Components
@@ -925,11 +930,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           const streamDone = new Promise((resolve, reject) => {
             api.connectToStream(connectionId, {
               onChunk: (data) => {
-                const chunk = extractStreamChunk(data);
+                const chunk = getStreamChunkContentOnly(data);
                 if (chunk) setEditingContent((prev) => prev + chunk);
               },
               onComplete: (data) => {
-                const finalContent = extractStreamCompleteContent(data);
+                const finalContent = getStreamCompleteContentOnly(data);
                 if (finalContent) setEditingContent(finalContent);
                 setContentGenerated(true);
                 resolve({ success: true, content: finalContent, blogPost: data?.blogPost });
@@ -3185,18 +3190,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     <Button
                       type="primary"
                       icon={<EditOutlined />}
-                      onClick={() => {
-                        const normalized = normalizeContentString(editingContent) || editingContent;
-                        if (normalized !== editingContent) setEditingContent(normalized);
-                        setContentViewMode('editor');
-                      }}
+                      onClick={() => setContentViewMode('editor')}
                     >
                       Switch to WYSIWYG
                     </Button>
                     <Button
                       icon={<CopyOutlined />}
                       onClick={async () => {
-                        const toCopy = normalizeContentString(editingContent) || editingContent;
+                        const toCopy = editingContent;
                         try {
                           await navigator.clipboard.writeText(toCopy);
                           message.success('Copied to clipboard');
@@ -3240,7 +3241,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   minHeight: '320px'
                 }}>
                   <StreamingPreview
-                    content={normalizeContentString(editingContent) || (generatingContent && editingContent ? 'Streaming…' : editingContent) || (generatingContent ? 'Waiting for content…' : '')}
+                    content={editingContent || (generatingContent ? 'Waiting for content…' : '')}
                     relatedArticles={relatedArticles || []}
                     relatedVideos={relatedVideos || []}
                     relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
