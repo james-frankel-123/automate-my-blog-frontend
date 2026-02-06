@@ -206,6 +206,15 @@ export const systemVoice = {
     workingForYou: "Working for you",
     imagesGenerating: "Adding images…",
     imagesReady: "Images added.",
+    // Related content fetch steps (tweets, articles, videos before blog generation)
+    fetchTweets: "Fetching related tweets…",
+    fetchTweetsDone: (n) => `Found ${n} tweet${n !== 1 ? 's' : ''}`,
+    fetchArticles: "Fetching related news articles…",
+    fetchArticlesDone: (n) => `Found ${n} article${n !== 1 ? 's' : ''}`,
+    fetchVideos: "Fetching related videos…",
+    fetchVideosDone: (n) => `Found ${n} video${n !== 1 ? 's' : ''}`,
+    fetchSkipped: "Skipped",
+    fetchFailed: "Failed",
   },
 
   // ─── Toasts & messages (message.success / message.info / message.error) ───
