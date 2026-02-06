@@ -12,9 +12,7 @@ import {
   LockOutlined,
   TeamOutlined,
   TrophyOutlined,
-  CopyOutlined,
-  FileTextOutlined,
-  PlayCircleOutlined
+  CopyOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -43,6 +41,7 @@ import {
 } from '../../utils/streamingUtils';
 import ThinkingPanel from '../shared/ThinkingPanel';
 import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
+import RelatedContentPanel from '../shared/RelatedContentPanel';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
@@ -1296,6 +1295,14 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       });
     }
   };
+
+  // Inject related content placeholder at end of post (e.g. [ARTICLE:0], [VIDEO:1])
+  const handleInjectRelated = (type, index) => {
+    const token = `[${type}:${index}]`;
+    const insert = (editingContent?.trim() ? '\n\n' : '') + token + '\n\n';
+    handleContentChange((editingContent || '') + insert);
+    message.success(`Added ${type.toLowerCase()} to post`);
+  };
   
   // Autosave function - saves silently without user notifications
   const handleAutosave = async (showUserFeedback = false) => {
@@ -2202,138 +2209,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     </div>
                   )}
 
-                  {/* Related tweets (fetched in background after stream starts) */}
-                  {(relatedTweets?.length > 0 || currentDraft?.relatedTweets?.length > 0) && (
-                    <div style={{
-                      marginBottom: '16px',
-                      padding: '12px',
-                      backgroundColor: 'var(--color-primary-50)',
-                      border: '1px solid var(--color-primary-100)',
-                      borderRadius: '6px'
-                    }}>
-                      <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
-                        Related tweets
-                      </Text>
-                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                        {(relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []).slice(0, 5).map((t, i) => (
-                          <li key={i} style={{ marginBottom: '4px' }}>
-                            {typeof t === 'string' ? t : (t?.text || t?.content || JSON.stringify(t)).slice(0, 120)}
-                            {(typeof t !== 'string' && (t?.text?.length > 120 || t?.content?.length > 120)) ? '…' : ''}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  <RelatedContentPanel
+                    tweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
+                    articles={relatedArticles || []}
+                    videos={relatedVideos || []}
+                    onInject={handleInjectRelated}
+                  />
 
-                  {/* Related articles (news search stream, in parallel with blog) */}
-                  {relatedArticles?.length > 0 && (
-                    <div style={{
-                      marginBottom: '16px',
-                      padding: '12px',
-                      backgroundColor: 'var(--color-primary-50)',
-                      border: '1px solid var(--color-primary-100)',
-                      borderRadius: '6px'
-                    }}>
-                      <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
-                        <FileTextOutlined style={{ marginRight: '6px' }} />
-                        Related articles
-                      </Text>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {relatedArticles.slice(0, 5).map((a, i) => (
-                          <a
-                            key={a?.url || i}
-                            href={a?.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: '10px',
-                              padding: '8px',
-                              backgroundColor: 'var(--color-background-body)',
-                              borderRadius: '6px',
-                              textDecoration: 'none',
-                              color: 'inherit',
-                              border: '1px solid var(--color-gray-200)'
-                            }}
-                          >
-                            {a?.urlToImage && (
-                              <img
-                                src={a.urlToImage}
-                                alt=""
-                                style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
-                              />
-                            )}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                                {a?.title || 'Article'}
-                              </Text>
-                              <Text type="secondary" style={{ fontSize: '12px' }}>
-                                {a?.sourceName}
-                                {a?.publishedAt ? ` · ${new Date(a.publishedAt).toLocaleDateString()}` : ''}
-                              </Text>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Related videos (YouTube search stream, in parallel with blog) */}
-                  {relatedVideos?.length > 0 && (
-                    <div style={{
-                      marginBottom: '16px',
-                      padding: '12px',
-                      backgroundColor: 'var(--color-primary-50)',
-                      border: '1px solid var(--color-primary-100)',
-                      borderRadius: '6px'
-                    }}>
-                      <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
-                        <PlayCircleOutlined style={{ marginRight: '6px' }} />
-                        Related videos
-                      </Text>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {relatedVideos.slice(0, 5).map((v, i) => (
-                          <a
-                            key={v?.videoId || i}
-                            href={v?.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                              display: 'flex',
-                              alignItems: 'flex-start',
-                              gap: '10px',
-                              padding: '8px',
-                              backgroundColor: 'var(--color-background-body)',
-                              borderRadius: '6px',
-                              textDecoration: 'none',
-                              color: 'inherit',
-                              border: '1px solid var(--color-gray-200)'
-                            }}
-                          >
-                            {v?.thumbnailUrl && (
-                              <img
-                                src={v.thumbnailUrl}
-                                alt=""
-                                style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
-                              />
-                            )}
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                                {v?.title || 'Video'}
-                              </Text>
-                              <Text type="secondary" style={{ fontSize: '12px' }}>
-                                {v?.channelTitle}
-                                {v?.viewCount != null ? ` · ${Number(v.viewCount).toLocaleString()} views` : ''}
-                                {v?.duration ? ` · ${v.duration}` : ''}
-                              </Text>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
                   {/* Enhanced Generation Toggle - Standalone Panel */}
                   {console.log('🔧 DEBUG: Rendering Enhanced Generation Toggle', { useEnhancedGeneration, selectedTopic: !!selectedTopic }) && null}
                   <div style={{ 
@@ -3457,138 +3339,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 </div>
               )}
 
-              {/* Related tweets (fetched in background after stream starts) */}
-              {(relatedTweets?.length > 0 || currentDraft?.relatedTweets?.length > 0) && (
-                <div style={{
-                  marginBottom: '16px',
-                  padding: '12px',
-                  backgroundColor: 'var(--color-primary-50)',
-                  border: '1px solid var(--color-primary-100)',
-                  borderRadius: '6px'
-                }}>
-                  <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
-                    Related tweets
-                  </Text>
-                  <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-                    {(relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []).slice(0, 5).map((t, i) => (
-                      <li key={i} style={{ marginBottom: '4px' }}>
-                        {typeof t === 'string' ? t : (t?.text || t?.content || JSON.stringify(t)).slice(0, 120)}
-                        {(typeof t !== 'string' && (t?.text?.length > 120 || t?.content?.length > 120)) ? '…' : ''}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+              <RelatedContentPanel
+                tweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
+                articles={relatedArticles || []}
+                videos={relatedVideos || []}
+                onInject={handleInjectRelated}
+              />
 
-              {/* Related articles (news search stream, in parallel with blog) */}
-              {relatedArticles?.length > 0 && (
-                <div style={{
-                  marginBottom: '16px',
-                  padding: '12px',
-                  backgroundColor: 'var(--color-primary-50)',
-                  border: '1px solid var(--color-primary-100)',
-                  borderRadius: '6px'
-                }}>
-                  <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
-                    <FileTextOutlined style={{ marginRight: '6px' }} />
-                    Related articles
-                  </Text>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {relatedArticles.slice(0, 5).map((a, i) => (
-                      <a
-                        key={a?.url || i}
-                        href={a?.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '10px',
-                          padding: '8px',
-                          backgroundColor: 'var(--color-background-body)',
-                          borderRadius: '6px',
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          border: '1px solid var(--color-gray-200)'
-                        }}
-                      >
-                        {a?.urlToImage && (
-                          <img
-                            src={a.urlToImage}
-                            alt=""
-                            style={{ width: 80, height: 56, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
-                          />
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                            {a?.title || 'Article'}
-                          </Text>
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {a?.sourceName}
-                            {a?.publishedAt ? ` · ${new Date(a.publishedAt).toLocaleDateString()}` : ''}
-                          </Text>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Related videos (YouTube search stream, in parallel with blog) */}
-              {relatedVideos?.length > 0 && (
-                <div style={{
-                  marginBottom: '16px',
-                  padding: '12px',
-                  backgroundColor: 'var(--color-primary-50)',
-                  border: '1px solid var(--color-primary-100)',
-                  borderRadius: '6px'
-                }}>
-                  <Text strong style={{ color: 'var(--color-primary-700)', display: 'block', marginBottom: '8px' }}>
-                    <PlayCircleOutlined style={{ marginRight: '6px' }} />
-                    Related videos
-                  </Text>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {relatedVideos.slice(0, 5).map((v, i) => (
-                      <a
-                        key={v?.videoId || i}
-                        href={v?.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          display: 'flex',
-                          alignItems: 'flex-start',
-                          gap: '10px',
-                          padding: '8px',
-                          backgroundColor: 'var(--color-background-body)',
-                          borderRadius: '6px',
-                          textDecoration: 'none',
-                          color: 'inherit',
-                          border: '1px solid var(--color-gray-200)'
-                        }}
-                      >
-                        {v?.thumbnailUrl && (
-                          <img
-                            src={v.thumbnailUrl}
-                            alt=""
-                            style={{ width: 120, height: 68, objectFit: 'cover', borderRadius: '4px', flexShrink: 0 }}
-                          />
-                        )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <Text strong style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                            {v?.title || 'Video'}
-                          </Text>
-                          <Text type="secondary" style={{ fontSize: '12px' }}>
-                            {v?.channelTitle}
-                            {v?.viewCount != null ? ` · ${Number(v.viewCount).toLocaleString()} views` : ''}
-                            {v?.duration ? ` · ${v.duration}` : ''}
-                          </Text>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
               {/* SEO Analysis Toggle */}
               {editingContent && editingContent.length >= 200 && (
                 <div style={{ marginBottom: '16px' }}>
