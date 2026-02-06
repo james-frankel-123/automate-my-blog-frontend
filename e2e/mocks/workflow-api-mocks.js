@@ -34,6 +34,9 @@ const MOCK_USER = {
   permissions: [],
 };
 
+/** Same as MOCK_USER but role super_admin for analytics e2e (UserAnalyticsTab, funnel stage users). */
+const MOCK_USER_SUPERADMIN = { ...MOCK_USER, role: 'super_admin' };
+
 const MOCK_ANALYSIS = {
   success: true,
   url: 'https://example.com',
@@ -209,13 +212,14 @@ const MOCK_CONTENT_WITH_IMAGE_GEN = {
  *   - imageGenerationInBackground: job result includes needsImageGeneration; images API returns content with images (progressive UX)
  */
 async function installWorkflowMocksWithOptions(page, options = {}) {
-  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null, analysisJobFails = false, analysisSyncFails = false } = options;
+  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null, analysisJobFails = false, analysisSyncFails = false, asSuperAdmin = false } = options;
   const pollCounts = {};
 
   await installWorkflowMocksBase(page, {
     imageGenerationInBackground,
     userCredits,
     analysisSyncFails,
+    asSuperAdmin,
     jobsStatusHandler: (jobId) => {
       pollCounts[jobId] = (pollCounts[jobId] || 0) + 1;
       const pollNum = pollCounts[jobId];
@@ -285,9 +289,20 @@ async function installWorkflowMocks(page) {
 
 const E2E_TWEET_STREAM_ID = 'e2e-tweet-stream';
 
+/** Mock funnel steps and lead funnel for analytics e2e (PR #195 / #258). */
+const MOCK_FUNNEL_STEPS = [
+  { step: 'signup', name: 'Signup', count: 10, conversion_rate: 100 },
+  { step: 'activated', name: 'Activated', count: 5, conversion_rate: 50 },
+];
+const MOCK_LEAD_FUNNEL_STEPS = [
+  { step: 'visit', name: 'Visit', count: 100, conversion_rate: 100 },
+  { step: 'lead', name: 'Lead', count: 20, conversion_rate: 20 },
+];
+
 async function installWorkflowMocksBase(page, options = {}) {
-  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false, contentWithTweetPlaceholder = false, tweetsForTopic = null, tweetStreamResponds = false } = options;
+  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false, contentWithTweetPlaceholder = false, tweetsForTopic = null, tweetStreamResponds = false, asSuperAdmin = false } = options;
   const creditsPayload = userCredits != null ? userCredits : DEFAULT_CREDITS;
+  const authUser = asSuperAdmin ? MOCK_USER_SUPERADMIN : MOCK_USER;
   const patterns = [
     { path: '/api/analyze-website', method: 'POST', body: () => (analysisSyncFails ? json({ success: false, error: 'Scraping failed' }) : json(MOCK_ANALYSIS)) },
     { path: '/api/generate-audiences', method: 'POST', body: () => json({ scenarios: MOCK_SCENARIOS }) },
@@ -310,7 +325,7 @@ async function installWorkflowMocksBase(page, options = {}) {
     { path: '/api/v1/jobs/content-generation', method: 'POST', body: () => ({ status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_CONTENT }) }) },
     { path: '/api/v1/jobs/website-analysis', method: 'POST', body: () => (analysisSyncFails ? { status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) } : { status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_ANALYSIS }) }) },
     { path: '/api/v1/session/create', method: 'POST', body: () => json({ session_id: 'e2e-session-id' }) },
-    { path: '/api/v1/auth/me', method: 'GET', body: () => json({ success: true, user: MOCK_USER }) },
+    { path: '/api/v1/auth/me', method: 'GET', body: () => json({ success: true, user: authUser }) },
     { path: '/api/v1/auth/refresh', method: 'POST', body: () => json({ success: true, accessToken: fakeJWT(), refreshToken: fakeJWT() }) },
     { path: '/api/v1/auth/logout', method: 'POST', body: () => json({}) },
     { path: '/api/v1/user/credits', method: 'GET', body: () => json({ data: creditsPayload }) },
@@ -432,6 +447,28 @@ async function installWorkflowMocksBase(page, options = {}) {
       return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
     }
 
+    // Analytics (superadmin): funnel, lead-funnel, stage users, metrics, cohorts, insights (PR #195 / #258)
+    if (pathPrefixMatch(url, '/api/v1/analytics') && method === 'GET') {
+      if (url.includes('/analytics/funnel?') && !url.includes('/funnel/stage/')) {
+        return route.fulfill(json({ steps: MOCK_FUNNEL_STEPS }));
+      }
+      if (url.includes('/analytics/lead-funnel?')) {
+        return route.fulfill(json({ steps: MOCK_LEAD_FUNNEL_STEPS }));
+      }
+      if (url.match(/\/api\/v1\/analytics\/funnel\/stage\/[^/]+\/users\?/)) {
+        return route.fulfill(json({ users: [] }));
+      }
+      if (url.includes('/analytics/comprehensive-metrics?')) {
+        return route.fulfill(json({ revenue: {}, referrals: {}, subscriptions: {} }));
+      }
+      if (url.includes('/analytics/cohorts?')) {
+        return route.fulfill(json({ cohorts: [], summary: {} }));
+      }
+      if (url.includes('/analytics/insights?')) {
+        return route.fulfill(json({ insights: [], sections: {} }));
+      }
+    }
+
     return route.continue();
   });
 }
@@ -451,6 +488,9 @@ module.exports = {
   injectLoggedInUser,
   fakeJWT,
   MOCK_USER,
+  MOCK_USER_SUPERADMIN,
+  MOCK_FUNNEL_STEPS,
+  MOCK_LEAD_FUNNEL_STEPS,
   MOCK_ANALYSIS,
   MOCK_TOPICS,
   MOCK_CONTENT,

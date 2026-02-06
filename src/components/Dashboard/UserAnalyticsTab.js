@@ -17,7 +17,6 @@ import FunnelSectionPanel from './Analytics/FunnelSectionPanel';
 import ProductSectionPanel from './Analytics/ProductSectionPanel';
 import UsageMetricsPanel from './Analytics/UsageMetricsPanel';
 import SessionHeatmap from './Analytics/SessionHeatmap';
-import LeadFunnelPanel from './Analytics/LeadFunnelPanel';
 
 const { RangePicker } = DatePicker;
 
@@ -275,16 +274,8 @@ const UserAnalyticsTab = () => {
               <FunnelSectionPanel
                 funnelData={llmInsights?.sections?.funnel}
                 funnelVisualizationData={funnelData}
-                dateRange={dateRange}
-                loading={loading}
-              />
-            </Col>
-          </Row>
-
-          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-            <Col span={24}>
-              <LeadFunnelPanel
                 leadFunnelData={leadFunnelData}
+                dateRange={dateRange}
                 loading={loading}
               />
             </Col>

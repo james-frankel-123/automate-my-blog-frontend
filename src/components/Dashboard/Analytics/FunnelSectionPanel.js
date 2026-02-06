@@ -1,26 +1,28 @@
 import React, { useState } from 'react';
 import { Card, List, Tag, Alert, Statistic, Row, Col, Progress, Spin, Table, Switch } from 'antd';
-import { FunnelPlotOutlined, WarningOutlined, DownOutlined } from '@ant-design/icons';
+import { FunnelPlotOutlined, WarningOutlined, DownOutlined, UserAddOutlined } from '@ant-design/icons';
 import autoBlogAPI from '../../../services/api';
 
-const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, dateRange }) => {
+const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, leadFunnelData, dateRange }) => {
   const [expandedStages, setExpandedStages] = useState({});
   const [stageUsers, setStageUsers] = useState({});
   const [loadingStage, setLoadingStage] = useState({});
   const [excludeAdvanced, setExcludeAdvanced] = useState({});
 
-  // Process funnel visualization data
+  // Process funnel visualization data; merge lead funnel into same panel (#195)
   const funnelSteps = funnelVisualizationData?.steps || [];
+  const leadSteps = leadFunnelData?.steps || [];
 
-  // If no funnel steps and no insights, don't render anything
-  if (funnelSteps.length === 0 && !funnelData) {
+  // If no funnel steps, no lead steps, and no insights, don't render anything
+  if (funnelSteps.length === 0 && leadSteps.length === 0 && !funnelData) {
     return null;
   }
 
   const { title = "Sales Funnel & Retention", insights = [], atRiskCount, potentialChurnCost, priority } = funnelData || {};
 
   const handleStageExpand = async (step) => {
-    const stageKey = step.step;
+    // Backend may key steps by .step or .name; use both for robustness (#195)
+    const stageKey = step.step ?? step.name;
 
     // Toggle expansion
     if (expandedStages[stageKey]) {
@@ -31,6 +33,10 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
     // If already loaded, just expand
     if (stageUsers[stageKey]) {
       setExpandedStages({ ...expandedStages, [stageKey]: true });
+      return;
+    }
+
+    if (!stageKey) {
       return;
     }
 
@@ -47,10 +53,14 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
         endDate,
         excludeAdvanced[stageKey] || false
       );
-      setStageUsers({ ...stageUsers, [stageKey]: response.users || [] });
+      // Support both response shapes (#195): backend may return { users } or { data: { users } }
+      const users = response?.users ?? response?.data?.users ?? [];
+      setStageUsers({ ...stageUsers, [stageKey]: Array.isArray(users) ? users : [] });
       setExpandedStages({ ...expandedStages, [stageKey]: true });
     } catch (error) {
       console.error(`Failed to load users for stage ${stageKey}:`, error);
+      setStageUsers({ ...stageUsers, [stageKey]: [] });
+      setExpandedStages({ ...expandedStages, [stageKey]: true });
     } finally {
       setLoadingStage({ ...loadingStage, [stageKey]: false });
     }
@@ -73,7 +83,8 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
           endDate,
           checked
         );
-        setStageUsers({ ...stageUsers, [stageKey]: response.users || [] });
+        const users = response?.users ?? response?.data?.users ?? [];
+        setStageUsers({ ...stageUsers, [stageKey]: Array.isArray(users) ? users : [] });
       } catch (error) {
         console.error(`Failed to reload users for stage ${stageKey}:`, error);
       } finally {
@@ -156,7 +167,7 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
               // Use 100% for first step (no previous step to convert from), otherwise use provided conversion_rate
               const conversionRate = step.conversion_rate !== undefined ? step.conversion_rate : 100;
               const isLowConversion = conversionRate <= 50;
-              const stageKey = step.step;
+              const stageKey = step.step ?? step.name ?? `step-${index}`;
               const isExpanded = expandedStages[stageKey];
               const users = stageUsers[stageKey] || [];
               const isLoading = loadingStage[stageKey];
@@ -244,6 +255,83 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
               );
             })}
           </div>
+        </Card>
+      )}
+
+      {/* Lead Conversion (merged into single Conversion Funnel per #195) */}
+      {leadSteps.length > 0 && (
+        <Card
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <UserAddOutlined style={{ fontSize: 18, color: '#722ed1' }} />
+              <span>Lead Conversion (Anonymous Visitor Journey)</span>
+            </div>
+          }
+          size="small"
+          style={{ marginTop: 16, marginBottom: 16 }}
+        >
+          <div style={{ padding: '16px 0' }}>
+            {leadSteps.map((step, index) => {
+              const conversionRate = step.conversion_rate !== undefined ? step.conversion_rate : 100;
+              const isLowConversion = conversionRate <= 50 && index > 0;
+              return (
+                <div key={step.step ?? step.name ?? index} style={{ marginBottom: 16 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      marginBottom: 4,
+                      padding: '4px 0'
+                    }}
+                  >
+                    <span style={{ fontWeight: 500 }}>{step.name || step.step}</span>
+                    <span>
+                      <strong>{step.count}</strong> leads
+                      {index > 0 && step.conversion_rate !== undefined && (
+                        <span style={{ marginLeft: 8, color: isLowConversion ? '#ff4d4f' : '#52c41a' }}>
+                          ({Number(conversionRate).toFixed(1)}% conversion)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <Progress
+                    percent={conversionRate}
+                    strokeColor={isLowConversion ? '#ff4d4f' : '#52c41a'}
+                    showInfo={false}
+                    strokeWidth={20}
+                  />
+                </div>
+              );
+            })}
+          </div>
+          {leadSteps.length > 0 && (() => {
+            const totalLeads = leadSteps[0]?.count || 0;
+            const converted = leadSteps[leadSteps.length - 1]?.count || 0;
+            const overallConversion = totalLeads > 0 ? ((converted / totalLeads) * 100).toFixed(1) : 0;
+            if (overallConversion < 5 && totalLeads > 10) {
+              return (
+                <Alert
+                  message="Low Lead Conversion Rate"
+                  description={`Only ${overallConversion}% of visitors are converting. Consider optimizing the onboarding flow.`}
+                  type="warning"
+                  showIcon
+                  style={{ marginTop: 16 }}
+                />
+              );
+            }
+            if (Number(overallConversion) >= 10) {
+              return (
+                <Alert
+                  message="Healthy Lead Conversion"
+                  description={`${overallConversion}% conversion rate indicates strong lead quality.`}
+                  type="success"
+                  showIcon
+                  style={{ marginTop: 16 }}
+                />
+              );
+            }
+            return null;
+          })()}
         </Card>
       )}
 
