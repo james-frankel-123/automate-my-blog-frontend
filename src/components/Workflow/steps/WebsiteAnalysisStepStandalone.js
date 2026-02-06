@@ -1148,25 +1148,6 @@ const WebsiteAnalysisStepStandalone = ({
           )}
         </div>
 
-        {/* Web Search Research Quality Indicator */}
-        {webSearchInsights?.researchQuality === 'basic' && (
-          <div style={{
-            padding: '16px',
-            backgroundColor: 'var(--color-background-container)',
-            border: '1px solid var(--color-border-base)',
-            borderRadius: 'var(--radius-lg)',
-            marginBottom: '20px'
-          }}>
-            <Text strong style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
-              📊 Standard Analysis
-            </Text>
-            <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
-              Analysis based on website content. Upgrade for enhanced research with brand guidelines, competitor analysis, and real-time keyword data.
-            </div>
-          </div>
-        )}
-
-
         {/* Business Overview Cards — show section with data or informative empty state (Issue #185) */}
         <Row gutter={responsive.gutter}>
           <Col xs={24} md={12}>
