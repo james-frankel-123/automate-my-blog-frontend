@@ -29,6 +29,18 @@ describe('HTMLPreview', () => {
       expect(screen.getByText(/First sentence/)).toBeInTheDocument();
     });
 
+    it('does not turn run-on streamed line (no newlines) into one giant h1', () => {
+      // When backend streams without newlines, whole blob can be one "line"; cap heading length so we don't render it all as h1.
+      const runOn = '# How to Effectively Test Your Streaming API In today\'s digital landscape, streaming APIs are pivotal for businesses aiming to deliver real-time data efficiently. Testing these APIs is crucial to ensure reliability and performance. This guide provides a comprehensive approach.';
+      render(<HTMLPreview content={runOn} forceMarkdown />);
+      // Should not be a single h1 containing the long paragraph (heading cap prevents that)
+      const h1 = screen.queryByRole('heading', { level: 1 });
+      if (h1) {
+        expect(h1.textContent.length).toBeLessThanOrEqual(250);
+      }
+      expect(screen.getByText(/streaming APIs are pivotal/)).toBeInTheDocument();
+    });
+
     it('renders bold and italic markdown', () => {
       const markdown = 'This is **bold** and *italic* text.';
       render(<HTMLPreview content={markdown} />);

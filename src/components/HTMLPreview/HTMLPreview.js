@@ -112,16 +112,19 @@ const markdownToHTML = (markdown, options = {}) => {
   const { heroImageUrl } = options;
   let html = markdown;
 
-  // Headers (multiline: ^ matches start of line)
-  html = html.replace(/^###### (.*)$/gim, '<h6>$1</h6>');
-  html = html.replace(/^##### (.*)$/gim, '<h5>$1</h5>');
-  html = html.replace(/^#### (.*)$/gim, '<h4>$1</h4>');
-  html = html.replace(/^### (.*)$/gim, '<h3>$1</h3>');
-  html = html.replace(/^## (.*)$/gim, '<h2>$1</h2>');
-  html = html.replace(/^# (.*)$/gim, '<h1>$1</h1>');
+  // Headers: only match a single line of heading text (up to next newline). Use [^\n]{1,max}
+  // so that when streamed content has no newlines, we don't turn the entire blob into one <h1>.
+  const maxHeadingLen = 250;
+  const headingCap = `[^\\n]{1,${maxHeadingLen}}`;
+  html = html.replace(new RegExp(`^###### (${headingCap})$`, 'gim'), '<h6>$1</h6>');
+  html = html.replace(new RegExp(`^##### (${headingCap})$`, 'gim'), '<h5>$1</h5>');
+  html = html.replace(new RegExp(`^#### (${headingCap})$`, 'gim'), '<h4>$1</h4>');
+  html = html.replace(new RegExp(`^### (${headingCap})$`, 'gim'), '<h3>$1</h3>');
+  html = html.replace(new RegExp(`^## (${headingCap})$`, 'gim'), '<h2>$1</h2>');
+  html = html.replace(new RegExp(`^# (${headingCap})$`, 'gim'), '<h1>$1</h1>');
 
-  // Blockquote
-  html = html.replace(/^>\s?(.*)$/gim, '<blockquote>$1</blockquote>');
+  // Blockquote (single line only so streamed run-on doesn't swallow whole content)
+  html = html.replace(/^>\s?([^\n]{0,500})$/gim, '<blockquote>$1</blockquote>');
 
   // Bold (non-greedy for streaming: incomplete ** stays as text)
   html = html.replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>');
@@ -159,9 +162,9 @@ const markdownToHTML = (markdown, options = {}) => {
   // Inline code
   html = html.replace(/`([^`]+)`/gim, '<code>$1</code>');
 
-  // Lists (unordered; multiline)
-  html = html.replace(/^\* (.*)$/gim, '<li>$1</li>');
-  html = html.replace(/^- (.*)$/gim, '<li>$1</li>');
+  // Lists (unordered; single line per item so streamed run-on doesn't merge)
+  html = html.replace(/^\* ([^\n]*)$/gim, '<li>$1</li>');
+  html = html.replace(/^- ([^\n]*)$/gim, '<li>$1</li>');
   html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
   // Paragraphs (split by double newline)
