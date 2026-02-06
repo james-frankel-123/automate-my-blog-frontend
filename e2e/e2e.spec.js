@@ -1473,6 +1473,50 @@ test.describe('E2E (mocked backend)', () => {
     });
   });
 
+  test.describe('Analytics funnel (superadmin, PR #195/#258)', () => {
+    async function setupSuperAdmin(page) {
+      await installWorkflowMocksWithOptions(page, { asSuperAdmin: true });
+      await page.goto('/');
+      await clearStorage(page);
+      await injectLoggedInUser(page);
+      await page.reload();
+      await page.waitForLoadState('load');
+      await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+      await page.waitForTimeout(800);
+      await removeOverlay(page);
+    }
+
+    test('should show Conversion Funnel and Lead Conversion when superadmin', async ({ page }) => {
+      await setupSuperAdmin(page);
+      const analyticsTab = page.locator('text=/analytics|insights/i, .ant-menu-item:has-text("Analytics")').first();
+      await expect(analyticsTab).toBeVisible({ timeout: 8000 });
+      await analyticsTab.click();
+      await page.waitForTimeout(1000);
+      await expect(page.locator('text=Access Denied')).not.toBeVisible();
+      await expect(page.locator('text=/Conversion Funnel|Conversion Funnel Visualization/i').first()).toBeVisible({ timeout: 8000 });
+      await expect(page.locator('text=Lead Conversion (Anonymous Visitor Journey)').first()).toBeVisible({ timeout: 5000 });
+    });
+
+    test('should expand funnel stage and show user list or empty state', async ({ page }) => {
+      await setupSuperAdmin(page);
+      const analyticsTab = page.locator('text=/analytics|insights/i, .ant-menu-item:has-text("Analytics")').first();
+      await expect(analyticsTab).toBeVisible({ timeout: 8000 });
+      await analyticsTab.click();
+      await page.waitForTimeout(1500);
+      const funnelCard = page.locator('.ant-card').filter({ hasText: 'Conversion Funnel Visualization' }).first();
+      await expect(funnelCard).toBeVisible({ timeout: 8000 });
+      const stageRow = funnelCard.getByText('Signup').first();
+      await expect(stageRow).toBeVisible({ timeout: 5000 });
+      await stageRow.click();
+      await page.waitForTimeout(1000);
+      const noUsers = page.locator('text=No users found at this stage');
+      const table = page.locator('.ant-table');
+      const hasNoUsers = await noUsers.isVisible({ timeout: 5000 }).catch(() => false);
+      const hasTable = await table.isVisible({ timeout: 3000 }).catch(() => false);
+      expect(hasNoUsers || hasTable).toBeTruthy();
+    });
+  });
+
   test.describe('Content management', () => {
     test.beforeEach(async ({ page }) => {
       await setupLoggedIn(page);
