@@ -63,11 +63,11 @@ const STREAMED_JSON_KEY_TOKENS = new Set(['cta', 'seo', 'suggestions', 'optimiza
 /** Return false if chunk should not be appended (JSON structure streamed as "content" instead of body). */
 function isAppendableContentChunk(chunk) {
   if (typeof chunk !== 'string' || !chunk.length) return false;
+  if (/^[\s\r\n]+$/.test(chunk)) return true;
   const t = chunk.trim();
   if (!t.length) return false;
   if (t === ',' || t === ' ' || t === '.') return true;
   if (JSON_STRUCTURE_ONLY.test(t)) return false;
-  if (/^\d+$|^\+$/.test(t)) return false;
   if (t.length <= 20 && STREAMED_JSON_KEY_TOKENS.has(t.toLowerCase())) return false;
   if (t === 'metaDescription') return false;
   if (/^#\s|^[-*>\d.]\s/m.test(t)) return true;
@@ -96,17 +96,16 @@ export function extractStreamChunk(data) {
     if (!STREAM_FIELD_BODY_ONLY.test(f)) return '';
   }
 
-  // Object: check common fields in order
+  // Object: check common fields in order (allow whitespace-only chunks so newlines are appended)
   const content = data.content ?? data.text ?? data.delta ?? (typeof data.blogPost === 'object' && data.blogPost !== null ? data.blogPost.content : undefined);
-  if (typeof content === 'string' && content.trim()) {
+  if (typeof content === 'string' && content.length > 0) {
     const trimmed = content.trim();
-    if (STREAM_KEY_LABELS.test(trimmed)) return '';
+    if (trimmed && STREAM_KEY_LABELS.test(trimmed)) return '';
     // Content may be a JSON string (e.g. full blog object) - extract displayable text, never append raw JSON
     const extracted = tryExtractFromJsonString(content);
     const out = extracted !== '' ? extracted : content.startsWith('{') || looksLikeJsonKeyValue(content) ? '' : content;
-    // Backend may stream wrapper JSON as content-chunk (e.g. "cta", "seo", "Score", " }\n"); don't append those
     if (out && !isAppendableContentChunk(out)) return '';
-    return out;
+    return out ? unescapeNewlinesAndTabs(out) : '';
   }
 
   // OpenAI-style: choices[0].delta.content

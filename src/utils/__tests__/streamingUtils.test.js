@@ -131,12 +131,16 @@ describe('streamingUtils', () => {
       expect(extractStreamChunk({ field: 'content', content: 'Suggestions' })).toBe('');
       expect(extractStreamChunk({ field: 'content', content: 'Optimization' })).toBe('');
       expect(extractStreamChunk({ field: 'content', content: 'Score' })).toBe('');
-      expect(extractStreamChunk({ field: 'content', content: '\":' })).toBe('');
+      expect(extractStreamChunk({ field: 'content', content: '":' })).toBe('');
       expect(extractStreamChunk({ field: 'content', content: ' []\n' })).toBe('');
       expect(extractStreamChunk({ field: 'content', content: '}\n' })).toBe('');
-      expect(extractStreamChunk({ field: 'content', content: '95' })).toBe('');
-      expect(extractStreamChunk({ field: 'content', content: '+' })).toBe('');
       expect(extractStreamChunk({ field: 'content', content: '# How to Test' })).toBe('# How to Test');
+    });
+
+    it('appends list/heading numbers and newlines so markdown renders (e.g. ### 1.)', () => {
+      expect(extractStreamChunk({ field: 'content', content: '1' })).toBe('1');
+      expect(extractStreamChunk({ field: 'content', content: '\n' })).toBe('\n');
+      expect(extractStreamChunk({ field: 'content', content: '\n\n' })).toBe('\n\n');
     });
 
     it('does not append key names or title/subtitle-value chunks streamed as content', () => {
