@@ -329,10 +329,14 @@ const ContentUploadModal = ({ visible, onClose, onSuccess }) => {
             )}
 
             {uploadProgress > 0 && (
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '24px' }} role="region" aria-label="Upload progress">
+                <div style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 500, color: 'var(--color-text-primary)' }}>
+                  {uploadProgress === 100 ? 'Processing complete' : `Uploading… ${uploadProgress}%`}
+                </div>
                 <Progress 
                   percent={uploadProgress} 
                   status={uploadProgress === 100 ? 'success' : 'active'}
+                  aria-label={`Upload progress: ${uploadProgress}%`}
                 />
               </div>
             )}

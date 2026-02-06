@@ -94,12 +94,18 @@ function ThinkingPanel({
   const statusText = stepDisplay ? `${workingForYouLabel} · ${stepDisplay}${stepSuffix}` : workingForYouLabel;
   const showEta = estimatedTimeRemaining != null && estimatedTimeRemaining > 0;
 
+  // When we have no numeric progress (e.g. streaming), show indeterminate animated bar
+  const hasNumericProgress = progress != null && typeof progress === 'number';
+  const percent = hasNumericProgress ? progress : undefined;
+  const showPercent = hasNumericProgress;
+
   return (
     <div
       data-testid={dataTestId}
       role="status"
       aria-live="polite"
       aria-label={statusText}
+      aria-busy={isActive}
       style={panelStyles.panel}
       className="thinking-panel"
     >
@@ -110,11 +116,12 @@ function ThinkingPanel({
       <div style={panelStyles.progressRow}>
         <div style={panelStyles.progressBar}>
           <Progress
-            percent={progress ?? 0}
-            showInfo
+            percent={percent}
+            status={!hasNumericProgress ? 'active' : undefined}
+            showInfo={showPercent}
             size="small"
-            strokeColor={{ from: 'var(--color-primary)', to: 'var(--color-primary-400)' }}
-            trailColor="var(--color-primary-100)"
+            strokeColor={hasNumericProgress ? { from: 'var(--color-primary)', to: 'var(--color-primary-400)' } : undefined}
+            railColor="var(--color-primary-100)"
           />
         </div>
         {showEta && (

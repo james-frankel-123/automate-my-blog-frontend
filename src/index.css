@@ -39,3 +39,9 @@ code {
 .thinking-panel-pulse {
   animation: pulse 2s ease-in-out infinite;
 }
+
+/* RelatedContentStepsPanel: spin icon when step is running */
+@keyframes related-step-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
