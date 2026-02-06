@@ -38,7 +38,6 @@ import { EmptyState } from '../EmptyStates';
 import { systemVoice } from '../../copy/systemVoice';
 import {
   getStreamChunkContentOnly,
-  getStreamCompleteContentOnly,
   extractStreamCompleteContent,
   normalizeContentString
 } from '../../utils/streamingUtils';
@@ -816,8 +815,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               if (term) setHint(`Searching for: ${term}…`, 'hint', 0);
             },
             onComplete: (data) => {
-              const tweets = data?.tweets || [];
-              if (tweets.length) {
+              const tweets = data?.tweets ?? data?.data?.tweets ?? [];
+              if (Array.isArray(tweets) && tweets.length) {
                 setRelatedTweets(tweets);
                 setCurrentDraft((prev) => (prev ? { ...prev, relatedTweets: tweets } : prev));
               }
@@ -836,8 +835,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               if (term) setHint(`Searching articles: ${term}…`, 'hint', 0);
             },
             onComplete: (data) => {
-              const articles = data?.articles || [];
-              if (articles.length) setRelatedArticles(articles);
+              const articles = data?.articles ?? data?.data?.articles ?? [];
+              if (Array.isArray(articles) && articles.length) setRelatedArticles(articles);
             },
             onError: () => {},
           }, { streamUrl });
@@ -853,8 +852,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               if (term) setHint(`Searching videos: ${term}…`, 'hint', 0);
             },
             onComplete: (data) => {
-              const videos = data?.videos || [];
-              if (videos.length) setRelatedVideos(videos);
+              const videos = data?.videos ?? data?.data?.videos ?? [];
+              if (Array.isArray(videos) && videos.length) setRelatedVideos(videos);
             },
             onError: () => {},
           }, { streamUrl });
@@ -927,17 +926,23 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           );
           setEditingContent('');
           setContentViewMode('preview');
+          let accumulatedChunks = '';
           const streamDone = new Promise((resolve, reject) => {
             api.connectToStream(connectionId, {
               onChunk: (data) => {
                 const chunk = getStreamChunkContentOnly(data);
-                if (chunk) setEditingContent((prev) => prev + chunk);
+                if (chunk) {
+                  accumulatedChunks += chunk;
+                  setEditingContent((prev) => prev + chunk);
+                }
               },
               onComplete: (data) => {
-                const finalContent = getStreamCompleteContentOnly(data);
+                // extractStreamCompleteContent handles result.content, blogPost.content, etc. (backend doc)
+                const fromComplete = extractStreamCompleteContent(data);
+                const finalContent = fromComplete || accumulatedChunks;
                 if (finalContent) setEditingContent(finalContent);
                 setContentGenerated(true);
-                resolve({ success: true, content: finalContent, blogPost: data?.blogPost });
+                resolve({ success: true, content: finalContent, blogPost: data?.blogPost ?? data?.result });
               },
               onError: (errData) => {
                 reject(new Error(errData?.message || 'Stream error'));
@@ -945,32 +950,34 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             });
           });
           result = await streamDone;
-          if (result?.success && (result.content !== undefined && result.content !== '')) {
+          const streamContent = (result?.content ?? '').trim();
+          const streamTitle = topic?.title?.trim();
+          if (result?.success && streamContent && streamTitle) {
             // Save post after stream complete (same as non-streaming path below)
             const initialPost = {
-              title: topic.title,
-              content: result.content,
+              title: streamTitle,
+              content: streamContent,
               status: 'draft',
               topic_data: topic,
               generation_metadata: {
                 strategy: contentStrategy,
                 generatedAt: new Date().toISOString(),
-                wordCount: (result.content || '').length
+                wordCount: streamContent.length
               }
             };
             const saveResult = await api.createPost(initialPost);
             if (saveResult.success && saveResult.post) {
               setCurrentDraft({
                 id: saveResult.post.id,
-                title: topic.title,
-                content: result.content,
+                title: streamTitle,
+                content: streamContent,
                 status: 'draft',
                 createdAt: saveResult.post.created_at ?? new Date().toISOString(),
                 topic: topic,
                 blogPost: result.blogPost,
                 relatedTweets: relatedTweets?.length ? relatedTweets : undefined
               });
-              setLastSavedContent(result.content);
+              setLastSavedContent(streamContent);
               setLastSaved(new Date());
               setIsAutosaving(false);
               setAutosaveError(null);
@@ -1092,15 +1099,21 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           message.success('Blog content generated and saved!');
         } else {
           // Fallback: create post via API (sync flow or when worker didn't save)
+          const title = topic?.title?.trim();
+          const content = (result.content ?? '').trim();
+          if (!title || !content) {
+            message.error('Title and content are required to save. No content was received from the stream. Please try again.');
+            return;
+          }
           const initialPost = {
-            title: topic.title,
-            content: result.content,
+            title,
+            content,
             status: 'draft',
             topic_data: topic,
             generation_metadata: {
               strategy: contentStrategy,
               generatedAt: new Date().toISOString(),
-              wordCount: result.content.length
+              wordCount: content.length
             }
           };
           const saveResult = await api.createPost(initialPost);
