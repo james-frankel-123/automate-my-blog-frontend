@@ -7,6 +7,8 @@ import { contentAPI } from '../../services/workflowAPI';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthModal from '../Auth/AuthModal';
 import StreamingPreview from './StreamingPreview';
+import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
+import { systemVoice } from '../../copy/systemVoice';
 
 const { Text } = Typography;
 
@@ -161,6 +163,7 @@ function StreamingTestbed() {
   const [liveRelatedTweets, setLiveRelatedTweets] = useState([]);
   const [liveRelatedArticles, setLiveRelatedArticles] = useState([]);
   const [liveRelatedVideos, setLiveRelatedVideos] = useState([]);
+  const [relatedContentSteps, setRelatedContentSteps] = useState([]);
   const streamClosesRef = useRef([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -218,6 +221,7 @@ function StreamingTestbed() {
     setLiveRelatedTweets([]);
     setLiveRelatedArticles([]);
     setLiveRelatedVideos([]);
+    setRelatedContentSteps([]);
   }, []);
 
   const startLiveStream = useCallback(async () => {
@@ -231,50 +235,8 @@ function StreamingTestbed() {
     setLiveRelatedTweets([]);
     setLiveRelatedArticles([]);
     setLiveRelatedVideos([]);
+    setRelatedContentSteps([]);
     streamClosesRef.current = [];
-
-    const topic = { id: 'testbed-live', title: liveTopicTitle || DEFAULT_LIVE_TOPIC_TITLE };
-    const websiteAnalysisData = MINIMAL_WEBSITE_ANALYSIS;
-
-    // Same parallel streams as Posts tab: tweets, news articles, YouTube videos (onComplete sets related state).
-    api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
-      .then(({ connectionId, streamUrl }) => {
-        const { close } = api.connectToStream(connectionId, {
-          onComplete: (data) => {
-            const tweets = data?.tweets || [];
-            if (tweets.length) setLiveRelatedTweets(tweets);
-          },
-          onError: () => {},
-        }, { streamUrl });
-        streamClosesRef.current.push(close);
-      })
-      .catch(() => {});
-
-    api.searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
-      .then(({ connectionId, streamUrl }) => {
-        const { close } = api.connectToStream(connectionId, {
-          onComplete: (data) => {
-            const articles = data?.articles || [];
-            if (articles.length) setLiveRelatedArticles(articles);
-          },
-          onError: () => {},
-        }, { streamUrl });
-        streamClosesRef.current.push(close);
-      })
-      .catch(() => {});
-
-    api.searchYouTubeVideosForTopicStream(topic, websiteAnalysisData, 5)
-      .then(({ connectionId, streamUrl }) => {
-        const { close } = api.connectToStream(connectionId, {
-          onComplete: (data) => {
-            const videos = data?.videos || [];
-            if (videos.length) setLiveRelatedVideos(videos);
-          },
-          onError: () => {},
-        }, { streamUrl });
-        streamClosesRef.current.push(close);
-      })
-      .catch(() => {});
 
     if (!organizationId) {
       setLiveStreamError('Sign in required. The API requires topic, businessInfo, and organizationId.');
@@ -282,15 +244,141 @@ function StreamingTestbed() {
       return;
     }
 
+    const topic = { id: 'testbed-live', title: liveTopicTitle || DEFAULT_LIVE_TOPIC_TITLE };
+    const websiteAnalysisData = MINIMAL_WEBSITE_ANALYSIS;
+
+    // Same flow as Posts tab: fetch tweets, articles, videos first with visible steps, then start blog stream with preloaded data.
+    const fetchSteps = [
+      { id: 'tweets', label: systemVoice.content.fetchTweets, status: RelatedContentStepStatus.PENDING },
+      { id: 'articles', label: systemVoice.content.fetchArticles, status: RelatedContentStepStatus.PENDING },
+      { id: 'videos', label: systemVoice.content.fetchVideos, status: RelatedContentStepStatus.PENDING },
+    ];
+    setRelatedContentSteps(fetchSteps);
+
+    const runTweetStream = () =>
+      api.searchTweetsForTopicStream(topic, websiteAnalysisData, 3)
+        .then(({ connectionId, streamUrl }) =>
+          new Promise((resolve) => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+            );
+            const { close } = api.connectToStream(connectionId, {
+              onComplete: (data) => {
+                const tweets = data?.tweets ?? data?.data?.tweets ?? [];
+                const arr = Array.isArray(tweets) ? tweets : [];
+                setLiveRelatedTweets(arr);
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                );
+                resolve(arr);
+              },
+              onError: () => {
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                );
+                resolve([]);
+              },
+            }, { streamUrl });
+            streamClosesRef.current.push(close);
+          })
+        )
+        .catch(() => {
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'tweets' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+          );
+          return [];
+        });
+
+    const runArticleStream = () =>
+      api.searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
+        .then(({ connectionId, streamUrl }) =>
+          new Promise((resolve) => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+            );
+            const { close } = api.connectToStream(connectionId, {
+              onComplete: (data) => {
+                const articles = data?.articles ?? data?.data?.articles ?? [];
+                const arr = Array.isArray(articles) ? articles : [];
+                setLiveRelatedArticles(arr);
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                );
+                resolve(arr);
+              },
+              onError: () => {
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                );
+                resolve([]);
+              },
+            }, { streamUrl });
+            streamClosesRef.current.push(close);
+          })
+        )
+        .catch(() => {
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+          );
+          return [];
+        });
+
+    const runVideoStream = () =>
+      api.searchYouTubeVideosForTopicStream(topic, websiteAnalysisData, 5)
+        .then(({ connectionId, streamUrl }) =>
+          new Promise((resolve) => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+            );
+            const { close } = api.connectToStream(connectionId, {
+              onComplete: (data) => {
+                const videos = data?.videos ?? data?.data?.videos ?? [];
+                const arr = Array.isArray(videos) ? videos : [];
+                setLiveRelatedVideos(arr);
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                );
+                resolve(arr);
+              },
+              onError: () => {
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                );
+                resolve([]);
+              },
+            }, { streamUrl });
+            streamClosesRef.current.push(close);
+          })
+        )
+        .catch(() => {
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+          );
+          return [];
+        });
+
     try {
+      const [preloadedTweets, preloadedArticles, preloadedVideos] = await Promise.all([
+        runTweetStream(),
+        runArticleStream(),
+        runVideoStream(),
+      ]);
+
+      setRelatedContentSteps([]);
+      setLastChunk('(streaming…)');
+
       const { connectionId } = await contentAPI.startBlogStream(
         topic,
         websiteAnalysisData,
         null,
         {},
-        { prefetchedTweets: [], organizationId }
+        {
+          organizationId,
+          preloadedTweets,
+          preloadedArticles,
+          preloadedVideos,
+        }
       );
-      setLastChunk('(streaming…)');
       const { close } = api.connectToStream(connectionId, {
         onChunk: (data) => {
           const chunk = extractStreamChunk(data);
@@ -316,6 +404,7 @@ function StreamingTestbed() {
       setLiveStreamError(err?.message || 'Failed to start stream');
       setLastChunk('(error)');
       setLiveStreaming(false);
+      setRelatedContentSteps([]);
     }
   }, [liveTopicTitle, organizationId]);
 
@@ -395,7 +484,7 @@ function StreamingTestbed() {
 
         <Card size="small" title="Stream from API" style={{ marginBottom: 24 }}>
           <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-            Same workflow as the Posts tab: contentAPI.startBlogStream (fetches tweets, then blog stream) plus parallel streams for tweets, news articles, and YouTube videos. [TWEET:n], [ARTICLE:n], [VIDEO:n] in the stream resolve as data arrives. Backend: {process.env.REACT_APP_API_URL || 'default'}. Sign in required (API requires organizationId).
+            Same workflow as the Posts tab: fetch tweets, articles, and videos first (with visible steps), then start blog stream with preloaded data. [TWEET:n], [ARTICLE:n], [VIDEO:n] in content resolve from preloaded arrays. Backend: {process.env.REACT_APP_API_URL || 'default'}. Sign in required (API requires organizationId).
           </Text>
           {!organizationId && (
             <Alert type="info" message="Sign in to use Stream from API" description="The blog generate-stream API requires topic, businessInfo, and organizationId. Use the Sign in button above to open the login modal." style={{ marginBottom: 12 }} />
@@ -418,6 +507,12 @@ function StreamingTestbed() {
               {liveStreaming ? 'Stop stream' : 'Start live stream'}
             </Button>
           </Space>
+          {liveStreaming && relatedContentSteps.length > 0 && (
+            <RelatedContentStepsPanel
+              steps={relatedContentSteps}
+              title="Preparing related content"
+            />
+          )}
           {liveStreaming && (
             <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 12 }}>
               Streaming… Chunks appear in Rendered preview below. Last chunk: {lastChunk || '—'}

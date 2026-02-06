@@ -543,6 +543,17 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     };
   }, [isEditorFullscreen]);
 
+  // Scroll to content section when generation starts so user sees stream
+  useEffect(() => {
+    if (generatingContent && selectedTopic) {
+      const t = setTimeout(() => {
+        const el = document.getElementById('content-generation-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+      return () => clearTimeout(t);
+    }
+  }, [generatingContent, selectedTopic?.id]);
+
   const loadPosts = async () => {
     setLoading(true);
     try {
@@ -3103,8 +3114,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         )}
 
         {/* ENHANCED CONTENT EDITING SECTION - When content is generated, or during stream so user sees typing effect */}
-        {(contentGenerated || (generatingContent && selectedTopic && editingContent)) && (
-          <div style={{ marginBottom: '24px' }}>
+        {(contentGenerated || (generatingContent && selectedTopic)) && (
+          <div id="content-generation-section" style={{ marginBottom: '24px' }}>
             {selectedTopic && (
               <div style={{
                 backgroundColor: 'var(--color-background-container)',
