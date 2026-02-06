@@ -451,6 +451,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       if (!cancelled) {
         console.error('Failed to load posts/credits:', err);
         setPosts([]);
+        message.error(`Failed to load posts: ${err?.message || 'Please try again.'}`);
       }
     }).finally(() => {
       if (!cancelled) {
@@ -573,8 +574,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }
     } catch (error) {
       console.error('Error loading posts:', error);
-      // For anonymous users, start with empty array instead of dummy data
       setPosts([]);
+      message.error(`Failed to load posts: ${error?.message || 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
