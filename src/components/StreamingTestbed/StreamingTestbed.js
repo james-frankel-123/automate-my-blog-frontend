@@ -321,13 +321,12 @@ function StreamingTestbed() {
       )
     );
 
-    try {
-      const [[preloadedTweets, preloadedVideos], preloadedArticles] = await Promise.all([
-        runTweetsAndVideos(),
-        runArticleStream(),
-      ]);
+    // Fire related content fetches in background; don't wait. Blog stream starts immediately
+    // with placeholders; StreamingPreview substitutes tweets/videos/articles when they arrive.
+    runTweetsAndVideos();
+    runArticleStream();
 
-      setRelatedContentSteps([]);
+    try {
       setLastChunk('(streaming…)');
 
       const { connectionId } = await contentAPI.startBlogStream(
@@ -337,11 +336,12 @@ function StreamingTestbed() {
         {},
         {
           organizationId,
-          preloadedTweets,
-          preloadedArticles,
-          preloadedVideos,
+          preloadedTweets: [],
+          preloadedArticles: [],
+          preloadedVideos: [],
         }
       );
+      setRelatedContentSteps([]); // Clear fetch steps; related content loads in background and substitutes
       const { close } = api.connectToStream(connectionId, {
         onChunk: (data) => {
           const chunk = extractStreamChunk(data);
