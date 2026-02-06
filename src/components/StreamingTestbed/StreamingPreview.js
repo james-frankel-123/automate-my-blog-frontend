@@ -10,6 +10,38 @@ import { replaceVideoPlaceholders } from '../../utils/videoPlaceholders';
 import HTMLPreview from '../HTMLPreview/HTMLPreview';
 
 /**
+ * Inject [TWEET:n], [ARTICLE:n], [VIDEO:n] placeholders when backend omits them.
+ * If we have related content but the body doesn't include placeholders, append them
+ * so the preview can show tweet/article/video cards.
+ */
+function injectRelatedContentPlaceholders(content, relatedTweets = [], relatedArticles = [], relatedVideos = []) {
+  if (!content || typeof content !== 'string') return content || '';
+  const hasPlaceholders = /\[(?:TWEET|ARTICLE|VIDEO):\d+\]/.test(content);
+  if (hasPlaceholders) return content;
+
+  const parts = [];
+  const tweets = Array.isArray(relatedTweets) ? relatedTweets : [];
+  const articles = Array.isArray(relatedArticles) ? relatedArticles : [];
+  const videos = Array.isArray(relatedVideos) ? relatedVideos : [];
+
+  if (tweets.length > 0) {
+    parts.push('\n\n## Related Tweets\n\n');
+    parts.push(tweets.slice(0, 3).map((_, i) => `[TWEET:${i}]`).join('\n\n'));
+  }
+  if (articles.length > 0) {
+    parts.push('\n\n## Related Articles\n\n');
+    parts.push(articles.slice(0, 3).map((_, i) => `[ARTICLE:${i}]`).join('\n\n'));
+  }
+  if (videos.length > 0) {
+    parts.push('\n\n## Related Videos\n\n');
+    parts.push(videos.slice(0, 3).map((_, i) => `[VIDEO:${i}]`).join('\n\n'));
+  }
+
+  if (parts.length === 0) return content;
+  return content.trimEnd() + parts.join('');
+}
+
+/**
  * Renders streamed blog content with article/tweet/video placeholders resolved.
  * Props match testbed usage; do not add app-only props here.
  *
@@ -28,9 +60,15 @@ function StreamingPreview({
   heroImageUrl,
   style = {},
 }) {
+  const contentWithPlaceholders = injectRelatedContentPlaceholders(
+    content || '',
+    relatedTweets,
+    relatedArticles,
+    relatedVideos
+  );
   const resolvedContent = replaceTweetPlaceholders(
     replaceVideoPlaceholders(
-      replaceArticlePlaceholders(content || '', relatedArticles),
+      replaceArticlePlaceholders(contentWithPlaceholders, relatedArticles),
       relatedVideos
     ),
     relatedTweets
