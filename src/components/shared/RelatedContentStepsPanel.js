@@ -44,6 +44,10 @@ const panelStyles = {
     width: '18px',
     textAlign: 'center',
   },
+  iconRunning: {
+    display: 'inline-block',
+    animation: 'related-step-spin 1s linear infinite',
+  },
 };
 
 /**
@@ -85,7 +89,7 @@ function RelatedContentStepsPanel({ steps = [], title = 'Preparing related conte
   };
 
   return (
-    <div style={panelStyles.panel} data-testid="related-content-steps-panel">
+    <div style={panelStyles.panel} data-testid="related-content-steps-panel" role="status" aria-label={title}>
       <div style={panelStyles.title}>{title}</div>
       {steps.map((step, i) => (
         <div
@@ -94,8 +98,15 @@ function RelatedContentStepsPanel({ steps = [], title = 'Preparing related conte
             ...panelStyles.step,
             ...(i === steps.length - 1 ? panelStyles.stepLast : {}),
           }}
+          aria-busy={step.status === STATUS.RUNNING}
         >
-          <span style={panelStyles.icon} aria-hidden>
+          <span
+            style={{
+              ...panelStyles.icon,
+              ...(step.status === STATUS.RUNNING ? panelStyles.iconRunning : {}),
+            }}
+            aria-hidden
+          >
             {getIcon(step.status)}
           </span>
           <span>{getStepLabel(step)}</span>
