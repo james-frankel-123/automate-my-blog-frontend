@@ -117,7 +117,7 @@ const ProductSectionPanel = ({ productData, loading, platformMetrics }) => {
           </ResponsiveContainer>
         )}
         <div style={{ marginTop: 16, padding: '8px 16px', background: '#f5f5f5', borderRadius: 4 }}>
-          <div style={{ fontSize: 12, color: '#8c8c8c', marginBottom: 8 }}>
+          <div style={{ fontSize: 12, color: 'var(--color-text-tertiary)', marginBottom: 8 }}>
             <strong>Legend:</strong>
             <span style={{ marginLeft: 8 }}>
               <span style={{ color: '#52c41a' }}>■</span> Healthy (≥50%)

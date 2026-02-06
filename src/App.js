@@ -235,13 +235,39 @@ const AppContent = () => {
   // Show loading state while auth is being determined
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        height: '100vh' 
-      }}>
-        Loading...
+      <div
+        role="status"
+        aria-label="Loading"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          gap: 'var(--space-4)',
+          background: 'var(--color-background-body)',
+        }}
+      >
+        <div
+          className="app-loading-spinner"
+          style={{
+            width: 40,
+            height: 40,
+            border: '3px solid var(--color-border-base)',
+            borderTopColor: 'var(--color-primary)',
+            borderRadius: '50%',
+            animation: 'app-loading-spin 0.8s linear infinite',
+          }}
+        />
+        <span
+          style={{
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text-secondary)',
+            fontWeight: 500,
+          }}
+        >
+          Loading…
+        </span>
       </div>
     );
   }

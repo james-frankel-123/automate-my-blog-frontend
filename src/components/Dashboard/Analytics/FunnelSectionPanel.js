@@ -236,7 +236,7 @@ const FunnelSectionPanel = ({ funnelData, loading, funnelVisualizationData, date
                   )}
 
                   {step.dropoff_reasons && step.dropoff_reasons.length > 0 && (
-                    <div style={{ marginTop: 4, fontSize: 12, color: '#8c8c8c' }}>
+                    <div style={{ marginTop: 4, fontSize: 12, color: 'var(--color-text-tertiary)' }}>
                       Dropoff reasons: {step.dropoff_reasons.join(', ')}
                     </div>
                   )}

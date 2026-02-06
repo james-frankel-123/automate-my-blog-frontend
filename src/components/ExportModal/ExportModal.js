@@ -182,7 +182,7 @@ const ExportModal = ({
         max-width: 800px;
         margin: 0 auto;
         padding: 40px 20px;
-        color: #333;
+        color: #0A2540;
       }
       h1, h2, h3, h4, h5, h6 {
         font-family: ${headingFont};
@@ -203,7 +203,7 @@ const ExportModal = ({
         font-family: Consolas, Monaco, 'Courier New', monospace;
       }
       a {
-        color: var(--color-primary);
+        color: #6366F1;
         text-decoration: none;
       }
       ul, ol {
