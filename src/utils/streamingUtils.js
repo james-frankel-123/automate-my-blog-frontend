@@ -2,7 +2,35 @@
  * Utilities for handling streamed content in blog generation and other SSE flows.
  * Normalizes various backend formats so raw JSON never appears in the editor.
  * Issue: Streamed content was being appended as JSON into the content editor.
+ *
+ * Blog-generation stream: backend now streams only the content (markdown). Use
+ * getStreamChunkContentOnly / getStreamCompleteContentOnly for that path; no stripping.
  */
+
+/**
+ * For content-only streams (e.g. blog-generation): return the chunk exactly as sent.
+ * Backend streams raw markdown; no JSON parsing or strip-formatting.
+ * @param {Object|string} data - Parsed event data (string or { content: string })
+ * @returns {string} The chunk to append, or empty string
+ */
+export function getStreamChunkContentOnly(data) {
+  if (data == null) return '';
+  if (typeof data === 'string') return data;
+  const c = data.content ?? data.text;
+  return typeof c === 'string' ? c : '';
+}
+
+/**
+ * For content-only streams: return the complete content exactly as sent.
+ * @param {Object|string} data - Complete event payload
+ * @returns {string} The full content string, or empty string
+ */
+export function getStreamCompleteContentOnly(data) {
+  if (data == null) return '';
+  if (typeof data === 'string') return data;
+  const c = data.content ?? data.text;
+  return typeof c === 'string' ? c : '';
+}
 
 /**
  * Extract displayable text from a streaming chunk.

@@ -1,14 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import autoBlogAPI from '../services/api';
-import { extractStreamChunk, extractStreamCompleteContent } from '../utils/streamingUtils';
+import {
+  getStreamChunkContentOnly,
+  getStreamCompleteContentOnly,
+  extractStreamChunk,
+  extractStreamCompleteContent
+} from '../utils/streamingUtils';
 
 /**
  * Hook for consuming SSE streaming content (blog, bundle overview, etc.).
  * Accumulates content from content-chunk events and exposes final result on complete.
  * Issue #65: LLM Streaming for Blog Posts, Audiences, and Bundle Overview.
- * Uses streamingUtils to prevent raw JSON from being appended to the editor.
  *
- * @param {Object} options - { onComplete?, onError? }
+ * @param {Object} options - { onComplete?, onError?, useRawContent?: boolean }
+ *   useRawContent: true for blog-generation stream (backend streams only markdown; no strip-formatting).
  * @returns {Object} { content, setContent, isStreaming, error, connect, disconnect }
  */
 export function useStreamingContent(options = {}) {
@@ -16,6 +21,7 @@ export function useStreamingContent(options = {}) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState(null);
   const closeRef = useRef(null);
+  const useRawContent = Boolean(options.useRawContent);
 
   const disconnect = useCallback(() => {
     if (closeRef.current) {
@@ -32,15 +38,18 @@ export function useStreamingContent(options = {}) {
       setIsStreaming(true);
       setContent('');
 
+      const getChunk = useRawContent ? getStreamChunkContentOnly : extractStreamChunk;
+      const getComplete = useRawContent ? getStreamCompleteContentOnly : extractStreamCompleteContent;
+
       closeRef.current = autoBlogAPI.connectToStream(connectionId, {
         onChunk: (data) => {
-          const chunk = extractStreamChunk(data);
+          const chunk = getChunk(data);
           if (chunk) {
             setContent((prev) => prev + chunk);
           }
         },
         onComplete: (data) => {
-          const finalContent = extractStreamCompleteContent(data);
+          const finalContent = getComplete(data);
           if (finalContent) setContent(finalContent);
           setIsStreaming(false);
           closeRef.current = null;
@@ -54,7 +63,7 @@ export function useStreamingContent(options = {}) {
         }
       });
     },
-    [options.onComplete, options.onError]
+    [options.onComplete, options.onError, options.useRawContent]
   );
 
   useEffect(() => {

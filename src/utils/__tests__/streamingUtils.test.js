@@ -1,6 +1,48 @@
-import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../streamingUtils';
+import {
+  getStreamChunkContentOnly,
+  getStreamCompleteContentOnly,
+  extractStreamChunk,
+  extractStreamCompleteContent,
+  normalizeContentString
+} from '../streamingUtils';
 
 describe('streamingUtils', () => {
+  describe('getStreamChunkContentOnly (content-only stream, no stripping)', () => {
+    it('returns string payload as-is', () => {
+      expect(getStreamChunkContentOnly('## Hello\n\nWorld')).toBe('## Hello\n\nWorld');
+      expect(getStreamChunkContentOnly('')).toBe('');
+    });
+
+    it('returns data.content or data.text from object', () => {
+      expect(getStreamChunkContentOnly({ content: '**bold**' })).toBe('**bold**');
+      expect(getStreamChunkContentOnly({ text: 'plain' })).toBe('plain');
+      expect(getStreamChunkContentOnly({ content: '```\ncode\n```' })).toBe('```\ncode\n```');
+    });
+
+    it('returns empty for null/undefined or missing content', () => {
+      expect(getStreamChunkContentOnly(null)).toBe('');
+      expect(getStreamChunkContentOnly(undefined)).toBe('');
+      expect(getStreamChunkContentOnly({})).toBe('');
+      expect(getStreamChunkContentOnly({ field: 'content' })).toBe('');
+    });
+  });
+
+  describe('getStreamCompleteContentOnly', () => {
+    it('returns string payload as-is', () => {
+      expect(getStreamCompleteContentOnly('# Full markdown\n\nParagraph.')).toBe('# Full markdown\n\nParagraph.');
+    });
+
+    it('returns data.content or data.text from object', () => {
+      expect(getStreamCompleteContentOnly({ content: 'Final content' })).toBe('Final content');
+      expect(getStreamCompleteContentOnly({ text: 'Done' })).toBe('Done');
+    });
+
+    it('returns empty for null/undefined or missing content', () => {
+      expect(getStreamCompleteContentOnly(null)).toBe('');
+      expect(getStreamCompleteContentOnly({})).toBe('');
+    });
+  });
+
   describe('extractStreamChunk', () => {
     it('extracts content from { content }', () => {
       expect(extractStreamChunk({ content: 'Hello world' })).toBe('Hello world');
