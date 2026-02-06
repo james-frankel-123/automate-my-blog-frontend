@@ -765,6 +765,20 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       } else {
         navigateToNextStep();
       }
+      // Auto-scroll to Posts section (Issue #200): retry so we scroll after layout has mounted the section
+      const scrollToPostsWhenReady = (delaysMs = [100, 250, 500, 800]) => {
+        let scrolled = false;
+        const tryScroll = () => {
+          if (scrolled) return;
+          const postsSection = document.getElementById('posts');
+          if (postsSection) {
+            postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            scrolled = true;
+          }
+        };
+        delaysMs.forEach((delay) => setTimeout(tryScroll, delay));
+      };
+      scrollToPostsWhenReady();
     }
   };
 
