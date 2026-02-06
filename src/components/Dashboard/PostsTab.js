@@ -897,14 +897,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         )
       );
 
-      // Run combined tweets+videos (one request) and articles stream in parallel
-      const [[preloadedTweets, preloadedVideos], preloadedArticles] = await Promise.all([
-        runTweetsAndVideos(),
-        runArticleStream(),
-      ]);
-
-      // Clear fetch steps before content generation (ThinkingPanel will show)
-      setRelatedContentSteps([]);
+      // Fire related content fetches in background; don't wait. Blog stream starts immediately
+      // with placeholders; StreamingPreview substitutes tweets/videos/articles when they arrive.
+      runTweetsAndVideos();
+      runArticleStream();
 
       // Determine if enhanced generation should be used based on available organization data
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
@@ -922,9 +918,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       const enhancementOptions = {
         useEnhancedGeneration: shouldUseEnhancement,
-        preloadedTweets: preloadedTweets,
-        preloadedArticles: preloadedArticles,
-        preloadedVideos: preloadedVideos,
+        preloadedTweets: [],
+        preloadedArticles: [],
+        preloadedVideos: [],
         goal: contentStrategy.goal,
         voice: contentStrategy.voice,
         template: contentStrategy.template,
@@ -972,6 +968,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             stepResults?.home?.webSearchInsights || {},
             enhancementOptions
           );
+          setRelatedContentSteps([]); // Clear fetch steps; related content loads in background and substitutes
           setEditingContent('');
           setContentViewMode('preview');
           let accumulatedChunks = '';
