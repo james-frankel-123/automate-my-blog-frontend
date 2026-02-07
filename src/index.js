@@ -5,6 +5,15 @@ import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
 
+// Prevent unhandled promise rejections from leaving a blank screen during demo/production
+window.addEventListener('unhandledrejection', (event) => {
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Unhandled promise rejection:', event.reason);
+  }
+  event.preventDefault();
+  event.stopPropagation();
+});
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
