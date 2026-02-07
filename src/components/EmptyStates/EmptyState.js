@@ -21,18 +21,18 @@ const EmptyState = ({
   const emptyDescription = (
     <div style={{ textAlign: 'center', maxWidth: '400px', margin: '0 auto' }}>
       {title && (
-        <Title level={4} style={{ marginBottom: '8px', color: '#262626' }}>
+        <Title level={4} style={{ marginBottom: 'var(--space-2)', color: 'var(--color-text-primary)' }}>
           {title}
         </Title>
       )}
       {description && (
-        <Paragraph style={{ color: '#8c8c8c', marginBottom: '16px' }}>
+        <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>
           {description}
         </Paragraph>
       )}
       {tips && (
-        <div style={{ marginTop: '16px', textAlign: 'left' }}>
-          <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '8px' }}>
+        <div style={{ marginTop: 'var(--space-4)', textAlign: 'left' }}>
+          <Text type="secondary" style={{ fontSize: 'var(--font-size-xs)', display: 'block', marginBottom: 'var(--space-2)' }}>
             <strong>Tip:</strong> {tips}
           </Text>
         </div>
@@ -43,14 +43,14 @@ const EmptyState = ({
   const emptyImage = image || (icon ? icon : Empty.PRESENTED_IMAGE_SIMPLE);
 
   return (
-    <div style={{ padding: '40px 20px', ...style }}>
+    <div style={{ padding: 'var(--space-10) var(--space-5)', ...style }}>
       <Empty
         image={emptyImage}
         description={emptyDescription}
         imageStyle={{ height: 80 }}
       >
         {action && onAction && (
-          <Space direction="vertical" size="middle" style={{ marginTop: '16px' }}>
+          <Space direction="vertical" size="middle" style={{ marginTop: 'var(--space-4)' }}>
             <Button type="primary" size="large" onClick={onAction}>
               {actionLabel || action}
             </Button>

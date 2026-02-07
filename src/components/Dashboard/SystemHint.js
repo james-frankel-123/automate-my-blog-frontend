@@ -58,13 +58,21 @@ export default function SystemHint() {
         type="button"
         onClick={clearHint}
         aria-label="Dismiss hint"
+        className="system-hint-dismiss"
         style={{
-          background: 'none',
+          background: 'transparent',
           border: 'none',
           cursor: 'pointer',
-          padding: '4px',
+          padding: 'var(--space-2)',
           color: 'inherit',
-          opacity: 0.7,
+          opacity: 0.8,
+          borderRadius: 'var(--radius-base)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minWidth: 32,
+          minHeight: 32,
+          transition: 'opacity 0.15s ease, background 0.15s ease',
         }}
       >
         ×

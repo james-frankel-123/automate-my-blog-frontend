@@ -267,6 +267,44 @@
   --blog-accent: #F97316;    /* Orange accent color */
 }
 
+/* ===== ACCESSIBILITY ===== */
+/* Focus visible - clear keyboard focus ring */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* SystemHint dismiss button - theme-aware hover */
+.system-hint-dismiss:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.dark-mode .system-hint-dismiss:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
 /* ===== BASE STYLES ===== */
 * {
   box-sizing: border-box;
@@ -429,12 +467,13 @@ body {
 
 /* Enhanced button interactions - Minimal */
 .btn-primary:hover {
-  opacity: 0.9;  /* Subtle color shift instead of transform */
-  transition: opacity var(--transition-base);
+  background: var(--color-primary-hover) !important;
+  opacity: 1;
+  transition: all var(--transition-base);
 }
 
 .btn-primary:active {
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
 .btn-secondary:hover {
@@ -488,7 +527,7 @@ body {
 }
 
 .btn-primary:hover {
-  background: var(--color-primary-dark);
+  background: var(--color-primary-hover) !important;
   transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
 }
@@ -1914,17 +1953,17 @@ html.dark-mode [class*="ant-badge"] * {
 
 .ant-btn-primary:hover:not(:disabled):not(.ant-btn-disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(13, 148, 136, 0.25) !important;
+  box-shadow: 0 8px 16px rgba(99, 102, 241, 0.25) !important;
 }
 
 .ant-btn-primary:active:not(:disabled):not(.ant-btn-disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(13, 148, 136, 0.15) !important;
+  box-shadow: 0 2px 4px rgba(99, 102, 241, 0.15) !important;
 }
 
-/* Dark mode button shadows */
+/* Dark mode button shadows - use primary purple glow */
 .dark-mode .ant-btn-primary:hover:not(:disabled):not(.ant-btn-disabled) {
-  box-shadow: 0 8px 16px rgba(20, 184, 166, 0.3), 0 0 20px rgba(20, 184, 166, 0.2) !important;
+  box-shadow: 0 8px 16px rgba(129, 140, 248, 0.35), 0 0 20px rgba(99, 102, 241, 0.2) !important;
 }
 
 /* Ripple effect on click */
@@ -1971,11 +2010,11 @@ html.dark-mode [class*="ant-badge"] * {
 }
 
 .ant-btn-text:hover:not(:disabled):not(.ant-btn-disabled) {
-  background-color: rgba(13, 148, 136, 0.08) !important;
+  background-color: rgba(99, 102, 241, 0.08) !important;
 }
 
 .dark-mode .ant-btn-text:hover:not(:disabled):not(.ant-btn-disabled) {
-  background-color: rgba(20, 184, 166, 0.15) !important;
+  background-color: rgba(129, 140, 248, 0.15) !important;
 }
 
 /* Button Loading State */
@@ -1998,19 +2037,19 @@ html.dark-mode [class*="ant-badge"] * {
    MICRO-INTERACTIONS - INPUTS
    ============================================ */
 
-/* Input focus animations */
+/* Input focus animations - use primary purple */
 .ant-input:focus,
 .ant-input-focused,
 .ant-select-focused .ant-select-selector {
   border-color: var(--color-primary) !important;
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1) !important;
+  box-shadow: var(--shadow-focus) !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark-mode .ant-input:focus,
 .dark-mode .ant-input-focused,
 .dark-mode .ant-select-focused .ant-select-selector {
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15) !important;
+  box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25) !important;
 }
 
 /* Input error state with shake animation - DISABLED */
