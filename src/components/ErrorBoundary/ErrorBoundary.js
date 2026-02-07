@@ -26,6 +26,7 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       const { error } = this.state;
+      const isDev = process.env.NODE_ENV !== 'production';
       return (
         <div
           style={{
@@ -45,9 +46,11 @@ class ErrorBoundary extends React.Component {
                 <p style={{ marginBottom: 12 }}>
                   An unexpected error occurred. Please try refreshing the page or try again.
                 </p>
-                <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
-                  {error?.message}
-                </p>
+                {isDev && error?.message && (
+                  <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
+                    {error.message}
+                  </p>
+                )}
                 <Button type="primary" onClick={this.handleReset}>
                   Try again
                 </Button>
