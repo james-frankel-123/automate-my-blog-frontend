@@ -2217,7 +2217,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   />
 
                   {/* Enhanced Generation Toggle - Standalone Panel */}
-                  {console.log('🔧 DEBUG: Rendering Enhanced Generation Toggle', { useEnhancedGeneration, selectedTopic: !!selectedTopic }) && null}
                   <div style={{ 
                     marginBottom: '20px',
                     padding: '16px',

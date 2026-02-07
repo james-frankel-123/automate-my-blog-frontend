@@ -321,28 +321,24 @@ function getVideoPlaceholderHtml(index, relatedVideos = []) {
   const video = videos[index];
   const safeTitle = (s) => escapeAttr(String(s ?? '').slice(0, 200));
   if (video && (video.url || video.videoId)) {
-    const videoId = (video.videoId || (video.url && video.url.match(/(?:v=|\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1]) || '').slice(0, 20);
-    const embedUrl = videoId ? `https://www.youtube.com/embed/${escapeAttr(videoId)}` : '';
+    const videoUrl = video.url || (video.videoId ? `https://www.youtube.com/watch?v=${video.videoId}` : '');
+    const safeUrl = videoUrl && /^https?:\/\//i.test(videoUrl) ? escapeAttr(videoUrl) : '';
     const title = safeTitle(video.title) || 'Video';
     const channel = safeTitle(video.channelTitle);
     const meta = [channel, video.viewCount != null ? `${Number(video.viewCount).toLocaleString()} views` : '', video.duration].filter(Boolean).join(' · ');
-    if (!embedUrl) {
-      return (
-        '<div class="markdown-video-card markdown-video-embed">' +
-        '<div class="markdown-video-card-body">' +
-        `<span class="markdown-video-card-title">${title}</span>` +
-        (meta ? `<span class="markdown-video-card-meta">${escapeAttr(meta)}</span>` : '') +
-        '</div></div>'
-      );
-    }
-    const allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    const thumbImg = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl)
+      ? `<img src="${escapeAttr(video.thumbnailUrl)}" alt="" class="markdown-video-card-thumb" loading="lazy" />`
+      : '<span class="markdown-video-card-thumb-placeholder" aria-hidden="true">▶</span>';
+    const thumbBlock = safeUrl
+      ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-link">${thumbImg}</a>`
+      : `<span class="markdown-video-card-link">${thumbImg}</span>`;
     return (
-      '<div class="markdown-video-card markdown-video-embed">' +
-      '<div class="markdown-video-embed-wrapper">' +
-      `<iframe src="${embedUrl}" title="${title}" allow="${escapeAttr(allow)}" allowfullscreen frameborder="0"></iframe>` +
-      '</div>' +
+      '<div class="markdown-video-card">' +
+      thumbBlock +
       '<div class="markdown-video-card-body">' +
-      `<span class="markdown-video-card-title">${title}</span>` +
+      (safeUrl
+        ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-title">${title}</a>`
+        : `<span class="markdown-video-card-title">${title}</span>`) +
       (meta ? `<span class="markdown-video-card-meta">${escapeAttr(meta)}</span>` : '') +
       '</div></div>'
     );
@@ -871,58 +867,61 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.08); }
         }
 
-        /* Video card (loaded) */
+        /* Video card (loaded): thumbnail left, text right – same layout as article cards */
         div :global(.markdown-video-card) {
           display: flex;
           align-items: flex-start;
-          gap: 12px;
+          gap: 14px;
           margin: ${paragraphSpacing}px 0;
-          padding: 12px;
-          border-radius: 8px;
+          padding: 12px 14px;
+          border-radius: 10px;
           border: 1px solid var(--color-gray-200);
           background: var(--color-background-container);
           transition: box-shadow 0.2s ease;
-        }
-
-        div :global(.markdown-video-card.markdown-video-embed) {
-          flex-direction: column;
-        }
-
-        div :global(.markdown-video-embed-wrapper) {
-          position: relative;
-          width: 100%;
-          padding-bottom: 56.25%;
-          border-radius: 8px;
-          overflow: hidden;
-          background: #000;
-        }
-
-        div :global(.markdown-video-embed-wrapper iframe) {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          flex-wrap: wrap;
         }
 
         div :global(.markdown-video-card:hover) {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        div :global(.markdown-video-card-thumb) {
-          width: 120px;
-          height: 68px;
-          object-fit: cover;
-          border-radius: 6px;
+        div :global(.markdown-video-card-link) {
           flex-shrink: 0;
+          display: block;
+          line-height: 0;
+          text-decoration: none;
+        }
+
+        div :global(.markdown-video-card-thumb) {
+          width: 72px;
+          height: 52px;
+          max-width: 72px;
+          max-height: 52px;
+          object-fit: cover;
+          border-radius: 8px;
+          display: block;
+        }
+
+        div :global(.markdown-video-card-thumb-placeholder) {
+          width: 72px;
+          height: 52px;
+          border-radius: 8px;
+          background: var(--color-gray-100);
+          color: var(--color-text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
         }
 
         div :global(.markdown-video-card-body) {
           flex: 1;
           min-width: 0;
+          min-height: 52px;
           display: flex;
           flex-direction: column;
           gap: 4px;
+          justify-content: center;
         }
 
         div :global(.markdown-video-card-title) {
@@ -931,10 +930,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           color: var(--color-primary);
           text-decoration: none;
           display: block;
-        }
-
-        div :global(.markdown-video-card.markdown-video-embed .markdown-video-card-title) {
-          color: var(--color-text-primary);
+          line-height: 1.35;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         div :global(.markdown-video-card-title:hover) {
@@ -944,6 +942,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         div :global(.markdown-video-card-meta) {
           font-size: 12px;
           color: var(--color-text-tertiary);
+          line-height: 1.4;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
       `}</style>
         </>

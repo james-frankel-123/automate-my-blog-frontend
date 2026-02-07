@@ -89,7 +89,13 @@ function RelatedContentStepsPanel({ steps = [], title = 'Preparing related conte
   };
 
   return (
-    <div style={panelStyles.panel} data-testid="related-content-steps-panel" role="status" aria-label={title}>
+    <div
+      style={panelStyles.panel}
+      data-testid="related-content-steps-panel"
+      role="status"
+      aria-label={title}
+      aria-live="polite"
+    >
       <div style={panelStyles.title}>{title}</div>
       {steps.map((step, i) => (
         <div

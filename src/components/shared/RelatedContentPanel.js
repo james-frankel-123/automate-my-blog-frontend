@@ -85,8 +85,13 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
     return (truncated + (String(str).length > TRUNCATE.tweet ? '…' : ''));
   };
 
+  const injectAriaLabel = (type, index) => {
+    const label = type.charAt(0) + type.slice(1).toLowerCase();
+    return `Add ${label} ${index + 1} to post`;
+  };
+
   return (
-    <div
+    <section
       style={{
         marginBottom: 16,
         borderRadius: 8,
@@ -95,12 +100,32 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
         overflow: 'hidden',
       }}
       data-testid="related-content-panel"
+      aria-labelledby="related-content-heading"
     >
+      <div style={{ padding: '10px 14px 6px', borderBottom: '1px solid var(--color-primary-100)' }}>
+        <h3
+          id="related-content-heading"
+          style={{
+            margin: 0,
+            fontSize: '14px',
+            fontWeight: 600,
+            color: 'var(--color-primary-700)',
+          }}
+        >
+          Related content
+        </h3>
+        {onInject && (
+          <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+            Add to post inserts a placeholder; switch to Preview to see the card in your post.
+          </p>
+        )}
+      </div>
       <Collapse
         activeKey={activeKeys}
         onChange={(keys) => setActiveKeys(Array.isArray(keys) ? keys : [keys])}
         ghost
         style={{ background: 'transparent' }}
+        aria-label="Tweets, articles, and videos you can add to your post"
       >
         {hasTweets && (
           <Collapse.Panel
@@ -136,6 +161,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                       icon={<PlusOutlined />}
                       onClick={() => handleInject('TWEET', i)}
                       style={{ flexShrink: 0 }}
+                      aria-label={injectAriaLabel('TWEET', i)}
                     >
                       Add to post
                     </Button>
@@ -172,11 +198,11 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                   >
                     {a?.urlToImage && (
                       linkUrl ? (
-                        <a href={linkUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }} aria-label="Open article">
-                          <img src={a.urlToImage} alt="" style={thumbStyle} />
+                        <a href={linkUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }} aria-label={`Open article: ${(a?.title || 'Article').slice(0, 50)}`}>
+                          <img src={a.urlToImage} alt="" style={thumbStyle} role="presentation" />
                         </a>
                       ) : (
-                        <img src={a.urlToImage} alt="" style={thumbStyle} />
+                        <img src={a.urlToImage} alt="" style={thumbStyle} role="presentation" />
                       )
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -209,6 +235,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                         icon={<PlusOutlined />}
                         onClick={() => handleInject('ARTICLE', i)}
                         style={{ flexShrink: 0 }}
+                        aria-label={injectAriaLabel('ARTICLE', i)}
                       >
                         Add to post
                       </Button>
@@ -246,11 +273,11 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                   >
                     {v?.thumbnailUrl && (
                       linkUrl ? (
-                        <a href={linkUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }} aria-label="Open video">
-                          <img src={v.thumbnailUrl} alt="" style={thumbStyle} />
+                        <a href={linkUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }} aria-label={`Open video: ${(v?.title || 'Video').slice(0, 50)}`}>
+                          <img src={v.thumbnailUrl} alt="" style={thumbStyle} role="presentation" />
                         </a>
                       ) : (
-                        <img src={v.thumbnailUrl} alt="" style={thumbStyle} />
+                        <img src={v.thumbnailUrl} alt="" style={thumbStyle} role="presentation" />
                       )
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -284,6 +311,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                         icon={<PlusOutlined />}
                         onClick={() => handleInject('VIDEO', i)}
                         style={{ flexShrink: 0 }}
+                        aria-label={injectAriaLabel('VIDEO', i)}
                       >
                         Add to post
                       </Button>
@@ -295,7 +323,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
           </Collapse.Panel>
         )}
       </Collapse>
-    </div>
+    </section>
   );
 }
 
