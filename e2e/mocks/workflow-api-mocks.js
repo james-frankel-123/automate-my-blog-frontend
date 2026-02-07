@@ -436,13 +436,75 @@ async function installWorkflowMocksBase(page, options = {}) {
   });
 }
 
-/** Inject localStorage tokens so app treats user as logged in. Call before goto. */
+/** Minimal workflow state so App shows dashboard (not onboarding funnel) for E2E. */
+function getE2ECompletedWorkflowState() {
+  return {
+    userId: MOCK_USER.id,
+    isAuthenticated: true,
+    mode: 'authenticated',
+    currentWorkflowStep: 1,
+    currentStep: 1,
+    completedWorkflowSteps: ['home'],
+    stepResults: {
+      home: {
+        websiteAnalysis: {
+          businessType: 'Technology',
+          businessName: 'Example Inc',
+          targetAudience: 'Developers and technical leads',
+          contentFocus: 'Developer tools, APIs, and best practices',
+          brandVoice: 'Professional, helpful',
+          description: 'Example Inc provides developer tools.',
+          keywords: [],
+          decisionMakers: '',
+          endUsers: '',
+          customerProblems: [],
+          searchBehavior: '',
+          customerLanguage: [],
+          contentIdeas: ['Getting started with APIs', 'Best practices for developers'],
+          connectionMessage: '',
+          businessModel: '',
+          websiteGoals: '',
+          blogStrategy: '',
+          scenarios: [],
+          brandColors: { primary: '', secondary: '', accent: '' },
+          websiteUrl: 'https://example.com'
+        },
+        webSearchInsights: { brandResearch: null, keywordResearch: null, researchQuality: 'basic' },
+        analysisCompleted: true,
+        ctas: [],
+        ctaCount: 0,
+        hasSufficientCTAs: false
+      },
+      audience: { customerStrategy: null, targetSegments: [] },
+      content: { trendingTopics: [], selectedContent: null, finalContent: '' },
+      analytics: { performance: null }
+    },
+    analysisCompleted: true,
+    strategyCompleted: false,
+    strategySelectionCompleted: false,
+    websiteUrl: 'https://example.com',
+    selectedTopic: null,
+    generatedContent: '',
+    savedAt: new Date().toISOString(),
+    version: '1.1'
+  };
+}
+
+/** Inject localStorage tokens and completed workflow state so app shows dashboard. Call before goto. */
 async function injectLoggedInUser(page) {
   const token = fakeJWT();
-  await page.addInitScript((t) => {
+  const workflowState = getE2ECompletedWorkflowState();
+  await page.addInitScript((t, stateJson) => {
     localStorage.setItem('accessToken', t);
     localStorage.setItem('refreshToken', t);
-  }, token);
+    if (stateJson) {
+      try {
+        localStorage.setItem('automate-my-blog-workflow-state', stateJson);
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, token, JSON.stringify(workflowState));
 }
 
 module.exports = {

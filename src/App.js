@@ -303,10 +303,12 @@ const AppContent = () => {
     );
   }
 
-  // Guided onboarding funnel (Issue #261): show for first-time or logged-out users
+  // Guided onboarding funnel (Issue #261): show for first-time or logged-out users.
+  // Path /dashboard + logged in forces dashboard (for E2E and direct links).
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  const forceDashboard = pathname === '/dashboard' && user;
   const showFunnel =
-    (typeof window !== 'undefined' && window.location.pathname === '/onboarding') ||
-    !isReturningUser;
+    pathname === '/onboarding' || (!forceDashboard && !isReturningUser);
   if (showFunnel) {
     return (
       <SystemHintProvider>
