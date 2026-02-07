@@ -67,6 +67,7 @@ export const systemVoice = {
     inputPlaceholder: "Enter your website URL (e.g., https://example.com)",
     analyze: "Analyze",
     analyzing: "Reading your site…",
+    startingAnalysis: "Starting analysis…",
     progress: [
       "Reading your pages…",
       "Checking what others in your space are doing…",

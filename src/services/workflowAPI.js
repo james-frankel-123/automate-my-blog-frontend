@@ -124,7 +124,25 @@ export const analysisAPI = {
             },
             onStreamTimeout: (data) => {
               if (options.onStreamTimeout) options.onStreamTimeout(data);
-            }
+            },
+            onAudienceNarrationChunk: (data) => {
+              if (options.onAudienceNarrationChunk) options.onAudienceNarrationChunk(data);
+            },
+            onAudienceNarrationComplete: (data) => {
+              if (options.onAudienceNarrationComplete) options.onAudienceNarrationComplete(data);
+            },
+            onTopicNarrationChunk: (data) => {
+              if (options.onTopicNarrationChunk) options.onTopicNarrationChunk(data);
+            },
+            onTopicNarrationComplete: (data) => {
+              if (options.onTopicNarrationComplete) options.onTopicNarrationComplete(data);
+            },
+            onContentNarrationChunk: (data) => {
+              if (options.onContentNarrationChunk) options.onContentNarrationChunk(data);
+            },
+            onContentNarrationComplete: (data) => {
+              if (options.onContentNarrationComplete) options.onContentNarrationComplete(data);
+            },
           });
         } catch (streamErr) {
           console.warn('Job stream not available, falling back to polling:', streamErr?.message);
