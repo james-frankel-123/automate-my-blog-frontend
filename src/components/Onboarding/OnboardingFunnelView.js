@@ -4,6 +4,7 @@
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Typography, message, Empty, Spin, Button, Skeleton } from 'antd';
+import { motion } from 'framer-motion';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { analysisAPI, topicAPI } from '../../services/workflowAPI';
 import autoBlogAPI from '../../services/api';
@@ -21,6 +22,25 @@ import AnalysisEditSection from './AnalysisEditSection';
 import DashboardLayout from '../Dashboard/DashboardLayout';
 
 const { Title } = Typography;
+
+const sectionTransition = { duration: 0.35, ease: [0.4, 0, 0.2, 1] };
+const sectionInitial = { opacity: 0, y: 16 };
+const sectionAnimate = { opacity: 1, y: 0 };
+const cardStaggerMs = 80;
+const cardTransition = (i) => ({ delay: i * (cardStaggerMs / 1000), duration: 0.28, ease: [0.4, 0, 0.2, 1] });
+const cardInitial = { opacity: 0, y: 10 };
+const cardAnimate = { opacity: 1, y: 0 };
+
+/** Coerce a value to a string safe for narration API params / display (never "[object Object]"). */
+function toNarrationParamString(val) {
+  if (val == null) return '';
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object') {
+    const s = val.title ?? val.topic ?? val.name ?? val.targetSegment ?? val.subheader ?? '';
+    return typeof s === 'string' ? s : (s && typeof s === 'object' ? '' : String(s));
+  }
+  return String(val);
+}
 
 const DEFAULT_UNLOCKED = {
   analysisNarration: false,
@@ -65,7 +85,18 @@ function OnboardingFunnelView() {
   const [fetchedTopicItems, setFetchedTopicItems] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [audiencePlaceholderVisible, setAudiencePlaceholderVisible] = useState(false);
+  const [audienceNarrationContent, setAudienceNarrationContent] = useState('');
+  const [audienceNarrationStreaming, setAudienceNarrationStreaming] = useState(false);
+  const [topicNarrationContent, setTopicNarrationContent] = useState('');
+  const [topicNarrationStreaming, setTopicNarrationStreaming] = useState(false);
+  const [contentNarrationContent, setContentNarrationContent] = useState('');
+  const [contentNarrationStreaming, setContentNarrationStreaming] = useState(false);
   const sectionRefs = useRef({});
+  const audienceNarrationStreamStartedRef = useRef(false);
+  const topicNarrationStreamStartedRef = useRef(false);
+  const contentNarrationStreamStartedRef = useRef(false);
+  const lastProgressAtRef = useRef(0);
+  const reassuranceStepRef = useRef(0);
 
   const analysis = stepResults?.home?.websiteAnalysis || {};
   const scenarios = analysis.scenarios || [];
@@ -114,8 +145,27 @@ function OnboardingFunnelView() {
   useEffect(() => {
     if (loading && !prevLoading.current) {
       setTimeout(() => scrollTo('analysisOutput'), 400);
+      lastProgressAtRef.current = Date.now();
+      reassuranceStepRef.current = 0;
     }
     prevLoading.current = loading;
+  }, [loading]);
+
+  // Reassurance rotation: if no progress update for a while, cycle through step messages so the user sees movement
+  useEffect(() => {
+    if (!loading) return;
+    const steps = systemVoice.analysis?.progress || systemVoice.analysis?.steps || ['Reading your pages…', 'Understanding who you\'re for…', 'Almost there…'];
+    if (steps.length === 0) return;
+    const intervalMs = 10000;
+    const stallThresholdMs = 8000;
+    const tid = setInterval(() => {
+      const elapsed = Date.now() - lastProgressAtRef.current;
+      if (elapsed >= stallThresholdMs) {
+        reassuranceStepRef.current = (reassuranceStepRef.current + 1) % steps.length;
+        setScanningMessage(steps[reassuranceStepRef.current]);
+      }
+    }, intervalMs);
+    return () => clearInterval(tid);
   }, [loading]);
 
   useEffect(() => {
@@ -155,6 +205,88 @@ function OnboardingFunnelView() {
     webSearchInsights,
   ]);
 
+  // Issue #261: fetch audience narration from GET /api/v1/analysis/narration/audience when section unlocks
+  useEffect(() => {
+    if (!unlocked.audienceNarration || !analysis?.organizationId || audienceNarrationStreamStartedRef.current) return;
+    audienceNarrationStreamStartedRef.current = true;
+    setAudienceNarrationStreaming(true);
+    autoBlogAPI
+      .connectNarrationStream(
+        'audience',
+        { organizationId: analysis.organizationId },
+        {
+          onChunk: (data) => {
+            const text = data?.text ?? data?.chunk ?? '';
+            if (text) setAudienceNarrationContent((prev) => prev + text);
+          },
+          onComplete: (data) => {
+            setAudienceNarrationStreaming(false);
+            if (data?.text) setAudienceNarrationContent(data.text);
+          },
+          onError: () => setAudienceNarrationStreaming(false),
+        }
+      )
+      .catch(() => setAudienceNarrationStreaming(false));
+  }, [unlocked.audienceNarration, analysis?.organizationId]);
+
+  // Issue #261: fetch topic narration when topic section unlocks (after user selects audience)
+  useEffect(() => {
+    if (!unlocked.topicNarration || !analysis?.organizationId || selectedAudienceIndex == null || topicNarrationStreamStartedRef.current) return;
+    const raw = displayScenarios[selectedAudienceIndex]?.targetSegment ?? '';
+    const selectedAudience = toNarrationParamString(raw);
+    topicNarrationStreamStartedRef.current = true;
+    setTopicNarrationStreaming(true);
+    autoBlogAPI
+      .connectNarrationStream(
+        'topic',
+        { organizationId: analysis.organizationId, selectedAudience },
+        {
+          onChunk: (data) => {
+            const text = data?.text ?? data?.chunk ?? '';
+            if (text) setTopicNarrationContent((prev) => prev + text);
+          },
+          onComplete: (data) => {
+            setTopicNarrationStreaming(false);
+            if (data?.text) setTopicNarrationContent(data.text);
+          },
+          onError: () => setTopicNarrationStreaming(false),
+        }
+      )
+      .catch(() => setTopicNarrationStreaming(false));
+  }, [unlocked.topicNarration, analysis?.organizationId, selectedAudienceIndex, displayScenarios]);
+
+  // Issue #261: fetch content narration when content section unlocks (after user selects topic)
+  useEffect(() => {
+    if (!unlocked.contentNarration || !analysis?.organizationId || contentNarrationStreamStartedRef.current) return;
+    const items =
+      contentIdeas.length > 0
+        ? contentIdeas.slice(0, 5).map((t) => ({
+            title: typeof t === 'string' ? t : toNarrationParamString(t?.title ?? t?.topic ?? t),
+          }))
+        : fetchedTopicItems.map((t) => ({ title: toNarrationParamString(t?.title ?? t?.subheader ?? 'Topic') }));
+    const rawTopic = items[selectedTopicIndex]?.title ?? items[selectedTopicIndex ?? 0]?.title ?? '';
+    const selectedTopic = toNarrationParamString(rawTopic);
+    contentNarrationStreamStartedRef.current = true;
+    setContentNarrationStreaming(true);
+    autoBlogAPI
+      .connectNarrationStream(
+        'content',
+        { organizationId: analysis.organizationId, selectedTopic },
+        {
+          onChunk: (data) => {
+            const text = data?.text ?? data?.chunk ?? '';
+            if (text) setContentNarrationContent((prev) => prev + text);
+          },
+          onComplete: (data) => {
+            setContentNarrationStreaming(false);
+            if (data?.text) setContentNarrationContent(data.text);
+          },
+          onError: () => setContentNarrationStreaming(false),
+        }
+      )
+      .catch(() => setContentNarrationStreaming(false));
+  }, [unlocked.contentNarration, analysis?.organizationId, selectedTopicIndex, contentIdeas, fetchedTopicItems]);
+
   const handleAnalyze = useCallback(async (url) => {
     const validation = workflowUtils.urlUtils.validateWebsiteUrl(url);
     if (!validation.isValid) {
@@ -165,20 +297,30 @@ function OnboardingFunnelView() {
     setScanningMessage(systemVoice.analysis.steps?.[0] || 'Reading your pages…');
     setAnalysisProgress(null);
     setAnalysisThoughts([]);
+    setAudienceNarrationContent('');
+    setTopicNarrationContent('');
+    setContentNarrationContent('');
+    audienceNarrationStreamStartedRef.current = false;
+    topicNarrationStreamStartedRef.current = false;
+    contentNarrationStreamStartedRef.current = false;
     addStickyWorkflowStep?.('websiteAnalysis', { websiteUrl: validation.formattedUrl, businessName: '', businessType: '' });
     try {
       const result = await analysisAPI.analyzeWebsite(validation.formattedUrl, {
         onJobCreated: () => {},
         onProgress: (stepOrStatus) => {
-          if (typeof stepOrStatus === 'object' && stepOrStatus?.currentStep) {
-            setScanningMessage(stepOrStatus.currentStep);
-            setAnalysisProgress({
-              progress: stepOrStatus.progress,
-              currentStep: stepOrStatus.currentStep,
-              phase: stepOrStatus.phase,
-              detail: stepOrStatus.detail,
-            });
-          }
+          if (typeof stepOrStatus !== 'object' || !stepOrStatus) return;
+          const step = stepOrStatus.currentStep ?? stepOrStatus.current_step ?? '';
+          const hasAny = step || stepOrStatus.progress != null || stepOrStatus.phase || stepOrStatus.detail || stepOrStatus.estimatedTimeRemaining != null;
+          if (!hasAny) return;
+          lastProgressAtRef.current = Date.now();
+          if (step) setScanningMessage(step);
+          setAnalysisProgress({
+            progress: stepOrStatus.progress,
+            currentStep: step || undefined,
+            phase: stepOrStatus.phase,
+            detail: stepOrStatus.detail,
+            estimatedTimeRemaining: stepOrStatus.estimatedTimeRemaining ?? stepOrStatus.estimated_seconds_remaining ?? undefined,
+          });
         },
         onScrapePhase: (data) => {
           if (data?.message) {
@@ -204,6 +346,39 @@ function OnboardingFunnelView() {
           if (data?.scenarios?.length) {
             updateWebsiteAnalysis({ scenarios: data.scenarios });
           }
+        },
+        onAudienceNarrationChunk: (data) => {
+          const chunk = data?.text ?? data?.chunk ?? '';
+          if (chunk) {
+            setAudienceNarrationStreaming(true);
+            setAudienceNarrationContent((prev) => prev + chunk);
+          }
+        },
+        onAudienceNarrationComplete: (data) => {
+          setAudienceNarrationStreaming(false);
+          if (data?.text) setAudienceNarrationContent(data.text);
+        },
+        onTopicNarrationChunk: (data) => {
+          const chunk = data?.text ?? data?.chunk ?? '';
+          if (chunk) {
+            setTopicNarrationStreaming(true);
+            setTopicNarrationContent((prev) => prev + chunk);
+          }
+        },
+        onTopicNarrationComplete: (data) => {
+          setTopicNarrationStreaming(false);
+          if (data?.text) setTopicNarrationContent(data.text);
+        },
+        onContentNarrationChunk: (data) => {
+          const chunk = data?.text ?? data?.chunk ?? '';
+          if (chunk) {
+            setContentNarrationStreaming(true);
+            setContentNarrationContent((prev) => prev + chunk);
+          }
+        },
+        onContentNarrationComplete: (data) => {
+          setContentNarrationStreaming(false);
+          if (data?.text) setContentNarrationContent(data.text);
         },
       });
       if (result?.success && result.analysis) {
@@ -232,7 +407,7 @@ function OnboardingFunnelView() {
     setAnalysisConfirmed(true);
     setEditMode(false);
     setOriginalAnalysisSnapshot(null);
-    setUnlocked((u) => ({ ...u, audienceNarration: true }));
+    setUnlocked((u) => ({ ...u, audienceNarration: true, audienceOutput: true }));
     saveWorkflowState?.();
   }, [saveWorkflowState]);
 
@@ -293,7 +468,7 @@ function OnboardingFunnelView() {
 
   const handleSelectAudience = useCallback((index) => {
     setSelectedAudienceIndex(index);
-    setUnlocked((u) => ({ ...u, topicNarration: true }));
+    setUnlocked((u) => ({ ...u, topicNarration: true, topicOutput: true }));
   }, []);
 
   const unlockTopicOutput = useCallback(() => {
@@ -330,21 +505,23 @@ function OnboardingFunnelView() {
     );
   }
 
+  const iconUrls = analysis.iconUrls || analysis.cardIcons || {};
   const analysisCards = [
-    { heading: 'Business', content: analysis.businessName || analysis.businessType, iconFallback: 'businessType' },
-    { heading: 'Target audience', content: analysis.targetAudience, iconFallback: 'targetAudience' },
-    { heading: 'Content focus', content: analysis.contentFocus, iconFallback: 'contentFocus' },
-    { heading: 'Keywords', content: Array.isArray(analysis.keywords) ? analysis.keywords.slice(0, 5).join(', ') : analysis.keywords, iconFallback: 'keywords' },
+    { heading: 'Business', content: analysis.businessName || analysis.businessType, iconFallback: 'businessType', iconUrl: iconUrls.businessType || iconUrls.business },
+    { heading: 'Target audience', content: analysis.targetAudience, iconFallback: 'targetAudience', iconUrl: iconUrls.targetAudience },
+    { heading: 'Content focus', content: analysis.contentFocus, iconFallback: 'contentFocus', iconUrl: iconUrls.contentFocus },
+    { heading: 'Keywords', content: Array.isArray(analysis.keywords) ? analysis.keywords.slice(0, 5).join(', ') : analysis.keywords, iconFallback: 'keywords', iconUrl: iconUrls.keywords },
   ].filter((c) => c.content);
 
   const contentIdeasAsTopics = contentIdeas.length
-    ? contentIdeas.slice(0, 5).map((t, i) =>
-        typeof t === 'string' ? { title: t, description: '' } : { title: t?.title || t?.topic || String(t), description: t?.description || '' }
-      )
+    ? contentIdeas.slice(0, 5).map((t) => ({
+        title: typeof t === 'string' ? t : toNarrationParamString(t?.title ?? t?.topic ?? t),
+        description: typeof t?.description === 'string' ? t.description : toNarrationParamString(t?.description ?? ''),
+      }))
     : [];
   const fetchedAsTopics = fetchedTopicItems.map((t) => ({
-    title: t.title || t.subheader || 'Topic',
-    description: t.subheader || t.description || '',
+    title: toNarrationParamString(t?.title ?? t?.subheader ?? 'Topic'),
+    description: typeof t?.description === 'string' ? t.description : toNarrationParamString(t?.subheader ?? t?.description ?? ''),
   }));
   const topicItems =
     contentIdeasAsTopics.length > 0
@@ -398,21 +575,26 @@ function OnboardingFunnelView() {
       {!loading && unlocked.analysisNarration && hasAnalysis && (
         <>
         <section ref={(el) => (sectionRefs.current.analysisNarration = el)} style={{ marginTop: 32 }}>
-          <StreamingNarration
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
+            <StreamingNarration
             content="I analyzed your website and found a clear focus. Here’s what stands out."
             isStreaming={false}
             onComplete={unlockAnalysisOutput}
             dataTestId="analysis-narration"
-          />
+            />
+          </motion.div>
         </section>
 
           {/* What I found + placeholders shown with narration so placeholders are visible during load */}
           <section ref={(el) => (sectionRefs.current.analysisOutput = el)} style={{ marginTop: 32 }}>
-            <Title level={4}>What I found</Title>
-            {analysisCards.length > 0 ? (
+            <motion.div initial={sectionInitial} animate={sectionAnimate} transition={{ ...sectionTransition, delay: 0.1 }}>
+              <Title level={4}>What I found</Title>
+              {analysisCards.length > 0 ? (
             <CardCarousel onAllCardsViewed={() => {}} dataTestId="analysis-carousel">
               {analysisCards.map((card, i) => (
-                <AnalysisCard key={i} heading={card.heading} content={card.content} iconFallback={card.iconFallback} dataTestId={`analysis-card-${i}`} />
+                <motion.div key={i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
+                  <AnalysisCard heading={card.heading} content={card.content} iconUrl={card.iconUrl} iconFallback={card.iconFallback} dataTestId={`analysis-card-${i}`} />
+                </motion.div>
               ))}
             </CardCarousel>
             ) : (
@@ -453,17 +635,21 @@ function OnboardingFunnelView() {
               editMode={editMode}
               dataTestId="edit-confirm-analysis"
             />
+            </motion.div>
           </section>
         </>
       )}
 
       {unlocked.analysisOutput && !(unlocked.analysisNarration && hasAnalysis) && (
         <section ref={(el) => (sectionRefs.current.analysisOutput = el)} style={{ marginTop: 32 }}>
-          <Title level={4}>What I found</Title>
-          {analysisCards.length > 0 ? (
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
+            <Title level={4}>What I found</Title>
+            {analysisCards.length > 0 ? (
             <CardCarousel onAllCardsViewed={() => {}} dataTestId="analysis-carousel">
               {analysisCards.map((card, i) => (
-                <AnalysisCard key={i} heading={card.heading} content={card.content} iconFallback={card.iconFallback} dataTestId={`analysis-card-${i}`} />
+                <motion.div key={i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
+                  <AnalysisCard heading={card.heading} content={card.content} iconUrl={card.iconUrl} iconFallback={card.iconFallback} dataTestId={`analysis-card-${i}`} />
+                </motion.div>
               ))}
             </CardCarousel>
           ) : (
@@ -504,23 +690,20 @@ function OnboardingFunnelView() {
             editMode={editMode}
             dataTestId="edit-confirm-analysis"
           />
+          </motion.div>
         </section>
       )}
 
       {unlocked.audienceNarration && (
-        <section ref={(el) => (sectionRefs.current.audienceNarration = el)} style={{ marginTop: 32 }}>
+        <section ref={(el) => { sectionRefs.current.audienceNarration = el; sectionRefs.current.audienceOutput = el; }} style={{ marginTop: 32 }}>
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <StreamingNarration
-            content="I identified audience segments that match your offering. Choose one to focus on."
-            isStreaming={false}
+            content={audienceNarrationContent || "I identified audience segments that match your offering. Choose one to focus on."}
+            isStreaming={audienceNarrationStreaming}
             onComplete={unlockAudienceOutput}
             dataTestId="audience-narration"
           />
-        </section>
-      )}
-
-      {unlocked.audienceOutput && (
-        <section ref={(el) => (sectionRefs.current.audienceOutput = el)} style={{ marginTop: 32 }}>
-          <Title level={4}>Choose your audience</Title>
+          <Title level={4} style={{ marginTop: 24 }}>Choose your audience</Title>
           {audiencePlaceholderVisible ? (
             <div style={{ marginTop: 16 }} data-testid="audience-results-loading">
               <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>Loading audience segments…</Typography.Text>
@@ -556,16 +739,17 @@ function OnboardingFunnelView() {
               )}
               <CardCarousel onAllCardsViewed={() => {}} dataTestId="audience-carousel">
                 {displayScenarios.map((s, i) => (
-                  <AudienceCard
-                    key={s.id || i}
-                    targetSegment={s.targetSegment}
-                    customerProblem={s.customerProblem}
-                    pitch={s.pitch}
-                    imageUrl={s.imageUrl}
-                    selected={selectedAudienceIndex === i}
-                    onClick={() => handleSelectAudience(i)}
-                    dataTestId={`audience-card-${i}`}
-                  />
+                  <motion.div key={s.id || i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
+                    <AudienceCard
+                      targetSegment={s.targetSegment}
+                      customerProblem={s.customerProblem}
+                      pitch={s.pitch}
+                      imageUrl={s.imageUrl}
+                      selected={selectedAudienceIndex === i}
+                      onClick={() => handleSelectAudience(i)}
+                      dataTestId={`audience-card-${i}`}
+                    />
+                  </motion.div>
                 ))}
               </CardCarousel>
             </>
@@ -599,50 +783,62 @@ function OnboardingFunnelView() {
                   If no segments appear above, you can continue to the next step.
                 </Typography.Text>
                 <div style={{ textAlign: 'center' }}>
-                  <Button type="primary" onClick={() => { setSelectedAudienceIndex(0); setUnlocked((u) => ({ ...u, topicNarration: true })); }}>
+                  <Button type="primary" onClick={() => { setSelectedAudienceIndex(0); setUnlocked((u) => ({ ...u, topicNarration: true, topicOutput: true })); }}>
                     Continue
                   </Button>
                 </div>
               </div>
             </div>
           )}
+          </motion.div>
         </section>
       )}
 
       {unlocked.topicNarration && (
-        <section ref={(el) => (sectionRefs.current.topicNarration = el)} style={{ marginTop: 32 }}>
+        <section ref={(el) => { sectionRefs.current.topicNarration = el; sectionRefs.current.topicOutput = el; }} style={{ marginTop: 32 }}>
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <StreamingNarration
-            content="Based on your audience, here are topics that will resonate. Pick one for your article."
-            isStreaming={false}
+            content={topicsLoading ? "I'm looking for topics that will resonate with your audience…" : (topicNarrationContent || "Based on your audience, here are topics that will resonate. Pick one for your article.")}
+            isStreaming={topicNarrationStreaming && !topicsLoading}
             onComplete={unlockTopicOutput}
             dataTestId="topic-narration"
           />
-        </section>
-      )}
-
-      {unlocked.topicOutput && (
-        <section ref={(el) => (sectionRefs.current.topicOutput = el)} style={{ marginTop: 32 }}>
-          <Title level={4}>Choose a topic</Title>
-          {topicsLoading && (
-            <div style={{ padding: '48px 24px', marginTop: 16, background: 'var(--color-background-alt)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }} data-testid="topics-loading">
-              <Spin size="large" tip="Generating topics for your audience…" />
+          <Title level={4} style={{ marginTop: 24 }}>Choose a topic</Title>
+          {topicsLoading ? (
+            <div style={{ marginTop: 16 }} data-testid="topics-loading">
+              <div style={{ display: 'flex', gap: 16, overflow: 'hidden', paddingBottom: 8 }}>
+                {[1, 2].map((i) => (
+                  <div
+                    key={i}
+                    style={{
+                      flex: '0 0 auto',
+                      width: 'min(400px, 85vw)',
+                      padding: 24,
+                      background: 'var(--color-background-elevated)',
+                      borderRadius: 'var(--radius-xl)',
+                      boxShadow: 'var(--shadow-card)',
+                    }}
+                  >
+                    <Skeleton active paragraph={{ rows: 2 }} title={{ width: '70%' }} />
+                  </div>
+                ))}
+              </div>
             </div>
-          )}
-          {!topicsLoading && topicItems.length > 0 && (
+          ) : topicItems.length > 0 ? (
             <CardCarousel onAllCardsViewed={() => {}} dataTestId="topic-carousel">
               {topicItems.map((t, i) => (
-                <TopicCard
-                  key={i}
-                  title={t.title}
-                  description={t.description}
-                  selected={selectedTopicIndex === i}
-                  onClick={() => handleSelectTopic(i)}
-                  dataTestId={`topic-card-${i}`}
-                />
+                <motion.div key={i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
+                  <TopicCard
+                    title={t.title}
+                    description={t.description}
+                    selected={selectedTopicIndex === i}
+                    onClick={() => handleSelectTopic(i)}
+                    dataTestId={`topic-card-${i}`}
+                  />
+                </motion.div>
               ))}
             </CardCarousel>
-          )}
-          {!topicsLoading && topicItems.length === 0 && contentIdeas.length === 0 && (
+          ) : contentIdeas.length === 0 ? (
             <div style={{ padding: '32px 16px', marginTop: 16, background: 'var(--color-background-alt)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-border-base)' }}>
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -658,24 +854,29 @@ function OnboardingFunnelView() {
                 </Button>
               </div>
             </div>
-          )}
+          ) : null}
+          </motion.div>
         </section>
       )}
 
       {unlocked.signupGate && !user && (
         <section ref={(el) => (sectionRefs.current.signupGate = el)} style={{ marginTop: 32 }}>
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <SignupGateCard onSuccess={handleSignupSuccess} />
+          </motion.div>
         </section>
       )}
 
       {unlocked.contentNarration && (
         <section ref={(el) => (sectionRefs.current.contentNarration = el)} style={{ marginTop: 32 }}>
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <StreamingNarration
-            content="I’ll create your article next. You can edit and export it when it’s ready."
-            isStreaming={false}
+            content={contentNarrationContent || "I'll create your article next. You can edit and export it when it's ready."}
+            isStreaming={contentNarrationStreaming}
             onComplete={handleContentNarrationComplete}
             dataTestId="content-narration"
           />
+          </motion.div>
         </section>
       )}
     </div>

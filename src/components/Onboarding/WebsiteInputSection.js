@@ -66,6 +66,9 @@ export function WebsiteInputSection({
               currentStep={analysisProgress?.currentStep || scanningMessage}
               progress={analysisProgress?.progress}
               thoughts={analysisThoughts}
+              estimatedTimeRemaining={analysisProgress?.estimatedTimeRemaining}
+              phase={analysisProgress?.phase}
+              detail={analysisProgress?.detail}
               workingForYouLabel={systemVoice.analysis.workingForYou}
               progressPreamble={systemVoice.analysis.progressPreamble}
               progressLabel={systemVoice.analysis.progressLabel}

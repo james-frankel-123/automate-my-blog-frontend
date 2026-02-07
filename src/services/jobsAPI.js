@@ -18,6 +18,9 @@ const DEFAULT_MAX_RECONNECT_ATTEMPTS = 5;
 /** Base delay (ms) for exponential backoff on reconnect */
 const RECONNECT_BASE_DELAY_MS = 1000;
 
+/** If no complete/failed event within this time, reject so caller can fall back to polling (avoids stuck "Reading your pages…") */
+const DEFAULT_STREAM_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
 /** Check if streaming is enabled via feature flag (default: true) */
 function isStreamingEnabled() {
   const val = process.env.REACT_APP_STREAMING_ENABLED;
@@ -250,7 +253,7 @@ class JobsAPI {
    *   onScrapePhase?, onScrapeResult?, onAnalysisResult?, ... }
    *   - onReconnecting(attempt, maxAttempts) - called when reconnecting after connection loss
    *   - onFailed(data) - failed: { error, errorCode?, retryable? }; rate limit errors include retryable: true
-   * @param {Object} [options] - { maxReconnectAttempts?: number }
+   * @param {Object} [options] - { maxReconnectAttempts?: number, streamTimeoutMs?: number }
    * @returns {Promise<Object>} Resolves with { status: 'succeeded'|'failed', result?, error?, errorCode?, retryable? }
    */
   connectToJobStream(jobId, handlers = {}, options = {}) {
@@ -259,6 +262,7 @@ class JobsAPI {
     }
 
     const maxReconnectAttempts = options.maxReconnectAttempts ?? DEFAULT_MAX_RECONNECT_ATTEMPTS;
+    const streamTimeoutMs = options.streamTimeoutMs ?? DEFAULT_STREAM_TIMEOUT_MS;
 
     return new Promise((resolve, reject) => {
       const url = this.getJobStreamUrl(jobId);
@@ -266,8 +270,21 @@ class JobsAPI {
       let settled = false;
       let reconnectAttempt = 0;
       let reconnectTimeoutId = null;
+      /** If backend never sends complete/failed, reject after this so caller can fall back to polling. */
+      let streamTimeoutId = null;
+      /** After job complete we keep stream open briefly so narration events can still be received (Issue #261). */
+      let narrationKeepOpenTimeoutId = null;
+      const NARRATION_KEEP_OPEN_MS = 90 * 1000;
 
       const close = () => {
+        if (streamTimeoutId) {
+          clearTimeout(streamTimeoutId);
+          streamTimeoutId = null;
+        }
+        if (narrationKeepOpenTimeoutId) {
+          clearTimeout(narrationKeepOpenTimeoutId);
+          narrationKeepOpenTimeoutId = null;
+        }
         if (reconnectTimeoutId) {
           clearTimeout(reconnectTimeoutId);
           reconnectTimeoutId = null;
@@ -290,6 +307,10 @@ class JobsAPI {
       const resolveFailed = (data) => {
         if (settled) return;
         settled = true;
+        if (streamTimeoutId) {
+          clearTimeout(streamTimeoutId);
+          streamTimeoutId = null;
+        }
         const payload = data || {};
         let error = payload.error ?? payload.message ?? 'Job failed';
         const errorCode = payload.errorCode;
@@ -305,8 +326,19 @@ class JobsAPI {
       const resolveSucceeded = (result) => {
         if (settled) return;
         settled = true;
-        close();
+        if (streamTimeoutId) {
+          clearTimeout(streamTimeoutId);
+          streamTimeoutId = null;
+        }
         resolve({ status: 'succeeded', result });
+        // Keep stream open so narration events (audience/topic/content) sent after complete are still received (Issue #261).
+        narrationKeepOpenTimeoutId = setTimeout(() => {
+          narrationKeepOpenTimeoutId = null;
+          if (eventSource) {
+            eventSource.close();
+            eventSource = null;
+          }
+        }, NARRATION_KEEP_OPEN_MS);
       };
 
       const tryReconnect = () => {
@@ -407,6 +439,43 @@ class JobsAPI {
           const data = parseData(event);
           if (handlers.onSeoResult) handlers.onSeoResult(data);
         });
+        // Issue #261: streaming narrations (audience, topic, content-gen)
+        const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
+        const logNarration = (label, data) => {
+          if (isDev && (data?.text ?? data?.chunk)) {
+            console.debug('[Job SSE] Narration:', label, (data?.text ?? data?.chunk).slice(0, 60) + (data?.text?.length > 60 || data?.chunk?.length > 60 ? '…' : ''));
+          }
+        };
+        eventSource.addEventListener('audience-narration-chunk', (event) => {
+          const data = parseData(event);
+          logNarration('audience-chunk', data);
+          if (handlers.onAudienceNarrationChunk) handlers.onAudienceNarrationChunk(data);
+        });
+        eventSource.addEventListener('audience-narration-complete', (event) => {
+          const data = parseData(event);
+          if (isDev) console.debug('[Job SSE] Narration: audience-complete');
+          if (handlers.onAudienceNarrationComplete) handlers.onAudienceNarrationComplete(data);
+        });
+        eventSource.addEventListener('topic-narration-chunk', (event) => {
+          const data = parseData(event);
+          logNarration('topic-chunk', data);
+          if (handlers.onTopicNarrationChunk) handlers.onTopicNarrationChunk(data);
+        });
+        eventSource.addEventListener('topic-narration-complete', (event) => {
+          const data = parseData(event);
+          if (isDev) console.debug('[Job SSE] Narration: topic-complete');
+          if (handlers.onTopicNarrationComplete) handlers.onTopicNarrationComplete(data);
+        });
+        eventSource.addEventListener('content-narration-chunk', (event) => {
+          const data = parseData(event);
+          logNarration('content-chunk', data);
+          if (handlers.onContentNarrationChunk) handlers.onContentNarrationChunk(data);
+        });
+        eventSource.addEventListener('content-narration-complete', (event) => {
+          const data = parseData(event);
+          if (isDev) console.debug('[Job SSE] Narration: content-complete');
+          if (handlers.onContentNarrationComplete) handlers.onContentNarrationComplete(data);
+        });
         eventSource.addEventListener('complete', (event) => {
           const data = parseData(event);
           if (handlers.onComplete) handlers.onComplete(data);
@@ -440,7 +509,7 @@ class JobsAPI {
                 break;
               case 'step-change':
                 if (handlers.onStepChange) handlers.onStepChange(payloadData);
-                if (handlers.onProgress && (payloadData?.progress != null || payloadData?.currentStep != null)) handlers.onProgress(payloadData);
+                if (handlers.onProgress && (payloadData?.progress != null || payloadData?.currentStep != null || payloadData?.current_step != null || payloadData?.phase != null || payloadData?.detail != null || payloadData?.estimatedTimeRemaining != null || payloadData?.estimated_seconds_remaining != null)) handlers.onProgress(payloadData);
                 break;
               case 'scrape-phase':
                 if (handlers.onScrapePhase) handlers.onScrapePhase(payloadData);
@@ -495,6 +564,24 @@ class JobsAPI {
               case 'rate_limit':
                 resolveFailed({ ...payloadData, errorCode: 'rate_limit', retryable: true });
                 break;
+              case 'audience-narration-chunk':
+                if (handlers.onAudienceNarrationChunk) handlers.onAudienceNarrationChunk(payloadData);
+                break;
+              case 'audience-narration-complete':
+                if (handlers.onAudienceNarrationComplete) handlers.onAudienceNarrationComplete(payloadData);
+                break;
+              case 'topic-narration-chunk':
+                if (handlers.onTopicNarrationChunk) handlers.onTopicNarrationChunk(payloadData);
+                break;
+              case 'topic-narration-complete':
+                if (handlers.onTopicNarrationComplete) handlers.onTopicNarrationComplete(payloadData);
+                break;
+              case 'content-narration-chunk':
+                if (handlers.onContentNarrationChunk) handlers.onContentNarrationChunk(payloadData);
+                break;
+              case 'content-narration-complete':
+                if (handlers.onContentNarrationComplete) handlers.onContentNarrationComplete(payloadData);
+                break;
               default:
                 break;
             }
@@ -510,6 +597,15 @@ class JobsAPI {
         };
       };
 
+      if (streamTimeoutMs > 0) {
+        streamTimeoutId = setTimeout(() => {
+          if (settled) return;
+          streamTimeoutId = null;
+          settled = true;
+          close();
+          reject(new Error('Job stream timed out — switching to polling'));
+        }, streamTimeoutMs);
+      }
       connect();
     });
   }

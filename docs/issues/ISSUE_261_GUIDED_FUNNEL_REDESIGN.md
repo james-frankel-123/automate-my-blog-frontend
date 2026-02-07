@@ -57,12 +57,12 @@ Redesign the website analysis → audience → topic flow as a **single-scroll, 
 | Phase | Focus | Status | Notes |
 |-------|--------|--------|-------|
 | **1** | Component setup & routing | ✅ Done | All components exist; route and first-time detection in place. |
-| **2** | Analysis section | ⚠️ Partial | Carousel + cards + Confirm done; Edit/diff/LLM suggestion and AI icons pending (backend + frontend). |
-| **3** | Audience section | ⚠️ Partial | Carousel + selection done; audience narration SSE and streaming UI pending. |
-| **4** | Topic section | ⚠️ Partial | Carousel + selection done; topic narration SSE and streaming UI pending. |
+| **2** | Analysis section | ✅ Done | Carousel + cards + Edit/diff + Get suggestion (API wired); iconUrl from backend when present. |
+| **3** | Audience section | ✅ Done | Carousel + selection; narration SSE wired (chunk/complete); static fallback. |
+| **4** | Topic section | ✅ Done | Carousel + selection; real topicAPI when no contentIdeas; narration SSE wired. |
 | **5** | Signup gate & auth | ✅ Done | SignupGateCard embedded; segmentation; state preserved after signup. |
-| **6** | Content generation narration | ⚠️ Partial | Static narration + funnel complete → dashboard; content-gen narration SSE pending. |
-| **7** | Polish & testing | ❌ Pending | Loading/error states, animations, mobile, a11y, E2E, analytics. |
+| **6** | Content generation narration | ✅ Done | Narration SSE wired; static fallback; funnel complete → dashboard. |
+| **7** | Polish & testing | ⚠️ Partial | Loading/empty states done; scroll-to-section; remaining: animations, mobile, a11y, E2E, analytics. |
 
 ---
 
@@ -110,14 +110,14 @@ Redesign the website analysis → audience → topic flow as a **single-scroll, 
 | **Analysis status** | URL form + progress during job (ThinkingPanel); no "narration" used for status. |
 | **Audience when API has no scenarios** | Fallback segment from analysis; funnel also subscribes to `onAudiencesResult` / `onPitchesResult` / `onScenariosResult` so streamed scenarios appear. |
 
-### Partial (needs work for 100%)
+### Partial (backend live; frontend wired)
 
 | Requirement | Current state | Gap |
 |-------------|---------------|-----|
-| **Edit / Confirm (Phase 2)** | Confirm & Continue only. | Edit button not wired (`onEdit` not passed). No inline edit UI, "What changed?" diff, or LLM-cleaned suggestion. |
-| **Narration source** | All narrations are static strings in the frontend. | Ticket expects streaming narration from backend (SSE) for audience, topic, content-gen. |
-| **Analysis icons** | Analysis cards use Ant Design icon fallback only. | Ticket: AI-generated icons (backend `generateAnalysisIcons`) + fallback. |
-| **Codebase rename** | "Scraping thought" / status naming may still exist. | Ticket: rename to "analysis-status-update"; avoid calling status "narration". |
+| **Edit / Confirm (Phase 2)** | Edit wired; inline edit, diff, "Get suggestion" (getCleanedAnalysisSuggestion API). | Backend PATCH org / DB fields when backend is ready. |
+| **Narration source** | Frontend subscribes to `audience-narration-chunk/complete`, `topic-narration-chunk/complete`, `content-narration-chunk/complete` on job stream; feeds into StreamingNarration with static fallback. | Backend emits events (user reports backend is live). |
+| **Analysis icons** | AnalysisCard receives `iconUrl` from `analysis.iconUrls` or `analysis.cardIcons`; fallback to Ant icons. | Backend includes icon URLs in analysis payload. |
+| **Codebase rename** | jobsAPI uses "analysis-status-update" (preferred) and "scraping-thought" (legacy). | Backend terminology alignment. |
 
 ### Not done (backend / later phases)
 
@@ -141,10 +141,10 @@ Use this list to close gaps until the implementation matches the ticket.
 - [x] **Inline edit UI** — After "Edit", show editable fields for analysis (business name, target audience, content focus) via AnalysisEditSection; Apply/Cancel.
 - [x] **"What changed?" diff** — AnalysisEditSection shows diff (original vs edited) as user types.
 - [x] **LLM-cleaned suggestion (UI)** — "Get suggestion" button in AnalysisEditSection; placeholder message until backend implements generateCleanedEdit.
-- [ ] **Streaming narration (UI)** — When backend sends narration SSE, feed chunks into StreamingNarration (content prop or dedicated stream prop). Requires backend events first.
-- [ ] **Analysis card icons** — When backend provides `iconUrl` (from generateAnalysisIcons), AnalysisCard already supports it; ensure API response and workflow state pass it through.
+- [x] **Streaming narration (UI)** — jobsAPI subscribes to audience/topic/content-narration-chunk and -complete; funnel state feeds StreamingNarration (content + isStreaming); static fallback when no stream.
+- [x] **Analysis card icons** — analysisCards built with iconUrl from analysis.iconUrls / analysis.cardIcons; AnalysisCard displays iconUrl when present.
 - [x] **Rename scraping-thought** — jobsAPI listens for `analysis-status-update` (preferred) and `scraping-thought` (legacy); useNarrativeStream doc updated.
-- [ ] **Phase 7 polish** — Loading/error states, animations, mobile layout, a11y, E2E tests, analytics as per ticket.
+- [ ] **Phase 7 polish** — Loading/error states done; remaining: animations, mobile layout, a11y, E2E tests, analytics as per ticket.
 
 ### Backend / full-stack (other repo or services)
 
@@ -166,9 +166,9 @@ Use this list to close gaps until the implementation matches the ticket.
 
 ## Next steps
 
-1. **Backend:** Implement narration SSE and OpenAI helpers (see Remaining work); deploy.
-2. **Frontend:** Connect streaming narration and analysis icons once backend is available; wire generateCleanedEdit when API exists.
-3. **Polish:** Phase 7 (loading, errors, mobile, a11y, E2E, analytics).
+1. **Backend:** Per team, narration SSE, cleaned-edit API, and analysis icons are live; ensure job stream emits narration events and analysis includes iconUrls/cardIcons.
+2. **Frontend:** Streaming narration and analysis icons are wired; verify with live backend.
+3. **Polish:** Phase 7 (animations, mobile, a11y, E2E, analytics).
 
 ---
 

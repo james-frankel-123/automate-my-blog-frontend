@@ -112,23 +112,19 @@ For `progress-update` and `step-change`, the frontend shows `currentStep` (or eq
 
 ## 4. What the backend must add for 100% match
 
-### 4.1 Streaming narrations (new SSE events)
+### 4.1 Streaming narrations (SSE endpoints)
 
-The ticket requires **first-person AI narration** after each major step. Today the frontend shows **static** narration strings. To support **streaming** narrations from the backend:
+The **backend implements narrations as separate SSE endpoints** (not on the job stream). The frontend calls them when each step unlocks:
 
-- Emit **chunked narration** over the existing job stream (or a dedicated stream) so the frontend can display text as it arrives.
-- Suggested **SSE event names** (backend can choose; frontend will need to subscribe):
+| Endpoint | When frontend calls it | Query params | Events (payload `{ text }`) |
+|----------|------------------------|--------------|-----------------------------|
+| `GET /api/v1/analysis/narration/audience` | When user confirms analysis and audience section unlocks | `organizationId` | `audience-narration-chunk`, `audience-narration-complete` |
+| `GET /api/v1/analysis/narration/topic` | When user selects an audience and topic section unlocks | `organizationId`, `selectedAudience` | `topic-narration-chunk`, `topic-narration-complete` |
+| `GET /api/v1/analysis/narration/content` | When user selects a topic (and passes signup if required) | `organizationId`, `selectedTopic` | `content-narration-chunk`, `content-narration-complete` |
 
-| Event | When to emit | Payload (suggested) |
-|-------|----------------|---------------------|
-| **Audience narration** | After analysis is confirmed and before/while showing audience carousel | Chunks: `audience-narration-chunk` with `{ text: string }` or `{ chunk: string }`. Complete: `audience-narration-complete` with `{ text?: string }` (full text optional). |
-| **Topic narration** | After user selects audience, before topic carousel | Same pattern: `topic-narration-chunk`, `topic-narration-complete`. |
-| **Content generation narration** | After user selects topic (and signup if required), before starting content gen | `content-narration-chunk`, `content-narration-complete`. |
+**Frontend behavior:** The frontend uses `autoBlogAPI.connectNarrationStream(type, params, handlers)` to open a fetch-based SSE connection to the above endpoints (with auth or `x-session-id`). It requires `analysis.organizationId` from the website analysis result; the backend must include `organizationId` in the job `result.analysis` so the funnel can request narrations.
 
-**Frontend change needed:** When these events exist, the frontend will pass the streamed text into the existing `StreamingNarration` component (e.g. via a `content` prop or a dedicated stream callback). Until then, static copy is used.
-
-**Backend implementation (from ticket):**  
-OpenAI (or equivalent) helpers: `generateAudienceNarration`, `generateTopicNarration`, `generateContentGenerationNarration` — first-person, short paragraphs suitable for the funnel.
+**Backend:** OpenAI helpers `generateAudienceNarration`, `generateTopicNarration`, `generateContentGenerationNarration` are implemented; see backend `docs/issue-261-backend-implementation.md`.
 
 ### 4.2 Analysis edit & confirm (PATCH organization)
 
@@ -143,9 +139,9 @@ The ticket requires:
 - **PATCH organization** (or equivalent) to:
   - Set `analysis_confirmed_at` when user clicks Confirm.
   - Store `analysis_edited` (boolean) and `edited_fields` (e.g. list of field names or patch payload) when user has edited.
-- **Generate cleaned suggestion:** Endpoint or internal call that accepts user-edited analysis fields and returns an LLM-cleaned version (e.g. `generateCleanedEdit`). Frontend will call this when “Edit” flow is implemented and show “Apply suggestion” when available.
+- **Generate cleaned suggestion:** Endpoint or internal call that accepts user-edited analysis fields and returns an LLM-cleaned version (e.g. `generateCleanedEdit`). Frontend calls **POST /api/v1/analysis/cleaned-edit** with body `{ editedFields: { businessName, targetAudience, contentFocus } }` and expects response `{ suggestion?: { businessName?, targetAudience?, contentFocus? } }`. Auth: Bearer token or `x-session-id`.
 
-**Frontend:** Will add Edit button, inline edit UI, diff view, and “Apply suggestion” once these APIs exist.
+**Frontend:** Edit button, inline edit UI, diff view, and “Get suggestion” (getCleanedAnalysisSuggestion) are implemented; request body uses `editedFields` wrapper to match backend.
 
 ### 4.3 Analysis card icons (generateAnalysisIcons)
 

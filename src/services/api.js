@@ -1156,6 +1156,89 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Connect to analysis narration SSE stream (Issue #261).
+   * Backend: GET /api/v1/analysis/narration/audience|topic|content with query params.
+   * @param {'audience'|'topic'|'content'} type - Which narration stream
+   * @param {{ organizationId: string, selectedAudience?: string, selectedTopic?: string }} params - organizationId required; selectedAudience for topic, selectedTopic for content
+   * @param {{ onChunk: (data: { text?: string }) => void, onComplete?: (data: { text?: string }) => void, onError?: (err: Error) => void }} handlers
+   * @returns {Promise<void>} Resolves when stream ends; rejects on HTTP error or handler throws
+   */
+  async connectNarrationStream(type, params, handlers = {}) {
+    const { organizationId, selectedAudience, selectedTopic } = params;
+    if (!organizationId) {
+      const err = new Error('organizationId is required for narration stream');
+      if (handlers.onError) handlers.onError(err);
+      throw err;
+    }
+    const base = `${this.baseURL}/api/v1/analysis/narration/${type}`;
+    const search = new URLSearchParams({ organizationId });
+    if (type === 'topic' && selectedAudience != null) search.set('selectedAudience', typeof selectedAudience === 'string' ? selectedAudience : (selectedAudience?.title ?? selectedAudience?.targetSegment ?? selectedAudience?.name ?? ''));
+    if (type === 'content' && selectedTopic != null) search.set('selectedTopic', typeof selectedTopic === 'string' ? selectedTopic : (selectedTopic?.title ?? selectedTopic?.topic ?? selectedTopic?.name ?? ''));
+    const url = `${base}?${search.toString()}`;
+
+    const headers = { Accept: 'text/event-stream' };
+    const token = localStorage.getItem('accessToken');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    else {
+      const sessionId = sessionStorage.getItem('audience_session_id');
+      if (sessionId) headers['x-session-id'] = sessionId;
+    }
+
+    const response = await fetch(url, { method: 'GET', headers });
+    if (!response.ok) {
+      let errMsg = `Narration stream ${response.status}`;
+      try {
+        const data = await response.json();
+        errMsg = data.error || data.message || errMsg;
+      } catch {
+        try { errMsg = await response.text() || errMsg; } catch { /* ignore */ }
+      }
+      const err = new Error(errMsg);
+      if (handlers.onError) handlers.onError(err);
+      throw err;
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      const err = new Error('Narration stream: no body');
+      if (handlers.onError) handlers.onError(err);
+      throw err;
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    const onChunk = handlers.onChunk || (() => {});
+    const onComplete = handlers.onComplete || (() => {});
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const blocks = buffer.split(/\n\n+/);
+        buffer = blocks.pop() ?? '';
+        for (const block of blocks) {
+          let eventType = '';
+          const dataParts = [];
+          for (const line of block.split('\n')) {
+            if (line.startsWith('event:')) eventType = line.slice(6).trim();
+            else if (line.startsWith('data:')) dataParts.push(line.slice(5).trim());
+          }
+          const dataStr = dataParts.join('\n');
+          try {
+            const data = dataStr ? JSON.parse(dataStr) : {};
+            if (eventType.endsWith('-chunk')) onChunk(data);
+            else if (eventType.endsWith('-complete')) onComplete(data);
+          } catch (e) { /* skip parse errors */ }
+        }
+      }
+    } catch (err) {
+      if (handlers.onError) handlers.onError(err);
+      throw err;
+    }
+  }
+
+  /**
    * Get discovered blog content for organization
    */
   async getBlogContent(organizationId) {
@@ -3044,7 +3127,7 @@ Please provide analysis in this JSON format:
   async getCleanedAnalysisSuggestion(editedFields) {
     const response = await this.makeRequest('/api/v1/analysis/cleaned-edit', {
       method: 'POST',
-      body: JSON.stringify(editedFields),
+      body: JSON.stringify({ editedFields }),
     });
     return response;
   }
