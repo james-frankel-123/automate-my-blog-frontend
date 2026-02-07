@@ -798,8 +798,8 @@ function OnboardingFunnelView() {
         <section ref={(el) => { sectionRefs.current.topicNarration = el; sectionRefs.current.topicOutput = el; }} style={{ marginTop: 32 }}>
           <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <StreamingNarration
-            content={topicsLoading ? "I'm looking for topics that will resonate with your audience…" : (topicNarrationContent || "Based on your audience, here are topics that will resonate. Pick one for your article.")}
-            isStreaming={topicNarrationStreaming && !topicsLoading}
+            content={topicNarrationContent || (topicsLoading ? "I'm looking for topics that will resonate with your audience…" : "Based on your audience, here are topics that will resonate. Pick one for your article.")}
+            isStreaming={topicNarrationStreaming}
             onComplete={unlockTopicOutput}
             dataTestId="topic-narration"
           />
