@@ -17,24 +17,18 @@ function getTweetText(t) {
 }
 
 /**
- * Replace [TWEET:0], [TWEET:1], ... in content with blockquote markdown.
- * If relatedTweets[n] exists, use that tweet's text; otherwise use "Loading tweet…".
+ * Replace [TWEET:0], [TWEET:1], ... in content with a token for HTMLPreview.
+ * HTMLPreview replaces __TWEET_PLACEHOLDER_n__ with a tweet-style card or loading UI.
  * @param {string} content - Raw content that may contain [TWEET:n] placeholders
  * @param {Array<string|{ text?: string, content?: string }>} [relatedTweets] - Tweets by index
- * @returns {string} Content with placeholders replaced
+ * @returns {string} Content with placeholders replaced by __TWEET_PLACEHOLDER_n__ tokens
  */
 function replaceTweetPlaceholders(content, relatedTweets = []) {
   if (!content || typeof content !== 'string') return content || '';
-  const tweets = Array.isArray(relatedTweets) ? relatedTweets : [];
   return content.replace(TWEET_PLACEHOLDER_REGEX, (_, indexStr) => {
     const index = parseInt(indexStr, 10);
     if (Number.isNaN(index) || index < 0) return '[TWEET:?]';
-    const tweet = tweets[index];
-    const text = tweet ? getTweetText(tweet) : '';
-    if (text) {
-      return `\n> **Related:** ${text.replace(/\n/g, ' ')}\n\n`;
-    }
-    return '\n> Loading tweet…\n\n';
+    return `\n\n__TWEET_PLACEHOLDER_${index}__\n\n`;
   });
 }
 

@@ -79,6 +79,7 @@ function StreamingPreview({
       content={resolvedContent}
       relatedArticles={relatedArticles}
       relatedVideos={relatedVideos}
+      relatedTweets={relatedTweets}
       forceMarkdown={true}
       heroImageUrl={heroImageUrl || undefined}
       style={style}
