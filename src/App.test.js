@@ -8,11 +8,11 @@ import autoBlogAPI from './services/api';
 jest.mock('./services/api');
 
 // Mock DashboardLayout to avoid deep component tree issues
-jest.mock('./components/Dashboard/DashboardLayout', () => ({ 
-  workflowContent, 
-  showDashboard, 
-  isMobile, 
-  forceWorkflowMode 
+jest.mock('./components/Dashboard/DashboardLayout', () => ({
+  workflowContent,
+  showDashboard,
+  isMobile,
+  forceWorkflowMode,
 }) => (
   <div data-testid="dashboard-layout">
     <span data-testid="workflow-mode">{forceWorkflowMode ? 'workflow' : 'normal'}</span>
@@ -20,6 +20,11 @@ jest.mock('./components/Dashboard/DashboardLayout', () => ({
     Dashboard Layout Content
   </div>
 ));
+
+// Mock OnboardingFunnelView (Issue #261) to avoid full funnel tree in App tests
+jest.mock('./components/Onboarding', () => ({
+  OnboardingFunnelView: () => <div data-testid="onboarding-funnel">Onboarding Funnel</div>,
+}));
 
 // Mock SEOHead
 jest.mock('./components/SEOHead', () => () => (
@@ -169,20 +174,30 @@ describe('App', () => {
       // Authenticated users should see dashboard elements
     });
 
-    it('renders dashboard when user is present', async () => {
+    it('renders onboarding funnel when user is present but no completed analysis', async () => {
       localStorage.setItem('accessToken', 'mock-token');
-      
       autoBlogAPI.getCurrentUser.mockResolvedValueOnce({
         success: true,
         user: createMockUser(),
       });
-      
       render(<App />);
-      
-      // Dashboard layout should be rendered
       await waitFor(() => {
-        expect(screen.getByTestId('dashboard-layout')).toBeInTheDocument();
+        expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
       });
+      expect(screen.getByTestId('onboarding-funnel')).toBeInTheDocument();
+    });
+
+    it('when user is present and no completed analysis, shows onboarding funnel', async () => {
+      localStorage.setItem('accessToken', 'mock-token');
+      autoBlogAPI.getCurrentUser.mockResolvedValue({
+        success: true,
+        user: createMockUser(),
+      });
+      render(<App />);
+      await waitFor(() => {
+        expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+      });
+      expect(screen.getByTestId('onboarding-funnel')).toBeInTheDocument();
     });
   });
 

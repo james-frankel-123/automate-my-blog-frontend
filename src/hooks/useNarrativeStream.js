@@ -1,7 +1,7 @@
 /**
- * useNarrativeStream — Hook for narrative-driven website analysis streaming (Issue #157).
+ * useNarrativeStream — Hook for narrative-driven website analysis streaming (Issue #157, #261).
  * Connects to GET /api/v1/jobs/:jobId/narrative-stream and accumulates
- * scraping thoughts + analysis narrative for the 3-moment UX.
+ * analysis status updates (preferred event: analysis-status-update; legacy: scraping-thought) + analysis narrative for the 3-moment UX.
  *
  * @param {string|null} jobId - Job ID from website analysis job
  * @returns {{ scrapingNarrative: string, analysisNarrative: string, currentMoment: string, isStreaming: boolean, narrativeAvailable: boolean }}

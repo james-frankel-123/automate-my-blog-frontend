@@ -9,7 +9,9 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
+import { OnboardingFunnelView } from './components/Onboarding';
 import SEOHead from './components/SEOHead';
+import { useWorkflowMode } from './contexts/WorkflowModeContext';
 import { storeReferralInfo } from './utils/referralUtils';
 import './styles/design-system.css';
 import './styles/mobile.css';
@@ -215,8 +217,16 @@ const getAntdTheme = (isDark) => ({
 
 const AppContent = () => {
   const { user, loading, loginContext } = useAuth();
+  const { stepResults } = useWorkflowMode();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [, setActiveTab] = useState('newpost');
+
+  const hasCompletedAnalysis =
+    stepResults?.home?.analysisCompleted &&
+    stepResults?.home?.websiteAnalysis?.businessName &&
+    stepResults?.home?.websiteAnalysis?.targetAudience &&
+    stepResults?.home?.websiteAnalysis?.contentFocus;
+  const isReturningUser = user && hasCompletedAnalysis;
 
   // Store referral information on app load
   useEffect(() => {
@@ -293,18 +303,29 @@ const AppContent = () => {
     );
   }
 
-  // Use DashboardLayout for both logged-in and logged-out users
-  // This creates seamless transitions where login only affects layout/spacing
+  // Guided onboarding funnel (Issue #261): show for first-time or logged-out users
+  const showFunnel =
+    (typeof window !== 'undefined' && window.location.pathname === '/onboarding') ||
+    !isReturningUser;
+  if (showFunnel) {
+    return (
+      <SystemHintProvider>
+        <SEOHead />
+        <OnboardingFunnelView />
+      </SystemHintProvider>
+    );
+  }
 
+  // Returning user with completed analysis: show 3-tab dashboard
   return (
     <SystemHintProvider>
       <SEOHead />
-      <DashboardLayout 
+      <DashboardLayout
         workflowContent={true}
-        showDashboard={user && loginContext === 'nav'} // Show dashboard UI when logged in with nav context
+        showDashboard={user && loginContext === 'nav'}
         isMobile={isMobile}
         onActiveTabChange={setActiveTab}
-        forceWorkflowMode={!user} // Force workflow mode for logged-out users
+        forceWorkflowMode={!user}
       />
     </SystemHintProvider>
   );

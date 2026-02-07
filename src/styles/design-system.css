@@ -779,6 +779,7 @@ body {
     --color-background-body: #0F1419;      /* Dark slate */
     --color-background-container: #1A1F29; /* Slightly lighter */
     --color-background-elevated: #242933;  /* Cards/modals */
+    --color-background-alt: #2D3139;       /* Alternate dark background (e.g. edit panels) */
     --color-white: #0F1419;                /* Override white for dark mode */
     --color-secondary: #1A1F29;
 
@@ -889,6 +890,7 @@ body {
   --color-background-body: #0F1419;      /* Dark slate */
   --color-background-container: #1A1F29; /* Slightly lighter */
   --color-background-elevated: #242933;  /* Cards/modals */
+  --color-background-alt: #2D3139;       /* Alternate dark background (e.g. edit panels) */
   --color-white: #0F1419;                /* Override white for dark mode */
   --color-secondary: #1A1F29;
 
@@ -1113,6 +1115,10 @@ body {
 .dark-mode .ant-input-textarea textarea {
   background-color: var(--color-background-elevated);
   border-color: var(--color-border-base);
+  color: var(--color-text-primary);
+}
+
+.dark-mode .ant-form-item-label > label {
   color: var(--color-text-primary);
 }
 

@@ -186,8 +186,26 @@ export const Badge = ({ children, count, showZero, ...props }) => (
   </span>
 );
 
-export const Spin = ({ spinning, children, size, ...props }) => (
+export const Spin = ({ spinning, children, size, tip, ...props }) => (
   <div data-testid="spin" data-spinning={spinning} {...props}>
+    {tip && <span>{tip}</span>}
+    {children}
+  </div>
+);
+
+export const Empty = ({ description, image, imageStyle, children, ...props }) => (
+  <div data-testid="empty" {...props}>
+    {image}
+    {description && <div data-testid="empty-description">{description}</div>}
+    {children}
+  </div>
+);
+Empty.PRESENTED_IMAGE_SIMPLE = 'simple';
+
+export const Skeleton = ({ active, paragraph, title, children, ...props }) => (
+  <div data-testid="skeleton" data-active={active} {...props}>
+    {title !== false && <div data-testid="skeleton-title" />}
+    {paragraph && <div data-testid="skeleton-paragraph" />}
     {children}
   </div>
 );
@@ -358,6 +376,8 @@ export default {
   Avatar,
   Badge,
   Spin,
+  Empty,
+  Skeleton,
   Card,
   Row,
   Col,

@@ -174,10 +174,10 @@ class JobsAPI {
   }
 
   /**
-   * Connect to narrative stream SSE (Issue #157).
-   * Events: scraping-thought, transition, analysis-chunk, complete.
+   * Connect to narrative stream SSE (Issue #157, #261).
+   * Events: analysis-status-update (preferred), scraping-thought (legacy), transition, analysis-chunk, complete.
    * @param {string} jobId
-   * @param {Object} [handlers] - { onScrapingThought?, onTransition?, onAnalysisChunk?, onComplete?, onError? }
+   * @param {Object} [handlers] - { onAnalysisStatusUpdate?, onScrapingThought?, onTransition?, onAnalysisChunk?, onComplete?, onError? }
    * @param {{ signal?: AbortSignal }} [options] - AbortSignal to cancel and close stream
    * @returns {Promise<{ available: boolean }>} Resolves when stream ends. available: false if endpoint unavailable (404) or aborted.
    */
@@ -209,10 +209,13 @@ class JobsAPI {
         });
       }
 
-      eventSource.addEventListener('scraping-thought', (event) => {
+      const onStatusUpdate = (event) => {
         const data = parseData(event);
+        if (handlers.onAnalysisStatusUpdate) handlers.onAnalysisStatusUpdate(data);
         if (handlers.onScrapingThought) handlers.onScrapingThought(data);
-      });
+      };
+      eventSource.addEventListener('analysis-status-update', onStatusUpdate);
+      eventSource.addEventListener('scraping-thought', onStatusUpdate);
 
       eventSource.addEventListener('transition', (event) => {
         const data = parseData(event);

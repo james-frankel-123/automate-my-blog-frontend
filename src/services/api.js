@@ -3036,6 +3036,20 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Get LLM-cleaned suggestion for user-edited analysis fields (Issue #261).
+   * Backend may implement POST /api/v1/analysis/cleaned-edit or similar.
+   * @param {{ businessName: string, targetAudience: string, contentFocus: string }} editedFields
+   * @returns {Promise<{ suggestion: { businessName?, targetAudience?, contentFocus? } }>}
+   */
+  async getCleanedAnalysisSuggestion(editedFields) {
+    const response = await this.makeRequest('/api/v1/analysis/cleaned-edit', {
+      method: 'POST',
+      body: JSON.stringify(editedFields),
+    });
+    return response;
+  }
+
+  /**
    * Generate comprehensive SEO analysis for content
    * Provides AI-powered educational analysis for solopreneurs
    */
