@@ -8,6 +8,7 @@ import { SystemHintProvider } from './contexts/SystemHintContext';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
+import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
 import SEOHead from './components/SEOHead';
 import { storeReferralInfo } from './utils/referralUtils';
 import './styles/design-system.css';
@@ -278,6 +279,16 @@ const AppContent = () => {
       <SystemHintProvider>
         <SEOHead />
         <StreamingTestbed />
+      </SystemHintProvider>
+    );
+  }
+
+  // Component library — test and iterate on shared components (same imports as app)
+  if (typeof window !== 'undefined' && window.location.pathname === '/component-library') {
+    return (
+      <SystemHintProvider>
+        <SEOHead />
+        <ComponentLibrary />
       </SystemHintProvider>
     );
   }
