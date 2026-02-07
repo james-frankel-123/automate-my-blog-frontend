@@ -221,6 +221,56 @@ const markdownToHTML = (markdown, options = {}) => {
 
 const ARTICLE_PLACEHOLDER_TOKEN_REGEX = /__ARTICLE_PLACEHOLDER_(\d+)__/g;
 
+const TWEET_PLACEHOLDER_TOKEN_REGEX = /__TWEET_PLACEHOLDER_(\d+)__/g;
+
+/**
+ * Get display text for a tweet (string or { text, content }).
+ * @param {string|{ text?: string, content?: string }} t
+ * @returns {string}
+ */
+function getTweetDisplayText(t) {
+  if (typeof t === 'string') return t;
+  return t?.text ?? t?.content ?? '';
+}
+
+/**
+ * Build HTML for a tweet placeholder: tweet-style card or loading state.
+ * @param {number} index - Placeholder index
+ * @param {Array<string|{ text?: string, content?: string }>} [relatedTweets]
+ * @returns {string} Safe HTML string
+ */
+function getTweetPlaceholderHtml(index, relatedTweets = []) {
+  const tweets = Array.isArray(relatedTweets) ? relatedTweets : [];
+  const tweet = tweets[index];
+  const text = tweet ? getTweetDisplayText(tweet) : '';
+  const escaped = (s) => String(s ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  if (text) {
+    const tweetUrl = typeof tweet === 'object' && tweet?.url && /^https?:\/\//i.test(tweet.url)
+      ? escapeAttr(tweet.url)
+      : '';
+    const linkWrap = tweetUrl
+      ? `<a href="${tweetUrl}" target="_blank" rel="noopener noreferrer" class="markdown-tweet-card-link">View on X</a>`
+      : '';
+    return (
+      '<div class="markdown-tweet-card">' +
+      '<div class="markdown-tweet-card-header">' +
+      '<span class="markdown-tweet-card-avatar" aria-hidden="true">𝕏</span>' +
+      '<span class="markdown-tweet-card-meta">Post</span>' +
+      '</div>' +
+      '<div class="markdown-tweet-card-body">' + escaped(text) + '</div>' +
+      (linkWrap ? '<div class="markdown-tweet-card-footer">' + linkWrap + '</div>' : '') +
+      '</div>'
+    );
+  }
+  return (
+    '<div class="markdown-tweet-placeholder" title="Loading tweet…">' +
+    '<span class="markdown-tweet-placeholder-icon" aria-hidden="true">𝕏</span>' +
+    '<span class="markdown-tweet-placeholder-text">Loading tweet…</span>' +
+    '</div>'
+  );
+}
+
 /**
  * Build HTML for an article placeholder slot: animated loading box or article card.
  * @param {number} index - Placeholder index
@@ -271,28 +321,24 @@ function getVideoPlaceholderHtml(index, relatedVideos = []) {
   const video = videos[index];
   const safeTitle = (s) => escapeAttr(String(s ?? '').slice(0, 200));
   if (video && (video.url || video.videoId)) {
-    const videoId = (video.videoId || (video.url && video.url.match(/(?:v=|\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1]) || '').slice(0, 20);
-    const embedUrl = videoId ? `https://www.youtube.com/embed/${escapeAttr(videoId)}` : '';
+    const videoUrl = video.url || (video.videoId ? `https://www.youtube.com/watch?v=${video.videoId}` : '');
+    const safeUrl = videoUrl && /^https?:\/\//i.test(videoUrl) ? escapeAttr(videoUrl) : '';
     const title = safeTitle(video.title) || 'Video';
     const channel = safeTitle(video.channelTitle);
     const meta = [channel, video.viewCount != null ? `${Number(video.viewCount).toLocaleString()} views` : '', video.duration].filter(Boolean).join(' · ');
-    if (!embedUrl) {
-      return (
-        '<div class="markdown-video-card markdown-video-embed">' +
-        '<div class="markdown-video-card-body">' +
-        `<span class="markdown-video-card-title">${title}</span>` +
-        (meta ? `<span class="markdown-video-card-meta">${escapeAttr(meta)}</span>` : '') +
-        '</div></div>'
-      );
-    }
-    const allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+    const thumbImg = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl)
+      ? `<img src="${escapeAttr(video.thumbnailUrl)}" alt="" class="markdown-video-card-thumb" loading="lazy" />`
+      : '<span class="markdown-video-card-thumb-placeholder" aria-hidden="true">▶</span>';
+    const thumbBlock = safeUrl
+      ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-link">${thumbImg}</a>`
+      : `<span class="markdown-video-card-link">${thumbImg}</span>`;
     return (
-      '<div class="markdown-video-card markdown-video-embed">' +
-      '<div class="markdown-video-embed-wrapper">' +
-      `<iframe src="${embedUrl}" title="${title}" allow="${escapeAttr(allow)}" allowfullscreen frameborder="0"></iframe>` +
-      '</div>' +
+      '<div class="markdown-video-card">' +
+      thumbBlock +
       '<div class="markdown-video-card-body">' +
-      `<span class="markdown-video-card-title">${title}</span>` +
+      (safeUrl
+        ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-title">${title}</a>`
+        : `<span class="markdown-video-card-title">${title}</span>`) +
       (meta ? `<span class="markdown-video-card-meta">${escapeAttr(meta)}</span>` : '') +
       '</div></div>'
     );
@@ -312,8 +358,9 @@ function getVideoPlaceholderHtml(index, relatedVideos = []) {
  * Otherwise converts markdown to HTML only when content does not look like pre-rendered HTML.
  * Optional relatedArticles: used to replace __ARTICLE_PLACEHOLDER_n__ tokens with article cards or loading UI.
  * Optional relatedVideos: used to replace __VIDEO_PLACEHOLDER_n__ tokens with video cards or loading UI.
+ * Optional relatedTweets: used to replace __TWEET_PLACEHOLDER_n__ tokens with tweet-style cards or loading UI.
  */
-const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos }) => {
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos, relatedTweets }) => {
   if (!content || !content.trim()) {
     return (
       <div style={{
@@ -344,6 +391,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     rawHtml = rawHtml.replace(VIDEO_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
       const index = parseInt(indexStr, 10);
       return Number.isNaN(index) || index < 0 ? '' : getVideoPlaceholderHtml(index, relatedVideos);
+    });
+  }
+  // Replace tweet placeholder tokens with tweet-style card or loading UI
+  if (rawHtml.includes('__TWEET_PLACEHOLDER_')) {
+    rawHtml = rawHtml.replace(TWEET_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
+      const index = parseInt(indexStr, 10);
+      return Number.isNaN(index) || index < 0 ? '' : getTweetPlaceholderHtml(index, relatedTweets);
     });
   }
 
@@ -629,7 +683,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           margin: ${paragraphSpacing}px 0;
         }
 
-        /* Tweet Card Styling */
+        /* Tweet Card Styling (TipTap editor node) */
         div :global(.tweet-card) {
           transition: box-shadow 0.2s ease;
           cursor: default;
@@ -661,6 +715,96 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
 
         div :global(.tweet-fallback:hover) {
           background-color: var(--color-primary-50) !important;
+        }
+
+        /* Markdown tweet card (preview: looks like a tweet) */
+        div :global(.markdown-tweet-card) {
+          margin: ${paragraphSpacing}px 0;
+          padding: 14px 16px;
+          max-width: 520px;
+          border: 1px solid var(--color-gray-200);
+          border-radius: 16px;
+          background: var(--color-background-body);
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+          transition: box-shadow 0.2s ease;
+        }
+
+        div :global(.markdown-tweet-card:hover) {
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+
+        div :global(.markdown-tweet-card-header) {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+
+        div :global(.markdown-tweet-card-avatar) {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: var(--color-text-primary);
+          color: var(--color-background-body);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
+          flex-shrink: 0;
+        }
+
+        div :global(.markdown-tweet-card-meta) {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--color-text-primary);
+        }
+
+        div :global(.markdown-tweet-card-body) {
+          font-size: 15px;
+          line-height: 1.4;
+          color: var(--color-text-primary);
+          white-space: pre-wrap;
+          word-break: break-word;
+        }
+
+        div :global(.markdown-tweet-card-footer) {
+          margin-top: 12px;
+          padding-top: 10px;
+          border-top: 1px solid var(--color-gray-100);
+        }
+
+        div :global(.markdown-tweet-card-link) {
+          font-size: 13px;
+          color: var(--color-primary);
+          text-decoration: none;
+        }
+
+        div :global(.markdown-tweet-card-link:hover) {
+          text-decoration: underline;
+        }
+
+        /* Tweet loading placeholder */
+        div :global(.markdown-tweet-placeholder) {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          min-height: 72px;
+          margin: ${paragraphSpacing}px 0;
+          padding: 14px 16px;
+          border-radius: 16px;
+          border: 1px dashed var(--color-gray-300);
+          background: var(--color-background-alt);
+          color: var(--color-text-tertiary);
+        }
+
+        div :global(.markdown-tweet-placeholder-icon) {
+          font-size: 20px;
+          opacity: 0.7;
+        }
+
+        div :global(.markdown-tweet-placeholder-text) {
+          font-size: 13px;
+          font-style: italic;
         }
 
         /* Image placeholder: shimmer animation (animated loading) */
@@ -723,58 +867,61 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.08); }
         }
 
-        /* Video card (loaded) */
+        /* Video card (loaded): thumbnail left, text right – same layout as article cards */
         div :global(.markdown-video-card) {
           display: flex;
           align-items: flex-start;
-          gap: 12px;
+          gap: 14px;
           margin: ${paragraphSpacing}px 0;
-          padding: 12px;
-          border-radius: 8px;
+          padding: 12px 14px;
+          border-radius: 10px;
           border: 1px solid var(--color-gray-200);
           background: var(--color-background-container);
           transition: box-shadow 0.2s ease;
-        }
-
-        div :global(.markdown-video-card.markdown-video-embed) {
-          flex-direction: column;
-        }
-
-        div :global(.markdown-video-embed-wrapper) {
-          position: relative;
-          width: 100%;
-          padding-bottom: 56.25%;
-          border-radius: 8px;
-          overflow: hidden;
-          background: #000;
-        }
-
-        div :global(.markdown-video-embed-wrapper iframe) {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
+          flex-wrap: wrap;
         }
 
         div :global(.markdown-video-card:hover) {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
-        div :global(.markdown-video-card-thumb) {
-          width: 120px;
-          height: 68px;
-          object-fit: cover;
-          border-radius: 6px;
+        div :global(.markdown-video-card-link) {
           flex-shrink: 0;
+          display: block;
+          line-height: 0;
+          text-decoration: none;
+        }
+
+        div :global(.markdown-video-card-thumb) {
+          width: 72px;
+          height: 52px;
+          max-width: 72px;
+          max-height: 52px;
+          object-fit: cover;
+          border-radius: 8px;
+          display: block;
+        }
+
+        div :global(.markdown-video-card-thumb-placeholder) {
+          width: 72px;
+          height: 52px;
+          border-radius: 8px;
+          background: var(--color-gray-100);
+          color: var(--color-text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 18px;
         }
 
         div :global(.markdown-video-card-body) {
           flex: 1;
           min-width: 0;
+          min-height: 52px;
           display: flex;
           flex-direction: column;
           gap: 4px;
+          justify-content: center;
         }
 
         div :global(.markdown-video-card-title) {
@@ -783,10 +930,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           color: var(--color-primary);
           text-decoration: none;
           display: block;
-        }
-
-        div :global(.markdown-video-card.markdown-video-embed .markdown-video-card-title) {
-          color: var(--color-text-primary);
+          line-height: 1.35;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
 
         div :global(.markdown-video-card-title:hover) {
@@ -796,6 +942,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         div :global(.markdown-video-card-meta) {
           font-size: 12px;
           color: var(--color-text-tertiary);
+          line-height: 1.4;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
       `}</style>
         </>
@@ -859,34 +1008,44 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.06); }
         }
 
-        /* Article card (loaded) */
+        /* Article card (loaded): image left, text right, compact and wrapped */
         div :global(.markdown-article-card) {
           display: flex;
           align-items: flex-start;
-          gap: 12px;
+          gap: 14px;
           margin: ${paragraphSpacing}px 0;
-          padding: 12px;
-          border-radius: 8px;
+          padding: 12px 14px;
+          border-radius: 10px;
           border: 1px solid var(--color-gray-200);
           background: var(--color-background-container);
           transition: box-shadow 0.2s ease;
+          flex-wrap: wrap;
         }
         div :global(.markdown-article-card:hover) {
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
-        div :global(.markdown-article-card-thumb) {
-          width: 100px;
-          height: 68px;
-          object-fit: cover;
-          border-radius: 6px;
+        div :global(.markdown-article-card-link) {
           flex-shrink: 0;
+          display: block;
+          line-height: 0;
+        }
+        div :global(.markdown-article-card-thumb) {
+          width: 72px;
+          height: 52px;
+          max-width: 72px;
+          max-height: 52px;
+          object-fit: cover;
+          border-radius: 8px;
+          display: block;
         }
         div :global(.markdown-article-card-body) {
           flex: 1;
           min-width: 0;
+          min-height: 52px;
           display: flex;
           flex-direction: column;
           gap: 4px;
+          justify-content: center;
         }
         div :global(.markdown-article-card-title) {
           font-weight: 600;
@@ -894,6 +1053,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           color: var(--color-primary);
           text-decoration: none;
           display: block;
+          line-height: 1.35;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
         div :global(.markdown-article-card-title:hover) {
           text-decoration: underline;
@@ -902,6 +1064,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         div :global(.markdown-article-card-desc) {
           font-size: 12px;
           color: var(--color-text-tertiary);
+          line-height: 1.4;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
         }
       `}</style>
     </div>

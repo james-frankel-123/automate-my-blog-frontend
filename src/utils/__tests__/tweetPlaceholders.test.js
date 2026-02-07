@@ -31,63 +31,59 @@ describe('tweetPlaceholders', () => {
       expect(replaceTweetPlaceholders(content, [])).toBe(content);
     });
 
-    it('replaces [TWEET:0] with blockquote when tweet provided', () => {
+    it('replaces [TWEET:0] with token for HTMLPreview to render as tweet card', () => {
       const content = 'Intro.\n[TWEET:0]\nMore.';
       const tweets = [{ text: 'First tweet' }];
       const out = replaceTweetPlaceholders(content, tweets);
-      expect(out).toContain('> **Related:** First tweet');
+      expect(out).toContain('__TWEET_PLACEHOLDER_0__');
       expect(out).not.toContain('[TWEET:0]');
     });
 
-    it('replaces [TWEET:0] with Loading tweet… when no tweets', () => {
+    it('replaces [TWEET:0] with token when no tweets (HTMLPreview shows loading)', () => {
       const content = 'Intro.\n[TWEET:0]\nMore.';
       const out = replaceTweetPlaceholders(content, []);
-      expect(out).toContain('> Loading tweet…');
+      expect(out).toContain('__TWEET_PLACEHOLDER_0__');
       expect(out).not.toContain('[TWEET:0]');
     });
 
-    it('replaces multiple placeholders by index', () => {
+    it('replaces multiple placeholders by index with tokens', () => {
       const content = 'A [TWEET:0] B [TWEET:1] C [TWEET:2]';
-      const tweets = [
-        { text: 'One' },
-        { text: 'Two' },
-        { text: 'Three' },
-      ];
+      const tweets = [{ text: 'One' }, { text: 'Two' }, { text: 'Three' }];
       const out = replaceTweetPlaceholders(content, tweets);
-      expect(out).toContain('> **Related:** One');
-      expect(out).toContain('> **Related:** Two');
-      expect(out).toContain('> **Related:** Three');
+      expect(out).toContain('__TWEET_PLACEHOLDER_0__');
+      expect(out).toContain('__TWEET_PLACEHOLDER_1__');
+      expect(out).toContain('__TWEET_PLACEHOLDER_2__');
       expect(out).not.toContain('[TWEET:0]');
       expect(out).not.toContain('[TWEET:1]');
       expect(out).not.toContain('[TWEET:2]');
     });
 
-    it('replaces [TWEET:1] with Loading when only one tweet provided', () => {
+    it('replaces [TWEET:1] with token when only one tweet provided', () => {
       const content = 'A [TWEET:0] B [TWEET:1]';
       const tweets = [{ text: 'Only' }];
       const out = replaceTweetPlaceholders(content, tweets);
-      expect(out).toContain('> **Related:** Only');
-      expect(out).toContain('> Loading tweet…');
+      expect(out).toContain('__TWEET_PLACEHOLDER_0__');
+      expect(out).toContain('__TWEET_PLACEHOLDER_1__');
     });
 
-    it('handles tweet object with content instead of text', () => {
+    it('outputs token for tweet object with content field', () => {
       const content = '[TWEET:0]';
       const tweets = [{ content: 'From content field' }];
       const out = replaceTweetPlaceholders(content, tweets);
-      expect(out).toContain('> **Related:** From content field');
+      expect(out).toContain('__TWEET_PLACEHOLDER_0__');
     });
 
-    it('handles string tweet in array', () => {
+    it('outputs token for string tweet in array', () => {
       const content = '[TWEET:0]';
       const tweets = ['Plain string tweet'];
       const out = replaceTweetPlaceholders(content, tweets);
-      expect(out).toContain('> **Related:** Plain string tweet');
+      expect(out).toContain('__TWEET_PLACEHOLDER_0__');
     });
 
-    it('handles undefined relatedTweets', () => {
+    it('handles undefined relatedTweets (still outputs token)', () => {
       const content = '[TWEET:0]';
-      expect(replaceTweetPlaceholders(content)).toContain('> Loading tweet…');
-      expect(replaceTweetPlaceholders(content, undefined)).toContain('> Loading tweet…');
+      expect(replaceTweetPlaceholders(content)).toContain('__TWEET_PLACEHOLDER_0__');
+      expect(replaceTweetPlaceholders(content, undefined)).toContain('__TWEET_PLACEHOLDER_0__');
     });
   });
 });

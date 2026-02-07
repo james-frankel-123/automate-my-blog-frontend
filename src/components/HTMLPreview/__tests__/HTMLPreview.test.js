@@ -136,7 +136,7 @@ describe('HTMLPreview', () => {
       expect(link).toHaveAttribute('href', 'https://example.com/news');
     });
 
-    it('replaces video placeholder token with inline YouTube embed when relatedVideos provided', () => {
+    it('replaces video placeholder token with left-right video card when relatedVideos provided', () => {
       const content = 'Before __VIDEO_PLACEHOLDER_0__ after.';
       const relatedVideos = [
         { url: 'https://www.youtube.com/watch?v=abc', videoId: 'abc', title: 'Test Video', channelTitle: 'Test Channel' },
@@ -144,9 +144,8 @@ describe('HTMLPreview', () => {
       render(<HTMLPreview content={content} forceMarkdown relatedVideos={relatedVideos} />);
       expect(screen.getByText('Test Video')).toBeInTheDocument();
       expect(screen.getByText('Test Channel')).toBeInTheDocument();
-      const iframe = document.querySelector('iframe[src*="youtube.com/embed/abc"]');
-      expect(iframe).toBeInTheDocument();
-      expect(iframe).toHaveAttribute('title', 'Test Video');
+      const link = screen.getByRole('link', { name: /Test Video/i });
+      expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc');
     });
   });
 });
