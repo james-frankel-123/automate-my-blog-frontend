@@ -72,7 +72,7 @@ All event payloads are JSON in `event.data`. The frontend parses `event.data` an
 | **2. Open stream immediately** | Right after receiving the response, open `GET /api/v1/stream/:connectionId` (e.g. `new EventSource(streamUrl)`). Use `streamUrl` from the POST response when provided. |
 | **3. Events** | Backend sends `topic-complete`, then `complete` (and optionally `topic-image-start`, `topic-image-complete`). |
 
-**Frontend:** `api.generateTopicsStream(payload)` returns `{ connectionId, streamUrl }`; the caller must call `api.connectToStream(connectionId, handlers, { streamUrl })` in the same synchronous flow (no await or other work between POST response and opening the EventSource). See `workflowAPI.js` → `topicAPI.generateTrendingTopics` → `runTopicStream`.
+**Frontend:** `api.generateTopicsStream(payload)` returns `{ connectionId, streamUrl }`; the caller must call `api.connectToStream(connectionId, handlers, { streamUrl })` in the same synchronous flow (no await or other work between POST response and opening the EventSource). See `workflowAPI.js` → `topicAPI.generateTrendingTopics` → `runTopicStream`. The frontend shows topic cards as each `topic-complete` event arrives (callers pass `onTopicComplete`). If the backend never sends `complete` or the stream errors/times out, the frontend still resolves with any topics already received so the UI is not left empty.
 
 ### 2.4 Final job result shape (website-analysis job)
 
@@ -137,6 +137,10 @@ The **backend implements narrations as separate SSE endpoints** (not on the job 
 **Frontend behavior:** The frontend uses `autoBlogAPI.connectNarrationStream(type, params, handlers)` to open a fetch-based SSE connection to the above endpoints (with auth or `x-session-id`). It requires `analysis.organizationId` from the website analysis result; the backend must include `organizationId` in the job `result.analysis` so the funnel can request narrations.
 
 **Backend:** OpenAI helpers `generateAudienceNarration`, `generateTopicNarration`, `generateContentGenerationNarration` are implemented; see backend `docs/issue-261-backend-implementation.md`.
+
+**Why you might see a 404:** The frontend calls these narration endpoints when each funnel step unlocks (audience → topic → content). Until the backend exposes these routes, the browser will show `GET …/narration/audience` (or topic/content) returning 404. The frontend treats 404 as “narration not available” and does not surface an error to the user.
+
+**Image 403 (DALL·E / Azure blob):** Audience and topic cards may show images from `imageUrl` (e.g. DALL·E via Azure blob). If those URLs use short-lived SAS tokens, the browser may get 403 when loading the image. The frontend falls back to a placeholder when an image fails to load; fixing expired or invalid image URLs is a backend concern (e.g. longer-lived SAS or a proxy).
 
 ### 4.2 Analysis edit & confirm (PATCH organization)
 

@@ -294,6 +294,8 @@ export const analysisAPI = {
 export const topicAPI = {
   /**
    * Generate trending topics for business. Tries streaming first; falls back to one-shot API.
+   * Pass onTopicComplete in options so topic cards appear as each topic-complete event arrives;
+   * on error/timeout the promise still resolves with any topics already received.
    * @param {Object} analysisData - Website analysis results
    * @param {Object} selectedStrategy - Customer strategy (optional)
    * @param {Object} webSearchInsights - Research insights
@@ -353,14 +355,27 @@ export const topicAPI = {
             resolve(list.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
           },
           onError: (err) => {
-            reject(new Error(err?.message ?? 'Topic stream failed'));
+            if (accumulated.length > 0) {
+              resolve(accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
+            } else {
+              reject(new Error(err?.message ?? 'Topic stream failed'));
+            }
           },
         }, { streamUrl });
       });
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error('Topic stream timed out')), TOPIC_STREAM_MAX_MS);
       });
-      const streamResult = await Promise.race([streamPromise, timeoutPromise]);
+      let streamResult;
+      try {
+        streamResult = await Promise.race([streamPromise, timeoutPromise]);
+      } catch (err) {
+        if (accumulated.length > 0) {
+          streamResult = accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i));
+        } else {
+          throw err;
+        }
+      }
       return Array.isArray(streamResult) ? streamResult : accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i));
     };
 

@@ -2,7 +2,7 @@
  * TopicCard — white card with image, title, description. Selectable.
  * Issue #261.
  */
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, Typography } from 'antd';
 import { CheckCircleFilled } from '@ant-design/icons';
 
@@ -38,6 +38,8 @@ export function TopicCard({
   onClick,
   dataTestId,
 }) {
+  const [imageError, setImageError] = useState(false);
+  const showImage = imageUrl && !imageError;
   return (
     <Card
       data-testid={dataTestId}
@@ -50,8 +52,8 @@ export function TopicCard({
       onClick={onClick}
     >
       <div style={{ aspectRatio: '16/9', background: 'var(--color-background-container)', position: 'relative' }}>
-        {imageUrl ? (
-          <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        {showImage ? (
+          <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImageError(true)} />
         ) : (
           <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}>
             Topic

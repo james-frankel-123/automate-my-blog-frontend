@@ -2073,7 +2073,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       </div>
                                     </div>
                                   ) : topic.image ? (
-                                    // Generated image
+                                    // Generated image (fallback to placeholder on 403/load error)
                                     <img 
                                       alt={topic.title} 
                                       src={topic.image} 
@@ -2081,7 +2081,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                         width: '100%', 
                                         height: '200px', 
                                         objectFit: 'cover' 
-                                      }} 
+                                      }}
+                                      onError={() => {
+                                        setAvailableTopics((prev) =>
+                                          prev.map((t) => (t.id === topic.id ? { ...t, image: null } : t))
+                                        );
+                                      }}
                                     />
                                   ) : (
                                     // Default gradient placeholder
@@ -2827,7 +2832,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     </div>
                                   </div>
                                 ) : topic.image ? (
-                                  // Generated image
+                                  // Generated image (fallback to placeholder on 403/load error)
                                   <img 
                                     alt={topic.title} 
                                     src={topic.image} 
@@ -2835,7 +2840,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       width: '100%', 
                                       height: '200px', 
                                       objectFit: 'cover' 
-                                    }} 
+                                    }}
+                                    onError={() => {
+                                      setAvailableTopics((prev) =>
+                                        prev.map((t) => (t.id === topic.id ? { ...t, image: null } : t))
+                                      );
+                                    }}
                                   />
                                 ) : (
                                   // Default gradient placeholder
