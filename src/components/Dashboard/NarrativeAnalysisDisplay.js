@@ -86,8 +86,10 @@ const analysisTextStyle = {
  * @param {boolean} [props.loading] - When true, show progress bar at top.
  * @param {string} [props.currentScanningMessage] - Fallback step label when analysisProgress.currentStep is missing.
  * @param {Array} [props.analysisThoughts] - Scrape-phase thoughts for ThinkingPanel.
+ * @param {boolean} [props.isCompletingAnimation] - From parent: checklist completing animation (original PR UI).
+ * @param {boolean} [props.isSlideIn] - From parent: checklist slide-in state (original PR UI).
  */
-export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback, onNarrativeComplete, analysisProgress, loading, currentScanningMessage, analysisThoughts }) {
+export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback, onNarrativeComplete, analysisProgress, loading, currentScanningMessage, analysisThoughts, isCompletingAnimation, isSlideIn }) {
   const {
     scrapingNarrative,
     analysisNarrative,
