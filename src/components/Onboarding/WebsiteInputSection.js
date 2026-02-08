@@ -5,7 +5,7 @@
 import React from 'react';
 import { Form, Input, Button, Spin } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
-import ThinkingPanel from '../shared/ThinkingPanel';
+import ChecklistProgress from '../shared/ChecklistProgress';
 import { systemVoice } from '../../copy/systemVoice';
 
 const compactRowStyle = {
@@ -59,20 +59,14 @@ export function WebsiteInputSection({
         </div>
       </Form>
       {loading && (
-        <div style={{ marginTop: 20, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
+        <div style={{ marginTop: 20, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
           {(analysisProgress || scanningMessage) ? (
-            <ThinkingPanel
-              isActive
+            <ChecklistProgress
+              steps={systemVoice.analysis.steps}
               currentStep={analysisProgress?.currentStep || scanningMessage}
-              progress={analysisProgress?.progress}
-              thoughts={analysisThoughts}
-              estimatedTimeRemaining={analysisProgress?.estimatedTimeRemaining}
               phase={analysisProgress?.phase}
-              detail={analysisProgress?.detail}
-              workingForYouLabel={systemVoice.analysis.workingForYou}
-              progressPreamble={systemVoice.analysis.progressPreamble}
-              progressLabel={systemVoice.analysis.progressLabel}
-              fallbackStep={systemVoice.analysis.defaultProgress}
+              progress={analysisProgress?.progress}
+              estimatedTimeRemaining={analysisProgress?.estimatedTimeRemaining}
               dataTestId="analysis-status-updates"
             />
           ) : (
