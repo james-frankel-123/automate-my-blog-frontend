@@ -55,6 +55,7 @@ export const CloseCircleOutlined = createIcon('CloseCircleOutlined');
 export const WarningOutlined = createIcon('WarningOutlined');
 export const QuestionCircleOutlined = createIcon('QuestionCircleOutlined');
 export const CopyOutlined = createIcon('CopyOutlined');
+export const BranchesOutlined = createIcon('BranchesOutlined');
 export const DeleteOutlined = createIcon('DeleteOutlined');
 export const MailOutlined = createIcon('MailOutlined');
 export const SendOutlined = createIcon('SendOutlined');
@@ -144,6 +145,7 @@ export default {
   WarningOutlined,
   QuestionCircleOutlined,
   CopyOutlined,
+  BranchesOutlined,
   DeleteOutlined,
   MailOutlined,
   SendOutlined,
