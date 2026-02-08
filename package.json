@@ -60,7 +60,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:record": "playwright test --grep \"walkthrough: auth\" --config=playwright.record.config.js --workers=1 && node scripts/copy-e2e-video.js",
-    "test:e2e:report": "playwright show-report"
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:production": "playwright test --config=playwright.production.config.js"
   },
   "eslintConfig": {
     "extends": [

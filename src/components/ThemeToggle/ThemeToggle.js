@@ -51,6 +51,7 @@ const ThemeToggle = ({ style }) => {
         type="text"
         icon={isDarkMode ? <BulbFilled /> : <BulbOutlined />}
         onClick={toggleTheme}
+        data-testid="theme-toggle"
         style={{
           fontSize: '18px',
           color: isDarkMode ? 'var(--color-accent)' : 'var(--color-primary)',
