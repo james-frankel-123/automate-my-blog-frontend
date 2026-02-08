@@ -124,6 +124,19 @@ test.describe('Production: Happy Path', () => {
 });
 
 test.describe('Production: Alternate Paths', () => {
+  test('login and signup buttons visible on home page initial flow', async ({ page }) => {
+    await page.goto('/');
+    await clearStorage(page);
+    await page.reload();
+    await page.waitForLoadState('load');
+    await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+
+    const loginBtn = page.getByTestId('login-button');
+    const signupBtn = page.getByTestId('signup-button');
+    await expect(loginBtn).toBeVisible({ timeout: 8000 });
+    await expect(signupBtn).toBeVisible({ timeout: 8000 });
+  });
+
   test('login button opens modal', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('load');

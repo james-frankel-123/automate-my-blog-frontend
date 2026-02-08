@@ -20,6 +20,8 @@ import SignupGateCard from './SignupGateCard';
 import EditConfirmActions from './EditConfirmActions';
 import AnalysisEditSection from './AnalysisEditSection';
 import DashboardLayout from '../Dashboard/DashboardLayout';
+import LoggedOutProgressHeader from '../Dashboard/LoggedOutProgressHeader';
+import AuthModal from '../Auth/AuthModal';
 
 const { Title } = Typography;
 
@@ -69,6 +71,10 @@ function OnboardingFunnelView() {
     updateStickyWorkflowStep,
     navigateToTab,
     saveWorkflowState,
+    showAuthModal,
+    setShowAuthModal,
+    authContext,
+    setAuthContext,
   } = useWorkflowMode();
 
   const [loading, setLoading] = useState(false);
@@ -551,7 +557,36 @@ function OnboardingFunnelView() {
         : [];
 
   return (
-    <div style={{ padding: '24px 16px', maxWidth: 800, margin: '0 auto' }} data-testid="onboarding-funnel">
+    <>
+      {!user && (
+        <LoggedOutProgressHeader
+          showAuthModal={showAuthModal}
+          setShowAuthModal={setShowAuthModal}
+          authContext={authContext}
+          setAuthContext={setAuthContext}
+          user={user}
+        />
+      )}
+      {!user && showAuthModal && authContext && (
+        <AuthModal
+          open={showAuthModal}
+          onClose={() => {
+            setShowAuthModal(false);
+            setAuthContext(null);
+          }}
+          context={authContext}
+          defaultTab={authContext === 'register' ? 'register' : 'login'}
+        />
+      )}
+      <div
+        style={{
+          padding: '24px 16px',
+          paddingTop: user ? 24 : 88,
+          maxWidth: 800,
+          margin: '0 auto',
+        }}
+        data-testid="onboarding-funnel"
+      >
       <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
         {systemVoice.analysis?.title || 'Analyze your site'}
       </Title>
@@ -901,6 +936,7 @@ function OnboardingFunnelView() {
         </section>
       )}
     </div>
+    </>
   );
 }
 
