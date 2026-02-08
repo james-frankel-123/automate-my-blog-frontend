@@ -184,7 +184,11 @@ function OnboardingFunnelView() {
       : null;
     setTopicsLoading(true);
     topicAPI
-      .generateTrendingTopics(analysis, selectedScenario, webSearchInsights || {})
+      .generateTrendingTopics(analysis, selectedScenario, webSearchInsights || {}, {
+        onTopicComplete: (topic) => {
+          setFetchedTopicItems((prev) => [...prev, topic]);
+        },
+      })
       .then((result) => {
         if (result?.success && Array.isArray(result.topics) && result.topics.length > 0) {
           setFetchedTopicItems(result.topics);
@@ -537,6 +541,7 @@ function OnboardingFunnelView() {
   const fetchedAsTopics = fetchedTopicItems.map((t) => ({
     title: toNarrationParamString(t?.title ?? t?.subheader ?? 'Topic'),
     description: typeof t?.description === 'string' ? t.description : toNarrationParamString(t?.subheader ?? t?.description ?? ''),
+    imageUrl: t?.image || undefined,
   }));
   const topicItems =
     contentIdeasAsTopics.length > 0
@@ -846,6 +851,7 @@ function OnboardingFunnelView() {
                   <TopicCard
                     title={t.title}
                     description={t.description}
+                    imageUrl={t.imageUrl}
                     selected={selectedTopicIndex === i}
                     onClick={() => handleSelectTopic(i)}
                     dataTestId={`topic-card-${i}`}

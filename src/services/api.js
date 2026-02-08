@@ -1203,6 +1203,10 @@ Please provide analysis in this JSON format:
     }
     if (!response.ok) {
       clearTimeout(timeoutId);
+      // 404 = backend has not implemented this narration endpoint yet (see ISSUE_261_BACKEND_HANDOFF)
+      if (response.status === 404) {
+        return;
+      }
       let errMsg = `Narration stream ${response.status}`;
       try {
         const data = await response.json();
