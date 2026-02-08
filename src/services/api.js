@@ -1161,7 +1161,7 @@ Please provide analysis in this JSON format:
    * @param {'audience'|'topic'|'content'} type - Which narration stream
    * @param {{ organizationId: string, selectedAudience?: string, selectedTopic?: string }} params - organizationId required; selectedAudience for topic, selectedTopic for content
    * @param {{ onChunk: (data: { text?: string }) => void, onComplete?: (data: { text?: string }) => void, onError?: (err: Error) => void }} handlers
-   * @returns {Promise<void>} Resolves when stream ends; rejects on HTTP error or handler throws
+   * @returns {Promise<void>} Resolves when stream ends; rejects on HTTP error, timeout, or handler throws
    */
   async connectNarrationStream(type, params, handlers = {}) {
     const { organizationId, selectedAudience, selectedTopic } = params;
@@ -1184,8 +1184,25 @@ Please provide analysis in this JSON format:
       if (sessionId) headers['x-session-id'] = sessionId;
     }
 
-    const response = await fetch(url, { method: 'GET', headers });
+    const NARRATION_STREAM_TIMEOUT_MS = 90000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), NARRATION_STREAM_TIMEOUT_MS);
+
+    let response;
+    try {
+      response = await fetch(url, { method: 'GET', headers, signal: controller.signal });
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr.name === 'AbortError') {
+        const err = new Error('Narration stream timed out');
+        if (handlers.onError) handlers.onError(err);
+        throw err;
+      }
+      if (handlers.onError) handlers.onError(fetchErr);
+      throw fetchErr;
+    }
     if (!response.ok) {
+      clearTimeout(timeoutId);
       let errMsg = `Narration stream ${response.status}`;
       try {
         const data = await response.json();
@@ -1200,6 +1217,7 @@ Please provide analysis in this JSON format:
 
     const reader = response.body?.getReader();
     if (!reader) {
+      clearTimeout(timeoutId);
       const err = new Error('Narration stream: no body');
       if (handlers.onError) handlers.onError(err);
       throw err;
@@ -1232,7 +1250,14 @@ Please provide analysis in this JSON format:
           } catch (e) { /* skip parse errors */ }
         }
       }
+      clearTimeout(timeoutId);
     } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        const timeoutErr = new Error('Narration stream timed out');
+        if (handlers.onError) handlers.onError(timeoutErr);
+        throw timeoutErr;
+      }
       if (handlers.onError) handlers.onError(err);
       throw err;
     }
@@ -3917,6 +3942,7 @@ Please provide analysis in this JSON format:
     return response;
   }
 
+  /** Same as generateTopicsStream: caller must open EventSource(streamUrl) immediately after return. */
   async generateTrendingTopicsStream(payload) {
     const response = await this.makeRequest('/api/v1/trending-topics/stream', {
       method: 'POST',
@@ -3935,10 +3961,11 @@ Please provide analysis in this JSON format:
   }
 
   /**
-   * Start topic ideas generation stream. Connect with connectToStream(connectionId, handlers).
-   * Backend sends topic-complete events with { topic }; onComplete may send { topics } array.
+   * Start topic ideas generation stream. Caller must open the stream (connectToStream) immediately
+   * after this returns—topic generation starts when the GET /api/v1/stream/:connectionId connection
+   * is created. Order: POST → get connectionId/streamUrl → open EventSource(streamUrl) (no delay).
    * @param {Object} payload - { businessType, targetAudience, contentFocus }
-   * @returns {Promise<{ connectionId: string }>}
+   * @returns {Promise<{ connectionId: string, streamUrl: string }>}
    */
   async generateTopicsStream(payload) {
     const response = await this.makeRequest('/api/v1/topics/generate-stream', {

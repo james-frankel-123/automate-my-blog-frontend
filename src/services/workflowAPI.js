@@ -323,10 +323,12 @@ export const topicAPI = {
     const maxTopics = 2;
 
     const streamPayload = { businessType, targetAudience, contentFocus: contentFocus || 'Content' };
+    const TOPIC_STREAM_MAX_MS = 120000;
     const runTopicStream = async (startStream) => {
       const { connectionId, streamUrl } = await startStream(streamPayload);
+      // Open EventSource immediately after POST so backend starts topic generation when stream connects.
       const accumulated = [];
-      const streamResult = await new Promise((resolve, reject) => {
+      const streamPromise = new Promise((resolve, reject) => {
         autoBlogAPI.connectToStream(connectionId, {
           onTopicComplete: (data) => {
             const raw = data.topic != null ? data.topic : data;
@@ -355,6 +357,10 @@ export const topicAPI = {
           },
         }, { streamUrl });
       });
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Topic stream timed out')), TOPIC_STREAM_MAX_MS);
+      });
+      const streamResult = await Promise.race([streamPromise, timeoutPromise]);
       return Array.isArray(streamResult) ? streamResult : accumulated.slice(0, maxTopics).map((t, i) => mapTopic(t, i));
     };
 
