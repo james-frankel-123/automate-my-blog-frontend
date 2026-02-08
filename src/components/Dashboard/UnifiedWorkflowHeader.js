@@ -36,17 +36,17 @@ const UnifiedWorkflowHeader = ({
   const [previousUser, setPreviousUser] = useState(user);
   const [showGradientSweep, setShowGradientSweep] = useState(false);
 
-  // Typewriter animation state
+  // Typewriter animation state (runs every time when enableSequentialAnimation is true)
   const [displayedTitle, setDisplayedTitle] = useState('');
-  const [displayedSubtitlePart1, setDisplayedSubtitlePart1] = useState(''); // Before "clicks"
-  const [displayedClicks, setDisplayedClicks] = useState(''); // The word "clicks"
-  const [displayedSubtitlePart2, setDisplayedSubtitlePart2] = useState(''); // After "clicks"
+  const [displayedSubtitlePart1, setDisplayedSubtitlePart1] = useState('');
+  const [displayedClicks, setDisplayedClicks] = useState('');
+  const [displayedSubtitlePart2, setDisplayedSubtitlePart2] = useState('');
   const [showTitleCursor, setShowTitleCursor] = useState(true);
   const [showSubtitleCursor, setShowSubtitleCursor] = useState(false);
   const [titleComplete, setTitleComplete] = useState(false);
   const [subtitleComplete, setSubtitleComplete] = useState(false);
-  const [showFlash, setShowFlash] = useState(null); // Only 'ding' now (no 'title' or 'subtitle')
-  const [showClicksHighlight, setShowClicksHighlight] = useState(false); // For "clicks" animation
+  const [showFlash, setShowFlash] = useState(null);
+  const [showClicksHighlight, setShowClicksHighlight] = useState(false);
   const [cursorRemoved, setCursorRemoved] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
   const [skipAnimation, setSkipAnimation] = useState(false);
@@ -78,36 +78,13 @@ const UnifiedWorkflowHeader = ({
     setDelayedInputIsEditing(inputIsEditing);
   }, [inputIsEditing]);
 
-  // Typewriter animation effect
+  // Typewriter animation effect (runs every time when enableSequentialAnimation is true)
   useEffect(() => {
     if (!enableSequentialAnimation) return;
 
-    // Check if animation has already played this session
-    const animationKey = 'autoblog-step0-typewriter-played';
-    const hasPlayed = sessionStorage.getItem(animationKey);
-
-    // Split subtitle into 3 parts for "clicks" animation
     const subtitlePart1 = "Automate website content to get ";
     const clicksWord = "clicks";
     const subtitlePart2 = " without complication";
-
-    if (hasPlayed) {
-      // Show full text immediately
-      setDisplayedTitle(systemVoice.header.step0Title);
-      setDisplayedSubtitlePart1(subtitlePart1);
-      setDisplayedClicks(clicksWord);
-      setDisplayedSubtitlePart2(subtitlePart2);
-      setShowTitleCursor(false);
-      setShowSubtitleCursor(false);
-      setTitleComplete(true);
-      setSubtitleComplete(true);
-      setCursorRemoved(true);
-      setSkipAnimation(true);
-      setAnimationComplete(true);
-      onSequenceComplete?.();
-      return;
-    }
-
     const fullTitle = systemVoice.header.step0Title;
     const charDelay = 50; // 50ms per character
     const clicksPauseDelay = 300; // 300ms pause after "clicks"
@@ -171,7 +148,6 @@ const UnifiedWorkflowHeader = ({
           // Mark animation complete
           const completeTimeout = setTimeout(() => {
             setAnimationComplete(true);
-            sessionStorage.setItem(animationKey, 'true');
             onSequenceComplete?.();
           }, 0);
           timeouts.push(completeTimeout);
@@ -202,9 +178,6 @@ const UnifiedWorkflowHeader = ({
     setCursorRemoved(true);
     setSkipAnimation(true);
     setAnimationComplete(true);
-
-    const animationKey = 'autoblog-step0-typewriter-played';
-    sessionStorage.setItem(animationKey, 'true');
     onSequenceComplete?.();
 
     // Dim text shortly after skip
