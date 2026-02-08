@@ -118,7 +118,7 @@ const LLMInsightsPanel = ({ insights, onRefresh }) => {
           />
 
           {insights.timestamp && (
-            <div style={{ textAlign: 'right', marginTop: 16, fontSize: 12, color: '#888' }}>
+            <div style={{ textAlign: 'right', marginTop: 16, fontSize: 12, color: 'var(--color-text-tertiary)' }}>
               Last updated: {new Date(insights.timestamp).toLocaleString()}
             </div>
           )}

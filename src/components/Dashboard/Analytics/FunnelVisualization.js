@@ -60,12 +60,12 @@ const FunnelVisualization = ({ data }) => {
                 />
                 <Progress
                   percent={parseFloat(conversionRate)}
-                  strokeColor={parseFloat(conversionRate) > 50 ? '#52c41a' : '#ff4d4f'}
+                  strokeColor={parseFloat(conversionRate) > 50 ? 'var(--color-success)' : 'var(--color-error)'}
                   style={{ marginTop: 16 }}
                 />
 
                 {step.dropoffReasons && step.dropoffReasons.length > 0 && (
-                  <div style={{ marginTop: 16, fontSize: 12, color: '#888' }}>
+                  <div style={{ marginTop: 16, fontSize: 12, color: 'var(--color-text-tertiary)' }}>
                     <strong>Top Dropoff Reasons:</strong>
                     <ul style={{ paddingLeft: 20, marginTop: 8 }}>
                       {step.dropoffReasons.map((reason, idx) => (
