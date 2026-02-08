@@ -631,6 +631,17 @@ body {
   }
 }
 
+@keyframes slideOutUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-40px);
+  }
+}
+
 .slide-in-up {
   animation: slideInUp var(--transition-normal) ease-out;
 }

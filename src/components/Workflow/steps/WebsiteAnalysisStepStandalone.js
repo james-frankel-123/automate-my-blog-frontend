@@ -110,6 +110,18 @@ const WebsiteAnalysisStepStandalone = ({
   const [technicalDetailsExpanded, setTechnicalDetailsExpanded] = useState(false);
   // Ref to latest analysis results for per-item stream updates (audience-complete, pitch-complete, scenario-image-complete)
   const latestAnalysisRef = useRef(analysisResults);
+  // Animation state: preserve inputAndTextExited when checklist completes so results stay visible (fix/preserve-animation-state-for-results)
+  const [isChecklistComplete, setIsChecklistComplete] = useState(false);
+  const [showCompletionAnimation, setShowCompletionAnimation] = useState(false);
+  const [showLoadingSlideIn, setShowLoadingSlideIn] = useState(false);
+  const [searchContainerOffset, setSearchContainerOffset] = useState(0);
+  const [streamingText, setStreamingText] = useState('');
+  const [showStreamingText, setShowStreamingText] = useState(false);
+  const [titleExited, setTitleExited] = useState(false);
+  const [inputRepositioned, setInputRepositioned] = useState(false);
+  const [streamingComplete, setStreamingComplete] = useState(false);
+  const [inputAndTextExited, setInputAndTextExited] = useState(false);
+  const isDev = typeof process !== 'undefined' && process.env?.NODE_ENV === 'development';
   // Last analysis error for informative empty state (Issue #185)
   const [lastAnalysisError, setLastAnalysisError] = useState(null);
 
@@ -238,12 +250,125 @@ const WebsiteAnalysisStepStandalone = ({
     }
   }, [loading, isEditing]);
 
+  // Trigger streaming text only after input is repositioned (fix/preserve-animation-state-for-results)
+  useEffect(() => {
+    if (inputRepositioned && !showStreamingText) {
+      if (isDev) console.log('[Animation] Stage 3: Triggering streaming text');
+      setShowStreamingText(true);
+    }
+  }, [inputRepositioned, showStreamingText, isDev]);
+
+  // Detect checklist completion and trigger slide-up animation
+  useEffect(() => {
+    const shouldComplete = (
+      (analysisProgress?.progress === 100) ||
+      (!loading && analysisResults != null && inputAndTextExited)
+    );
+    if (isDev) {
+      console.log('[VISIBILITY DEBUG] Completion check:', {
+        progress: analysisProgress?.progress,
+        loading,
+        hasResults: !!analysisResults,
+        inputAndTextExited,
+        isChecklistComplete,
+        shouldComplete
+      });
+    }
+    if (shouldComplete && !isChecklistComplete) {
+      if (isDev) console.log('[Animation] Checklist complete, triggering slide-up');
+      setIsChecklistComplete(true);
+      setShowCompletionAnimation(true);
+      const timer = setTimeout(() => {
+        if (isDev) console.log('[Animation] Completion animation finished');
+        setShowCompletionAnimation(false);
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+  }, [analysisProgress?.progress, loading, analysisResults, inputAndTextExited, isChecklistComplete, isDev]);
+
+  // Reset completion state when new analysis starts
+  useEffect(() => {
+    if (loading && analysisProgress?.progress != null && analysisProgress.progress < 100) {
+      setIsChecklistComplete(false);
+      setShowCompletionAnimation(false);
+    }
+  }, [loading, analysisProgress?.progress]);
+
+  // Master animation orchestration: only reset animation state when !loading and checklist not complete
+  useEffect(() => {
+    if (!loading) {
+      if (!isChecklistComplete) {
+        if (isDev) console.log('[Animation] Resetting animation states (job not started or cancelled)');
+        setTitleExited(false);
+        setInputRepositioned(false);
+        setStreamingComplete(false);
+        setInputAndTextExited(false);
+        setSearchContainerOffset(0);
+        setShowLoadingSlideIn(false);
+      } else if (isDev) {
+        console.log('[Animation] Checklist complete, preserving inputAndTextExited for results');
+      }
+      return;
+    }
+    if (loading && !titleExited) {
+      if (isDev) console.log('[Animation] Stage 1: Button fading, input centering (0-500ms)');
+      const timer1 = setTimeout(() => {
+        if (isDev) console.log('[Animation] Stage 2: Title exiting, input moving up (750ms)');
+        setTitleExited(true);
+        setSearchContainerOffset(-100);
+        setTimeout(() => {
+          if (isDev) console.log('[Animation] Stage 3: Input repositioned, streaming starts (2000ms)');
+          setInputRepositioned(true);
+        }, 1250);
+      }, 750);
+      return () => clearTimeout(timer1);
+    }
+  }, [loading, titleExited, isChecklistComplete, isDev]);
+
   // Notify parent when editing state changes (for header text fade)
   useEffect(() => {
     if (onEditingStateChange) {
       onEditingStateChange(isEditing);
     }
   }, [isEditing, onEditingStateChange]);
+
+  // Typing effect for streaming message
+  useEffect(() => {
+    if (loading && showStreamingText) {
+      const fullMessage = 'Let me take a look at your website, hold tight';
+      let currentIndex = 0;
+      setStreamingText('');
+      const typingInterval = setInterval(() => {
+        if (currentIndex <= fullMessage.length) {
+          setStreamingText(fullMessage.slice(0, currentIndex));
+          currentIndex++;
+        } else {
+          clearInterval(typingInterval);
+          setTimeout(() => setStreamingComplete(true), 250);
+        }
+      }, 40);
+      return () => clearInterval(typingInterval);
+    } else if (!loading) {
+      setShowStreamingText(false);
+      setStreamingText('');
+      setStreamingComplete(false);
+    }
+  }, [loading, showStreamingText]);
+
+  // Stage 5: Exit input and text, show checklist
+  useEffect(() => {
+    if (streamingComplete && !inputAndTextExited) {
+      if (isDev) console.log('[Animation] Stage 5: Exiting input and text off screen top');
+      setSearchContainerOffset(-500);
+      const checklistTimer = setTimeout(() => {
+        if (isDev) console.log('[Animation] Stage 6: Showing checklist centered');
+        setInputAndTextExited(true);
+        setSearchContainerOffset(0);
+        setShowLoadingSlideIn(true);
+      }, 1000);
+      return () => clearTimeout(checklistTimer);
+    }
+  }, [streamingComplete, inputAndTextExited, isDev]);
 
   // Remove sparkle on input focus or interaction, and restore editing mode
   const handleInputFocus = () => {
@@ -275,7 +400,7 @@ const WebsiteAnalysisStepStandalone = ({
             setWebsiteUrl && setWebsiteUrl(cachedAnalysis.websiteUrl);
             setAnalysisResults && setAnalysisResults(cachedAnalysis);
             setAnalysisCompleted && setAnalysisCompleted(true);
-            
+
             // Update sticky header with cached business information
             updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
               websiteUrl: cachedAnalysis.websiteUrl,
@@ -573,9 +698,18 @@ const WebsiteAnalysisStepStandalone = ({
     setWebsiteUrl && setWebsiteUrl('');
     setAnalysisResults && setAnalysisResults(null);
     setAnalysisCompleted && setAnalysisCompleted(false);
+    setIsChecklistComplete(false);
+    setShowCompletionAnimation(false);
+    setShowLoadingSlideIn(false);
+    setSearchContainerOffset(0);
+    setStreamingText('');
+    setShowStreamingText(false);
+    setTitleExited(false);
+    setInputRepositioned(false);
+    setStreamingComplete(false);
+    setInputAndTextExited(false);
     setWebSearchInsights && setWebSearchInsights({ researchQuality: 'basic' });
     setUrlOverrideMode(false);
-    
     onStartOver && onStartOver();
   };
   
@@ -817,48 +951,98 @@ const WebsiteAnalysisStepStandalone = ({
       </div>
     </div>
   );
-  
+
+  /**
+   * Render streaming encouragement message (typing effect before checklist)
+   */
+  const renderStreamingMessage = () => {
+    if (!showStreamingText || inputAndTextExited) return null;
+    return (
+      <div
+        style={{
+          textAlign: 'center',
+          marginTop: '16px',
+          marginBottom: '24px',
+          minHeight: '28px',
+          opacity: streamingText.length > 0 ? 1 : 0,
+          transition: 'opacity 0.3s ease-in'
+        }}
+      >
+        <Text
+          style={{
+            fontSize: responsive.fontSize.text,
+            color: 'var(--color-text-secondary)',
+            fontStyle: 'italic'
+          }}
+        >
+          {streamingText}
+          {streamingText.length > 0 && streamingText.length < 46 && (
+            <span
+              style={{
+                display: 'inline-block',
+                width: '2px',
+                height: '1em',
+                backgroundColor: 'var(--color-primary)',
+                marginLeft: '2px',
+                animation: 'cursor-blink 1s step-end infinite',
+                verticalAlign: 'text-bottom'
+              }}
+            />
+          )}
+        </Text>
+      </div>
+    );
+  };
+
   /**
    * Render fallback loading UX (ThinkingPanel) when narrative stream unavailable
    */
   const renderThinkingPanelFallback = () => (
-    <Card style={{ marginBottom: '20px' }}>
-      <div style={{ textAlign: 'center', padding: '24px 20px' }}>
-        <Spin size="large" />
-        <div style={{ marginTop: '16px' }}>
-          <Title level={4} style={{ color: 'var(--color-text-primary)', marginBottom: '4px' }}>
-            <ScanOutlined style={{ marginRight: '8px' }} />
-            {systemVoice.analysis.loadingTitle}
-          </Title>
-          {!analysisProgress && (
-            <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '12px', fontSize: responsive.fontSize.text }}>
-              {systemVoice.analysis.defaultProgress}
-            </Paragraph>
-          )}
-          {analysisResults?.scrapePreview?.title && (
-            <Paragraph style={{ color: 'var(--color-text-secondary)', fontSize: responsive.fontSize.small, marginBottom: analysisProgress ? '12px' : '16px' }}>
-              We found: <Text strong>{analysisResults.scrapePreview.title}</Text>
-            </Paragraph>
-          )}
-          {analysisProgress && (
-            <div style={{ margin: '0 auto 16px', maxWidth: '420px' }}>
-              <ThinkingPanel
-                isActive
-                currentStep={analysisProgress.currentStep || currentScanningMessage}
-                progress={analysisProgress.progress}
-                thoughts={analysisThoughts}
-                estimatedTimeRemaining={analysisProgress.estimatedTimeRemaining}
-                phase={analysisProgress.phase}
-                detail={analysisProgress.detail}
-                workingForYouLabel={systemVoice.analysis.workingForYou}
-                progressPreamble={systemVoice.analysis.progressPreamble}
-                progressLabel={systemVoice.analysis.progressLabel}
-                fallbackStep={currentScanningMessage}
-                dataTestId="website-analysis-progress"
-              />
-            </div>
-          )}
-        </div>
+    <Card
+      style={{
+        marginBottom: '20px',
+        opacity: showLoadingSlideIn ? 1 : 0,
+        transition: 'opacity 0.3s ease',
+        animation: showCompletionAnimation ? 'slideOutUp 0.6s ease-out forwards' : 'none'
+      }}
+    >
+      <div style={{ padding: '24px 20px' }}>
+        {!analysisProgress && (
+          <Paragraph style={{ color: 'var(--color-text-secondary)', marginBottom: '12px', fontSize: responsive.fontSize.text, textAlign: 'center' }}>
+            {systemVoice.analysis.defaultProgress}
+          </Paragraph>
+        )}
+        {analysisResults?.scrapePreview?.title && (
+          <Paragraph style={{
+            color: 'var(--color-text-secondary)',
+            fontSize: responsive.fontSize.small,
+            marginBottom: analysisProgress ? '12px' : '16px',
+            textAlign: 'center',
+            animation: 'fadeIn 0.6s ease-in forwards',
+            opacity: 0
+          }}
+          >
+            <Text strong>{analysisResults.scrapePreview.title}</Text>
+          </Paragraph>
+        )}
+        {analysisProgress && (
+          <div style={{ margin: '0 auto 16px', maxWidth: '420px' }}>
+            <ThinkingPanel
+              isActive
+              currentStep={analysisProgress.currentStep || currentScanningMessage}
+              progress={analysisProgress.progress}
+              thoughts={analysisThoughts}
+              estimatedTimeRemaining={analysisProgress.estimatedTimeRemaining}
+              phase={analysisProgress.phase}
+              detail={analysisProgress.detail}
+              workingForYouLabel={systemVoice.analysis.workingForYou}
+              progressPreamble={systemVoice.analysis.progressPreamble}
+              progressLabel={systemVoice.analysis.progressLabel}
+              fallbackStep={currentScanningMessage}
+              dataTestId="website-analysis-progress"
+            />
+          </div>
+        )}
         <div style={{ marginTop: '16px', textAlign: 'left', maxWidth: '360px', marginLeft: 'auto', marginRight: 'auto' }}>
           <div style={{ height: '12px', background: 'var(--color-gray-100)', borderRadius: '4px', marginBottom: '8px', width: '75%' }} />
           <div style={{ height: '12px', background: 'var(--color-gray-100)', borderRadius: '4px', width: '55%' }} />
@@ -1509,8 +1693,32 @@ const WebsiteAnalysisStepStandalone = ({
   return (
     <div className={className} style={{ width: '100%' }}>
       <Card style={{ ...cardStyle }}>
-        {/* Always show URL input - greyed out when analysis exists and not in edit mode */}
-        {renderUrlInput()}
+        {/* Animated container: URL input + streaming text, then checklist, then results (fix/preserve-animation-state-for-results) */}
+        <div
+          style={{
+            position: 'relative',
+            minHeight: '400px',
+            transform: `translateY(${searchContainerOffset}px)`,
+            transition: 'transform 1s ease-out',
+            overflow: inputAndTextExited ? 'visible' : 'hidden'
+          }}
+        >
+          {!inputAndTextExited && renderUrlInput()}
+          {!inputAndTextExited && renderStreamingMessage()}
+
+          {inputAndTextExited && !isChecklistComplete && (
+            <div
+              style={{
+                opacity: 1,
+                animation: showCompletionAnimation
+                  ? 'slideOutUp 0.6s ease-out forwards'
+                  : 'fadeIn 0.5s ease-in'
+              }}
+            >
+              {renderAnalysisLoading()}
+            </div>
+          )}
+        </div>
 
         {/* Informative empty state when analysis failed (Issue #185) */}
         {lastAnalysisError && !loading && (
@@ -1524,11 +1732,17 @@ const WebsiteAnalysisStepStandalone = ({
           />
         )}
 
-        {/* Show streaming UI when we have a narrative job (during and after API loading so streamed content persists) */}
-        {(loading || analysisJobId) && renderAnalysisLoading()}
-
-        {/* Show analysis results only after user has run analysis (loading or completed), not initial placeholder state */}
-        {(analysisCompleted || loading) && analysisResults && renderAnalysisResults()}
+        {/* Show results after checklist completes, or when analysisCompleted (e.g. cached load) */}
+        {analysisResults && ((inputAndTextExited && isChecklistComplete) || analysisCompleted) && (
+          <div
+            style={{
+              opacity: (inputAndTextExited && isChecklistComplete) ? 0 : 1,
+              animation: (inputAndTextExited && isChecklistComplete) ? 'fadeIn 0.8s ease-in 0.6s forwards' : 'none'
+            }}
+          >
+            {renderAnalysisResults()}
+          </div>
+        )}
       </Card>
     </div>
   );
