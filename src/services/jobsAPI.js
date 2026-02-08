@@ -201,10 +201,17 @@ class JobsAPI {
       const resolveAvailable = (available) => {
         if (!settled) {
           settled = true;
+          if (timeoutId) clearTimeout(timeoutId);
           eventSource.close();
           resolve({ available });
         }
       };
+
+      const NARRATIVE_STREAM_MAX_MS = 120000;
+      const timeoutId = setTimeout(() => {
+        if (handlers.onError) handlers.onError(new Error('Narrative stream timed out'));
+        resolveAvailable(false);
+      }, NARRATIVE_STREAM_MAX_MS);
 
       if (options.signal) {
         options.signal.addEventListener('abort', () => {

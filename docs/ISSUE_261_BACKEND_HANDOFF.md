@@ -62,7 +62,19 @@ All event payloads are JSON in `event.data`. The frontend parses `event.data` an
 
 **Fallback:** The frontend also listens for a generic `message` event with `{ type: string, data?: object }` and routes by `type` (e.g. `type: 'analysis-result'`, `data` as above).
 
-### 2.3 Final job result shape
+### 2.3 Topic stream (POST then immediate GET)
+
+**Required order:** The client must open the topic stream (e.g. `EventSource(streamUrl)`) **before or right after** calling POST. Topic generation starts when the stream connection is created.
+
+| Step | Contract |
+|------|----------|
+| **1. POST** | `POST /api/v1/topics/generate-stream` with body `{ businessType, targetAudience, contentFocus }`. Response: `{ connectionId, streamUrl? }`. |
+| **2. Open stream immediately** | Right after receiving the response, open `GET /api/v1/stream/:connectionId` (e.g. `new EventSource(streamUrl)`). Use `streamUrl` from the POST response when provided. |
+| **3. Events** | Backend sends `topic-complete`, then `complete` (and optionally `topic-image-start`, `topic-image-complete`). |
+
+**Frontend:** `api.generateTopicsStream(payload)` returns `{ connectionId, streamUrl }`; the caller must call `api.connectToStream(connectionId, handlers, { streamUrl })` in the same synchronous flow (no await or other work between POST response and opening the EventSource). See `workflowAPI.js` → `topicAPI.generateTrendingTopics` → `runTopicStream`.
+
+### 2.4 Final job result shape (website-analysis job)
 
 When the job completes, the frontend uses `complete` event’s `data.result` (or polling’s `result`). It expects a shape that can be passed to `mapWebsiteAnalysisResult(result)`:
 

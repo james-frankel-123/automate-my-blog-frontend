@@ -50,7 +50,16 @@ export const AuthProvider = ({ children }) => {
       }
     }, 3000); // Retry after 3 seconds if still not authenticated
 
-    return () => clearTimeout(retryAuthCheck);
+    // Safety: never leave app stuck on loading (e.g. getCurrentUser hangs or race)
+    const AUTH_LOADING_MAX_MS = 65000; // slightly above makeRequest 60s timeout
+    const loadingSafety = setTimeout(() => {
+      setLoading((prev) => (prev ? false : prev));
+    }, AUTH_LOADING_MAX_MS);
+
+    return () => {
+      clearTimeout(retryAuthCheck);
+      clearTimeout(loadingSafety);
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const checkAuthStatus = async () => {

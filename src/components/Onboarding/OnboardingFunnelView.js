@@ -97,6 +97,7 @@ function OnboardingFunnelView() {
   const contentNarrationStreamStartedRef = useRef(false);
   const lastProgressAtRef = useRef(0);
   const reassuranceStepRef = useRef(0);
+  const analysisInProgressRef = useRef(false);
 
   const analysis = stepResults?.home?.websiteAnalysis || {};
   const scenarios = analysis.scenarios || [];
@@ -288,11 +289,13 @@ function OnboardingFunnelView() {
   }, [unlocked.contentNarration, analysis?.organizationId, selectedTopicIndex, contentIdeas, fetchedTopicItems]);
 
   const handleAnalyze = useCallback(async (url) => {
+    if (analysisInProgressRef.current) return;
     const validation = workflowUtils.urlUtils.validateWebsiteUrl(url);
     if (!validation.isValid) {
       message.error(validation.error);
       return;
     }
+    analysisInProgressRef.current = true;
     setLoading(true);
     setScanningMessage(systemVoice.analysis.steps?.[0] || 'Reading your pages…');
     setAnalysisProgress(null);
@@ -304,6 +307,16 @@ function OnboardingFunnelView() {
     topicNarrationStreamStartedRef.current = false;
     contentNarrationStreamStartedRef.current = false;
     addStickyWorkflowStep?.('websiteAnalysis', { websiteUrl: validation.formattedUrl, businessName: '', businessType: '' });
+
+    const ANALYSIS_MAX_WAIT_MS = 6 * 60 * 1000;
+    const safetyTimeoutId = setTimeout(() => {
+      if (analysisInProgressRef.current) {
+        analysisInProgressRef.current = false;
+        setLoading(false);
+        message.warning('Analysis is taking longer than expected. You can try again or use a different URL.');
+      }
+    }, ANALYSIS_MAX_WAIT_MS);
+
     try {
       const result = await analysisAPI.analyzeWebsite(validation.formattedUrl, {
         onJobCreated: () => {},
@@ -395,6 +408,8 @@ function OnboardingFunnelView() {
     } catch (err) {
       message.error(err?.message || 'Analysis failed');
     } finally {
+      clearTimeout(safetyTimeoutId);
+      analysisInProgressRef.current = false;
       setLoading(false);
     }
   }, [setWebsiteUrl, updateWebsiteAnalysis, updateAnalysisCompleted, updateCTAData, updateWebSearchInsights, addStickyWorkflowStep, updateStickyWorkflowStep]);
