@@ -1062,6 +1062,17 @@ body {
   color: var(--color-text-primary);
 }
 
+/* Analysis card icons — ensure AI-generated icons work in dark mode */
+.dark-mode .analysis-card-icon {
+  background-color: var(--color-background-container) !important;
+  border-color: var(--color-border-base) !important;
+}
+
+.dark-mode .analysis-card-icon img {
+  /* Generated icons may have white backgrounds; container provides separation */
+  border-radius: var(--radius-sm);
+}
+
 /* Content preview: blockquotes and titles (headings) in dark mode */
 .dark-mode blockquote {
   color: var(--color-text-secondary);
@@ -1087,7 +1098,7 @@ body {
 }
 
 .dark-mode .ant-btn-default:hover {
-  background-color: var(--color-gray-200);
+  background-color: rgba(255, 255, 255, 0.1);
   border-color: var(--color-border-dark);
   color: var(--color-text-primary);
 }
@@ -1097,7 +1108,7 @@ body {
 }
 
 .dark-mode .ant-btn-text:hover {
-  background-color: var(--color-gray-100);
+  background-color: rgba(255, 255, 255, 0.08);
   color: var(--color-text-primary);
 }
 
@@ -1139,11 +1150,11 @@ body {
 }
 
 .dark-mode .ant-select-item-option-selected {
-  background-color: var(--color-gray-100);
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 .dark-mode .ant-select-item-option:hover {
-  background-color: var(--color-gray-100);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 /* Tables */
@@ -1169,11 +1180,11 @@ body {
 }
 
 .dark-mode .ant-table-tbody > tr:hover > td {
-  background-color: var(--color-gray-100) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 .dark-mode .ant-table-tbody > tr.ant-table-row:hover > td {
-  background-color: var(--color-gray-100) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 .dark-mode .ant-table-cell {
@@ -1182,7 +1193,7 @@ body {
 }
 
 .dark-mode .ant-table-cell-row-hover {
-  background-color: var(--color-gray-100) !important;
+  background-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Pagination */
@@ -1258,7 +1269,7 @@ body {
 }
 
 .dark-mode .ant-dropdown-menu-item:hover {
-  background-color: var(--color-gray-100);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 /* Tooltip */
@@ -1282,11 +1293,11 @@ body {
 }
 
 .dark-mode .ant-menu-item:hover {
-  background-color: var(--color-gray-100);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .dark-mode .ant-menu-item-selected {
-  background-color: var(--color-gray-100);
+  background-color: rgba(255, 255, 255, 0.12);
   color: var(--color-primary);
 }
 
@@ -1497,7 +1508,7 @@ html.dark-mode .ant-message .ant-message-notice-content,
 
 /* Tag */
 .dark-mode .ant-tag {
-  background-color: var(--color-gray-100);
+  background-color: rgba(255, 255, 255, 0.1);
   border-color: var(--color-border-base);
   color: var(--color-text-primary);
 }

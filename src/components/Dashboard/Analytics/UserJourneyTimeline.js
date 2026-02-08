@@ -83,12 +83,12 @@ const UserJourneyTimeline = ({ dateRange }) => {
             >
               <p><strong>{event.event_type}</strong></p>
               {event.conversion_funnel_step && (
-                <p style={{ color: '#52c41a' }}>Funnel: {event.conversion_funnel_step}</p>
+                <p style={{ color: 'var(--color-success)' }}>Funnel: {event.conversion_funnel_step}</p>
               )}
               {event.page_url && (
-                <p style={{ fontSize: 12, color: '#888' }}>Page: {event.page_url}</p>
+                <p style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>Page: {event.page_url}</p>
               )}
-              <p style={{ fontSize: 12, color: '#888' }}>
+              <p style={{ fontSize: 12, color: 'var(--color-text-tertiary)' }}>
                 {new Date(event.timestamp).toLocaleString()}
               </p>
             </Timeline.Item>

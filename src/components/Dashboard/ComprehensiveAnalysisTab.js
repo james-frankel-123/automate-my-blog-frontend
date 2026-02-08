@@ -844,7 +844,7 @@ const ComprehensiveAnalysisTab = () => {
                                                   backgroundColor: color,
                                                   marginRight: '4px',
                                                   borderRadius: '2px',
-                                                  border: '1px solid #ddd',
+                                                  border: '1px solid var(--color-border-base)',
                                                   verticalAlign: 'middle'
                                                 }}
                                               />
@@ -893,7 +893,7 @@ const ComprehensiveAnalysisTab = () => {
                                                   backgroundColor: color,
                                                   marginRight: '4px',
                                                   borderRadius: '2px',
-                                                  border: '1px solid #ddd',
+                                                  border: '1px solid var(--color-border-base)',
                                                   verticalAlign: 'middle'
                                                 }}
                                               />
@@ -915,7 +915,7 @@ const ComprehensiveAnalysisTab = () => {
                                                   backgroundColor: color,
                                                   marginRight: '4px',
                                                   borderRadius: '2px',
-                                                  border: '1px solid #ddd',
+                                                  border: '1px solid var(--color-border-base)',
                                                   verticalAlign: 'middle'
                                                 }}
                                               />
