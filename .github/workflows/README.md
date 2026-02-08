@@ -44,6 +44,30 @@ General CI workflow for running tests on all PRs and pushes.
 - Runs E2E tests
 - Runs unit tests on push to feat/** or fix/** only (on PR and main they run once in deploy.yml)
 
+### `daily-merge-digest.yml`
+Summarizes in plain language everything merged into `main` in the last 24 hours and shares it with project owners.
+
+**Triggers:**
+- **Schedule:** 5pm UTC every day (`0 17 * * *`)
+- **Manual:** Actions → Daily merge digest → Run workflow
+
+**What it does:**
+- Queries the GitHub API for PRs merged into `main` in the past 24 hours
+- **Tags project owners** in the issue (see below)
+- **Layman summary:** uses OpenAI to generate a short, non-technical summary (requires `OPENAI_API_TOKEN_FOR_GITHUB_ACTIONS`)
+- Builds a bullet list of merged PRs (title, link, author, labels)
+- Opens a new GitHub Issue with the above so owners get notified
+
+**Project owners (tagging):**
+- **Dynamic:** the workflow tries to list repository collaborators with **admin** permission and tags them at the top of the issue (`@user1 @user2`). If the default token cannot list collaborators (e.g. in some orgs), that step is skipped.
+- **Fallback:** set a repo **variable** `PROJECT_OWNER_LOGINS` to a comma-separated list of GitHub logins (e.g. `alice,bob`). They are tagged when the dynamic list is empty or the API call fails.
+
+**Secrets / variables:**
+- **`OPENAI_API_TOKEN_FOR_GITHUB_ACTIONS`** (secret): OpenAI API key used to generate the “In plain language” summary. If unset, the issue still opens with the PR list only.
+- **`PROJECT_OWNER_LOGINS`** (variable, optional): fallback list of logins to tag when dynamic owner resolution is not available.
+
+**Why an Issue?** Issues are visible in the repo, searchable, and trigger notifications for watchers. Tagging owners ensures they get notified. To run at a different time, edit the `cron` in the workflow (times are UTC).
+
 ## Workflow Dependencies
 
 ```
