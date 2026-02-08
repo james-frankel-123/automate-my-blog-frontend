@@ -848,8 +848,9 @@ const WebsiteAnalysisStepStandalone = ({
   const renderUrlInput = () => (
     <div
       style={{
-        transform: !isEditing ? 'translateY(-200px)' : 'translateY(0)',
-        transition: 'all 1s ease'
+        opacity: inputAndTextExited ? 0 : 1,
+        transition: 'opacity 0.8s ease-out',
+        overflow: 'hidden'
       }}
     >
       <div
@@ -864,8 +865,13 @@ const WebsiteAnalysisStepStandalone = ({
         <Title level={3} style={{
           textAlign: 'center',
           marginBottom: '20px',
-          fontSize: responsive.fontSize.title
-        }}>
+          fontSize: responsive.fontSize.title,
+          transform: titleExited ? 'translateY(-200px)' : 'translateY(0)',
+          opacity: titleExited ? 0 : 1,
+          transition: 'all 0.8s ease-out',
+          position: titleExited ? 'absolute' : 'relative'
+        }}
+        >
           <GlobalOutlined style={{ marginRight: '8px', color: 'var(--color-text-secondary)' }} />
           {systemVoice.analysis.title}
         </Title>
