@@ -23,12 +23,22 @@ If the rebase fails or conflicts are too complex, suggest:
 - Merge main instead: \`git merge origin/main\`
 - Resolve any merge conflicts, then commit`;
 
+const DEMO_PARAM = 'demo=rebase';
+
 const RebaseReminder = () => {
-  const [behindBy, setBehindBy] = useState(null);
+  const isDemo =
+    process.env.NODE_ENV === 'development' &&
+    typeof window !== 'undefined' &&
+    window.location?.search?.includes(DEMO_PARAM);
+
+  const [behindBy, setBehindBy] = useState(isDemo ? 3 : null);
   const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const checkForUpdates = useCallback(async () => {
+    const demoMode =
+      typeof window !== 'undefined' && window.location?.search?.includes(DEMO_PARAM);
+    if (demoMode) return; // Keep demo state
     const currentSha = process.env.REACT_APP_GIT_COMMIT_SHA;
     if (!currentSha || currentSha === 'dev') {
       return;
@@ -83,6 +93,9 @@ const RebaseReminder = () => {
         margin: '0 auto',
         zIndex: 999,
         boxShadow: 'var(--shadow-md)',
+        backgroundColor: 'var(--color-bg-container)',
+        borderRadius: 8,
+        overflow: 'hidden',
       }}
       data-testid="rebase-reminder"
     >

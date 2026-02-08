@@ -6,7 +6,7 @@ import { WorkflowModeProvider } from './contexts/WorkflowModeContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { SystemHintProvider } from './contexts/SystemHintContext';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
-import RebaseReminder from './components/RebaseReminder';
+import RebaseReminder from './components/RebaseReminder/RebaseReminder';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
