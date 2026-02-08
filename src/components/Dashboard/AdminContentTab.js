@@ -560,13 +560,13 @@ const AdminContentTab = () => {
         )}
       </Modal>
 
-      {/* CSS for row highlighting */}
+      {/* CSS for row highlighting — theme-aware */}
       <style jsx global>{`
         .flagged-row {
-          background-color: #fff2f0 !important;
+          background-color: var(--color-error-bg) !important;
         }
         .low-quality-row {
-          background-color: #fffbe6 !important;
+          background-color: var(--color-warning-bg) !important;
         }
       `}</style>
     </div>

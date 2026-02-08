@@ -1,5 +1,6 @@
 /**
- * AnalysisCard — white card with icon (AI or fallback), heading, content.
+ * AnalysisCard — card with icon (AI or fallback), heading, content.
+ * Icon container ensures generated/AI icons work well in both light and dark mode.
  * Issue #261.
  */
 import React from 'react';
@@ -36,6 +37,18 @@ const CARD_STYLE = {
   padding: 24,
 };
 
+const ICON_CONTAINER_STYLE = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 56,
+  height: 56,
+  borderRadius: 'var(--radius-md)',
+  background: 'var(--color-background-alt)',
+  border: '1px solid var(--color-border-base)',
+  marginBottom: 12,
+};
+
 const FALLBACK_ICONS = {
   targetAudience: AimOutlined,
   businessType: BarChartOutlined,
@@ -58,11 +71,11 @@ export function AnalysisCard({
       style={CARD_STYLE}
       bodyStyle={{ padding: 24 }}
     >
-      <div style={{ marginBottom: 12 }}>
+      <div className="analysis-card-icon" style={ICON_CONTAINER_STYLE}>
         {iconUrl ? (
-          <img src={iconUrl} alt="" style={{ width: 48, height: 48 }} />
+          <img src={iconUrl} alt="" style={{ width: 40, height: 40, objectFit: 'contain' }} />
         ) : (
-          <FallbackIcon style={{ fontSize: 48, color: 'var(--color-primary)' }} />
+          <FallbackIcon style={{ fontSize: 40, color: 'var(--color-primary)' }} />
         )}
       </div>
       {toDisplayString(heading) && (
