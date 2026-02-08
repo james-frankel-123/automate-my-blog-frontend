@@ -1,11 +1,12 @@
 # E2E Test Coverage – Workflows
 
-All e2e tests live in **`e2e/e2e.spec.js`** and use a **mocked backend**.
+E2E tests live under **`e2e/`** and use a **mocked backend**. Main suite: **`e2e/e2e.spec.js`**. **`e2e/onboarding-funnel.spec.js`** covers the guided funnel (Issue #261).
 
 ## Workflows Covered
 
 | Workflow | Describe | Notes |
 |----------|----------|-------|
+| **Onboarding funnel (#261)** | Onboarding funnel (Issue #261) | URL → Analyze → Confirm & Continue → audience → topic → signup (register). See `e2e/onboarding-funnel.spec.js`. |
 | **Auth (logged out)** | Auth (logged out) | Login form, sign up form, **website analysis section nav (#168)** (granular nav, smooth scroll, scroll spy, mobile horizontal nav). |
 | **Auth (logged in)** | Auth (logged in) | Persist login, logout, **section nav after analysis (#168)**. |
 | **Workflow** | Workflow | Homepage steps, start analysis, results, persistence, **smoke** (analyze → audience → strategy → posts), **full** (analyze → … → export). |

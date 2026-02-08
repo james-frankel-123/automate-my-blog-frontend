@@ -16,7 +16,13 @@ export function SignupGateCard({ onSuccess, dataTestId = 'signup-gate-card' }) {
   const handleRegister = async (values) => {
     setLoading(true);
     try {
-      await register({ email: values.email, password: values.password, name: values.name });
+      await register({
+        email: values.email,
+        password: values.password,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        organizationName: values.organizationName,
+      });
       message.success('Account created. Continuing…');
       onSuccess?.();
     } catch (e) {
@@ -58,14 +64,20 @@ export function SignupGateCard({ onSuccess, dataTestId = 'signup-gate-card' }) {
             label: 'Register',
             children: (
               <Form form={form} onFinish={handleRegister} layout="vertical">
-                <Form.Item name="name" rules={[{ required: true }]} label="Name">
-                  <Input placeholder="Your name" />
+                <Form.Item name="firstName" rules={[{ required: true, message: 'First name is required' }]} label="First name">
+                  <Input placeholder="First name" />
+                </Form.Item>
+                <Form.Item name="lastName" rules={[{ required: true, message: 'Last name is required' }]} label="Last name">
+                  <Input placeholder="Last name" />
                 </Form.Item>
                 <Form.Item name="email" rules={[{ required: true, type: 'email' }]} label="Email">
                   <Input placeholder="you@example.com" />
                 </Form.Item>
                 <Form.Item name="password" rules={[{ required: true, min: 8 }]} label="Password">
                   <Input.Password placeholder="Min 8 characters" />
+                </Form.Item>
+                <Form.Item name="organizationName" rules={[{ required: true, message: 'Organization name is required' }]} label="Organization name">
+                  <Input placeholder="Your company or blog name" />
                 </Form.Item>
                 <Button type="primary" htmlType="submit" loading={loading} block>
                   Create account
