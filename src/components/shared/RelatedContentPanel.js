@@ -8,7 +8,7 @@ import { MessageOutlined, FileTextOutlined, PlayCircleOutlined, PlusOutlined } f
 
 const { Text } = Typography;
 
-const TRUNCATE = { tweet: 48, title: 40 };
+const TRUNCATE = { tweet: 72, title: 48 };
 
 const panelHeaderStyle = {
   fontSize: '13px',
@@ -19,15 +19,12 @@ const panelHeaderStyle = {
 const itemRowStyle = {
   display: 'flex',
   alignItems: 'center',
-  gap: '8px',
-  padding: '4px 0',
+  gap: '10px',
+  padding: '6px 0',
   borderBottom: '1px solid var(--color-gray-100)',
-  minHeight: 36,
+  minHeight: 44,
 };
 const itemRowLastStyle = { borderBottom: 'none' };
-
-/** Max height for the tweets/articles/videos list area so it doesn't dominate the layout */
-const RELATED_PANEL_MAX_HEIGHT = 280;
 
 const thumbStyle = {
   width: 56,
@@ -69,10 +66,11 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
   const hasAny = hasTweets || hasArticles || hasVideos;
 
   const [activeKeys, setActiveKeys] = useState(() => {
-    if (hasTweets) return ['tweets'];
-    if (hasArticles) return ['articles'];
-    if (hasVideos) return ['videos'];
-    return [];
+    const keys = [];
+    if (hasTweets) keys.push('tweets');
+    if (hasArticles) keys.push('articles');
+    if (hasVideos) keys.push('videos');
+    return keys;
   });
 
   if (!hasAny) return null;
@@ -95,7 +93,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
   return (
     <section
       style={{
-        marginBottom: 12,
+        marginBottom: 16,
         borderRadius: 8,
         border: '1px solid var(--color-primary-100)',
         backgroundColor: 'var(--color-primary-50)',
@@ -104,7 +102,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
       data-testid="related-content-panel"
       aria-labelledby="related-content-heading"
     >
-      <div style={{ padding: '8px 14px 6px', borderBottom: '1px solid var(--color-primary-100)' }}>
+      <div style={{ padding: '10px 14px 6px', borderBottom: '1px solid var(--color-primary-100)' }}>
         <h3
           id="related-content-heading"
           style={{
@@ -122,7 +120,6 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
           </p>
         )}
       </div>
-      <div style={{ maxHeight: RELATED_PANEL_MAX_HEIGHT, overflowY: 'auto' }}>
       <Collapse
         activeKey={activeKeys}
         onChange={(keys) => setActiveKeys(Array.isArray(keys) ? keys : [keys])}
@@ -143,7 +140,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
             }
             key="tweets"
           >
-            <div style={{ padding: '2px 0 6px 0' }}>
+            <div style={{ padding: '4px 0 8px 0' }}>
               {tweets.slice(0, 5).map((t, i) => (
                 <div
                   key={i}
@@ -188,7 +185,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
             }
             key="articles"
           >
-            <div style={{ padding: '2px 0 6px 0' }}>
+            <div style={{ padding: '4px 0 8px 0' }}>
               {articles.slice(0, 5).map((a, i) => {
                 const linkUrl = a?.url && /^https?:\/\//i.test(a.url) ? a.url : null;
                 return (
@@ -263,7 +260,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
             }
             key="videos"
           >
-            <div style={{ padding: '2px 0 6px 0' }}>
+            <div style={{ padding: '4px 0 8px 0' }}>
               {videos.slice(0, 5).map((v, i) => {
                 const linkUrl = v?.url && /^https?:\/\//i.test(v.url) ? v.url : (v?.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : null);
                 return (
@@ -326,7 +323,6 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
           </Collapse.Panel>
         )}
       </Collapse>
-      </div>
     </section>
   );
 }
