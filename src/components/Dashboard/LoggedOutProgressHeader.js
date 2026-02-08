@@ -4,6 +4,7 @@ import {
   LoginOutlined,
   UserAddOutlined
 } from '@ant-design/icons';
+import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
 /**
  * LoggedOutProgressHeader Component
@@ -55,10 +56,11 @@ const LoggedOutProgressHeader = ({
       {/* Center: flexible space */}
       <div style={{ flex: '1 1 0', minWidth: 0 }} />
 
-      {/* Right: auth / save buttons — touch-friendly on mobile */}
+      {/* Right: theme toggle + auth / save buttons — touch-friendly on mobile */}
       <div className="logged-out-header-right" style={{ minWidth: 0, flex: '0 0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '8px' }}>
         {!user ? (
-          <Space size="small" wrap>
+          <Space size="small" wrap align="center">
+            <ThemeToggle />
             <Button
               type="text"
               icon={<LoginOutlined />}
@@ -67,6 +69,7 @@ const LoggedOutProgressHeader = ({
                 setShowAuthModal(true);
               }}
               style={{ minHeight: 44, borderRadius: 6 }}
+              data-testid="login-button"
             >
               Log In
             </Button>
@@ -78,6 +81,7 @@ const LoggedOutProgressHeader = ({
                 setShowAuthModal(true);
               }}
               style={{ borderRadius: 6, minHeight: 44 }}
+              data-testid="signup-button"
             >
               Sign Up Free
             </Button>
