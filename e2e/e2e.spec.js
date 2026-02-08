@@ -156,6 +156,13 @@ test.describe('E2E (mocked backend)', () => {
       await setupLoggedOut(page);
     });
 
+    test('login and signup buttons visible on home page initial flow', async ({ page }) => {
+      const loginBtn = page.getByTestId('login-button');
+      const signupBtn = page.getByTestId('signup-button');
+      await expect(loginBtn).toBeVisible({ timeout: 8000 });
+      await expect(signupBtn).toBeVisible({ timeout: 8000 });
+    });
+
     test('should display login form when clicking login', async ({ page }) => {
       const loginButton = page.locator('button:has-text("Log In"), button:has-text("Sign In"), text=/log in/i').first();
       const visible = await loginButton.isVisible({ timeout: 10000 }).catch(() => false);
