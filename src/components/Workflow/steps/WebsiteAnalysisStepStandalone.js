@@ -734,7 +734,7 @@ const WebsiteAnalysisStepStandalone = ({
           fontSize: responsive.fontSize.title
         }}>
           <GlobalOutlined style={{ marginRight: '8px', color: 'var(--color-text-secondary)' }} />
-          {systemVoice.analysis.title}
+          {systemVoice.header.step0Title}
         </Title>
       )}
 
