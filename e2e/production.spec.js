@@ -1,9 +1,16 @@
 /**
  * Production E2E Tests - Live automatemyblog.com
  * No mocks. Tests real backend. Run: npx playwright test --config=playwright.production.config.js
+ *
+ * Full flow with signup uses E2E_PRODUCTION_TEST_EMAIL (default: e2e-production-demo-{timestamp}@e2etest.com)
+ * and E2E_PRODUCTION_TEST_PASSWORD (default: E2eProductionTest123!) for registration.
  */
 
 const { test, expect } = require('@playwright/test');
+
+const E2E_TEST_EMAIL =
+  process.env.E2E_PRODUCTION_TEST_EMAIL || `e2e-production-demo-${Date.now()}@e2etest.com`;
+const E2E_TEST_PASSWORD = process.env.E2E_PRODUCTION_TEST_PASSWORD || 'E2eProductionTest123!';
 
 async function clearStorage(page) {
   await page.evaluate(() => {
@@ -246,29 +253,49 @@ test.describe('Production: Full Flow (extended)', () => {
       await page.waitForTimeout(2500);
     }
 
-    // Click Create post on first topic card, or Create Post / Generate post button
+    // If signup gate appears, complete registration with clear test email (e2e-production-demo-{timestamp}@e2etest.com)
+    const signupGate = page.locator('[data-testid="signup-gate-card"], text=/Claim your free|Register|Create account/i').first();
+    if (await signupGate.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await page.locator('text=Register').first().click().catch(() => {});
+      await page.waitForTimeout(500);
+      const firstNameInput = page.locator('input[placeholder*="First name" i], input[name="firstName"]').first();
+      if (await firstNameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
+        await firstNameInput.fill('E2E');
+        await page.locator('input[name="lastName"], input[placeholder*="Last name" i]').first().fill('Demo');
+        await page.locator('input[name="organizationName"], input[placeholder*="Organization" i], input[placeholder*="Company" i]').first().fill('E2E Production Test');
+        await page.locator('input[name="email"], input[type="email"]').first().fill(E2E_TEST_EMAIL);
+        await page.locator('input[name="password"], input[type="password"]').first().fill(E2E_TEST_PASSWORD);
+        await page.locator('button:has-text("Create account")').first().click();
+        await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 15000 }).catch(() => {});
+        await page.waitForTimeout(3000);
+      }
+    }
+
+    // Topics may need to be generated after signup; try again if needed
+    const generateTopicsBtn2 = page.locator('button:has-text("Generate post"), button:has-text("Generate topic")').first();
+    if (await generateTopicsBtn2.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await generateTopicsBtn2.click();
+      await page.waitForSelector('button:has-text("Generating")', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(2500);
+    }
+
+    // Click Create post on first topic card
     const createFromTopic = page.locator('[data-testid="create-post-from-topic-btn"], button:has-text("Create post"), button:has-text("Create Post")').first();
     const topicCard = page.locator('#posts .ant-card, [class*="card"]').filter({ hasText: /blog|post|topic|idea/i }).first();
-    if (await createFromTopic.isVisible({ timeout: 5000 }).catch(() => false)) {
+    if (await createFromTopic.isVisible({ timeout: 8000 }).catch(() => false)) {
       await createFromTopic.click();
-    } else if (await topicCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+    } else if (await topicCard.isVisible({ timeout: 5000 }).catch(() => false)) {
       await topicCard.locator('button').first().click();
     }
 
-    await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 60000 }).catch(() => {});
-    await page.waitForTimeout(3000);
+    await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 90000 }).catch(() => {});
+    await page.waitForTimeout(5000);
 
-    // Success: editor with content, or signup gate (logged-out), or topic cards (reached content step)
+    // Success: editor with blog content
     const editor = page.locator('.tiptap, [contenteditable="true"]').first();
-    const signupGate = page.locator('text=/Claim your free|Register|Sign up|Create account/i').first();
-    const topicCards = page.locator('#posts').locator('text=/topic|post idea|blog/i').first();
-
-    const hasEditor = await editor.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasContent = hasEditor && (await editor.textContent()).length > 50;
-    const hasSignupGate = await signupGate.isVisible({ timeout: 3000 }).catch(() => false);
-    const hasTopics = await topicCards.isVisible({ timeout: 2000 }).catch(() => false);
-
-    expect(hasContent || hasSignupGate || hasTopics).toBeTruthy();
+    await expect(editor).toBeVisible({ timeout: 15000 });
+    const content = await editor.textContent();
+    expect(content.length).toBeGreaterThan(50);
   });
 });
 

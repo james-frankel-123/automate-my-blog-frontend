@@ -97,4 +97,12 @@ Production E2E tests were run against the live site with no mocks. **5 of 8 test
 1. **Auth tests:** Done — Added `data-testid="login-button"` and `data-testid="signup-button"` to LoggedOutProgressHeader.
 2. **Theme toggle:** Done — Added data-testid and ThemeToggle in logged-out header from dashboard (or add `data-testid` and ensure it’s present on onboarding).
 3. **CI:** Done — Added `.github/workflows/production-e2e.yml` (daily at 6:00 UTC; `npm run test:e2e:production`).
-4. **Coverage:** Done — Added full-flow test (analyze → confirm → audience → topics → blog content generation) and error-state test. Logged-in tests require auth credentials.
+4. **Coverage:** Done — Added full-flow test including signup and blog content generation. See below.
+
+---
+
+## Full Flow Test (Signup + Content Generation)
+
+The full flow test walks the complete journey: analyze → confirm → audience → topics → **sign up** → **blog content generation**.
+
+**Test email:** `e2e-production-demo-{timestamp}@e2etest.com` (unique per run). Override with `E2E_PRODUCTION_TEST_EMAIL` and `E2E_PRODUCTION_TEST_PASSWORD` env vars if your backend restricts domains.
