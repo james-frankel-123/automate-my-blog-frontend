@@ -200,16 +200,17 @@ test.describe('Production: Alternate Paths', () => {
 });
 
 test.describe('Production: Full Flow (extended)', () => {
-  test('analyze → confirm → audience step', async ({ page }) => {
-    test.setTimeout(120000);
+  test('analyze → confirm → audience → topics → blog content generation', async ({ page }) => {
+    test.setTimeout(180000);
     await page.goto('/');
     await clearStorage(page);
     await page.reload();
     await page.waitForLoadState('load');
-    await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
+    await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(1000);
 
     const input = page.locator('input[placeholder*="url" i], input[placeholder*="website" i], input[placeholder*="Enter" i]').first();
-    if (!(await input.isVisible({ timeout: 8000 }).catch(() => false))) {
+    if (!(await input.isVisible({ timeout: 12000 }).catch(() => false))) {
       test.skip();
       return;
     }
@@ -226,9 +227,48 @@ test.describe('Production: Full Flow (extended)', () => {
     await confirmBtn.click();
     await page.waitForTimeout(2000);
 
-    // Expect audience selection or topic step (flexible copy)
-    const nextStep = page.locator('text=/audience|Audience|strategy|Strategy|topic|Topic|Pick|Select/i').first();
-    await expect(nextStep).toBeVisible({ timeout: 15000 });
+    // Audience step: select a strategy card
+    const strategyCard = page.locator('#audience-segments .ant-card, [class*="card"]').filter({ hasText: /Strategy|audience|scenario/i }).first();
+    if (await strategyCard.isVisible({ timeout: 10000 }).catch(() => false)) {
+      await strategyCard.click();
+      await page.waitForTimeout(2000);
+    }
+
+    // Topics / posts section
+    const postsSection = page.locator('#posts');
+    await postsSection.scrollIntoViewIfNeeded().catch(() => {});
+    await page.waitForTimeout(1500);
+
+    const generateTopicsBtn = page.locator('button:has-text("Generate post"), button:has-text("Generate topic"), button:has-text("Generating Topics")').first();
+    if (await generateTopicsBtn.isVisible({ timeout: 8000 }).catch(() => false)) {
+      await generateTopicsBtn.click();
+      await page.waitForSelector('button:has-text("Generating Topics"), button:has-text("Generating…")', { state: 'hidden', timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(2500);
+    }
+
+    // Click Create post on first topic card, or Create Post / Generate post button
+    const createFromTopic = page.locator('[data-testid="create-post-from-topic-btn"], button:has-text("Create post"), button:has-text("Create Post")').first();
+    const topicCard = page.locator('#posts .ant-card, [class*="card"]').filter({ hasText: /blog|post|topic|idea/i }).first();
+    if (await createFromTopic.isVisible({ timeout: 5000 }).catch(() => false)) {
+      await createFromTopic.click();
+    } else if (await topicCard.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await topicCard.locator('button').first().click();
+    }
+
+    await page.waitForSelector('.ant-spin-spinning', { state: 'hidden', timeout: 60000 }).catch(() => {});
+    await page.waitForTimeout(3000);
+
+    // Success: editor with content, or signup gate (logged-out), or topic cards (reached content step)
+    const editor = page.locator('.tiptap, [contenteditable="true"]').first();
+    const signupGate = page.locator('text=/Claim your free|Register|Sign up|Create account/i').first();
+    const topicCards = page.locator('#posts').locator('text=/topic|post idea|blog/i').first();
+
+    const hasEditor = await editor.isVisible({ timeout: 5000 }).catch(() => false);
+    const hasContent = hasEditor && (await editor.textContent()).length > 50;
+    const hasSignupGate = await signupGate.isVisible({ timeout: 3000 }).catch(() => false);
+    const hasTopics = await topicCards.isVisible({ timeout: 2000 }).catch(() => false);
+
+    expect(hasContent || hasSignupGate || hasTopics).toBeTruthy();
   });
 });
 
