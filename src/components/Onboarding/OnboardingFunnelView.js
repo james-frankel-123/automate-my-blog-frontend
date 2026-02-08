@@ -588,7 +588,7 @@ function OnboardingFunnelView() {
         data-testid="onboarding-funnel"
       >
       <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
-        {systemVoice.analysis?.title || 'Analyze your site'}
+        {systemVoice.header.step0Title}
       </Title>
 
       <section ref={(el) => (sectionRefs.current.websiteInput = el)}>
