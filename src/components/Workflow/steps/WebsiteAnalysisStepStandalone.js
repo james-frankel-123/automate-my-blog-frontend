@@ -110,6 +110,9 @@ const WebsiteAnalysisStepStandalone = ({
   const [technicalDetailsExpanded, setTechnicalDetailsExpanded] = useState(false);
   // Ref to latest analysis results for per-item stream updates (audience-complete, pitch-complete, scenario-image-complete)
   const latestAnalysisRef = useRef(analysisResults);
+  // Preserve results visibility: once we receive analysis results, keep showing them until Start Over
+  // (avoids parent or effects resetting analysisCompleted from hiding results after loading completes)
+  const resultsReceivedRef = useRef(false);
   // Last analysis error for informative empty state (Issue #185)
   const [lastAnalysisError, setLastAnalysisError] = useState(null);
 
@@ -275,6 +278,7 @@ const WebsiteAnalysisStepStandalone = ({
             setWebsiteUrl && setWebsiteUrl(cachedAnalysis.websiteUrl);
             setAnalysisResults && setAnalysisResults(cachedAnalysis);
             setAnalysisCompleted && setAnalysisCompleted(true);
+            resultsReceivedRef.current = true;
             
             // Update sticky header with cached business information
             updateStickyWorkflowStep && updateStickyWorkflowStep('websiteAnalysis', {
@@ -492,6 +496,7 @@ const WebsiteAnalysisStepStandalone = ({
         setAnalysisResults && setAnalysisResults(result.analysis);
         setWebSearchInsights && setWebSearchInsights(result.webSearchInsights);
         setAnalysisCompleted && setAnalysisCompleted(true);
+        resultsReceivedRef.current = true;
         setWebsiteUrl && setWebsiteUrl(validation.formattedUrl);
 
         // Track analysis completed
@@ -573,6 +578,7 @@ const WebsiteAnalysisStepStandalone = ({
     setWebsiteUrl && setWebsiteUrl('');
     setAnalysisResults && setAnalysisResults(null);
     setAnalysisCompleted && setAnalysisCompleted(false);
+    resultsReceivedRef.current = false;
     setWebSearchInsights && setWebSearchInsights({ researchQuality: 'basic' });
     setUrlOverrideMode(false);
     
@@ -1527,8 +1533,8 @@ const WebsiteAnalysisStepStandalone = ({
         {/* Show streaming UI when we have a narrative job (during and after API loading so streamed content persists) */}
         {(loading || analysisJobId) && renderAnalysisLoading()}
 
-        {/* Show analysis results only after user has run analysis (loading or completed), not initial placeholder state */}
-        {(analysisCompleted || loading) && analysisResults && renderAnalysisResults()}
+        {/* Show analysis results after run (preserve visibility once received until Start Over) */}
+        {analysisResults && (analysisCompleted || loading || resultsReceivedRef.current) && renderAnalysisResults()}
       </Card>
     </div>
   );
