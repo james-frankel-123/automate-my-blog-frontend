@@ -57,7 +57,7 @@ test.describe('Onboarding funnel (Issue #261)', () => {
     await expect(firstAudienceCard).toBeVisible({ timeout: 8000 });
     await firstAudienceCard.click();
 
-    await expect(page.getByText(/Choose a topic|Pick one for your article/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('heading', { name: 'Choose a topic' })).toBeVisible({ timeout: 10000 });
     const firstTopicCard = page.getByTestId('topic-card-0');
     await expect(firstTopicCard).toBeVisible({ timeout: 8000 });
     await firstTopicCard.click();
