@@ -106,6 +106,16 @@ describe('HTMLPreview', () => {
       expect(screen.getByText(/\[IMAGE:hero_image:description\]/)).toBeInTheDocument();
     });
 
+    it('renders hero image when backend streams [IMAGE:hero_image:...] without leading ! (normalization)', () => {
+      const markdown = 'Intro.\n\n[IMAGE:hero_image:Professional photograph of a team.]\n\nMore text.';
+      const heroUrl = 'https://example.com/hero.jpg';
+      render(<HTMLPreview content={markdown} forceMarkdown heroImageUrl={heroUrl} />);
+      const img = screen.getByRole('img', { name: /IMAGE:hero_image/i });
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', heroUrl);
+      expect(img).toHaveClass('hero-image');
+    });
+
     it('replaces article placeholder token with loading UI when relatedArticles missing', () => {
       const content = 'Intro.\n\n__ARTICLE_PLACEHOLDER_0__\n\nMore.';
       render(<HTMLPreview content={content} forceMarkdown relatedArticles={[]} />);
