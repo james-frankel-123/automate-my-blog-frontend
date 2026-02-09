@@ -8,10 +8,30 @@ const GITHUB_API_BASE = 'https://api.github.com/repos';
 const REPO = process.env.REACT_APP_GITHUB_REPO || 'Automate-My-Blog/automate-my-blog-frontend';
 const REPO_OWNER = REPO.split('/')[0];
 
+function deployedAgo(buildTimeSec, nowSec) {
+  if (!buildTimeSec) return null;
+  const diffSec = Math.max(0, (nowSec || Math.floor(Date.now() / 1000)) - buildTimeSec);
+  if (diffSec < 60) return 'deployed just now';
+  if (diffSec < 3600) {
+    const m = Math.floor(diffSec / 60);
+    return `deployed ${m} minute${m === 1 ? '' : 's'} ago`;
+  }
+  const h = Math.floor(diffSec / 3600);
+  return `deployed ${h} hour${h === 1 ? '' : 's'} ago`;
+}
+
 const StagingPromoteBar = () => {
   const isStaging = process.env.REACT_APP_STAGING === 'true';
   const [prUrl, setPrUrl] = useState(null);
   const [loading, setLoading] = useState(true);
+  const buildTimeSec = process.env.REACT_APP_BUILD_TIME ? parseInt(process.env.REACT_APP_BUILD_TIME, 10) : null;
+  const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+
+  useEffect(() => {
+    if (!buildTimeSec) return;
+    const id = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 60_000);
+    return () => clearInterval(id);
+  }, [buildTimeSec]);
 
   // Reserve space at bottom so content isn't hidden behind the bar
   useEffect(() => {
@@ -51,7 +71,9 @@ const StagingPromoteBar = () => {
 
   const promoteUrl =
     prUrl ||
-    `https://github.com/${REPO}/actions/workflows/promote-staging-to-production.yml`;
+    `https://github.com/${REPO}/compare/main...staging`;
+  const commitSha = process.env.REACT_APP_GIT_COMMIT_SHA || 'dev';
+  const shortSha = commitSha === 'dev' ? 'dev' : commitSha.slice(0, 7);
 
   return (
     <div
@@ -75,6 +97,17 @@ const StagingPromoteBar = () => {
     >
       <span style={{ fontWeight: 600 }}>Staging</span>
       <span style={{ opacity: 0.9 }}>|</span>
+      <span style={{ fontFamily: 'monospace', fontSize: 12 }} title={commitSha}>{shortSha}</span>
+      <span style={{ opacity: 0.9 }}>|</span>
+      {(() => {
+        const ago = deployedAgo(buildTimeSec, now);
+        return ago ? (
+          <>
+            <span style={{ opacity: 0.9 }}>{ago}</span>
+            <span style={{ opacity: 0.9 }}>|</span>
+          </>
+        ) : null;
+      })()}
       {loading ? (
         <span>Loading…</span>
       ) : (
@@ -88,7 +121,7 @@ const StagingPromoteBar = () => {
             textDecoration: 'underline',
           }}
         >
-          {prUrl ? 'Promote to production →' : 'Open promote workflow'}
+          {prUrl ? 'Promote to production →' : 'Open staging → main PR'}
         </a>
       )}
     </div>
