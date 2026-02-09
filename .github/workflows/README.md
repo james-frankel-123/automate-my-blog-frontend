@@ -109,8 +109,6 @@ The **staging** branch is included in deploy, E2E, CI, lint, and security workfl
 - Pushes to `staging` and PRs targeting `staging` run **Test and Build** and **E2E Tests** (and get preview deployments for PRs).
 - **Promote staging to production** (manual workflow) creates a PR from `staging` → `main`; merging that PR deploys to production and respects branch protection on `main`.
 
-See **docs/VERCEL_STAGING_SETUP.md** for Vercel staging configuration.
-
 ## Blocking Deployment
 
 E2E is enforced by **branch protection**, not by a job inside `deploy.yml` (avoids running E2E twice).
