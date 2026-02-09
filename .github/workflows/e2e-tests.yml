@@ -128,7 +128,7 @@ jobs:
           path: e2e-results-artifact
 
       - name: Comment E2E failure explanation on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_TOKEN_FOR_GITHUB_ACTIONS }}
         with:
