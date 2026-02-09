@@ -111,3 +111,29 @@ jobs:
           name: e2e-results
           path: e2e-results.json
           retention-days: 30
+
+  comment-on-e2e-failure:
+    name: Comment on PR when E2E fails
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    needs: e2e-tests
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Comment E2E failure explanation on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## E2E tests failed
+
+              **Why this often happens:**
+              - **Overlay blocking clicks** — In CI, the webpack dev server error overlay can appear and intercept pointer events. The E2E suite removes it via \`installOverlayRemover\` / \`removeOverlay\`; flakiness may mean the overlay reappeared.
+              - **Timing / animations** — Typewriter or other UI animations may not finish within timeouts in CI; tests that assert on specific copy may need to assert on stable elements (e.g. workflow start screen) instead.
+              - **Environment** — E2E runs with \`REACT_APP_GIT_COMMIT_SHA=dev\` and \`REACT_APP_STREAMING_ENABLED=false\` via \`npm run start:e2e\`.
+
+              **What to do:** Check the **playwright-report** and **test-screenshots** artifacts from this run for the failing test and screenshot. Re-run the workflow if the failure looks flaky.`
+            });
