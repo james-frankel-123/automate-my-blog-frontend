@@ -742,6 +742,9 @@ const DashboardLayout = ({
     );
   };
 
+  /** When true, LoggedOutProgressHeader is rendered; content area and FABs must use padding/position to sit below it. */
+  const showLoggedOutProgressHeader = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode);
+
   return (
     <>
       {/* CSS Keyframes for smooth slide-in animations */}
@@ -757,7 +760,7 @@ const DashboardLayout = ({
       `}</style>
       
       {/* Progress Header for Logged-Out Users and New Registrations */}
-      {(!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? (
+      {showLoggedOutProgressHeader ? (
         <LoggedOutProgressHeader
           currentStep={currentStep}
           completedSteps={completedSteps}
@@ -990,28 +993,27 @@ const DashboardLayout = ({
       )}
 
 
-      {/* Content area - always show. When fixed header is visible, use CSS class for responsive top offset so hero is never hidden. */}
+      {/* Content area - always show. When LoggedOutProgressHeader is present, use CSS class so hero sits below it. */}
         {(() => {
-          const showFixedHeader = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode);
           return (
         <div
-          className={showFixedHeader ? 'dashboard-content-below-fixed-header' : undefined}
+          className={showLoggedOutProgressHeader ? 'dashboard-content-below-fixed-header' : undefined}
           style={{
             padding: isMobile ? 'var(--space-4) var(--space-4) calc(80px + env(safe-area-inset-bottom, 0px)) var(--space-4)' : 'var(--space-6)',
             background: 'var(--color-gray-50)',
             overflow: 'auto',
-            ...(showFixedHeader ? {} : { paddingTop: '24px' }),
+            ...(showLoggedOutProgressHeader ? {} : { paddingTop: '24px' }),
             // So ThinkingPanel sticks above mobile bottom nav when present
             '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
           }}
         >
-          {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90); below fixed header when header is visible (mobile + desktop) */}
+          {/* Floating Action Buttons - below LoggedOutProgressHeader when it is visible (mobile + desktop) */}
           {user && (
           <div
-            className={showFixedHeader ? 'dashboard-fabs-below-fixed-header' : undefined}
+            className={showLoggedOutProgressHeader ? 'dashboard-fabs-below-fixed-header' : undefined}
             style={{
             position: 'fixed',
-            top: showFixedHeader
+            top: showLoggedOutProgressHeader
               ? (isMobile ? 'calc(56px + env(safe-area-inset-top, 0px) + 12px)' : 'calc(88px + env(safe-area-inset-top, 0px) + 12px)')
               : (isMobile ? '16px' : '29px'),
             right: isMobile ? '12px' : '29px',
