@@ -197,8 +197,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
   return (
     <div>
-      
-      <div style={{ padding: 'var(--space-6)' }}>
+      <div className="dashboard-tab-content" style={{ padding: 'var(--space-6)' }}>
         {/* Unified Header - Shows for both logged-out workflow and logged-in users */}
         <UnifiedWorkflowHeader
           user={user}
