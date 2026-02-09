@@ -10,6 +10,7 @@ import { analysisAPI, topicAPI } from '../../services/workflowAPI';
 import autoBlogAPI from '../../services/api';
 import workflowUtils from '../../utils/workflowUtils';
 import { systemVoice } from '../../copy/systemVoice';
+import UnifiedWorkflowHeader from '../Dashboard/UnifiedWorkflowHeader';
 import WebsiteInputSection from './WebsiteInputSection';
 import StreamingNarration from './StreamingNarration';
 import CardCarousel from './CardCarousel';
@@ -581,15 +582,18 @@ function OnboardingFunnelView() {
       <div
         style={{
           padding: '24px 16px',
-          paddingTop: user ? 24 : 88,
+          paddingTop: user ? 24 : 120,
           maxWidth: 800,
           margin: '0 auto',
         }}
         data-testid="onboarding-funnel"
       >
-      <Title level={2} style={{ textAlign: 'center', marginBottom: 24 }}>
-        {systemVoice.analysis?.title || 'Analyze your site'}
-      </Title>
+      <UnifiedWorkflowHeader
+        user={user}
+        currentStep={0}
+        enableSequentialAnimation={true}
+        inputIsEditing={true}
+      />
 
       <section ref={(el) => (sectionRefs.current.websiteInput = el)}>
         <WebsiteInputSection

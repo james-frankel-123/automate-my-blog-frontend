@@ -132,6 +132,10 @@ const markdownToHTML = (markdown, options = {}) => {
   // Italic (non-greedy)
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
 
+  // Normalize hero placeholder when backend streams [IMAGE:hero_image:...] without leading !
+  // (Frontend expects markdown image syntax ![IMAGE:hero_image:...]; without ! no placeholder/image is shown.)
+  html = html.replace(/(?<!!)\[(IMAGE:hero_image:[^\]]*)\](?!\()/gim, '![$1]');
+
   // Images ![alt](url) — before links so ![...](...) is not treated as link; placeholders get span (or hero sentinel if URL provided)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, (_, alt, url) => {
     const u = url.trim();
@@ -256,7 +260,7 @@ function getTweetPlaceholderHtml(index, relatedTweets = []) {
       '<div class="markdown-tweet-card">' +
       '<div class="markdown-tweet-card-header">' +
       '<span class="markdown-tweet-card-avatar" aria-hidden="true">𝕏</span>' +
-      '<span class="markdown-tweet-card-meta">Post</span>' +
+      '<span class="markdown-tweet-card-badge">Post</span>' +
       '</div>' +
       '<div class="markdown-tweet-card-body">' + escaped(text) + '</div>' +
       (linkWrap ? '<div class="markdown-tweet-card-footer">' + linkWrap + '</div>' : '') +
@@ -288,14 +292,18 @@ function getArticlePlaceholderHtml(index, relatedArticles = []) {
     const source = safeTitle(article.sourceName);
     const meta = [source, article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''].filter(Boolean).join(' · ');
     const img = article.urlToImage && /^https?:\/\//i.test(article.urlToImage) ? escapeAttr(article.urlToImage) : '';
+    const descLen = 120;
+    const desc = article.description ? escapeAttr(String(article.description).slice(0, descLen)) + (String(article.description).length > descLen ? '…' : '') : '';
+    const thumbBlock = img
+      ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-thumb-wrap"><img src="${img}" alt="" class="markdown-article-card-thumb" loading="lazy" /></a>`
+      : '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true">📰</span></span>';
     return (
       '<div class="markdown-article-card">' +
-      (img ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-link">` +
-        `<img src="${img}" alt="" class="markdown-article-card-thumb" />` + '</a>' : '') +
+      thumbBlock +
       '<div class="markdown-article-card-body">' +
       `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-title">${title}</a>` +
       (meta ? `<span class="markdown-article-card-meta">${escapeAttr(meta)}</span>` : '') +
-      (article.description ? `<span class="markdown-article-card-desc">${escapeAttr(String(article.description).slice(0, 200))}${String(article.description).length > 200 ? '…' : ''}</span>` : '') +
+      (desc ? `<span class="markdown-article-card-desc">${desc}</span>` : '') +
       '</div></div>'
     );
   }
@@ -329,9 +337,10 @@ function getVideoPlaceholderHtml(index, relatedVideos = []) {
     const thumbImg = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl)
       ? `<img src="${escapeAttr(video.thumbnailUrl)}" alt="" class="markdown-video-card-thumb" loading="lazy" />`
       : '<span class="markdown-video-card-thumb-placeholder" aria-hidden="true">▶</span>';
+    const playIcon = '<span class="markdown-video-card-play" aria-hidden="true">▶</span>';
     const thumbBlock = safeUrl
-      ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-link">${thumbImg}</a>`
-      : `<span class="markdown-video-card-link">${thumbImg}</span>`;
+      ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-thumb-wrap">${thumbImg}${playIcon}</a>`
+      : `<span class="markdown-video-card-thumb-wrap">${thumbImg}${playIcon}</span>`;
     return (
       '<div class="markdown-video-card">' +
       thumbBlock +
@@ -429,8 +438,8 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     ...style
   };
 
-  // Hero image: extract alt from first ![IMAGE:hero_image:...] and split content to inject HeroImage with animated placeholder
-  const heroAltMatch = content.match(/!\[(IMAGE:hero_image:[^\]]*)\]/);
+  // Hero image: extract alt from first ![IMAGE:hero_image:...] or [IMAGE:hero_image:...] and split content to inject HeroImage with animated placeholder
+  const heroAltMatch = content.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
   const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
   const useHeroComponent = Boolean(heroImageUrl && htmlContent.includes(HERO_IMAGE_SENTINEL));
   const contentParts = useHeroComponent ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
@@ -717,64 +726,93 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           background-color: var(--color-primary-50) !important;
         }
 
-        /* Markdown tweet card (preview: looks like a tweet) */
+        /* Related content badges – visually differentiate article / video / tweet */
+        div :global(.markdown-related-badge) {
+          position: absolute;
+          top: 4px;
+          right: 6px;
+          font-size: 9px;
+          font-weight: 600;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          padding: 2px 5px;
+          border-radius: 4px;
+          z-index: 1;
+        }
+        div :global(.markdown-related-badge-article) {
+          background: rgba(59, 130, 246, 0.12);
+          color: #2563eb;
+          border: 1px solid rgba(59, 130, 246, 0.25);
+        }
+        div :global(.markdown-related-badge-video) {
+          background: rgba(220, 38, 38, 0.1);
+          color: #dc2626;
+          border: 1px solid rgba(220, 38, 38, 0.2);
+        }
+
+        /* Markdown tweet card – compact, distinct X/Post style with dark accent */
         div :global(.markdown-tweet-card) {
-          margin: ${paragraphSpacing}px 0;
-          padding: 14px 16px;
-          max-width: 520px;
-          border: 1px solid var(--color-gray-200);
-          border-radius: 16px;
-          background: var(--color-background-body);
+          position: relative;
+          margin: 8px 0;
+          padding: 10px 12px;
+          max-width: 400px;
+          border-left: 3px solid #1a1a1a;
+          border-radius: 8px;
+          background: var(--color-background-container);
           box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
           transition: box-shadow 0.2s ease;
         }
 
         div :global(.markdown-tweet-card:hover) {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
         }
 
         div :global(.markdown-tweet-card-header) {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 10px;
+          gap: 8px;
+          margin-bottom: 6px;
         }
 
         div :global(.markdown-tweet-card-avatar) {
-          width: 40px;
-          height: 40px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           background: var(--color-text-primary);
           color: var(--color-background-body);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 18px;
+          font-size: 12px;
           flex-shrink: 0;
         }
 
-        div :global(.markdown-tweet-card-meta) {
-          font-size: 14px;
+        div :global(.markdown-tweet-card-badge) {
+          font-size: 11px;
           font-weight: 600;
-          color: var(--color-text-primary);
+          color: var(--color-text-secondary);
+          text-transform: uppercase;
+          letter-spacing: 0.03em;
         }
 
         div :global(.markdown-tweet-card-body) {
-          font-size: 15px;
+          font-size: 13px;
           line-height: 1.4;
           color: var(--color-text-primary);
           white-space: pre-wrap;
           word-break: break-word;
+          max-height: 4.2em;
+          overflow: hidden;
         }
 
         div :global(.markdown-tweet-card-footer) {
-          margin-top: 12px;
-          padding-top: 10px;
-          border-top: 1px solid var(--color-gray-100);
+          margin-top: 6px;
+          padding-top: 6px;
+          border-top: 1px solid var(--color-border-base);
         }
 
         div :global(.markdown-tweet-card-link) {
-          font-size: 13px;
+          font-size: 11px;
           color: var(--color-primary);
           text-decoration: none;
         }
@@ -787,23 +825,24 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         div :global(.markdown-tweet-placeholder) {
           display: flex;
           align-items: center;
-          gap: 10px;
-          min-height: 72px;
-          margin: ${paragraphSpacing}px 0;
-          padding: 14px 16px;
-          border-radius: 16px;
-          border: 1px dashed var(--color-gray-300);
+          gap: 8px;
+          min-height: 52px;
+          margin: 8px 0;
+          padding: 10px 12px;
+          border-radius: 8px;
+          border: 1px dashed var(--color-border-base);
+          border-left: 3px solid #1a1a1a;
           background: var(--color-background-alt);
           color: var(--color-text-tertiary);
         }
 
         div :global(.markdown-tweet-placeholder-icon) {
-          font-size: 20px;
+          font-size: 16px;
           opacity: 0.7;
         }
 
         div :global(.markdown-tweet-placeholder-text) {
-          font-size: 13px;
+          font-size: 12px;
           font-style: italic;
         }
 
@@ -830,30 +869,31 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           100% { background-position: calc(200px + 100%) 0; }
         }
 
-        /* Video placeholder: different look – pulse + gradient (YouTube-style) */
+        /* Video placeholder: compact, YouTube-style red accent */
         div :global(.markdown-video-placeholder) {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 10px;
-          min-height: 100px;
-          margin: ${paragraphSpacing}px 0;
-          padding: 16px 20px;
-          border-radius: 8px;
-          border: 1px dashed var(--color-gray-300);
-          background: linear-gradient(135deg, rgba(255, 0, 0, 0.04) 0%, rgba(200, 50, 50, 0.06) 100%);
+          gap: 8px;
+          min-height: 64px;
+          margin: 8px 0;
+          padding: 10px 12px;
+          border-radius: 6px;
+          border: 1px dashed var(--color-border-base);
+          border-left: 3px solid #dc2626;
+          background: linear-gradient(135deg, rgba(220, 38, 38, 0.04) 0%, rgba(200, 50, 50, 0.06) 100%);
           animation: videoPlaceholderPulse 1.8s ease-in-out infinite;
           color: var(--color-text-tertiary);
         }
 
         div :global(.markdown-video-placeholder-icon) {
-          font-size: 24px;
+          font-size: 18px;
           opacity: 0.7;
           animation: videoPlaceholderIconPulse 1.2s ease-in-out infinite;
         }
 
         div :global(.markdown-video-placeholder-text) {
-          font-size: 13px;
+          font-size: 12px;
           font-style: italic;
         }
 
@@ -867,84 +907,119 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.08); }
         }
 
-        /* Video card (loaded): thumbnail left, text right – same layout as article cards */
+        /* Section heading + first video card spacing */
+        div :global(h2 + .markdown-video-card) {
+          margin-top: 6px;
+        }
+
+        /* Video card: clear separation, larger thumb, play overlay */
         div :global(.markdown-video-card) {
+          position: relative;
           display: flex;
-          align-items: flex-start;
+          align-items: stretch;
           gap: 14px;
-          margin: ${paragraphSpacing}px 0;
-          padding: 12px 14px;
+          margin: 14px 0;
+          padding: 0;
           border-radius: 10px;
-          border: 1px solid var(--color-gray-200);
+          border: 1px solid var(--color-border-base);
           background: var(--color-background-container);
-          transition: box-shadow 0.2s ease;
-          flex-wrap: wrap;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+          overflow: hidden;
         }
 
         div :global(.markdown-video-card:hover) {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border-color: var(--color-primary-200);
         }
 
-        div :global(.markdown-video-card-link) {
+        div :global(.markdown-video-card-thumb-wrap) {
           flex-shrink: 0;
+          position: relative;
           display: block;
           line-height: 0;
           text-decoration: none;
+          width: 160px;
+          min-height: 90px;
         }
 
         div :global(.markdown-video-card-thumb) {
-          width: 72px;
-          height: 52px;
-          max-width: 72px;
-          max-height: 52px;
+          width: 160px;
+          height: 90px;
+          max-width: 160px;
+          max-height: 90px;
           object-fit: cover;
-          border-radius: 8px;
           display: block;
+          vertical-align: top;
+        }
+
+        div :global(.markdown-video-card-play) {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.7);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          padding-left: 3px;
+          pointer-events: none;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        div :global(.markdown-video-card-thumb-wrap:hover) .markdown-video-card-play {
+          background: rgba(99, 102, 241, 0.9);
+          transform: translate(-50%, -50%) scale(1.08);
         }
 
         div :global(.markdown-video-card-thumb-placeholder) {
-          width: 72px;
-          height: 52px;
-          border-radius: 8px;
-          background: var(--color-gray-100);
+          width: 160px;
+          height: 90px;
+          background: var(--color-background-alt);
           color: var(--color-text-tertiary);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 18px;
+          font-size: 24px;
         }
 
         div :global(.markdown-video-card-body) {
           flex: 1;
           min-width: 0;
-          min-height: 52px;
+          padding: 12px 14px 12px 0;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 6px;
           justify-content: center;
         }
 
         div :global(.markdown-video-card-title) {
           font-weight: 600;
-          font-size: 13px;
-          color: var(--color-primary);
-          text-decoration: none;
-          display: block;
+          font-size: 14px;
           line-height: 1.35;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          color: var(--color-text-primary);
+          text-decoration: none;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          transition: color 0.2s ease;
         }
 
         div :global(.markdown-video-card-title:hover) {
+          color: var(--color-primary);
           text-decoration: underline;
         }
 
         div :global(.markdown-video-card-meta) {
           font-size: 12px;
-          color: var(--color-text-tertiary);
+          color: var(--color-text-secondary);
           line-height: 1.4;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          display: block;
         }
       `}</style>
         </>
@@ -975,28 +1050,29 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           100% { background-position: -200% 0; }
         }
 
-        /* Article placeholder: loading state (distinct from hero/video) */
+        /* Article placeholder: compact, blue accent */
         div :global(.markdown-article-placeholder) {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 10px;
-          min-height: 88px;
-          margin: ${paragraphSpacing}px 0;
-          padding: 16px 20px;
-          border-radius: 8px;
-          border: 1px dashed var(--color-gray-300);
+          gap: 8px;
+          min-height: 64px;
+          margin: 8px 0;
+          padding: 10px 12px;
+          border-radius: 6px;
+          border: 1px dashed var(--color-border-base);
+          border-left: 3px solid #2563eb;
           background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.08) 100%);
           animation: articlePlaceholderPulse 1.8s ease-in-out infinite;
           color: var(--color-text-tertiary);
         }
         div :global(.markdown-article-placeholder-icon) {
-          font-size: 22px;
+          font-size: 18px;
           opacity: 0.8;
           animation: articlePlaceholderIconPulse 1.2s ease-in-out infinite;
         }
         div :global(.markdown-article-placeholder-text) {
-          font-size: 13px;
+          font-size: 12px;
           font-style: italic;
         }
         @keyframes articlePlaceholderPulse {
@@ -1008,65 +1084,95 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.06); }
         }
 
-        /* Article card (loaded): image left, text right, compact and wrapped */
+        /* Section heading + first article card spacing */
+        div :global(h2 + .markdown-article-card) {
+          margin-top: 6px;
+        }
+
+        /* Article card: clear separation, larger thumb, aligned with video cards */
         div :global(.markdown-article-card) {
+          position: relative;
           display: flex;
-          align-items: flex-start;
+          align-items: stretch;
           gap: 14px;
-          margin: ${paragraphSpacing}px 0;
-          padding: 12px 14px;
+          margin: 14px 0;
+          padding: 0;
           border-radius: 10px;
-          border: 1px solid var(--color-gray-200);
+          border: 1px solid var(--color-border-base);
           background: var(--color-background-container);
-          transition: box-shadow 0.2s ease;
-          flex-wrap: wrap;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+          overflow: hidden;
         }
         div :global(.markdown-article-card:hover) {
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border-color: var(--color-primary-200);
         }
-        div :global(.markdown-article-card-link) {
+        div :global(.markdown-article-card-thumb-wrap) {
           flex-shrink: 0;
           display: block;
           line-height: 0;
+          text-decoration: none;
+          width: 160px;
+          min-height: 90px;
         }
         div :global(.markdown-article-card-thumb) {
-          width: 72px;
-          height: 52px;
-          max-width: 72px;
-          max-height: 52px;
+          width: 160px;
+          height: 90px;
+          max-width: 160px;
+          max-height: 90px;
           object-fit: cover;
-          border-radius: 8px;
           display: block;
+          vertical-align: top;
+        }
+        div :global(.markdown-article-card-thumb-placeholder) {
+          width: 160px;
+          height: 90px;
+          background: var(--color-background-alt);
+          color: var(--color-text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
         }
         div :global(.markdown-article-card-body) {
           flex: 1;
           min-width: 0;
-          min-height: 52px;
+          padding: 12px 14px 12px 0;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 6px;
           justify-content: center;
         }
         div :global(.markdown-article-card-title) {
           font-weight: 600;
-          font-size: 13px;
-          color: var(--color-primary);
-          text-decoration: none;
-          display: block;
+          font-size: 14px;
           line-height: 1.35;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          color: var(--color-text-primary);
+          text-decoration: none;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          transition: color 0.2s ease;
         }
         div :global(.markdown-article-card-title:hover) {
+          color: var(--color-primary);
           text-decoration: underline;
         }
-        div :global(.markdown-article-card-meta),
+        div :global(.markdown-article-card-meta) {
+          font-size: 12px;
+          color: var(--color-text-secondary);
+          line-height: 1.4;
+          display: block;
+        }
         div :global(.markdown-article-card-desc) {
           font-size: 12px;
-          color: var(--color-text-tertiary);
+          color: var(--color-text-secondary);
           line-height: 1.4;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
         }
       `}</style>
     </div>

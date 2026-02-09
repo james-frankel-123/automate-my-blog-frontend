@@ -35,9 +35,7 @@ describe('HTMLPreview', () => {
       render(<HTMLPreview content={runOn} forceMarkdown />);
       // Should not be a single h1 containing the long paragraph (heading cap prevents that)
       const h1 = screen.queryByRole('heading', { level: 1 });
-      if (h1) {
-        expect(h1.textContent.length).toBeLessThanOrEqual(250);
-      }
+      expect(h1?.textContent?.length ?? 0).toBeLessThanOrEqual(250);
       expect(screen.getByText(/streaming APIs are pivotal/)).toBeInTheDocument();
     });
 
@@ -106,6 +104,16 @@ describe('HTMLPreview', () => {
       const markdown = 'Text ![IMAGE:hero_image:description] end.';
       render(<HTMLPreview content={markdown} forceMarkdown />);
       expect(screen.getByText(/\[IMAGE:hero_image:description\]/)).toBeInTheDocument();
+    });
+
+    it('renders hero image when backend streams [IMAGE:hero_image:...] without leading ! (normalization)', () => {
+      const markdown = 'Intro.\n\n[IMAGE:hero_image:Professional photograph of a team.]\n\nMore text.';
+      const heroUrl = 'https://example.com/hero.jpg';
+      render(<HTMLPreview content={markdown} forceMarkdown heroImageUrl={heroUrl} />);
+      const img = screen.getByRole('img', { name: /IMAGE:hero_image/i });
+      expect(img).toBeInTheDocument();
+      expect(img).toHaveAttribute('src', heroUrl);
+      expect(img).toHaveClass('hero-image');
     });
 
     it('replaces article placeholder token with loading UI when relatedArticles missing', () => {

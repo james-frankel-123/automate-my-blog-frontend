@@ -74,12 +74,18 @@ export const systemVoice = {
       "Gathering a sense of who you're talking to…",
       "Synthesizing…",
     ],
-    // 1:1 with API steps (analyze-website, generate-audiences, generate-pitches, generate-audience-images)
+    // Detailed analysis steps for ChecklistProgress component
     steps: [
-      "Reading your pages…",
-      "Understanding who you're for…",
-      "Shaping conversion angles…",
-      "Adding audience visuals…",
+      "Fetching your website content",
+      "Researching your brand & competitors",
+      "Researching keywords & SEO",
+      "Analyzing business from content",
+      "Mapping customer psychology",
+      "Checking existing audiences",
+      "Identifying audience opportunities",
+      "Creating customer scenarios",
+      "Calculating revenue projections",
+      "Generating conversion pitches",
     ],
     defaultProgress: "Reading your site and building your profile. I'll have this ready in about a minute.",
     loadingTitle: "Reading your site…",

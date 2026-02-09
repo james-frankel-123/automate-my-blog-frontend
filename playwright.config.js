@@ -53,9 +53,9 @@ module.exports = defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
+  /* Run your local dev server before starting the tests (start:e2e disables RebaseReminder and streaming) */
   webServer: {
-    command: 'npm start',
+    command: 'npm run start:e2e',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
@@ -63,9 +63,7 @@ module.exports = defineConfig({
     stderr: 'pipe',
     env: {
       CI: process.env.CI || 'false',
-      BROWSER: 'none', // Don't open browser in CI
-      // E2E mocks return 404 for stream endpoints; disable streaming so app uses polling immediately
-      REACT_APP_STREAMING_ENABLED: 'false',
+      BROWSER: 'none',
     },
   },
 });

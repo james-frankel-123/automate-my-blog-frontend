@@ -15,6 +15,7 @@ import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 import { NarrativeAnalysisDisplay } from '../../Dashboard/NarrativeAnalysisDisplay';
 import AnalysisSectionNav from '../../Dashboard/AnalysisSectionNav';
 import ThinkingPanel from '../../shared/ThinkingPanel';
+import ChecklistProgress from '../../shared/ChecklistProgress';
 import AnalysisEmptyState from '../../EmptyStates/AnalysisEmptyState';
 
 const { Title, Text, Paragraph } = Typography;
@@ -733,7 +734,7 @@ const WebsiteAnalysisStepStandalone = ({
           fontSize: responsive.fontSize.title
         }}>
           <GlobalOutlined style={{ marginRight: '8px', color: 'var(--color-text-secondary)' }} />
-          {systemVoice.analysis.title}
+          {systemVoice.header.step0Title}
         </Title>
       )}
 
@@ -840,24 +841,18 @@ const WebsiteAnalysisStepStandalone = ({
               We found: <Text strong>{analysisResults.scrapePreview.title}</Text>
             </Paragraph>
           )}
-          {analysisProgress && (
-            <div style={{ margin: '0 auto 16px', maxWidth: '420px' }}>
-              <ThinkingPanel
-                isActive
-                currentStep={analysisProgress.currentStep || currentScanningMessage}
-                progress={analysisProgress.progress}
-                thoughts={analysisThoughts}
-                estimatedTimeRemaining={analysisProgress.estimatedTimeRemaining}
-                phase={analysisProgress.phase}
-                detail={analysisProgress.detail}
-                workingForYouLabel={systemVoice.analysis.workingForYou}
-                progressPreamble={systemVoice.analysis.progressPreamble}
-                progressLabel={systemVoice.analysis.progressLabel}
-                fallbackStep={currentScanningMessage}
-                dataTestId="website-analysis-progress"
-              />
-            </div>
-          )}
+        {analysisProgress && (
+          <div style={{ margin: '0 auto 16px', maxWidth: '500px' }}>
+            <ChecklistProgress
+              steps={systemVoice.analysis.steps}
+              currentStep={analysisProgress.currentStep || currentScanningMessage}
+              phase={analysisProgress.phase}
+              progress={analysisProgress.progress}
+              estimatedTimeRemaining={analysisProgress.estimatedTimeRemaining}
+              dataTestId="website-analysis-progress"
+            />
+          </div>
+        )}
         </div>
         <div style={{ marginTop: '16px', textAlign: 'left', maxWidth: '360px', marginLeft: 'auto', marginRight: 'auto' }}>
           <div style={{ height: '12px', background: 'var(--color-gray-100)', borderRadius: '4px', marginBottom: '8px', width: '75%' }} />
@@ -1147,6 +1142,25 @@ const WebsiteAnalysisStepStandalone = ({
             </Space>
           )}
         </div>
+
+        {/* Web Search Research Quality Indicator */}
+        {webSearchInsights?.researchQuality === 'basic' && (
+          <div style={{
+            padding: '16px',
+            backgroundColor: 'var(--color-background-container)',
+            border: '1px solid var(--color-border-base)',
+            borderRadius: 'var(--radius-lg)',
+            marginBottom: '20px'
+          }}>
+            <Text strong style={{ color: 'var(--color-text-secondary)', fontSize: '14px', marginBottom: '8px', display: 'block' }}>
+              📊 Standard Analysis
+            </Text>
+            <div style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>
+              Analysis based on website content. Upgrade for enhanced research with brand guidelines, competitor analysis, and real-time keyword data.
+            </div>
+          </div>
+        )}
+
 
         {/* Business Overview Cards — show section with data or informative empty state (Issue #185) */}
         <Row gutter={responsive.gutter}>
