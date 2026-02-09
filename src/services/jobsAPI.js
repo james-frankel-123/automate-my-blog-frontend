@@ -64,8 +64,15 @@ class JobsAPI {
     return headers;
   }
 
-  async _request(method, path, body = null) {
+  /**
+   * @param {string} method
+   * @param {string} path
+   * @param {Object|null} body
+   * @param {{ timeoutMs?: number }} [opts] - timeoutMs: abort fetch after this many ms (default none). Use for job create to avoid hanging if backend is slow/cold.
+   */
+  async _request(method, path, body = null, opts = {}) {
     const url = `${this.baseURL}${path}`;
+    const { timeoutMs } = opts;
     const options = {
       method,
       headers: this._getHeaders(),
@@ -73,7 +80,23 @@ class JobsAPI {
     if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
       options.body = JSON.stringify(body);
     }
-    const response = await fetch(url, options);
+    let controller;
+    if (timeoutMs > 0) {
+      controller = new AbortController();
+      options.signal = controller.signal;
+      setTimeout(() => controller.abort(), timeoutMs);
+    }
+    let response;
+    try {
+      response = await fetch(url, options);
+    } catch (err) {
+      if (err.name === 'AbortError') {
+        const timeoutErr = new Error(`Request timed out after ${timeoutMs}ms. The server may be busy or slow to respond. Try again.`);
+        timeoutErr.code = 'TIMEOUT';
+        throw timeoutErr;
+      }
+      throw err;
+    }
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const err = new Error(data.error || data.message || `HTTP ${response.status}`);
@@ -91,7 +114,9 @@ class JobsAPI {
    * @returns {Promise<{ jobId: string }>}
    */
   async createContentGenerationJob(payload) {
-    return this._request('POST', '/api/v1/jobs/content-generation', payload);
+    return this._request('POST', '/api/v1/jobs/content-generation', payload, {
+      timeoutMs: JobsAPI.CREATE_JOB_TIMEOUT_MS,
+    });
   }
 
   /**
@@ -101,10 +126,15 @@ class JobsAPI {
    * @param {string} [sessionId] - Optional; can also be sent via x-session-id header
    * @returns {Promise<{ jobId: string }>}
    */
+  /** Request timeout for job creation (avoids indefinite hang if backend is cold/slow). */
+  static CREATE_JOB_TIMEOUT_MS = 45 * 1000;
+
   async createWebsiteAnalysisJob(url, sessionId = null) {
     const body = { url };
     if (sessionId) body.sessionId = sessionId;
-    return this._request('POST', '/api/v1/jobs/website-analysis', body);
+    return this._request('POST', '/api/v1/jobs/website-analysis', body, {
+      timeoutMs: JobsAPI.CREATE_JOB_TIMEOUT_MS,
+    });
   }
 
   /**
