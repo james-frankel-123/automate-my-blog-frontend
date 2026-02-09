@@ -294,11 +294,12 @@ function getArticlePlaceholderHtml(index, relatedArticles = []) {
     const img = article.urlToImage && /^https?:\/\//i.test(article.urlToImage) ? escapeAttr(article.urlToImage) : '';
     const descLen = 120;
     const desc = article.description ? escapeAttr(String(article.description).slice(0, descLen)) + (String(article.description).length > descLen ? '…' : '') : '';
+    const thumbBlock = img
+      ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-thumb-wrap"><img src="${img}" alt="" class="markdown-article-card-thumb" loading="lazy" /></a>`
+      : '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true">📰</span></span>';
     return (
       '<div class="markdown-article-card">' +
-      '<span class="markdown-related-badge markdown-related-badge-article">Article</span>' +
-      (img ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-link">` +
-        `<img src="${img}" alt="" class="markdown-article-card-thumb" />` + '</a>' : '') +
+      thumbBlock +
       '<div class="markdown-article-card-body">' +
       `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-title">${title}</a>` +
       (meta ? `<span class="markdown-article-card-meta">${escapeAttr(meta)}</span>` : '') +
@@ -336,12 +337,12 @@ function getVideoPlaceholderHtml(index, relatedVideos = []) {
     const thumbImg = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl)
       ? `<img src="${escapeAttr(video.thumbnailUrl)}" alt="" class="markdown-video-card-thumb" loading="lazy" />`
       : '<span class="markdown-video-card-thumb-placeholder" aria-hidden="true">▶</span>';
+    const playIcon = '<span class="markdown-video-card-play" aria-hidden="true">▶</span>';
     const thumbBlock = safeUrl
-      ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-link">${thumbImg}</a>`
-      : `<span class="markdown-video-card-link">${thumbImg}</span>`;
+      ? `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="markdown-video-card-thumb-wrap">${thumbImg}${playIcon}</a>`
+      : `<span class="markdown-video-card-thumb-wrap">${thumbImg}${playIcon}</span>`;
     return (
       '<div class="markdown-video-card">' +
-      '<span class="markdown-related-badge markdown-related-badge-video">Video</span>' +
       thumbBlock +
       '<div class="markdown-video-card-body">' +
       (safeUrl
@@ -906,89 +907,119 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.08); }
         }
 
-        /* Video card: compact, red left accent */
+        /* Section heading + first video card spacing */
+        div :global(h2 + .markdown-video-card) {
+          margin-top: 6px;
+        }
+
+        /* Video card: clear separation, larger thumb, play overlay */
         div :global(.markdown-video-card) {
           position: relative;
           display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          margin: 8px 0;
-          padding: 8px 10px;
-          border-radius: 6px;
+          align-items: stretch;
+          gap: 14px;
+          margin: 14px 0;
+          padding: 0;
+          border-radius: 10px;
           border: 1px solid var(--color-border-base);
-          border-left: 3px solid #dc2626;
           background: var(--color-background-container);
-          transition: box-shadow 0.2s ease;
-          flex-wrap: wrap;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+          overflow: hidden;
         }
 
         div :global(.markdown-video-card:hover) {
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border-color: var(--color-primary-200);
         }
 
-        div :global(.markdown-video-card-link) {
+        div :global(.markdown-video-card-thumb-wrap) {
           flex-shrink: 0;
+          position: relative;
           display: block;
           line-height: 0;
           text-decoration: none;
+          width: 160px;
+          min-height: 90px;
         }
 
         div :global(.markdown-video-card-thumb) {
-          width: 56px;
-          height: 40px;
-          max-width: 56px;
-          max-height: 40px;
+          width: 160px;
+          height: 90px;
+          max-width: 160px;
+          max-height: 90px;
           object-fit: cover;
-          border-radius: 6px;
           display: block;
+          vertical-align: top;
+        }
+
+        div :global(.markdown-video-card-play) {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          width: 44px;
+          height: 44px;
+          border-radius: 50%;
+          background: rgba(0, 0, 0, 0.7);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          padding-left: 3px;
+          pointer-events: none;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+
+        div :global(.markdown-video-card-thumb-wrap:hover) .markdown-video-card-play {
+          background: rgba(99, 102, 241, 0.9);
+          transform: translate(-50%, -50%) scale(1.08);
         }
 
         div :global(.markdown-video-card-thumb-placeholder) {
-          width: 56px;
-          height: 40px;
-          border-radius: 6px;
+          width: 160px;
+          height: 90px;
           background: var(--color-background-alt);
           color: var(--color-text-tertiary);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 14px;
+          font-size: 24px;
         }
 
         div :global(.markdown-video-card-body) {
           flex: 1;
           min-width: 0;
-          min-height: 40px;
+          padding: 12px 14px 12px 0;
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 6px;
           justify-content: center;
         }
 
         div :global(.markdown-video-card-title) {
           font-weight: 600;
-          font-size: 12px;
-          color: var(--color-primary);
+          font-size: 14px;
+          line-height: 1.35;
+          color: var(--color-text-primary);
           text-decoration: none;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          line-height: 1.3;
+          transition: color 0.2s ease;
         }
 
         div :global(.markdown-video-card-title:hover) {
+          color: var(--color-primary);
           text-decoration: underline;
         }
 
         div :global(.markdown-video-card-meta) {
-          font-size: 11px;
-          color: var(--color-text-tertiary);
-          line-height: 1.3;
-          display: -webkit-box;
-          -webkit-line-clamp: 1;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          font-size: 12px;
+          color: var(--color-text-secondary);
+          line-height: 1.4;
+          display: block;
         }
       `}</style>
         </>
@@ -1053,68 +1084,93 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.06); }
         }
 
-        /* Article card: compact, blue left accent */
+        /* Section heading + first article card spacing */
+        div :global(h2 + .markdown-article-card) {
+          margin-top: 6px;
+        }
+
+        /* Article card: clear separation, larger thumb, aligned with video cards */
         div :global(.markdown-article-card) {
           position: relative;
           display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          margin: 8px 0;
-          padding: 8px 10px;
-          border-radius: 6px;
+          align-items: stretch;
+          gap: 14px;
+          margin: 14px 0;
+          padding: 0;
+          border-radius: 10px;
           border: 1px solid var(--color-border-base);
-          border-left: 3px solid #2563eb;
           background: var(--color-background-container);
-          transition: box-shadow 0.2s ease;
-          flex-wrap: wrap;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+          overflow: hidden;
         }
         div :global(.markdown-article-card:hover) {
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border-color: var(--color-primary-200);
         }
-        div :global(.markdown-article-card-link) {
+        div :global(.markdown-article-card-thumb-wrap) {
           flex-shrink: 0;
           display: block;
           line-height: 0;
+          text-decoration: none;
+          width: 160px;
+          min-height: 90px;
         }
         div :global(.markdown-article-card-thumb) {
-          width: 56px;
-          height: 40px;
-          max-width: 56px;
-          max-height: 40px;
+          width: 160px;
+          height: 90px;
+          max-width: 160px;
+          max-height: 90px;
           object-fit: cover;
-          border-radius: 6px;
           display: block;
+          vertical-align: top;
+        }
+        div :global(.markdown-article-card-thumb-placeholder) {
+          width: 160px;
+          height: 90px;
+          background: var(--color-background-alt);
+          color: var(--color-text-tertiary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 28px;
         }
         div :global(.markdown-article-card-body) {
           flex: 1;
           min-width: 0;
-          min-height: 40px;
+          padding: 12px 14px 12px 0;
           display: flex;
           flex-direction: column;
-          gap: 2px;
+          gap: 6px;
           justify-content: center;
         }
         div :global(.markdown-article-card-title) {
           font-weight: 600;
-          font-size: 12px;
-          color: var(--color-primary);
+          font-size: 14px;
+          line-height: 1.35;
+          color: var(--color-text-primary);
           text-decoration: none;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
-          line-height: 1.3;
+          transition: color 0.2s ease;
         }
         div :global(.markdown-article-card-title:hover) {
+          color: var(--color-primary);
           text-decoration: underline;
         }
-        div :global(.markdown-article-card-meta),
+        div :global(.markdown-article-card-meta) {
+          font-size: 12px;
+          color: var(--color-text-secondary);
+          line-height: 1.4;
+          display: block;
+        }
         div :global(.markdown-article-card-desc) {
-          font-size: 11px;
-          color: var(--color-text-tertiary);
-          line-height: 1.3;
+          font-size: 12px;
+          color: var(--color-text-secondary);
+          line-height: 1.4;
           display: -webkit-box;
-          -webkit-line-clamp: 1;
+          -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
           overflow: hidden;
         }
