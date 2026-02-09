@@ -121,7 +121,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download E2E results
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         continue-on-error: true
         with:
           name: e2e-results
