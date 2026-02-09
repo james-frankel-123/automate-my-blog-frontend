@@ -1,5 +1,17 @@
 /* Mobile-first responsive styles */
 
+/* ===== CONTENT BELOW FIXED HEADER (hero never hidden by top bar) ===== */
+/* Desktop: clear fixed header (can wrap to 2 rows) so full hero is visible */
+@media (min-width: 768px) {
+  .dashboard-content-below-fixed-header {
+    padding-top: max(128px, 80px + env(safe-area-inset-top, 0px) + 24px) !important;
+  }
+}
+/* Fallback for very small viewports before mobile breakpoint */
+.dashboard-content-below-fixed-header {
+  padding-top: max(120px, 64px + env(safe-area-inset-top, 0px) + 24px) !important;
+}
+
 /* ===== GLOBAL MOBILE FOUNDATIONS ===== */
 /* Touch-friendly: min 44x44px tap targets (WCAG 2.5.5) */
 @media (max-width: 767px) {
@@ -29,6 +41,14 @@
   #root {
     width: 100%;
     max-width: 100vw;
+  }
+
+  /* Prevent long URLs and text from causing horizontal scroll */
+  .dashboard-tab-content,
+  .dashboard-content-below-fixed-header,
+  .ant-card-body {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
   }
 
   /* Workflow container mobile optimization */
@@ -112,8 +132,41 @@
     min-height: 56px !important;
   }
 
+  /* Content below fixed header: dynamic top offset so hero is never hidden by the bar */
+  .dashboard-content-below-fixed-header {
+    padding-top: max(116px, 56px + env(safe-area-inset-top, 0px) + 32px) !important;
+  }
+
   .logged-out-header-left {
     min-width: 0 !important;
+  }
+
+  /* Hero: responsive title, subtitle and padding so they don't overflow on small screens */
+  .unified-workflow-hero {
+    padding: var(--space-4) var(--space-3) !important;
+  }
+  .unified-workflow-hero .ant-typography {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .unified-workflow-hero h2.ant-typography {
+    font-size: 1.5rem !important;
+    line-height: 1.3 !important;
+  }
+  .unified-workflow-hero .ant-typography + .ant-typography,
+  .unified-workflow-hero p.ant-typography {
+    font-size: 1rem !important;
+  }
+
+  /* Dashboard tab: reduce padding on mobile for more content space */
+  .dashboard-tab-content {
+    padding: var(--space-4) !important;
+  }
+
+  /* Footer: reduce horizontal padding on mobile */
+  .dashboard-footer {
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
   }
 }
 

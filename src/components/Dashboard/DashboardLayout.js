@@ -742,6 +742,9 @@ const DashboardLayout = ({
     );
   };
 
+  /** When true, LoggedOutProgressHeader is rendered; content area and FABs must use padding/position to sit below it. */
+  const showLoggedOutProgressHeader = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode);
+
   return (
     <>
       {/* CSS Keyframes for smooth slide-in animations */}
@@ -757,7 +760,7 @@ const DashboardLayout = ({
       `}</style>
       
       {/* Progress Header for Logged-Out Users and New Registrations */}
-      {(!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? (
+      {showLoggedOutProgressHeader ? (
         <LoggedOutProgressHeader
           currentStep={currentStep}
           completedSteps={completedSteps}
@@ -990,25 +993,29 @@ const DashboardLayout = ({
       )}
 
 
-      {/* Content area - always show */}
+      {/* Content area - always show. When LoggedOutProgressHeader is present, use CSS class so hero sits below it. */}
+        {(() => {
+          return (
         <div
+          className={showLoggedOutProgressHeader ? 'dashboard-content-below-fixed-header' : undefined}
           style={{
             padding: isMobile ? 'var(--space-4) var(--space-4) calc(80px + env(safe-area-inset-bottom, 0px)) var(--space-4)' : 'var(--space-6)',
             background: 'var(--color-gray-50)',
             overflow: 'auto',
-            paddingTop: (() => {
-              const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
-              return `${baseHeaderHeight}px`;
-            })(),
+            ...(showLoggedOutProgressHeader ? {} : { paddingTop: '24px' }),
             // So ThinkingPanel sticks above mobile bottom nav when present
             '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
           }}
         >
-          {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90); compact on mobile */}
+          {/* Floating Action Buttons - below LoggedOutProgressHeader when it is visible (mobile + desktop) */}
           {user && (
-          <div style={{
+          <div
+            className={showLoggedOutProgressHeader ? 'dashboard-fabs-below-fixed-header' : undefined}
+            style={{
             position: 'fixed',
-            top: isMobile ? '16px' : '29px',
+            top: showLoggedOutProgressHeader
+              ? (isMobile ? 'calc(56px + env(safe-area-inset-top, 0px) + 12px)' : 'calc(88px + env(safe-area-inset-top, 0px) + 12px)')
+              : (isMobile ? '16px' : '29px'),
             right: isMobile ? '12px' : '29px',
             left: isMobile ? '12px' : undefined,
             zIndex: 999,
@@ -1237,6 +1244,7 @@ const DashboardLayout = ({
 
           {/* Footer with deploy commit hash for deployment verification */}
           <footer
+            className="dashboard-footer"
             style={{
               marginTop: 'var(--space-6)',
               padding: 'var(--space-3) var(--space-6)',
@@ -1251,6 +1259,8 @@ const DashboardLayout = ({
             Build: <code style={{ fontFamily: 'monospace', fontSize: '11px' }} data-testid="build-commit-hash">{process.env.REACT_APP_GIT_COMMIT_SHA || 'dev'}</code>
           </footer>
         </div>
+          );
+        })()}
 
       {/* Impersonation Banner */}
       {isImpersonating && impersonationData && (
