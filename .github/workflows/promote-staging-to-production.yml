@@ -1,0 +1,61 @@
+# Manual "Approve and push to production" workflow.
+# Creates a PR from staging → main. Merge the PR in GitHub to deploy (works with branch protection).
+# Run from: Actions → Promote staging to production → Run workflow.
+
+name: Promote staging to production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "production" to confirm'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  promote:
+    name: Create PR staging → main
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "production" ]; then
+            echo "::error::Confirmation failed. You must type exactly 'production' to run this workflow."
+            exit 1
+          fi
+
+      - name: Create or update PR (staging → main)
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check for existing open PR from staging to main
+          EXISTING=$(gh pr list --base main --head staging --state open --json number,url --jq '.[0]')
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            PR_NUM=$(echo "$EXISTING" | jq -r '.number')
+            PR_URL=$(echo "$EXISTING" | jq -r '.url')
+            echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+            echo "pr_number=$PR_NUM" >> $GITHUB_OUTPUT
+            echo "Existing PR found: $PR_URL"
+            exit 0
+          fi
+          # Create new PR
+          PR_URL=$(gh pr create --base main --head staging \
+            --title "Promote staging to production" \
+            --body "PR created by **Promote staging to production** workflow. Merge when staging looks good to deploy to production.")
+          PR_NUM=$(gh pr view "$PR_URL" --json number --jq '.number')
+          echo "pr_url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "pr_number=$PR_NUM" >> $GITHUB_OUTPUT
+          echo "Created PR: $PR_URL"
+
+      - name: Summary
+        run: |
+          echo "## Promote to production" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR (staging → main):** ${{ steps.pr.outputs.pr_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Merge the PR in GitHub to deploy to production. Branch protection rules apply." >> $GITHUB_STEP_SUMMARY
