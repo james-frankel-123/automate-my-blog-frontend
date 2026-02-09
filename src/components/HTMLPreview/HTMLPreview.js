@@ -433,8 +433,8 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     ...style
   };
 
-  // Hero image: extract alt from first ![IMAGE:hero_image:...] and split content to inject HeroImage with animated placeholder
-  const heroAltMatch = content.match(/!\[(IMAGE:hero_image:[^\]]*)\]/);
+  // Hero image: extract alt from first ![IMAGE:hero_image:...] or [IMAGE:hero_image:...] and split content to inject HeroImage with animated placeholder
+  const heroAltMatch = content.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
   const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
   const useHeroComponent = Boolean(heroImageUrl && htmlContent.includes(HERO_IMAGE_SENTINEL));
   const contentParts = useHeroComponent ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
