@@ -582,7 +582,7 @@ function OnboardingFunnelView() {
       <div
         style={{
           padding: '24px 16px',
-          paddingTop: user ? 24 : 88,
+          paddingTop: user ? 24 : 120,
           maxWidth: 800,
           margin: '0 auto',
         }}
