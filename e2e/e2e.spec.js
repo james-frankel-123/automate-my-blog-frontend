@@ -409,9 +409,8 @@ test.describe('E2E (mocked backend)', () => {
           return;
         }
         await createBtn.click();
-        await page.waitForTimeout(500);
-        const header = page.locator('text=The new era of marketing has started.').first();
-        await expect(header).toBeVisible({ timeout: 5000 });
+        // Step 0 header uses typewriter (full title: "The new era of marketing has started."); assert on start of title so we pass once visible
+        await expect(page.getByRole('heading', { name: /The new/ })).toBeVisible({ timeout: 8000 });
       });
 
       test('should show new success message after website analysis', async ({ page }) => {

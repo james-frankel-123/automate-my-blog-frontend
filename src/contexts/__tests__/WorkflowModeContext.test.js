@@ -174,9 +174,9 @@ describe('WorkflowModeContext', () => {
       
       await waitFor(() => {
         expect(contextState.stepResults.home.websiteAnalysis.businessName).toBe('Test Business');
-        expect(contextState.stepResults.home.websiteAnalysis.targetAudience).toBe('Test Audience');
-        expect(contextState.stepResults.home.websiteAnalysis.contentFocus).toBe('Test Focus');
       });
+      expect(contextState.stepResults.home.websiteAnalysis.targetAudience).toBe('Test Audience');
+      expect(contextState.stepResults.home.websiteAnalysis.contentFocus).toBe('Test Focus');
     });
 
     it('marks analysis as completed', async () => {
