@@ -80,8 +80,19 @@ const UnifiedWorkflowHeader = ({
 
   // Typewriter animation effect (runs every time when enableSequentialAnimation is true)
   useEffect(() => {
-    if (!enableSequentialAnimation) return;
+    if (!enableSequentialAnimation) {
+      return;
+    }
 
+    // Prevent animation from restarting if already complete
+    if (animationComplete) {
+      return;
+    }
+
+    // Prevent animation from starting if title is already being typed
+    if (displayedTitle.length > 0) {
+      return;
+    }
     const subtitlePart1 = "Automate website content to get ";
     const clicksWord = "clicks";
     const subtitlePart2 = " without complication";

@@ -2498,3 +2498,20 @@ html.dark-mode [class*="ant-badge"] * {
 .dark-mode ::-ms-input-placeholder {
   color: var(--color-text-tertiary);
 }
+/* ==================== Checklist Progress Animations ==================== */
+
+@keyframes checkboxPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes checkmarkSlide {
+  0% { opacity: 0; transform: translateY(-4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
