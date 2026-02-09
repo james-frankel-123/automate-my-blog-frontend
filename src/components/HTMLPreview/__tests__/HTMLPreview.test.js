@@ -35,9 +35,7 @@ describe('HTMLPreview', () => {
       render(<HTMLPreview content={runOn} forceMarkdown />);
       // Should not be a single h1 containing the long paragraph (heading cap prevents that)
       const h1 = screen.queryByRole('heading', { level: 1 });
-      if (h1) {
-        expect(h1.textContent.length).toBeLessThanOrEqual(250);
-      }
+      expect(h1?.textContent?.length ?? 0).toBeLessThanOrEqual(250);
       expect(screen.getByText(/streaming APIs are pivotal/)).toBeInTheDocument();
     });
 

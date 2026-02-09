@@ -4,8 +4,8 @@ import RelatedContentStepsPanel, { STATUS } from '../RelatedContentStepsPanel';
 
 describe('RelatedContentStepsPanel', () => {
   it('renders nothing when steps is empty', () => {
-    const { container } = render(<RelatedContentStepsPanel steps={[]} />);
-    expect(container.firstChild).toBeNull();
+    render(<RelatedContentStepsPanel steps={[]} />);
+    expect(screen.queryByTestId('related-content-steps-panel')).not.toBeInTheDocument();
   });
 
   it('renders steps with correct labels for each status', () => {

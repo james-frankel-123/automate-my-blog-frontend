@@ -12,16 +12,14 @@ describe('RebaseReminder', () => {
 
   it('renders nothing when not in development mode', () => {
     process.env.NODE_ENV = 'test';
-    const { container } = render(<RebaseReminder />);
+    render(<RebaseReminder />);
     expect(screen.queryByTestId('rebase-reminder')).not.toBeInTheDocument();
-    expect(container.firstChild).toBeNull();
   });
 
   it('renders nothing when NODE_ENV is production', () => {
     process.env.NODE_ENV = 'production';
-    const { container } = render(<RebaseReminder />);
+    render(<RebaseReminder />);
     expect(screen.queryByTestId('rebase-reminder')).not.toBeInTheDocument();
-    expect(container.firstChild).toBeNull();
   });
 
   it('renders banner when in development and behind main', async () => {

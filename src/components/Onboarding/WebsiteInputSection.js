@@ -1,12 +1,14 @@
 /**
- * WebsiteInputSection — URL form + analysis status updates (no narration here).
+ * WebsiteInputSection — URL form + analysis status updates with streaming narration.
  * Issue #261.
  */
-import React from 'react';
-import { Form, Input, Button, Spin } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Form, Input, Button, Spin, Typography } from 'antd';
 import { GlobalOutlined } from '@ant-design/icons';
-import ThinkingPanel from '../shared/ThinkingPanel';
+import ChecklistProgress from '../shared/ChecklistProgress';
 import { systemVoice } from '../../copy/systemVoice';
+
+const { Text } = Typography;
 
 const compactRowStyle = {
   width: '100%',
@@ -26,9 +28,40 @@ export function WebsiteInputSection({
   analysisThoughts = [],
   dataTestId = 'website-input-section',
 }) {
+  const [streamingText, setStreamingText] = useState('');
+  const [showStreamingText, setShowStreamingText] = useState(false);
+
   const handleSubmit = () => {
     if (websiteUrl?.trim()) onAnalyze?.(websiteUrl.trim());
   };
+
+  // Typing effect for streaming narration
+  useEffect(() => {
+    if (loading && !showStreamingText) {
+      // Small delay before starting typing
+      const startDelay = setTimeout(() => {
+        setShowStreamingText(true);
+        const fullMessage = "Let me take a look at your website, hold tight";
+        let currentIndex = 0;
+
+        const typingInterval = setInterval(() => {
+          if (currentIndex <= fullMessage.length) {
+            setStreamingText(fullMessage.slice(0, currentIndex));
+            currentIndex++;
+          } else {
+            clearInterval(typingInterval);
+          }
+        }, 40); // 40ms per character
+
+        return () => clearInterval(typingInterval);
+      }, 500);
+
+      return () => clearTimeout(startDelay);
+    } else if (!loading) {
+      setShowStreamingText(false);
+      setStreamingText('');
+    }
+  }, [loading, showStreamingText]);
 
   return (
     <div data-testid={dataTestId} style={{ marginBottom: 32 }}>
@@ -58,21 +91,53 @@ export function WebsiteInputSection({
           </Button>
         </div>
       </Form>
+
+      {/* Streaming narration text */}
+      {loading && showStreamingText && streamingText && (
+        <div
+          style={{
+            textAlign: 'center',
+            marginTop: '16px',
+            marginBottom: '16px',
+            minHeight: '28px',
+            opacity: 1,
+            transition: 'opacity 0.3s ease-in'
+          }}
+        >
+          <Text
+            style={{
+              fontSize: '16px',
+              color: 'var(--color-text-secondary)',
+              fontStyle: 'italic'
+            }}
+          >
+            {streamingText}
+            {streamingText.length > 0 && streamingText.length < 46 && (
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: '2px',
+                  height: '1em',
+                  backgroundColor: 'var(--color-primary)',
+                  marginLeft: '2px',
+                  animation: 'blink 1s step-end infinite',
+                  verticalAlign: 'text-bottom'
+                }}
+              />
+            )}
+          </Text>
+        </div>
+      )}
+
       {loading && (
-        <div style={{ marginTop: 20, maxWidth: 420, marginLeft: 'auto', marginRight: 'auto' }}>
+        <div style={{ marginTop: 20, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
           {(analysisProgress || scanningMessage) ? (
-            <ThinkingPanel
-              isActive
+            <ChecklistProgress
+              steps={systemVoice.analysis.steps}
               currentStep={analysisProgress?.currentStep || scanningMessage}
-              progress={analysisProgress?.progress}
-              thoughts={analysisThoughts}
-              estimatedTimeRemaining={analysisProgress?.estimatedTimeRemaining}
               phase={analysisProgress?.phase}
-              detail={analysisProgress?.detail}
-              workingForYouLabel={systemVoice.analysis.workingForYou}
-              progressPreamble={systemVoice.analysis.progressPreamble}
-              progressLabel={systemVoice.analysis.progressLabel}
-              fallbackStep={systemVoice.analysis.defaultProgress}
+              progress={analysisProgress?.progress}
+              estimatedTimeRemaining={analysisProgress?.estimatedTimeRemaining}
               dataTestId="analysis-status-updates"
             />
           ) : (

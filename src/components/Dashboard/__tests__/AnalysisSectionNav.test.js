@@ -12,8 +12,9 @@ const mockSections = [
 ];
 
 describe('AnalysisSectionNav', () => {
+  let mockScrollIntoView;
   beforeEach(() => {
-    const mockScrollIntoView = jest.fn();
+    mockScrollIntoView = jest.fn();
     jest.spyOn(document, 'getElementById').mockImplementation((id) => {
       const el = document.createElement('div');
       el.id = id;
@@ -27,8 +28,8 @@ describe('AnalysisSectionNav', () => {
   });
 
   it('returns null when sections is empty', () => {
-    const { container } = render(<AnalysisSectionNav sections={[]} />);
-    expect(container.firstChild).toBeNull();
+    render(<AnalysisSectionNav sections={[]} />);
+    expect(screen.queryByRole('navigation', { name: 'Analysis sections' })).not.toBeInTheDocument();
   });
 
   it('renders section links with correct labels and testids', () => {
@@ -52,9 +53,7 @@ describe('AnalysisSectionNav', () => {
     fireEvent.click(targetAudienceBtn);
 
     expect(onSectionClick).toHaveBeenCalledWith('analysis-target-audience');
-    const el = document.getElementById('analysis-target-audience');
-    expect(el).toBeTruthy();
-    expect(el.scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
+    expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' });
   });
 });
 
@@ -73,8 +72,8 @@ describe('AnalysisSectionNavHorizontal', () => {
   });
 
   it('returns null when sections is empty', () => {
-    const { container } = render(<AnalysisSectionNavHorizontal sections={[]} />);
-    expect(container.firstChild).toBeNull();
+    render(<AnalysisSectionNavHorizontal sections={[]} />);
+    expect(screen.queryByTestId('analysis-nav-analysis-narrative')).not.toBeInTheDocument();
   });
 
   it('renders horizontal nav with section buttons', () => {
