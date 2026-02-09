@@ -29,7 +29,6 @@ jobs:
           EXISTING=$(gh pr list --base main --head staging --state open --json number,url --jq '.[0]')
           if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
             echo "Open PR already exists"
-            echo "existing=$EXISTING" >> $GITHUB_OUTPUT
           else
             gh pr create --base main --head staging --title "Staging → main" --body "Auto-opened from push to \`staging\`."
           fi

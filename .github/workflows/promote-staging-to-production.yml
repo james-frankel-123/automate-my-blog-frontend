@@ -29,6 +29,11 @@ jobs:
     name: Create or update PR (staging → main)
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Validate confirmation (manual run)
         if: github.event_name == 'workflow_dispatch'
         run: |
