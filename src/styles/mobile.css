@@ -1,8 +1,15 @@
 /* Mobile-first responsive styles */
 
 /* ===== CONTENT BELOW FIXED HEADER (hero never hidden by top bar) ===== */
+/* Desktop: clear fixed header (can wrap to 2 rows) so full hero is visible */
+@media (min-width: 768px) {
+  .dashboard-content-below-fixed-header {
+    padding-top: max(128px, 80px + env(safe-area-inset-top, 0px) + 24px) !important;
+  }
+}
+/* Fallback for very small viewports before mobile breakpoint */
 .dashboard-content-below-fixed-header {
-  padding-top: max(100px, 64px + env(safe-area-inset-top, 0px) + 20px) !important;
+  padding-top: max(120px, 64px + env(safe-area-inset-top, 0px) + 24px) !important;
 }
 
 /* ===== GLOBAL MOBILE FOUNDATIONS ===== */
