@@ -71,7 +71,8 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "ignorePatterns": ["src/__mocks__/**"]
   },
   "browserslist": {
     "production": [

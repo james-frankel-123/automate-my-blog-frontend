@@ -39,7 +39,7 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
       const title = match[1].trim();
       const content = match[2].trim();
 
-      const bulletPattern = /^[•\-\*]\s+(.+)$/gm;
+      const bulletPattern = /^[•\-*]\s+(.+)$/gm;
       const bullets = [];
       let bulletMatch;
       while ((bulletMatch = bulletPattern.exec(content)) !== null) {
@@ -56,7 +56,7 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
     }
 
     if (parsedSections.length === 0) {
-      const bulletPattern = /^[•\-\*]\s+(.+)$/gm;
+      const bulletPattern = /^[•\-*]\s+(.+)$/gm;
       const bullets = [];
       let bulletMatch;
       while ((bulletMatch = bulletPattern.exec(narrative)) !== null) {

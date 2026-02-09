@@ -21,7 +21,6 @@ function getVideoPlaceholderToken(index) {
  */
 function replaceVideoPlaceholders(content, relatedVideos = []) {
   if (!content || typeof content !== 'string') return content || '';
-  const videos = Array.isArray(relatedVideos) ? relatedVideos : [];
   return content.replace(VIDEO_PLACEHOLDER_REGEX, (_, indexStr) => {
     const index = parseInt(indexStr, 10);
     if (Number.isNaN(index) || index < 0) return '[VIDEO:?]';

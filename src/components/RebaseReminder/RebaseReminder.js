@@ -18,7 +18,7 @@ const REBASE_PROMPT = `Please help me rebase my current branch onto the latest m
 4. After a successful rebase, force-push if I've already pushed this branch: \`git push --force-with-lease\`
 
 If the rebase fails or conflicts are too complex, suggest:
-- Create a backup branch first: \`git branch backup-\$(date +%Y%m%d-%H%M)\`
+- Create a backup branch first: \`git branch backup-$(date +%Y%m%d-%H%M)\`
 - Abort the rebase: \`git rebase --abort\`
 - Merge main instead: \`git merge origin/main\`
 - Resolve any merge conflicts, then commit`;
