@@ -427,8 +427,9 @@ test.describe('E2E (mocked backend)', () => {
           return;
         }
         await createBtn.click();
-        // Step 0 header uses typewriter (full title: "The new era of marketing has started."); assert on start of title so we pass once visible
-        await expect(page.getByRole('heading', { name: /The new/ })).toBeVisible({ timeout: 8000 });
+        // After Create New Post we should see the workflow start screen (website URL input). Avoid asserting on typewriter header — it may not be visible in CI.
+        const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
+        await expect(websiteInput).toBeVisible({ timeout: 10000 });
       });
 
       test('should show new success message after website analysis', async ({ page }) => {
