@@ -21,7 +21,6 @@ function getArticlePlaceholderToken(index) {
  */
 function replaceArticlePlaceholders(content, relatedArticles = []) {
   if (!content || typeof content !== 'string') return content || '';
-  const articles = Array.isArray(relatedArticles) ? relatedArticles : [];
   return content.replace(ARTICLE_PLACEHOLDER_REGEX, (_, indexStr) => {
     const index = parseInt(indexStr, 10);
     if (Number.isNaN(index) || index < 0) return '[ARTICLE:?]';

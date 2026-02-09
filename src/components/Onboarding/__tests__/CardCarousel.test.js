@@ -42,10 +42,8 @@ describe('CardCarousel', () => {
         <div>Card</div>
       </CardCarousel>
     );
-    const continueBtn = screen.queryByTestId('carousel-continue');
-    if (continueBtn) {
-      await userEvent.click(continueBtn);
-      expect(onAllCardsViewed).toHaveBeenCalled();
-    }
+    const continueBtn = await screen.findByTestId('carousel-continue', { timeout: 2000 });
+    await userEvent.click(continueBtn);
+    expect(onAllCardsViewed).toHaveBeenCalled();
   });
 });

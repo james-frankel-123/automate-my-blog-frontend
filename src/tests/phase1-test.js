@@ -146,45 +146,45 @@ const testData = {
 
 // Category 1: API Existence Tests
 testRunner.addTest('autoBlogAPI should exist', async () => {
-  assertExists(window.autoBlogAPI || autoBlogAPI, 'autoBlogAPI global object');
+  assertExists(window.autoBlogAPI, 'autoBlogAPI global object');
 }, 'api-existence');
 
 testRunner.addTest('New workflow persistence methods should exist', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   assertType(api.saveWorkflowProgress, 'function', 'saveWorkflowProgress');
   assertType(api.getWorkflowProgress, 'function', 'getWorkflowProgress');
   assertType(api.clearWorkflowProgress, 'function', 'clearWorkflowProgress');
 }, 'api-existence');
 
 testRunner.addTest('New project management methods should exist', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   assertType(api.saveProjectFromAnalysis, 'function', 'saveProjectFromAnalysis');
   assertType(api.getUserProjects, 'function', 'getUserProjects');
 }, 'api-existence');
 
 testRunner.addTest('New content management methods should exist', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   assertType(api.saveContentVersion, 'function', 'saveContentVersion');
   assertType(api.getBlogPosts, 'function', 'getBlogPosts');
   assertType(api.trackContentExport, 'function', 'trackContentExport');
 }, 'api-existence');
 
 testRunner.addTest('New analytics methods should exist', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   assertType(api.trackUserActivity, 'function', 'trackUserActivity');
   assertType(api.getRecentActivities, 'function', 'getRecentActivities');
   assertType(api.getUsageStatistics, 'function', 'getUsageStatistics');
 }, 'api-existence');
 
 testRunner.addTest('New utility methods should exist', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   assertType(api.getSessionId, 'function', 'getSessionId');
   assertType(api.getCurrentUserId, 'function', 'getCurrentUserId');
 }, 'api-existence');
 
 // Category 2: Workflow Persistence Tests
 testRunner.addTest('Should save workflow progress to localStorage', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Clear any existing progress
   await api.clearWorkflowProgress();
@@ -204,7 +204,7 @@ testRunner.addTest('Should save workflow progress to localStorage', async () => 
 }, 'workflow-persistence');
 
 testRunner.addTest('Should retrieve saved workflow progress', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Get previously saved progress
   const getResult = await api.getWorkflowProgress('test_user');
@@ -215,7 +215,7 @@ testRunner.addTest('Should retrieve saved workflow progress', async () => {
 }, 'workflow-persistence');
 
 testRunner.addTest('Should handle anonymous workflow progress', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Save anonymous progress
   const saveResult = await api.saveWorkflowProgress(testData.mockStepResults, 1, null);
@@ -228,7 +228,7 @@ testRunner.addTest('Should handle anonymous workflow progress', async () => {
 }, 'workflow-persistence');
 
 testRunner.addTest('Should clear workflow progress', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const clearResult = await api.clearWorkflowProgress('test_user');
   assert(clearResult.success === true, 'Clear should succeed');
@@ -240,7 +240,7 @@ testRunner.addTest('Should clear workflow progress', async () => {
 
 // Category 3: Project Management Tests
 testRunner.addTest('Should save project from analysis (requires auth token)', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Mock having an auth token for this test
   const originalToken = localStorage.getItem('accessToken');
@@ -262,7 +262,7 @@ testRunner.addTest('Should save project from analysis (requires auth token)', as
 }, 'project-management');
 
 testRunner.addTest('Should get user projects', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const result = await api.getUserProjects();
   assert(result.success === true, 'Get projects should succeed');
@@ -270,7 +270,7 @@ testRunner.addTest('Should get user projects', async () => {
 }, 'project-management');
 
 testRunner.addTest('Should handle project save without auth token', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Remove auth token temporarily
   const originalToken = localStorage.getItem('accessToken');
@@ -289,7 +289,7 @@ testRunner.addTest('Should handle project save without auth token', async () => 
 
 // Category 4: Content Management Tests
 testRunner.addTest('Should save content version (requires auth)', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Mock auth token
   const originalToken = localStorage.getItem('accessToken');
@@ -311,7 +311,7 @@ testRunner.addTest('Should save content version (requires auth)', async () => {
 }, 'content-management');
 
 testRunner.addTest('Should get blog posts', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const result = await api.getBlogPosts();
   assert(result.success === true, 'Get posts should succeed');
@@ -319,7 +319,7 @@ testRunner.addTest('Should get blog posts', async () => {
 }, 'content-management');
 
 testRunner.addTest('Should track content export', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const result = await api.trackContentExport('test_post_1', 'markdown');
   assert(result.success === true, 'Export tracking should succeed');
@@ -327,7 +327,7 @@ testRunner.addTest('Should track content export', async () => {
 
 // Category 5: Analytics Tests
 testRunner.addTest('Should track user activity', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const result = await api.trackUserActivity('test_event', { testData: 'value' });
   assert(result.success === true, 'Activity tracking should succeed');
@@ -336,7 +336,7 @@ testRunner.addTest('Should track user activity', async () => {
 }, 'analytics');
 
 testRunner.addTest('Should get recent activities', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const result = await api.getRecentActivities(5);
   assert(result.success === true, 'Get activities should succeed');
@@ -345,7 +345,7 @@ testRunner.addTest('Should get recent activities', async () => {
 }, 'analytics');
 
 testRunner.addTest('Should get usage statistics', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const result = await api.getUsageStatistics();
   assert(result.success === true, 'Get stats should succeed');
@@ -357,7 +357,7 @@ testRunner.addTest('Should get usage statistics', async () => {
 
 // Category 6: Utility Tests
 testRunner.addTest('Should generate consistent session ID', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   const sessionId1 = api.getSessionId();
   const sessionId2 = api.getSessionId();
@@ -368,7 +368,7 @@ testRunner.addTest('Should generate consistent session ID', async () => {
 }, 'utilities');
 
 testRunner.addTest('Should handle user ID extraction safely', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Should not throw error even with invalid or missing token
   const userId = api.getCurrentUserId();
@@ -378,14 +378,14 @@ testRunner.addTest('Should handle user ID extraction safely', async () => {
 
 // Category 7: Data Persistence Tests
 testRunner.addTest('Should persist data across page refresh simulation', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Save some test data
   await api.saveWorkflowProgress(testData.mockStepResults, 3, 'persistence_test');
   await api.trackUserActivity('persistence_test_event', { test: true });
   
   // Simulate what happens on page refresh by creating new API instance
-  const testAPI = new (window.AutoBlogAPI || autoBlogAPI.constructor)();
+  const testAPI = new (window.AutoBlogAPI || window.autoBlogAPI.constructor)();
   
   // Data should still be retrievable
   const progress = await testAPI.getWorkflowProgress('persistence_test');
@@ -394,7 +394,7 @@ testRunner.addTest('Should persist data across page refresh simulation', async (
 }, 'data-persistence');
 
 testRunner.addTest('Should handle localStorage quota limits gracefully', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Our methods should handle storage limits without crashing
   // Generate lots of test data to approach limits
@@ -429,7 +429,7 @@ testRunner.addTest('Should handle localStorage quota limits gracefully', async (
 
 // Category 8: Regression Tests (ensure existing functionality isn't broken)
 testRunner.addTest('Original API methods should still work', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Test existing methods still exist and are callable
   assertType(api.analyzeWebsite, 'function', 'analyzeWebsite');
@@ -442,7 +442,7 @@ testRunner.addTest('Original API methods should still work', async () => {
 }, 'regression');
 
 testRunner.addTest('localStorage should not interfere with existing app state', async () => {
-  const api = window.autoBlogAPI || autoBlogAPI;
+  const api = window.autoBlogAPI;
   
   // Save some test data
   await api.saveWorkflowProgress(testData.mockStepResults, 2);

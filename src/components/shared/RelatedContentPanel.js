@@ -16,32 +16,58 @@ const panelHeaderStyle = {
   color: 'var(--color-primary-700)',
 };
 
-const itemRowStyle = {
+/** Accent colors to differentiate tweets / articles / videos */
+const ACCENT = {
+  tweet: { border: '#1a1a1a', bg: 'rgba(26, 26, 26, 0.04)' },
+  article: { border: '#2563eb', bg: 'rgba(59, 130, 246, 0.06)' },
+  video: { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.05)' },
+};
+
+const itemRowStyle = (type) => ({
   display: 'flex',
   alignItems: 'center',
   gap: '8px',
-  padding: '4px 0',
-  borderBottom: '1px solid var(--color-gray-100)',
-  minHeight: 36,
-};
+  padding: '6px 8px',
+  borderBottom: '1px solid var(--color-border-base)',
+  borderLeft: `3px solid ${ACCENT[type]?.border || 'var(--color-border-base)'}`,
+  borderRadius: 4,
+  marginBottom: 4,
+  marginLeft: 4,
+  marginRight: 4,
+  backgroundColor: ACCENT[type]?.bg || 'transparent',
+  minHeight: 32,
+});
 const itemRowLastStyle = { borderBottom: 'none' };
 
 /** Max height for the tweets/articles/videos list area so it doesn't dominate the layout */
-const RELATED_PANEL_MAX_HEIGHT = 280;
+const RELATED_PANEL_MAX_HEIGHT = 240;
 
 const thumbStyle = {
-  width: 56,
-  height: 32,
+  width: 48,
+  height: 28,
   objectFit: 'cover',
   borderRadius: 4,
   flexShrink: 0,
-  backgroundColor: 'var(--color-gray-100)',
+  backgroundColor: 'var(--color-background-alt)',
 };
+
+const badgeStyle = (type) => ({
+  fontSize: '9px',
+  fontWeight: 600,
+  letterSpacing: '0.03em',
+  textTransform: 'uppercase',
+  padding: '2px 5px',
+  borderRadius: 4,
+  flexShrink: 0,
+  border: `1px solid ${ACCENT[type]?.border}40`,
+  backgroundColor: ACCENT[type]?.bg || 'transparent',
+  color: ACCENT[type]?.border,
+});
 
 const titleStyle = {
   flex: 1,
   minWidth: 0,
-  fontSize: '12px',
+  fontSize: '11px',
   fontWeight: 500,
   color: 'var(--color-text-primary)',
   overflow: 'hidden',
@@ -50,7 +76,7 @@ const titleStyle = {
 };
 
 const metaStyle = {
-  fontSize: '11px',
+  fontSize: '10px',
   color: 'var(--color-text-tertiary)',
   marginTop: 1,
 };
@@ -143,15 +169,16 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
             }
             key="tweets"
           >
-            <div style={{ padding: '2px 0 6px 0' }}>
+            <div style={{ padding: '4px 0 8px 0' }}>
               {tweets.slice(0, 5).map((t, i) => (
                 <div
                   key={i}
                   style={{
-                    ...itemRowStyle,
+                    ...itemRowStyle('tweet'),
                     ...(i === Math.min(4, tweets.length - 1) ? itemRowLastStyle : {}),
                   }}
                 >
+                  <span style={badgeStyle('tweet')}>Post</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={titleStyle} title={typeof t === 'string' ? t : (t?.text || t?.content || '')}>
                       {tweetLabel(t, i)}
@@ -163,7 +190,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                       size="small"
                       icon={<PlusOutlined />}
                       onClick={() => handleInject('TWEET', i)}
-                      style={{ flexShrink: 0 }}
+                      style={{ flexShrink: 0, height: 24, fontSize: 11 }}
                       aria-label={injectAriaLabel('TWEET', i)}
                     >
                       Add to post
@@ -188,17 +215,18 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
             }
             key="articles"
           >
-            <div style={{ padding: '2px 0 6px 0' }}>
+            <div style={{ padding: '4px 0 8px 0' }}>
               {articles.slice(0, 5).map((a, i) => {
                 const linkUrl = a?.url && /^https?:\/\//i.test(a.url) ? a.url : null;
                 return (
                   <div
                     key={a?.url || i}
                     style={{
-                      ...itemRowStyle,
+                      ...itemRowStyle('article'),
                       ...(i === Math.min(4, articles.length - 1) ? itemRowLastStyle : {}),
                     }}
                   >
+                    <span style={badgeStyle('article')}>Article</span>
                     {a?.urlToImage && (
                       linkUrl ? (
                         <a href={linkUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }} aria-label={`Open article: ${(a?.title || 'Article').slice(0, 50)}`}>
@@ -237,7 +265,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                         size="small"
                         icon={<PlusOutlined />}
                         onClick={() => handleInject('ARTICLE', i)}
-                        style={{ flexShrink: 0 }}
+                        style={{ flexShrink: 0, height: 24, fontSize: 11 }}
                         aria-label={injectAriaLabel('ARTICLE', i)}
                       >
                         Add to post
@@ -263,17 +291,18 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
             }
             key="videos"
           >
-            <div style={{ padding: '2px 0 6px 0' }}>
+            <div style={{ padding: '4px 0 8px 0' }}>
               {videos.slice(0, 5).map((v, i) => {
                 const linkUrl = v?.url && /^https?:\/\//i.test(v.url) ? v.url : (v?.videoId ? `https://www.youtube.com/watch?v=${v.videoId}` : null);
                 return (
                   <div
                     key={v?.videoId || i}
                     style={{
-                      ...itemRowStyle,
+                      ...itemRowStyle('video'),
                       ...(i === Math.min(4, videos.length - 1) ? itemRowLastStyle : {}),
                     }}
                   >
+                    <span style={badgeStyle('video')}>Video</span>
                     {v?.thumbnailUrl && (
                       linkUrl ? (
                         <a href={linkUrl} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }} aria-label={`Open video: ${(v?.title || 'Video').slice(0, 50)}`}>
@@ -313,7 +342,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                         size="small"
                         icon={<PlusOutlined />}
                         onClick={() => handleInject('VIDEO', i)}
-                        style={{ flexShrink: 0 }}
+                        style={{ flexShrink: 0, height: 24, fontSize: 11 }}
                         aria-label={injectAriaLabel('VIDEO', i)}
                       >
                         Add to post

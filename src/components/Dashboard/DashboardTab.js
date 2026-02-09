@@ -211,7 +211,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           isNewRegistration={isNewRegistration}
           completedSteps={[]} // Will be populated based on workflow progress
           projectJustSaved={projectJustSaved}
-          enableSequentialAnimation={!user && currentStep === 0}
+          enableSequentialAnimation={currentStep === 0}
           onSequenceComplete={() => setTextAnimationComplete(true)}
           inputIsEditing={inputIsEditing}
         />

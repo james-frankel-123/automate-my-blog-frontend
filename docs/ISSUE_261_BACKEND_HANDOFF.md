@@ -38,6 +38,8 @@ The funnel already uses the **website analysis job** and its **SSE stream**. It 
 
 See [backend-queue-system-specification.md](./backend-queue-system-specification.md) for full job API.
 
+**If create-job appears to hang:** The frontend now aborts the `POST /api/v1/jobs/website-analysis` request after 45 seconds and shows: *"Request timed out. The server may be busy or slow to respond. Try again."* So the UI no longer hangs indefinitely. If users see this often, the backend should respond to the create-job request quickly (e.g. return `{ jobId }` and do work asynchronously); slow cold starts or blocking on DB/queue can be investigated in backend logs.
+
 ### 2.2 SSE events the frontend subscribes to (website-analysis job stream)
 
 All event payloads are JSON in `event.data`. The frontend parses `event.data` and passes the object to the corresponding handler.
