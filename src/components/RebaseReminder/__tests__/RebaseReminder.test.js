@@ -22,7 +22,7 @@ describe('RebaseReminder', () => {
     expect(screen.queryByTestId('rebase-reminder')).not.toBeInTheDocument();
   });
 
-  it('renders banner when in development and behind main', async () => {
+  it('renders banner when in development and behind staging', async () => {
     process.env.NODE_ENV = 'development';
     process.env.REACT_APP_GIT_COMMIT_SHA = 'abc123def456';
 
@@ -37,10 +37,10 @@ describe('RebaseReminder', () => {
     await screen.findByTestId('rebase-reminder');
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining('/compare/main...abc123def456'),
+      expect.stringContaining('/compare/staging...abc123def456'),
       expect.any(Object)
     );
-    expect(screen.getByText(/main has 3 new commits/)).toBeInTheDocument();
+    expect(screen.getByText(/staging has 3 new commits/)).toBeInTheDocument();
     expect(screen.getByText(/Copy-paste prompt for Claude Code/)).toBeInTheDocument();
     expect(screen.getByText(/If rebase does not work/)).toBeInTheDocument();
   });
