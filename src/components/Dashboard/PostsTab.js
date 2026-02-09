@@ -331,6 +331,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [availableTopics, setAvailableTopics] = useState([]);
   const [topicImageGeneratingIndex, setTopicImageGeneratingIndex] = useState(null); // index when DALL·E started for a topic (for "Generating image for topic N…")
   const [selectedTopic, setSelectedTopic] = useState(null);
+  // True while topic stream is in progress; prevents clicking "Create Post" until topics (and images) are ready
+  const [topicsGenerationInProgress, setTopicsGenerationInProgress] = useState(false);
+  // Ref so topic gen's finally doesn't clear generatingContent when user already started content gen
+  const contentGenerationInProgressRef = React.useRef(false);
   
   // Content editing state
   const [editingContent, setEditingContent] = useState('');
@@ -649,17 +653,20 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Generate trending topics based on audience strategy
   const handleGenerateTopics = async () => {
     setGeneratingContent(true);
+    setTopicsGenerationInProgress(true);
     try {
       // For logged-out users in workflow mode, check if analysis is completed
       if (forceWorkflowMode && !user) {
         if (!stepResults?.home?.analysisCompleted) {
           setGeneratingContent(false);
           message.warning('Please complete website analysis first before generating content topics.');
+          setTopicsGenerationInProgress(false);
           return;
         }
       } else if (!user) {
         // For logged-out users not in workflow mode, trigger sign-up (Fixes #85: run after login)
         setGeneratingContent(false);
+        setTopicsGenerationInProgress(false);
         return requireSignUp('Generate AI content topics', 'Start creating content', () => handleGenerateTopics());
       }
 
@@ -684,6 +691,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         console.warn('⚠️ Missing website analysis data for topic generation');
         message.warning('Website analysis data is required for topic generation. Please analyze your website first.');
         setGeneratingContent(false);
+        setTopicsGenerationInProgress(false);
         return;
       }
 
@@ -743,7 +751,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       console.error('Topic generation error:', error);
       message.error(`Failed to generate topics: ${error.message}`);
     } finally {
-      setGeneratingContent(false);
+      setTopicsGenerationInProgress(false);
+      // Don't clear generatingContent if user already started content generation (clicked Create Post)
+      if (!contentGenerationInProgressRef.current) {
+        setGeneratingContent(false);
+      }
     }
   };
   
@@ -757,8 +769,11 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     const topic = availableTopics.find(t => t.id === topicId);
     if (!topic) return;
 
+    // Prevent starting content gen while topics are still streaming (avoids "waiting for stream" then refresh)
+    if (topicsGenerationInProgress) return;
+
     const websiteAnalysisData = stepResults?.home?.websiteAnalysis || {};
-    
+    contentGenerationInProgressRef.current = true;
     setSelectedTopic(topic);
     setEditingContent('');
     setContentViewMode('preview');
@@ -781,6 +796,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       const creditsResult = await api.getUserCredits().catch(() => ({ totalCredits: 1, usedCredits: 0 }));
       const remainingPosts = creditsResult.totalCredits - creditsResult.usedCredits;
       if (remainingPosts <= 0) {
+        contentGenerationInProgressRef.current = false;
         setGeneratingContent(false);
         Modal.warning({
           title: 'Content Generation Limit Reached',
@@ -1031,6 +1047,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
               message.success('Blog content generated and saved!');
             }
+            contentGenerationInProgressRef.current = false;
             setGeneratingContent(false);
             return;
           }
@@ -1258,6 +1275,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               } catch (err) {
                 message.error(`Retry failed: ${err.message}`);
               } finally {
+                contentGenerationInProgressRef.current = false;
                 setGeneratingContent(false);
                 setGenerationProgress(null);
               }
@@ -1271,6 +1289,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       console.error('Content generation error:', error);
       message.error(`Failed to generate content: ${error.message}`);
     } finally {
+      contentGenerationInProgressRef.current = false;
       setGeneratingContent(false);
       setGenerationProgress(null);
     }
@@ -2171,6 +2190,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                       }
                                     }}
                                     loading={isGenerating}
+                                    disabled={topicsGenerationInProgress}
                                     style={{
                                       backgroundColor: defaultColors.primary,
                                       borderColor: defaultColors.primary,
@@ -2179,6 +2199,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     }}
                                   >
                                     {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
+                                     topicsGenerationInProgress ? 'Waiting for topics…' :
                                      user ? (hasAvailablePosts ? 'Create Post' : 'Buy More Posts') : 'Get One Free Post'}
                                   </Button>
                                   </span>
@@ -2933,6 +2954,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                     }
                                   }}
                                   loading={isGenerating}
+                                  disabled={topicsGenerationInProgress}
                                   style={{
                                     backgroundColor: defaultColors.primary,
                                     borderColor: defaultColors.primary,
@@ -2941,6 +2963,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                                   }}
                                 >
                                   {isGenerating ? (generationProgress?.currentStep || systemVoice.content.generating) :
+                                   topicsGenerationInProgress ? 'Waiting for topics…' :
                                    user ?
                                      (hasAvailablePosts ? 'Generate post' : 'Buy more posts') :
                                      'Register to claim free post'
