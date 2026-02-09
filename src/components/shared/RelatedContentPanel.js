@@ -193,7 +193,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                       style={{ flexShrink: 0, height: 24, fontSize: 11 }}
                       aria-label={injectAriaLabel('TWEET', i)}
                     >
-                      Add
+                      Add to post
                     </Button>
                   )}
                 </div>
@@ -268,7 +268,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                         style={{ flexShrink: 0, height: 24, fontSize: 11 }}
                         aria-label={injectAriaLabel('ARTICLE', i)}
                       >
-                        Add
+                        Add to post
                       </Button>
                     )}
                   </div>
@@ -345,7 +345,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
                         style={{ flexShrink: 0, height: 24, fontSize: 11 }}
                         aria-label={injectAriaLabel('VIDEO', i)}
                       >
-                        Add
+                        Add to post
                       </Button>
                     )}
                   </div>
