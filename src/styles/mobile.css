@@ -1,5 +1,10 @@
 /* Mobile-first responsive styles */
 
+/* ===== CONTENT BELOW FIXED HEADER (hero never hidden by top bar) ===== */
+.dashboard-content-below-fixed-header {
+  padding-top: max(100px, 64px + env(safe-area-inset-top, 0px) + 20px) !important;
+}
+
 /* ===== GLOBAL MOBILE FOUNDATIONS ===== */
 /* Touch-friendly: min 44x44px tap targets (WCAG 2.5.5) */
 @media (max-width: 767px) {
@@ -110,6 +115,11 @@
     padding: 10px 12px !important;
     padding-top: max(10px, env(safe-area-inset-top)) !important;
     min-height: 56px !important;
+  }
+
+  /* Content below fixed header: dynamic top offset so hero is never hidden by the bar */
+  .dashboard-content-below-fixed-header {
+    padding-top: max(116px, 56px + env(safe-area-inset-top, 0px) + 32px) !important;
   }
 
   .logged-out-header-left {

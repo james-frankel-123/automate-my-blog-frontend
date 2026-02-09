@@ -990,16 +990,17 @@ const DashboardLayout = ({
       )}
 
 
-      {/* Content area - always show */}
+      {/* Content area - always show. When fixed header is visible, use CSS class for responsive top offset so hero is never hidden. */}
+        {(() => {
+          const showFixedHeader = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode);
+          return (
         <div
+          className={showFixedHeader ? 'dashboard-content-below-fixed-header' : undefined}
           style={{
             padding: isMobile ? 'var(--space-4) var(--space-4) calc(80px + env(safe-area-inset-bottom, 0px)) var(--space-4)' : 'var(--space-6)',
             background: 'var(--color-gray-50)',
             overflow: 'auto',
-            paddingTop: (() => {
-              const baseHeaderHeight = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode) ? 100 : 24;
-              return `${baseHeaderHeight}px`;
-            })(),
+            ...(showFixedHeader ? {} : { paddingTop: '24px' }),
             // So ThinkingPanel sticks above mobile bottom nav when present
             '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
           }}
@@ -1251,6 +1252,8 @@ const DashboardLayout = ({
             Build: <code style={{ fontFamily: 'monospace', fontSize: '11px' }} data-testid="build-commit-hash">{process.env.REACT_APP_GIT_COMMIT_SHA || 'dev'}</code>
           </footer>
         </div>
+          );
+        })()}
 
       {/* Impersonation Banner */}
       {isImpersonating && impersonationData && (
