@@ -1,4 +1,5 @@
 # Create or update the staging → main PR when staging is updated.
+# Skips the create/update job when an open staging→main PR already exists (so it does not run on that PR).
 # Also runnable manually: Actions → Promote staging to production → Run workflow.
 
 name: Promote staging to production
@@ -25,8 +26,23 @@ permissions:
   pull-requests: write
 
 jobs:
+  check:
+    name: Check for open staging→main PR
+    runs-on: ubuntu-latest
+    outputs:
+      open_pr_exists: ${{ steps.query.outputs.open_pr_exists }}
+    steps:
+      - name: Query open PR
+        id: query
+        run: |
+          COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?base=main&head=${{ github.repository_owner }}:staging&state=open" | jq 'length')
+          echo "open_pr_exists=$([ "$COUNT" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
   ensure-pr:
     name: Create or update PR (staging → main)
+    needs: check
+    if: needs.check.outputs.open_pr_exists != 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository

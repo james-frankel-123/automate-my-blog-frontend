@@ -1,5 +1,5 @@
 # Create or update a PR from staging → main when staging is pushed.
-# Requires actions/checkout so gh CLI has a git repository context.
+# Skips the create/update job when an open staging→main PR already exists (e.g. this run is from that PR).
 
 name: Create or update PR (staging → main)
 
@@ -13,8 +13,23 @@ permissions:
   pull-requests: write
 
 jobs:
+  check:
+    name: Check for open staging→main PR
+    runs-on: ubuntu-latest
+    outputs:
+      open_pr_exists: ${{ steps.query.outputs.open_pr_exists }}
+    steps:
+      - name: Query open PR
+        id: query
+        run: |
+          COUNT=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/pulls?base=main&head=${{ github.repository_owner }}:staging&state=open" | jq 'length')
+          echo "open_pr_exists=$([ "$COUNT" -gt 0 ] && echo 'true' || echo 'false')" >> $GITHUB_OUTPUT
+
   pr:
     name: Create or update PR (staging → main)
+    needs: check
+    if: needs.check.outputs.open_pr_exists != 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
