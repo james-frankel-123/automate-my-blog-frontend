@@ -121,6 +121,13 @@ Send the full result. The frontend uses **`result.content`** as the final body (
 
 The backend may emit `[TWEET:0]`, `[TWEET:1]`, … inside the streamed body. The frontend replaces these with tweet content when the tweet stream completes. No change needed for this handoff beyond keeping placeholders in the body and sending tweets on the tweet stream.
 
+### 5. Hero image placeholder in body
+
+The frontend expects the **hero image slot** as **markdown image syntax** so the preview can show a placeholder and later the generated hero image:
+
+- **Preferred:** `![IMAGE:hero_image:Description of the image.]` (with the leading `!`).
+- If the backend streams `[IMAGE:hero_image:...]` **without** the leading `!`, the frontend normalizes it so the placeholder and hero image still appear. For consistency and to avoid reliance on this normalization, the backend should emit the full markdown form: `![IMAGE:hero_image:...]`.
+
 ---
 
 ## Summary
@@ -131,6 +138,7 @@ The backend may emit `[TWEET:0]`, `[TWEET:1]`, … inside the streamed body. The
 | **No wrapper JSON in content** | Do not stream keys/values like `cta`, `seo`, `Score`, `Suggestions`, or JSON punctuation as content-chunk. |
 | **complete** | Send `result.content` as the full body with normal JSON newlines (`\n`). |
 | **field** | Use `field` so the frontend can distinguish title, metaDescription, and body without heuristics. |
+| **Hero image placeholder** | Use markdown image form `![IMAGE:hero_image:description]` (with leading `!`) so the preview shows the placeholder and hero image. |
 
 Once the backend follows this contract, the frontend can rely on it and simplify or remove the current filtering heuristics.
 

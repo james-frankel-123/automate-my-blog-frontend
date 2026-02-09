@@ -132,6 +132,10 @@ const markdownToHTML = (markdown, options = {}) => {
   // Italic (non-greedy)
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
 
+  // Normalize hero placeholder when backend streams [IMAGE:hero_image:...] without leading !
+  // (Frontend expects markdown image syntax ![IMAGE:hero_image:...]; without ! no placeholder/image is shown.)
+  html = html.replace(/(?<!!)\[(IMAGE:hero_image:[^\]]*)\](?!\()/gim, '![$1]');
+
   // Images ![alt](url) — before links so ![...](...) is not treated as link; placeholders get span (or hero sentinel if URL provided)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, (_, alt, url) => {
     const u = url.trim();
