@@ -1005,11 +1005,13 @@ const DashboardLayout = ({
             '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
           }}
         >
-          {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90); compact on mobile */}
+          {/* Floating Action Buttons - Only visible for logged-in users (Fixes #90); below fixed header on mobile when header is visible */}
           {user && (
-          <div style={{
+          <div
+            className={showFixedHeader && isMobile ? 'dashboard-fabs-below-fixed-header' : undefined}
+            style={{
             position: 'fixed',
-            top: isMobile ? '16px' : '29px',
+            top: isMobile && showFixedHeader ? 'calc(56px + env(safe-area-inset-top, 0px) + 12px)' : (isMobile ? '16px' : '29px'),
             right: isMobile ? '12px' : '29px',
             left: isMobile ? '12px' : undefined,
             zIndex: 999,
@@ -1238,6 +1240,7 @@ const DashboardLayout = ({
 
           {/* Footer with deploy commit hash for deployment verification */}
           <footer
+            className="dashboard-footer"
             style={{
               marginTop: 'var(--space-6)',
               padding: 'var(--space-3) var(--space-6)',

@@ -36,6 +36,14 @@
     max-width: 100vw;
   }
 
+  /* Prevent long URLs and text from causing horizontal scroll */
+  .dashboard-tab-content,
+  .dashboard-content-below-fixed-header,
+  .ant-card-body {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
   /* Workflow container mobile optimization */
   .workflow-container {
     width: 100% !important;
@@ -124,6 +132,34 @@
 
   .logged-out-header-left {
     min-width: 0 !important;
+  }
+
+  /* Hero: responsive title, subtitle and padding so they don't overflow on small screens */
+  .unified-workflow-hero {
+    padding: var(--space-4) var(--space-3) !important;
+  }
+  .unified-workflow-hero .ant-typography {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+  .unified-workflow-hero h2.ant-typography {
+    font-size: 1.5rem !important;
+    line-height: 1.3 !important;
+  }
+  .unified-workflow-hero .ant-typography + .ant-typography,
+  .unified-workflow-hero p.ant-typography {
+    font-size: 1rem !important;
+  }
+
+  /* Dashboard tab: reduce padding on mobile for more content space */
+  .dashboard-tab-content {
+    padding: var(--space-4) !important;
+  }
+
+  /* Footer: reduce horizontal padding on mobile */
+  .dashboard-footer {
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
   }
 }
 

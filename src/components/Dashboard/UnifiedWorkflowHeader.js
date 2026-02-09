@@ -329,7 +329,9 @@ const UnifiedWorkflowHeader = ({
 
   return (
     <>
-      <div style={{
+      <div
+        className="unified-workflow-hero"
+        style={{
         marginBottom: '24px',
         textAlign: 'center',
         padding: '24px',
