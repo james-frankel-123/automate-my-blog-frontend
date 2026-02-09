@@ -24,6 +24,18 @@ function removeOverlay(page) {
   });
 }
 
+/** Install script that removes webpack dev server overlay on load and shortly after (CI: overlay intercepts clicks). */
+async function installOverlayRemover(page) {
+  await page.addInitScript(() => {
+    const remove = () => {
+      const el = document.getElementById('webpack-dev-server-client-overlay');
+      if (el) el.remove();
+    };
+    remove();
+    [200, 500, 1000, 2000].forEach((ms) => setTimeout(remove, ms));
+  });
+}
+
 /** Dismiss any open Ant Design modal so it does not intercept clicks (e.g. on Create Post button). */
 async function dismissOpenModalIfPresent(page) {
   const modalWrap = page.locator('.ant-modal-wrap').first();
@@ -128,6 +140,7 @@ async function clickCreatePostButton(page, options = {}) {
 }
 
 async function setupLoggedIn(page) {
+  await installOverlayRemover(page);
   await installWorkflowMocks(page);
   await page.goto('/');
   await clearStorage(page);
@@ -137,9 +150,12 @@ async function setupLoggedIn(page) {
   await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(500);
   await removeOverlay(page);
+  await page.waitForTimeout(300);
+  await removeOverlay(page);
 }
 
 async function setupLoggedOut(page) {
+  await installOverlayRemover(page);
   await installWorkflowMocks(page);
   await page.goto('/');
   await clearStorage(page);
@@ -147,6 +163,8 @@ async function setupLoggedOut(page) {
   await page.waitForLoadState('load');
   await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
   await page.waitForTimeout(500);
+  await removeOverlay(page);
+  await page.waitForTimeout(300);
   await removeOverlay(page);
 }
 
@@ -1263,6 +1281,7 @@ test.describe('E2E (mocked backend)', () => {
 
     test('website analysis shows progress bar during analysis', async ({ page }) => {
       test.setTimeout(60000);
+      await installOverlayRemover(page);
       await installWorkflowMocksWithOptions(page, { progressiveJobStatus: true });
       await page.goto('/');
       await clearStorage(page);
@@ -1272,8 +1291,10 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(500);
       await removeOverlay(page);
+      await page.waitForTimeout(300);
+      await removeOverlay(page);
 
-      await page.locator('button:has-text("Create New Post")').first().click();
+      await page.locator('button:has-text("Create New Post")').first().click({ force: true });
       await page.waitForTimeout(500);
       const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
       await expect(input).toBeVisible({ timeout: 10000 });
@@ -1296,6 +1317,7 @@ test.describe('E2E (mocked backend)', () => {
 
     test('503 on job create shows queue unavailable message', async ({ page }) => {
       test.setTimeout(90000);
+      await installOverlayRemover(page);
       await installWorkflowMocks(page);
       await page.goto('/');
       await clearStorage(page);
@@ -1304,6 +1326,8 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForLoadState('load');
       await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
       await page.waitForTimeout(500);
+      await removeOverlay(page);
+      await page.waitForTimeout(300);
       await removeOverlay(page);
 
       await page.route('**/api/v1/jobs/content-generation', (route) => {
@@ -1317,7 +1341,8 @@ test.describe('E2E (mocked backend)', () => {
         return route.continue();
       });
 
-      await page.locator('button:has-text("Create New Post")').first().click();
+      await removeOverlay(page);
+      await page.locator('button:has-text("Create New Post")').first().click({ force: true });
       await page.waitForTimeout(800);
       const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
       await expect(websiteInput).toBeVisible({ timeout: 10000 });
@@ -1401,9 +1426,10 @@ test.describe('E2E (mocked backend)', () => {
       test.setTimeout(45000);
       await setupLoggedIn(page);
 
+      await removeOverlay(page);
       const postsTab = page.locator('.ant-menu-item').filter({ hasText: /posts|blog/i }).first();
       await expect(postsTab).toBeVisible({ timeout: 8000 });
-      await postsTab.click();
+      await postsTab.click({ force: true });
       await page.waitForTimeout(1000);
 
       const postsSection = page.locator('#posts');
@@ -1481,9 +1507,10 @@ test.describe('E2E (mocked backend)', () => {
     });
 
     test('should display user menu when logged in', async ({ page }) => {
+      await removeOverlay(page);
       const userMenu = page.locator('[data-testid="user-menu"], .ant-avatar, .ant-dropdown-trigger').first();
       if (await userMenu.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await userMenu.click();
+        await userMenu.click({ force: true });
         await page.waitForTimeout(200);
         const items = page.locator('.ant-dropdown-menu-item, [role="menuitem"]');
         await expect(items.first()).toBeVisible({ timeout: 3000 });
@@ -1552,9 +1579,10 @@ test.describe('E2E (mocked backend)', () => {
     });
 
     test('should allow editing post content', async ({ page }) => {
+      await removeOverlay(page);
       const create = page.locator('button:has-text("Create"), button:has-text("New Post")').first();
       if (await create.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await create.click();
+        await create.click({ force: true });
         const editor = page.locator('.tiptap, [contenteditable="true"]').first();
         if (await editor.isVisible({ timeout: 3000 }).catch(() => false)) {
           await editor.click();
@@ -1605,9 +1633,10 @@ test.describe('E2E (mocked backend)', () => {
     });
 
     test('should filter and search posts', async ({ page }) => {
-      const tab = page.locator('text=/posts|blog/i').first();
+      await removeOverlay(page);
+      const tab = page.locator('.ant-menu-item').filter({ hasText: /posts|blog/i }).first();
       if (await tab.isVisible({ timeout: 5000 }).catch(() => false)) {
-        await tab.click();
+        await tab.click({ force: true });
         await page.waitForTimeout(500);
       }
       const search = page.locator('input[placeholder*="search" i], input[type="search"]').first();
@@ -1643,12 +1672,13 @@ test.describe('E2E (mocked backend)', () => {
     });
 
     test('content editing workflow: create → edit → preview → export', async ({ page }) => {
+      await removeOverlay(page);
       const create = page.locator('button:has-text("Create"), button:has-text("New Post")').first();
       if (!(await create.isVisible({ timeout: 5000 }).catch(() => false))) {
         test.skip();
         return;
       }
-      await create.click();
+      await create.click({ force: true });
       const titleInput = page.locator('input[placeholder*="title" i]').first();
       if (await titleInput.isVisible({ timeout: 3000 }).catch(() => false)) {
         await titleInput.fill('My Test Post');
@@ -1689,7 +1719,8 @@ test.describe('E2E (mocked backend)', () => {
         test.setTimeout(90000);
         await setupLoggedIn(page);
 
-        await page.locator('button:has-text("Create New Post")').first().click();
+        await removeOverlay(page);
+        await page.locator('button:has-text("Create New Post")').first().click({ force: true });
         await page.waitForTimeout(800);
         const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
         await expect(websiteInput).toBeVisible({ timeout: 10000 });
@@ -1729,7 +1760,8 @@ test.describe('E2E (mocked backend)', () => {
         test.setTimeout(90000);
         await setupLoggedIn(page);
 
-        await page.locator('button:has-text("Create New Post")').first().click();
+        await removeOverlay(page);
+        await page.locator('button:has-text("Create New Post")').first().click({ force: true });
         await page.waitForTimeout(800);
         const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
         await expect(websiteInput).toBeVisible({ timeout: 10000 });
@@ -1769,7 +1801,8 @@ test.describe('E2E (mocked backend)', () => {
         test.setTimeout(90000);
         await setupLoggedIn(page);
 
-        await page.locator('button:has-text("Create New Post")').first().click();
+        await removeOverlay(page);
+        await page.locator('button:has-text("Create New Post")').first().click({ force: true });
         await page.waitForTimeout(800);
         const websiteInput = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
         await expect(websiteInput).toBeVisible({ timeout: 10000 });
