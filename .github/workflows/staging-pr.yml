@@ -1,0 +1,34 @@
+# Create or update a PR from staging → main when staging is pushed.
+# Requires actions/checkout so gh CLI has a git repository context.
+
+name: Create or update PR (staging → main)
+
+on:
+  push:
+    branches:
+      - staging
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr:
+    name: Create or update PR (staging → main)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Create or update PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          EXISTING=$(gh pr list --base main --head staging --state open --json number,url --jq '.[0]')
+          if [ -n "$EXISTING" ] && [ "$EXISTING" != "null" ]; then
+            echo "Open PR already exists"
+          else
+            gh pr create --base main --head staging --title "Staging → main" --body "Auto-opened from push to \`staging\`."
+          fi
