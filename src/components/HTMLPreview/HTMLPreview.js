@@ -3,7 +3,7 @@ import DOMPurify from 'dompurify';
 import { Tweet } from 'react-tweet';
 import 'react-tweet/theme.css';
 import { typography } from '../DesignSystem/tokens';
-import heroImageFallback from '../assets/hero-image-fallback.png';
+import heroImageFallback from '../../assets/hero-image-fallback.png';
 
 function escapeAttr(s) {
   if (typeof s !== 'string') return '';
