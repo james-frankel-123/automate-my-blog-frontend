@@ -42,6 +42,9 @@ function StreamingPreview({
   style = {},
   generationComplete = false,
 }) {
+  if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+    console.log('[HeroImage] StreamingPreview received', { heroImageUrl: heroImageUrl ?? '(none)', hasContent: !!content });
+  }
   const contentWithPlaceholders = applyRelatedContentPlaceholders(content || '');
   const resolvedContent = replaceTweetPlaceholders(
     replaceVideoPlaceholders(

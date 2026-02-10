@@ -20,11 +20,22 @@ const HERO_PLACEHOLDER_MIN_MS = 400;
  * Handles cached images (checks img.complete) so the real image always replaces the placeholder once ready.
  * Uses inline styles + a scoped style tag so the placeholder is always visible (no dependency on parent styled-jsx).
  */
+/** Set window.__HERO_IMAGE_DEBUG__ = false to disable hero image logging */
+const HERO_LOG = (msg, data) => {
+  if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+    console.log(`[HeroImage] ${msg}`, data ?? '');
+  }
+};
+
 function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [effectiveSrc, setEffectiveSrc] = useState(src);
   const imgRef = useRef(null);
+
+  useEffect(() => {
+    HERO_LOG('received props', { src: src ? `${String(src).slice(0, 80)}...` : src, isFallback: src === heroImageFallback });
+  }, [src]);
 
   useEffect(() => {
     const t = setTimeout(() => setMinTimeElapsed(true), HERO_PLACEHOLDER_MIN_MS);
@@ -52,15 +63,23 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
       if (node.complete && node.naturalWidth > 0) setImageLoaded(true);
     };
     const onError = () => {
+      HERO_LOG('img error', { effectiveSrc: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
       if (effectiveSrc !== heroImageFallback) {
+        HERO_LOG('switching to fallback');
         setEffectiveSrc(heroImageFallback);
       } else {
         setImageLoaded(true); // fallback also failed; hide placeholder
       }
     };
-    imgRef._onLoad = checkComplete;
+    const onLoadSuccess = () => {
+      if (node.complete && node.naturalWidth > 0) {
+        HERO_LOG('img loaded', { naturalWidth: node.naturalWidth, src: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
+      }
+      checkComplete();
+    };
+    imgRef._onLoad = onLoadSuccess;
     imgRef._onError = onError;
-    node.addEventListener('load', checkComplete);
+    node.addEventListener('load', onLoadSuccess);
     node.addEventListener('error', onError);
     checkComplete();
     requestAnimationFrame(checkComplete);
