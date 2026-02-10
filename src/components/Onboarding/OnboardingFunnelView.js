@@ -1,15 +1,17 @@
 /**
  * OnboardingFunnelView — guided sequential funnel: website → analysis → audience → topic → signup (optional) → content.
- * Issue #261.
+ * Issue #261. Content generation runs on the same page (no redirect to dashboard).
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { Typography, message, Empty, Button, Skeleton } from 'antd';
 import { motion } from 'framer-motion';
+import { FileTextOutlined, HomeOutlined } from '@ant-design/icons';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
-import { analysisAPI, topicAPI } from '../../services/workflowAPI';
+import { analysisAPI, topicAPI, contentAPI } from '../../services/workflowAPI';
 import autoBlogAPI from '../../services/api';
 import workflowUtils from '../../utils/workflowUtils';
 import { systemVoice } from '../../copy/systemVoice';
+import { getStreamChunkContentOnly, extractStreamCompleteContent } from '../../utils/streamingUtils';
 import UnifiedWorkflowHeader from '../Dashboard/UnifiedWorkflowHeader';
 import WebsiteInputSection from './WebsiteInputSection';
 import StreamingNarration from './StreamingNarration';
@@ -20,9 +22,12 @@ import TopicCard from './TopicCard';
 import SignupGateCard from './SignupGateCard';
 import EditConfirmActions from './EditConfirmActions';
 import AnalysisEditSection from './AnalysisEditSection';
-import DashboardLayout from '../Dashboard/DashboardLayout';
 import LoggedOutProgressHeader from '../Dashboard/LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
+import ThinkingPanel from '../shared/ThinkingPanel';
+import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
+import RelatedContentPanel from '../shared/RelatedContentPanel';
+import StreamingPreview from '../StreamingTestbed/StreamingPreview';
 
 const { Title } = Typography;
 
@@ -84,7 +89,6 @@ function OnboardingFunnelView() {
   const [selectedAudienceIndex, setSelectedAudienceIndex] = useState(null);
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(null);
   const [_analysisConfirmed, setAnalysisConfirmed] = useState(false);
-  const [funnelComplete, setFunnelComplete] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [originalAnalysisSnapshot, setOriginalAnalysisSnapshot] = useState(null);
   const [fetchedTopicItems, setFetchedTopicItems] = useState([]);
@@ -103,11 +107,22 @@ function OnboardingFunnelView() {
   const lastProgressAtRef = useRef(0);
   const reassuranceStepRef = useRef(0);
   const analysisInProgressRef = useRef(false);
+  const contentGenerationStartedRef = useRef(false);
+
+  // Content generation on same page (related content + blog generation)
+  const [relatedContentSteps, setRelatedContentSteps] = useState([]);
+  const [relatedTweets, setRelatedTweets] = useState([]);
+  const [relatedArticles, setRelatedArticles] = useState([]);
+  const [relatedVideos, setRelatedVideos] = useState([]);
+  const [generatingContent, setGeneratingContent] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [contentGenerated, setContentGenerated] = useState(false);
+  const [contentGenerationError, setContentGenerationError] = useState(null);
 
   const analysis = stepResults?.home?.websiteAnalysis || {};
   const scenarios = analysis.scenarios || [];
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas intentionally not useMemo
-  const contentIdeas = analysis.contentIdeas || [];
+  const contentIdeas = React.useMemo(() => analysis.contentIdeas || [], [analysis.contentIdeas]);
   const hasAnalysis = stepResults?.home?.analysisCompleted && analysis?.businessName;
 
   // When backend doesn't return audience scenarios, show one segment derived from analysis so the funnel can continue
@@ -297,8 +312,6 @@ function OnboardingFunnelView() {
         }
       )
       .catch(() => setContentNarrationStreaming(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas expression intentionally not wrapped in useMemo
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas expression intentionally not useMemo
   }, [unlocked.contentNarration, analysis?.organizationId, selectedTopicIndex, contentIdeas, fetchedTopicItems]);
 
   const handleAnalyze = useCallback(async (url) => {
@@ -517,22 +530,230 @@ function OnboardingFunnelView() {
   }, []);
 
   const handleContentNarrationComplete = useCallback(() => {
-    setFunnelComplete(true);
     saveWorkflowState?.();
+    // Content generation section is shown below; generation is started by useEffect
   }, [saveWorkflowState]);
 
-  if (funnelComplete) {
-    return (
-      <DashboardLayout
-        workflowContent={true}
-        showDashboard={true}
-        isMobile={false}
-        onActiveTabChange={() => {}}
-        forceWorkflowMode={false}
-        initialActiveTab="posts"
-      />
+  // Start content generation when content narration section unlocks (same flow as PostsTab)
+  useEffect(() => {
+    if (
+      !unlocked.contentNarration ||
+      contentGenerationStartedRef.current ||
+      selectedTopicIndex == null ||
+      !hasAnalysis
+    ) {
+      return;
+    }
+    const items =
+      contentIdeas.length > 0
+        ? contentIdeas.slice(0, 5).map((t, i) => ({
+            id: `funnel-topic-${i}`,
+            title: typeof t === 'string' ? t : toNarrationParamString(t?.title ?? t?.topic ?? t),
+            description: typeof t === 'object' && t?.description != null ? t.description : '',
+          }))
+        : fetchedTopicItems.map((t, i) => ({
+            id: `funnel-topic-${i}`,
+            title: toNarrationParamString(t?.title ?? t?.subheader ?? 'Topic'),
+            description: typeof t?.description === 'string' ? t.description : toNarrationParamString(t?.subheader ?? t?.description ?? ''),
+          }));
+    const topicRaw = items[selectedTopicIndex] ?? items[0];
+    if (!topicRaw?.title) return;
+
+    const topic = {
+      id: topicRaw.id ?? `funnel-topic-${selectedTopicIndex}`,
+      title: topicRaw.title,
+      description: topicRaw.description ?? '',
+      subheader: topicRaw.description ?? '',
+    };
+    const websiteAnalysisData = analysis;
+    const organizationId = analysis?.organizationId ?? null;
+    const organizationName = analysis?.businessName ?? '';
+
+    contentGenerationStartedRef.current = true;
+    setGeneratingContent(true);
+    setContentGenerationError(null);
+    setRelatedTweets([]);
+    setRelatedArticles([]);
+    setRelatedVideos([]);
+    setEditingContent('');
+
+    const fetchSteps = [
+      { id: 'tweets', label: systemVoice.content?.fetchTweets ?? 'Fetching tweets…', status: RelatedContentStepStatus.PENDING },
+      { id: 'articles', label: systemVoice.content?.fetchArticles ?? 'Fetching articles…', status: RelatedContentStepStatus.PENDING },
+      { id: 'videos', label: systemVoice.content?.fetchVideos ?? 'Fetching videos…', status: RelatedContentStepStatus.PENDING },
+    ];
+    setRelatedContentSteps(fetchSteps);
+
+    const runTweetsAndVideos = () =>
+      autoBlogAPI
+        .fetchRelatedContent(topic, websiteAnalysisData, { maxTweets: 3, maxVideos: 5 })
+        .then(({ tweets: tweetsData, videos: videosData }) => {
+          const tweetsArr = Array.isArray(tweetsData) ? tweetsData : [];
+          const videosArr = Array.isArray(videosData) ? videosData : [];
+          setRelatedTweets(tweetsArr);
+          setRelatedVideos(videosArr);
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => {
+              if (s.id === 'tweets') return { ...s, status: RelatedContentStepStatus.DONE, count: tweetsArr.length };
+              if (s.id === 'videos') return { ...s, status: RelatedContentStepStatus.DONE, count: videosArr.length };
+              return s;
+            })
+          );
+          return [tweetsArr, videosArr];
+        })
+        .catch(() => {
+          setRelatedContentSteps((prev) =>
+            prev.map((s) =>
+              s.id === 'tweets' || s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s
+            )
+          );
+          return [[], []];
+        });
+
+    const runArticleStream = () =>
+      autoBlogAPI
+        .searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
+        .then(({ connectionId, streamUrl }) =>
+          new Promise((resolve) => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+            );
+            autoBlogAPI.connectToStream(connectionId, {
+              onComplete: (data) => {
+                const articles = data?.articles ?? data?.data?.articles ?? [];
+                const arr = Array.isArray(articles) ? articles : [];
+                setRelatedArticles(arr);
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                );
+                resolve(arr);
+              },
+              onError: () => {
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                );
+                resolve([]);
+              },
+            }, { streamUrl });
+          })
+        )
+        .catch(() => {
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+          );
+          return [];
+        });
+
+    setRelatedContentSteps((prev) =>
+      prev.map((s) =>
+        s.id === 'tweets' || s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s
+      )
     );
-  }
+
+    Promise.all([runTweetsAndVideos(), runArticleStream()]).then(([tweetsVideosResult, articlesResult]) => {
+      const [tweetsArr = [], videosArr = []] = Array.isArray(tweetsVideosResult) ? tweetsVideosResult : [[], []];
+      const articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
+      const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
+      const shouldUseEnhancement = !!(organizationId && hasWebsiteAnalysis);
+      const enhancementOptions = {
+        useEnhancedGeneration: shouldUseEnhancement,
+        preloadedTweets: tweetsArr,
+        preloadedArticles: articlesArr,
+        preloadedVideos: videosArr,
+        organizationId,
+        organizationName,
+        comprehensiveContext: shouldUseEnhancement
+          ? { organizationId, organizationName, websiteAnalysis: websiteAnalysisData }
+          : null,
+        targetSEOScore: 95,
+        includeVisuals: shouldUseEnhancement,
+        onProgress: (status) => {
+          setGenerationProgress({
+            progress: status.progress,
+            currentStep: status.currentStep,
+            status: status.status,
+            estimatedTimeRemaining: status.estimatedTimeRemaining,
+          });
+        },
+        onBlogResult: (data) => {
+          const text = extractStreamCompleteContent(data);
+          if (text) setEditingContent(text);
+        },
+      };
+
+      contentAPI
+        .startBlogStream(topic, websiteAnalysisData, null, stepResults?.home?.webSearchInsights || {}, enhancementOptions)
+        .then(({ connectionId }) => {
+          setRelatedContentSteps([]);
+          setEditingContent('');
+          let accumulatedChunks = '';
+          return new Promise((resolve, reject) => {
+            autoBlogAPI.connectToStream(connectionId, {
+              onChunk: (data) => {
+                const chunk = getStreamChunkContentOnly(data);
+                if (chunk) {
+                  accumulatedChunks += chunk;
+                  setEditingContent((prev) => prev + chunk);
+                }
+              },
+              onComplete: (data) => {
+                const fromComplete = extractStreamCompleteContent(data);
+                const finalContent = fromComplete || accumulatedChunks;
+                if (finalContent) setEditingContent(finalContent);
+                setContentGenerated(true);
+                setGeneratingContent(false);
+                resolve({ success: true, content: finalContent });
+              },
+              onError: (errData) => {
+                reject(new Error(errData?.message || 'Stream error'));
+              },
+            });
+          });
+        })
+        .then((result) => {
+          if (result?.success && result?.content) {
+            message.success('Blog content generated!');
+            autoBlogAPI.createPost?.({
+              title: topic.title,
+              content: result.content,
+              status: 'draft',
+              topic_data: topic,
+            }).catch((err) => console.warn('Save post failed:', err?.message));
+          }
+        })
+        .catch((streamErr) => {
+          console.warn('Blog stream not available, falling back to sync generation:', streamErr?.message);
+          return contentAPI.generateContent(
+            topic,
+            websiteAnalysisData,
+            null,
+            stepResults?.home?.webSearchInsights || {},
+            enhancementOptions
+          ).then((res) => {
+            if (res?.success && res?.content) {
+              setEditingContent(res.content ?? '');
+              setContentGenerated(true);
+              message.success('Blog content generated!');
+              autoBlogAPI.createPost?.({
+                title: topic.title,
+                content: res.content,
+                status: 'draft',
+                topic_data: topic,
+              }).catch((err) => console.warn('Save post failed:', err?.message));
+            } else if (res?.error) {
+              setContentGenerationError(res.error);
+              message.error(res.error);
+            }
+            setGeneratingContent(false);
+          }).catch((err) => {
+            setContentGenerationError(err?.message ?? 'Content generation failed');
+            message.error(err?.message ?? 'Content generation failed');
+            setGeneratingContent(false);
+          });
+        });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content section unlocks; contentIdeas intentionally not useMemo
+  }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis]);
 
   const iconUrls = analysis.iconUrls || analysis.cardIcons || {};
   const analysisCards = [
@@ -939,6 +1160,88 @@ function OnboardingFunnelView() {
             onComplete={handleContentNarrationComplete}
             dataTestId="content-narration"
           />
+          </motion.div>
+        </section>
+      )}
+
+      {/* Content generation on same page: related content search + existing content component */}
+      {unlocked.contentNarration && (
+        <section ref={(el) => (sectionRefs.current.contentGeneration = el)} style={{ marginTop: 40, marginBottom: 48 }}>
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0 }}>Creating your article</Title>
+              <Button
+                type="link"
+                icon={<HomeOutlined />}
+                onClick={() => { window.location.href = '/dashboard'; }}
+                style={{ paddingLeft: 0, paddingRight: 0 }}
+              >
+                Go to dashboard
+              </Button>
+            </div>
+            {generatingContent && (
+              <>
+                <ThinkingPanel
+                  isActive={generatingContent}
+                  currentStep={generationProgress?.currentStep}
+                  progress={generationProgress?.progress}
+                  thoughts={[]}
+                  estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                  workingForYouLabel={systemVoice.content?.workingForYou ?? 'Working on it…'}
+                  progressPreamble={systemVoice.content?.progressPreamble ?? ''}
+                  fallbackStep={systemVoice.content?.generating ?? 'Generating…'}
+                  dataTestId="content-generation-progress"
+                />
+                {relatedContentSteps.length > 0 && (
+                  <RelatedContentStepsPanel
+                    steps={relatedContentSteps}
+                    title="Preparing related content"
+                  />
+                )}
+              </>
+            )}
+            {(relatedTweets.length > 0 || relatedArticles.length > 0 || relatedVideos.length > 0) && (
+              <div style={{ marginTop: 16, marginBottom: 16 }}>
+                <RelatedContentPanel
+                  tweets={relatedTweets}
+                  articles={relatedArticles}
+                  videos={relatedVideos}
+                />
+              </div>
+            )}
+            {contentGenerationError && (
+              <Typography.Text type="danger" style={{ display: 'block', marginTop: 16 }}>
+                {contentGenerationError}
+              </Typography.Text>
+            )}
+            {(editingContent || contentGenerated) && (
+              <div style={{ marginTop: 24 }}>
+                <StreamingPreview
+                  content={editingContent}
+                  relatedArticles={relatedArticles}
+                  relatedVideos={relatedVideos}
+                  relatedTweets={relatedTweets}
+                  style={{ marginTop: 16 }}
+                />
+                <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<FileTextOutlined />}
+                    onClick={() => { window.location.href = '/dashboard?tab=posts'; }}
+                  >
+                    View all posts in dashboard
+                  </Button>
+                  <Button
+                    type="default"
+                    icon={<HomeOutlined />}
+                    onClick={() => { window.location.href = '/dashboard'; }}
+                  >
+                    Go to dashboard
+                  </Button>
+                </div>
+              </div>
+            )}
           </motion.div>
         </section>
       )}
