@@ -124,6 +124,8 @@ function OnboardingFunnelView() {
   const [showManualCTAModal, setShowManualCTAModal] = useState(false);
   const [startContentGenerationTrigger, setStartContentGenerationTrigger] = useState(0);
   const ctaPromptSkippedForSessionRef = useRef(false);
+  /** When true, article stream completed after we already timed out — ignore its onComplete/onError so step stays "Skipped". */
+  const articlesTimedOutRef = useRef(false);
 
   const analysis = stepResults?.home?.websiteAnalysis || {};
   const organizationCTAs = stepResults?.home?.ctas ?? [];
@@ -656,6 +658,8 @@ function OnboardingFunnelView() {
           return [[], []];
         });
 
+    const ONBOARDING_ARTICLES_TIMEOUT_MS = 10000;
+
     const runArticleStream = () =>
       autoBlogAPI
         .searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
@@ -666,6 +670,7 @@ function OnboardingFunnelView() {
             );
             autoBlogAPI.connectToStream(connectionId, {
               onComplete: (data) => {
+                if (articlesTimedOutRef.current) return;
                 const articles = data?.articles ?? data?.data?.articles ?? [];
                 const arr = Array.isArray(articles) ? articles : [];
                 setRelatedArticles(arr);
@@ -675,6 +680,7 @@ function OnboardingFunnelView() {
                 resolve(arr);
               },
               onError: () => {
+                if (articlesTimedOutRef.current) return;
                 setRelatedContentSteps((prev) =>
                   prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
                 );
@@ -684,11 +690,26 @@ function OnboardingFunnelView() {
           })
         )
         .catch(() => {
+          if (articlesTimedOutRef.current) return [];
           setRelatedContentSteps((prev) =>
             prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
           );
           return [];
         });
+
+    const runArticleStreamWithTimeout = () => {
+      articlesTimedOutRef.current = false;
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          articlesTimedOutRef.current = true;
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.SKIPPED } : s))
+          );
+          resolve([]);
+        }, ONBOARDING_ARTICLES_TIMEOUT_MS);
+      });
+      return Promise.race([runArticleStream(), timeoutPromise]);
+    };
 
     setRelatedContentSteps((prev) =>
       prev.map((s) =>
@@ -696,7 +717,7 @@ function OnboardingFunnelView() {
       )
     );
 
-    Promise.all([runTweetsAndVideos(), runArticleStream()]).then(([tweetsVideosResult, articlesResult]) => {
+    Promise.all([runTweetsAndVideos(), runArticleStreamWithTimeout()]).then(([tweetsVideosResult, articlesResult]) => {
       const [tweetsArr = [], videosArr = []] = Array.isArray(tweetsVideosResult) ? tweetsVideosResult : [[], []];
       const articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
