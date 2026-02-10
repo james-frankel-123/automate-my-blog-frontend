@@ -733,6 +733,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             setTopicImageGeneratingIndex(data?.index != null ? data.index : null);
           },
           onTopicImageComplete: (topic, index) => {
+            if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+              console.log('[HeroImage] topic-image-complete', { index, topicId: topic?.id, image: topic?.image ? `${String(topic.image).slice(0, 60)}...` : topic?.image });
+            }
             setTopicImageGeneratingIndex((prev) => (prev === index ? null : prev));
             setAvailableTopics((prev) => {
               const next = [...prev];
@@ -741,8 +744,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             });
             // So preview gets heroImageUrl: keep selectedTopic in sync when its topic's image arrives
             setSelectedTopic((prev) => {
-              if (prev?.id != null && topic?.id != null && prev.id === topic.id && topic?.image)
+              if (prev?.id != null && topic?.id != null && prev.id === topic.id && topic?.image) {
+                if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+                  console.log('[HeroImage] selectedTopic updated with image', { topicId: prev.id });
+                }
                 return { ...prev, image: topic.image };
+              }
               return prev;
             });
           },
