@@ -21,6 +21,19 @@ const paragraphCardStyle = {
 };
 
 /**
+ * Converts insight to displayable string
+ * Handles both string insights and object insights (with body, heading, etc.)
+ */
+function insightToString(insight) {
+  if (typeof insight === 'string') return insight;
+  if (typeof insight === 'object' && insight !== null) {
+    // Try common string fields in order of preference
+    return insight.body || insight.heading || insight.takeaway || insight.category || JSON.stringify(insight);
+  }
+  return String(insight);
+}
+
+/**
  * NarrativeAnalysisCard - Displays website analysis as a multi-step journey.
  * Renders markdown and breaks content into paragraph cards (streaming-style UX).
  */
@@ -176,7 +189,7 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
                     bodyStyle={{ padding: '12px 16px' }}
                   >
                     <Text style={{ color: 'var(--color-primary-700)', fontSize: 14, fontWeight: 500, lineHeight: 1.5 }}>
-                      {insight}
+                      {insightToString(insight)}
                     </Text>
                   </Card>
                 </Col>

@@ -2,10 +2,11 @@
  * ChecklistProgress — A checklist-style progress indicator for analysis tasks.
  * Shows steps as checkboxes that get checked off as tasks complete.
  * Features cute animations and a clean white background.
+ * Supports completed state to show all steps as done with success styling.
  */
 
 import React, { useRef, useEffect } from 'react';
-import { CheckOutlined, LoadingOutlined } from '@ant-design/icons';
+import { CheckOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons';
 
 const styles = {
   container: {
@@ -14,6 +15,19 @@ const styles = {
     padding: '20px 24px',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
     border: '1px solid var(--color-border-base)',
+  },
+  containerCompleted: {
+    backgroundColor: '#f6ffed',
+    border: '1px solid #b7eb8f',
+  },
+  completedHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    color: '#52c41a',
+    fontWeight: 500,
+    marginBottom: '16px',
+    fontSize: '14px',
   },
   checklistItem: {
     display: 'flex',
@@ -92,6 +106,7 @@ const styles = {
  * @param {string} [props.phase] - Current sub-phase within the step
  * @param {number} [props.progress] - Overall progress percentage (0-100)
  * @param {number} [props.estimatedTimeRemaining] - Seconds remaining
+ * @param {boolean} [props.completed] - If true, show all steps as complete with success styling
  * @param {string} [props.dataTestId] - Test ID for the component
  */
 function ChecklistProgress({
@@ -100,6 +115,7 @@ function ChecklistProgress({
   phase,
   progress,
   estimatedTimeRemaining,
+  completed = false,
   dataTestId = 'checklist-progress',
 }) {
   // Track the maximum step index reached to prevent backwards movement
@@ -130,8 +146,20 @@ function ChecklistProgress({
     maxStepIndexRef.current = currentStepIndex;
   }
 
+  // Log when completed state changes
+  useEffect(() => {
+    if (completed) {
+      console.log('🕐 [ChecklistProgress] Showing completed state with all checkmarks');
+    }
+  }, [completed]);
+
   // Determine which steps are complete (before current), active (current), or pending (after current)
   const getStepState = (index) => {
+    // If completed prop is true, all steps are complete
+    if (completed) {
+      return 'complete';
+    }
+
     if (currentStepIndex === -1) {
       // If no current step determined, show first step as active
       return index === 0 ? 'active' : 'pending';
@@ -149,10 +177,20 @@ function ChecklistProgress({
       data-testid={dataTestId}
       role="status"
       aria-live="polite"
-      aria-label={`Analysis progress: ${currentStep || 'Starting'}`}
-      style={styles.container}
+      aria-label={completed ? 'Analysis complete' : `Analysis progress: ${currentStep || 'Starting'}`}
+      style={{
+        ...styles.container,
+        ...(completed ? styles.containerCompleted : {}),
+      }}
       className="checklist-progress"
     >
+      {completed && (
+        <div style={styles.completedHeader}>
+          <CheckCircleOutlined />
+          <span>Analysis Complete</span>
+        </div>
+      )}
+
       {steps.map((step, index) => {
         const state = getStepState(index);
         const isComplete = state === 'complete';
@@ -197,14 +235,12 @@ function ChecklistProgress({
       })}
 
       {/* Footer with progress percentage and ETA */}
-      {(progress != null || estimatedTimeRemaining != null) && (
+      {(progress != null || estimatedTimeRemaining != null || completed) && (
         <div style={styles.footer}>
-          {progress != null && (
-            <span style={styles.progressText}>
-              {Math.round(progress)}% complete
-            </span>
-          )}
-          {estimatedTimeRemaining != null && estimatedTimeRemaining > 0 && (
+          <span style={styles.progressText}>
+            {completed ? '100% complete' : progress != null ? `${Math.round(progress)}% complete` : ''}
+          </span>
+          {!completed && estimatedTimeRemaining != null && estimatedTimeRemaining > 0 && (
             <span style={styles.eta}>
               ~{estimatedTimeRemaining}s remaining
             </span>

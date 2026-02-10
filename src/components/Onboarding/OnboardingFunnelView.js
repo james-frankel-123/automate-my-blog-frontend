@@ -23,6 +23,7 @@ import AnalysisEditSection from './AnalysisEditSection';
 import DashboardLayout from '../Dashboard/DashboardLayout';
 import LoggedOutProgressHeader from '../Dashboard/LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
+import BusinessProfileSlide from '../Analysis/BusinessProfileSlide';
 
 const { Title } = Typography;
 
@@ -92,13 +93,23 @@ function OnboardingFunnelView() {
   const [fetchedTopicItems, setFetchedTopicItems] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [audiencePlaceholderVisible, setAudiencePlaceholderVisible] = useState(false);
+  const [analysisNarrationContent, setAnalysisNarrationContent] = useState('');
+  const [analysisNarrationStreaming, setAnalysisNarrationStreaming] = useState(false);
+  const [analysisNarrationComplete, setAnalysisNarrationComplete] = useState(false);
+  const [businessProfile, setBusinessProfile] = useState(null);
+  const [editedBusinessProfile, setEditedBusinessProfile] = useState(null);
   const [audienceNarrationContent, setAudienceNarrationContent] = useState('');
   const [audienceNarrationStreaming, setAudienceNarrationStreaming] = useState(false);
   const [topicNarrationContent, setTopicNarrationContent] = useState('');
   const [topicNarrationStreaming, setTopicNarrationStreaming] = useState(false);
   const [contentNarrationContent, setContentNarrationContent] = useState('');
   const [contentNarrationStreaming, setContentNarrationStreaming] = useState(false);
+  const [headerAnimationComplete, setHeaderAnimationComplete] = useState(false);
+  const [holdTightNarrationComplete, setHoldTightNarrationComplete] = useState(false);
+  const [audienceNarrationComplete, setAudienceNarrationComplete] = useState(false);
+  const [topicNarrationComplete, setTopicNarrationComplete] = useState(false);
   const sectionRefs = useRef({});
+  const analysisNarrationStreamStartedRef = useRef(false);
   const audienceNarrationStreamStartedRef = useRef(false);
   const topicNarrationStreamStartedRef = useRef(false);
   const contentNarrationStreamStartedRef = useRef(false);
@@ -124,12 +135,50 @@ function OnboardingFunnelView() {
     : [];
   const displayScenarios = scenarios.length > 0 ? scenarios : fallbackScenarios;
 
+  // Log audience scenarios data
+  useEffect(() => {
+    if (scenarios.length > 0) {
+      console.log(`🕐 [OnboardingFunnelView] Found ${scenarios.length} audience scenarios from backend:`, scenarios);
+      console.log('🕐 [OnboardingFunnelView] displayScenarios:', displayScenarios);
+    } else if (fallbackScenarios.length > 0) {
+      console.log('🕐 [OnboardingFunnelView] Using fallback scenario:', fallbackScenarios);
+    }
+  }, [scenarios.length, fallbackScenarios.length]);
+
   const scrollTo = (key) => {
     const el = sectionRefs.current[key];
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const prevUnlocked = useRef({ ...DEFAULT_UNLOCKED });
+
+  // Log when analysisNarrationComplete changes
+  useEffect(() => {
+    if (analysisNarrationComplete) {
+      console.log('🕐 [OnboardingFunnelView] analysisNarrationComplete = true - PowerPoint slide can now render');
+    }
+  }, [analysisNarrationComplete]);
+
+  // Log when businessProfile loads
+  useEffect(() => {
+    if (businessProfile) {
+      console.log('🕐 [OnboardingFunnelView] businessProfile loaded - Edit/Confirm buttons can now render');
+    }
+  }, [businessProfile]);
+
+  // Log when analysis completes
+  useEffect(() => {
+    if (!loading && hasAnalysis) {
+      console.log('🕐 [OnboardingFunnelView] Analysis completed - checklist will stay visible');
+    }
+  }, [loading, hasAnalysis]);
+
+  // Log when analysisNarration unlocks
+  useEffect(() => {
+    if (unlocked.analysisNarration) {
+      console.log('🕐 [OnboardingFunnelView] analysisNarration unlocked - narration section will render');
+    }
+  }, [unlocked.analysisNarration]);
   useEffect(() => {
     const keys = ['analysisNarration', 'analysisOutput', 'audienceNarration', 'audienceOutput', 'topicNarration', 'topicOutput', 'signupGate', 'contentNarration'];
     keys.forEach((key) => {
@@ -217,11 +266,72 @@ function OnboardingFunnelView() {
     webSearchInsights,
   ]);
 
+  // Issue #303: fetch analysis narration from GET /api/v1/analysis/narration/analysis when section unlocks
+  useEffect(() => {
+    console.log('🎙️ [FRONTEND] Analysis narration useEffect triggered', {
+      unlocked: unlocked.analysisNarration,
+      hasOrgId: !!analysis?.organizationId,
+      alreadyStarted: analysisNarrationStreamStartedRef.current
+    });
+
+    if (!unlocked.analysisNarration || !analysis?.organizationId || analysisNarrationStreamStartedRef.current) return;
+
+    console.log('🚀 [FRONTEND] Starting analysis narration stream for orgId:', analysis.organizationId);
+    analysisNarrationStreamStartedRef.current = true;
+    setAnalysisNarrationStreaming(true);
+
+    autoBlogAPI
+      .connectNarrationStream(
+        'analysis',
+        { organizationId: analysis.organizationId },
+        {
+          onChunk: (data) => {
+            const text = data?.text ?? data?.chunk ?? '';
+            console.log('📝 [FRONTEND] Analysis chunk received:', text);
+            if (text) setAnalysisNarrationContent((prev) => prev + text);
+          },
+          onComplete: (data) => {
+            console.log('✅ [FRONTEND] Analysis narration complete');
+            setAnalysisNarrationStreaming(false);
+            if (data?.text) setAnalysisNarrationContent(data.text);
+          },
+          onBusinessProfile: (data) => {
+            console.log('📊 [FRONTEND-FUNNEL] Business profile EVENT RECEIVED:', data);
+            try {
+              const profile = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+              console.log('📊 [FRONTEND-FUNNEL] Business profile parsed:', profile);
+              setBusinessProfile(profile);
+              console.log('📊 [FRONTEND-FUNNEL] Business profile state set');
+            } catch (err) {
+              console.error('❌ [FRONTEND-FUNNEL] Failed to parse business profile:', err);
+            }
+          },
+          onError: (err) => {
+            console.error('❌ [FRONTEND] Analysis narration error:', err);
+            setAnalysisNarrationStreaming(false);
+          },
+        }
+      )
+      .catch((err) => {
+        console.error('❌ [FRONTEND] Analysis narration catch:', err);
+        setAnalysisNarrationStreaming(false);
+      });
+  }, [unlocked.analysisNarration, analysis?.organizationId]);
+
   // Issue #261: fetch audience narration from GET /api/v1/analysis/narration/audience when section unlocks
   useEffect(() => {
+    console.log('👥 [FRONTEND] Audience narration useEffect triggered', {
+      unlocked: unlocked.audienceNarration,
+      hasOrgId: !!analysis?.organizationId,
+      alreadyStarted: audienceNarrationStreamStartedRef.current
+    });
+
     if (!unlocked.audienceNarration || !analysis?.organizationId || audienceNarrationStreamStartedRef.current) return;
+
+    console.log('🚀 [FRONTEND] Starting audience narration stream for orgId:', analysis.organizationId);
     audienceNarrationStreamStartedRef.current = true;
     setAudienceNarrationStreaming(true);
+
     autoBlogAPI
       .connectNarrationStream(
         'audience',
@@ -229,25 +339,47 @@ function OnboardingFunnelView() {
         {
           onChunk: (data) => {
             const text = data?.text ?? data?.chunk ?? '';
+            console.log('📝 [FRONTEND] Audience chunk received:', text);
             if (text) setAudienceNarrationContent((prev) => prev + text);
           },
           onComplete: (data) => {
+            console.log('✅ [FRONTEND] Audience narration complete');
             setAudienceNarrationStreaming(false);
             if (data?.text) setAudienceNarrationContent(data.text);
           },
-          onError: () => setAudienceNarrationStreaming(false),
+          onError: (err) => {
+            console.error('❌ [FRONTEND] Audience narration error:', err);
+            setAudienceNarrationStreaming(false);
+          },
         }
       )
-      .catch(() => setAudienceNarrationStreaming(false));
+      .catch((err) => {
+        console.error('❌ [FRONTEND] Audience narration catch:', err);
+        setAudienceNarrationStreaming(false);
+      });
   }, [unlocked.audienceNarration, analysis?.organizationId]);
 
   // Issue #261: fetch topic narration when topic section unlocks (after user selects audience)
   useEffect(() => {
+    console.log('📝 [FRONTEND] Topic narration useEffect triggered', {
+      unlocked: unlocked.topicNarration,
+      hasOrgId: !!analysis?.organizationId,
+      selectedAudienceIndex,
+      alreadyStarted: topicNarrationStreamStartedRef.current
+    });
+
     if (!unlocked.topicNarration || !analysis?.organizationId || selectedAudienceIndex == null || topicNarrationStreamStartedRef.current) return;
+
     const raw = displayScenarios[selectedAudienceIndex]?.targetSegment ?? '';
     const selectedAudience = toNarrationParamString(raw);
+    console.log('🚀 [FRONTEND] Starting topic narration stream', {
+      orgId: analysis.organizationId,
+      selectedAudience
+    });
+
     topicNarrationStreamStartedRef.current = true;
     setTopicNarrationStreaming(true);
+
     autoBlogAPI
       .connectNarrationStream(
         'topic',
@@ -255,16 +387,24 @@ function OnboardingFunnelView() {
         {
           onChunk: (data) => {
             const text = data?.text ?? data?.chunk ?? '';
+            console.log('📝 [FRONTEND] Topic chunk received:', text);
             if (text) setTopicNarrationContent((prev) => prev + text);
           },
           onComplete: (data) => {
+            console.log('✅ [FRONTEND] Topic narration complete');
             setTopicNarrationStreaming(false);
             if (data?.text) setTopicNarrationContent(data.text);
           },
-          onError: () => setTopicNarrationStreaming(false),
+          onError: (err) => {
+            console.error('❌ [FRONTEND] Topic narration error:', err);
+            setTopicNarrationStreaming(false);
+          },
         }
       )
-      .catch(() => setTopicNarrationStreaming(false));
+      .catch((err) => {
+        console.error('❌ [FRONTEND] Topic narration catch:', err);
+        setTopicNarrationStreaming(false);
+      });
   }, [unlocked.topicNarration, analysis?.organizationId, selectedAudienceIndex, displayScenarios]);
 
   // Issue #261: fetch content narration when content section unlocks (after user selects topic)
@@ -426,38 +566,49 @@ function OnboardingFunnelView() {
   }, [setWebsiteUrl, updateWebsiteAnalysis, updateAnalysisCompleted, updateCTAData, updateWebSearchInsights, addStickyWorkflowStep, updateStickyWorkflowStep]);
 
   const unlockAnalysisOutput = useCallback(() => {
-    setUnlocked((u) => ({ ...u, analysisOutput: true }));
+    console.log('🕐 [OnboardingFunnelView] Analysis narration complete - unlocking output');
+    setAnalysisNarrationComplete(true);
+    console.log('🕐 [OnboardingFunnelView] Waiting 300ms before showing PowerPoint slide');
+    setTimeout(() => {
+      console.log('🕐 [OnboardingFunnelView] Unlocking analysisOutput - slide will now appear');
+      setUnlocked((u) => ({ ...u, analysisOutput: true }));
+    }, 300); // Small delay before showing slide to create clear sequencing
   }, []);
 
   const handleConfirmAnalysis = useCallback(() => {
     setAnalysisConfirmed(true);
     setEditMode(false);
     setOriginalAnalysisSnapshot(null);
+    setEditedBusinessProfile(null);
     setUnlocked((u) => ({ ...u, audienceNarration: true, audienceOutput: true }));
     saveWorkflowState?.();
   }, [saveWorkflowState]);
 
   const handleEditAnalysis = useCallback(() => {
-    setOriginalAnalysisSnapshot({
-      businessName: analysis.businessName ?? '',
-      targetAudience: analysis.targetAudience ?? '',
-      contentFocus: analysis.contentFocus ?? '',
-    });
+    setOriginalAnalysisSnapshot(businessProfile);
+    setEditedBusinessProfile(businessProfile);
     setEditMode(true);
-  }, [analysis.businessName, analysis.targetAudience, analysis.contentFocus]);
+  }, [businessProfile]);
 
-  const handleApplyEdit = useCallback(
-    (edited) => {
-      updateWebsiteAnalysis(edited);
-      setEditMode(false);
-      setOriginalAnalysisSnapshot(null);
-    },
-    [updateWebsiteAnalysis]
-  );
+  const handleApplyEdit = useCallback(() => {
+    if (editedBusinessProfile) {
+      setBusinessProfile(editedBusinessProfile);
+      // Also update the analysis object with the edited fields
+      updateWebsiteAnalysis({
+        businessName: editedBusinessProfile.businessName,
+        targetAudience: editedBusinessProfile.targetAudience,
+        contentFocus: editedBusinessProfile.contentFocus,
+      });
+    }
+    setEditMode(false);
+    setOriginalAnalysisSnapshot(null);
+    setEditedBusinessProfile(null);
+  }, [editedBusinessProfile, updateWebsiteAnalysis]);
 
   const handleCancelEdit = useCallback(() => {
     setEditMode(false);
     setOriginalAnalysisSnapshot(null);
+    setEditedBusinessProfile(null);
   }, []);
 
   const handleRequestSuggestion = useCallback(async (values, setFieldsValue) => {
@@ -489,7 +640,11 @@ function OnboardingFunnelView() {
   }, []);
 
   const unlockAudienceOutput = useCallback(() => {
-    setUnlocked((u) => ({ ...u, audienceOutput: true }));
+    console.log('🕐 [OnboardingFunnelView] Audience narration complete - unlocking audience cards');
+    setAudienceNarrationComplete(true);
+    setTimeout(() => {
+      setUnlocked((u) => ({ ...u, audienceOutput: true }));
+    }, 300); // Small delay for visual sequencing
   }, []);
 
   const handleSelectAudience = useCallback((index) => {
@@ -498,7 +653,11 @@ function OnboardingFunnelView() {
   }, []);
 
   const unlockTopicOutput = useCallback(() => {
-    setUnlocked((u) => ({ ...u, topicOutput: true }));
+    console.log('🕐 [OnboardingFunnelView] Topic narration complete - unlocking topic cards');
+    setTopicNarrationComplete(true);
+    setTimeout(() => {
+      setUnlocked((u) => ({ ...u, topicOutput: true }));
+    }, 300); // Small delay for visual sequencing
   }, []);
 
   const handleSelectTopic = useCallback((index) => {
@@ -593,6 +752,7 @@ function OnboardingFunnelView() {
         currentStep={0}
         enableSequentialAnimation={true}
         inputIsEditing={true}
+        onSequenceComplete={() => setHeaderAnimationComplete(true)}
       />
 
       <section ref={(el) => (sectionRefs.current.websiteInput = el)}>
@@ -604,98 +764,82 @@ function OnboardingFunnelView() {
           scanningMessage={scanningMessage}
           analysisProgress={analysisProgress}
           analysisThoughts={analysisThoughts}
+          analysisComplete={!loading && hasAnalysis}
+          headerAnimationComplete={headerAnimationComplete}
+          onHoldTightNarrationComplete={() => setHoldTightNarrationComplete(true)}
         />
       </section>
 
-      {loading && (
-        <section ref={(el) => (sectionRefs.current.analysisOutput = el)} style={{ marginTop: 32 }} data-testid="analysis-results-loading">
-          <Title level={4}>What I found</Title>
-          <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12, marginTop: 16 }}>Preparing your results…</Typography.Text>
-          <div style={{ display: 'flex', gap: 16, overflow: 'hidden', paddingBottom: 8 }}>
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                style={{
-                  flex: '0 0 auto',
-                  width: 'min(400px, 85vw)',
-                  padding: 24,
-                  background: 'var(--color-background-elevated)',
-                  borderRadius: 'var(--radius-xl)',
-                  boxShadow: 'var(--shadow-card)',
-                }}
-              >
-                <Skeleton active avatar={{ shape: 'square', size: 48 }} paragraph={{ rows: 2 }} title={false} />
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
       {!loading && unlocked.analysisNarration && hasAnalysis && (
         <>
+        {/* Phase 1: Narration (always shows) */}
         <section ref={(el) => (sectionRefs.current.analysisNarration = el)} style={{ marginTop: 32 }}>
           <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
             <StreamingNarration
-            content="I analyzed your website and found a clear focus. Here’s what stands out."
-            isStreaming={false}
+            content={analysisNarrationContent || `I analyzed ${analysis?.businessName || 'your website'} and found valuable insights. Here's what stands out.`}
+            isStreaming={analysisNarrationStreaming}
             onComplete={unlockAnalysisOutput}
             dataTestId="analysis-narration"
+            enableTypingEffect={true}
+            fallbackText={`I analyzed ${analysis?.businessName || 'your website'} and found valuable insights. Here's what stands out.`}
             />
           </motion.div>
         </section>
 
-          {/* What I found + placeholders shown with narration so placeholders are visible during load */}
-          <section ref={(el) => (sectionRefs.current.analysisOutput = el)} style={{ marginTop: 32 }}>
-            <motion.div initial={sectionInitial} animate={sectionAnimate} transition={{ ...sectionTransition, delay: 0.1 }}>
-              <Title level={4}>What I found</Title>
-              {analysisCards.length > 0 ? (
-            <CardCarousel onAllCardsViewed={() => {}} dataTestId="analysis-carousel">
-              {analysisCards.map((card, i) => (
-                <motion.div key={i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
-                  <AnalysisCard heading={card.heading} content={card.content} iconUrl={card.iconUrl} iconFallback={card.iconFallback} dataTestId={`analysis-card-${i}`} />
-                </motion.div>
-              ))}
-            </CardCarousel>
+          {/* Phase 2: Business Profile PowerPoint slide (only after narration completes) */}
+          {analysisNarrationComplete && (
+            businessProfile ? (
+                <section style={{ marginTop: 32 }}>
+                  <motion.div initial={sectionInitial} animate={sectionAnimate} transition={{ ...sectionTransition, delay: 0.3 }}>
+                    <BusinessProfileSlide
+                      profileData={editMode ? editedBusinessProfile : businessProfile}
+                      editMode={editMode}
+                      onUpdate={setEditedBusinessProfile}
+                    />
+                  </motion.div>
+                </section>
             ) : (
-              <div style={{ marginTop: 16 }} data-testid="analysis-results-loading">
-                <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>Preparing your results…</Typography.Text>
-                <div style={{ display: 'flex', gap: 16, overflow: 'hidden', paddingBottom: 8 }}>
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      style={{
-                        flex: '0 0 auto',
-                        width: 'min(400px, 85vw)',
-                        padding: 24,
-                        background: 'var(--color-background-elevated)',
-                        borderRadius: 'var(--radius-xl)',
-                        boxShadow: 'var(--shadow-card)',
-                      }}
-                    >
-                      <Skeleton active avatar={{ shape: 'square', size: 48 }} paragraph={{ rows: 2 }} title={false} />
+                <section style={{ marginTop: 32 }}>
+                  <div style={{
+                  maxWidth: '1000px',
+                  margin: '0 auto',
+                  padding: '0 32px'
+                }}>
+                  <div style={{
+                    background: '#FFFFFF',
+                    borderRadius: '12px',
+                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    padding: window.innerWidth <= 768 ? '48px 28px' : '80px 64px'
+                  }}>
+                    <Skeleton active paragraph={{ rows: 8 }} title={{ width: '50%' }} />
+                    <div style={{ marginTop: 48 }}>
+                      <Skeleton active paragraph={{ rows: 3 }} title={{ width: '30%' }} />
                     </div>
-                  ))}
+                    <div style={{ marginTop: 32, display: 'grid', gridTemplateColumns: window.innerWidth <= 768 ? '1fr' : '1fr 1fr', gap: 32 }}>
+                      <Skeleton active paragraph={{ rows: 2 }} title={{ width: '60%' }} />
+                      <Skeleton active paragraph={{ rows: 2 }} title={{ width: '60%' }} />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
-            {editMode && (
-              <AnalysisEditSection
-                originalAnalysis={originalAnalysisSnapshot ?? {}}
-                currentAnalysis={analysis}
+              </section>
+            )
+          )}
+
+          {/* Phase 3: Edit and Continue buttons (only after slide appears) */}
+          {analysisNarrationComplete && businessProfile && (
+            <section ref={(el) => (sectionRefs.current.analysisOutput = el)} style={{ marginTop: 32 }}>
+              <motion.div initial={sectionInitial} animate={sectionAnimate} transition={{ ...sectionTransition, delay: 0.5 }}>
+              <EditConfirmActions
+                onEdit={handleEditAnalysis}
+                onConfirm={handleConfirmAnalysis}
                 onApply={handleApplyEdit}
                 onCancel={handleCancelEdit}
-                onRequestSuggestion={handleRequestSuggestion}
-                dataTestId="analysis-edit-section"
+                editMode={editMode}
+                dataTestId="edit-confirm-analysis"
               />
-            )}
-            <EditConfirmActions
-              onEdit={handleEditAnalysis}
-              onConfirm={handleConfirmAnalysis}
-              editMode={editMode}
-              dataTestId="edit-confirm-analysis"
-            />
-            </motion.div>
-          </section>
+              </motion.div>
+            </section>
+          )}
         </>
       )}
 
@@ -733,19 +877,11 @@ function OnboardingFunnelView() {
               </div>
             </div>
           )}
-          {editMode && (
-            <AnalysisEditSection
-              originalAnalysis={originalAnalysisSnapshot ?? {}}
-              currentAnalysis={analysis}
-              onApply={handleApplyEdit}
-              onCancel={handleCancelEdit}
-              onRequestSuggestion={handleRequestSuggestion}
-              dataTestId="analysis-edit-section"
-            />
-          )}
           <EditConfirmActions
             onEdit={handleEditAnalysis}
             onConfirm={handleConfirmAnalysis}
+            onApply={handleApplyEdit}
+            onCancel={handleCancelEdit}
             editMode={editMode}
             dataTestId="edit-confirm-analysis"
           />
@@ -761,9 +897,12 @@ function OnboardingFunnelView() {
             isStreaming={audienceNarrationStreaming}
             onComplete={unlockAudienceOutput}
             dataTestId="audience-narration"
+            enableTypingEffect={true}
           />
-          <Title level={4} style={{ marginTop: 24 }}>Choose your audience</Title>
-          {audiencePlaceholderVisible ? (
+          {audienceNarrationComplete && (
+            <>
+              <Title level={4} style={{ marginTop: 24 }}>Choose your audience</Title>
+              {audiencePlaceholderVisible ? (
             <div style={{ marginTop: 16 }} data-testid="audience-results-loading">
               <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>Loading audience segments…</Typography.Text>
               <div style={{ display: 'flex', gap: 16, overflow: 'hidden', paddingBottom: 8 }}>
@@ -849,6 +988,8 @@ function OnboardingFunnelView() {
               </div>
             </div>
           )}
+            </>
+          )}
           </motion.div>
         </section>
       )}
@@ -861,9 +1002,12 @@ function OnboardingFunnelView() {
             isStreaming={topicNarrationStreaming}
             onComplete={unlockTopicOutput}
             dataTestId="topic-narration"
+            enableTypingEffect={true}
           />
-          <Title level={4} style={{ marginTop: 24 }}>Choose a topic</Title>
-          {topicsLoading ? (
+          {topicNarrationComplete && (
+            <>
+              <Title level={4} style={{ marginTop: 24 }}>Choose a topic</Title>
+              {topicsLoading ? (
             <div style={{ marginTop: 16 }} data-testid="topics-loading">
               <div style={{ display: 'flex', gap: 16, overflow: 'hidden', paddingBottom: 8 }}>
                 {[1, 2].map((i) => (
@@ -915,6 +1059,8 @@ function OnboardingFunnelView() {
               </div>
             </div>
           ) : null}
+            </>
+          )}
           </motion.div>
         </section>
       )}
