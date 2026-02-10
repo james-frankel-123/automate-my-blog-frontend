@@ -734,6 +734,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               if (next[index] != null && topic?.image) next[index] = { ...next[index], image: topic.image };
               return next;
             });
+            // So preview gets heroImageUrl: keep selectedTopic in sync when its topic's image arrives
+            setSelectedTopic((prev) => {
+              if (prev?.id != null && topic?.id != null && prev.id === topic.id && topic?.image)
+                return { ...prev, image: topic.image };
+              return prev;
+            });
           },
         }
       );
