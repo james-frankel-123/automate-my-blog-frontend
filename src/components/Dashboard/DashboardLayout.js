@@ -103,7 +103,8 @@ const DashboardLayout = ({
   const [projectMode, setProjectMode] = useState(!user || forceWorkflowMode); // Start in project mode for logged-out users or when forced
   const [showSaveProjectButton, setShowSaveProjectButton] = useState(false);
   const [projectJustSaved, setProjectJustSaved] = useState(false);
-  const effectiveShowDashboard = (showDashboard || showDashboardLocal) && !(isNewRegistration && projectMode);
+  // Show sidebar when user has dashboard access, or when they just registered from onboarding (stay in place, show menu)
+  const effectiveShowDashboard = (showDashboard || showDashboardLocal) || isNewRegistration;
 
   // Quota tracking state
   const [userCredits, setUserCredits] = useState(null);
@@ -263,8 +264,8 @@ const DashboardLayout = ({
         // New user just completed registration - keep in workflow mode
         setProjectMode(true);
         setShowSaveProjectButton(true);
-        // Don't show sidebar until "Save Project" is clicked
-        setShowDashboardLocal(false);
+        // Show sidebar immediately so user stays in place and sees navigation (per onboarding UX)
+        setShowDashboardLocal(true);
       } else {
         // Returning user logging in - go directly to focus mode
         setProjectMode(false);
@@ -376,7 +377,27 @@ const DashboardLayout = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTab excluded to prevent feedback loop
   }, [user, onActiveTabChange, projectMode, showDashboardLocal]); // Note: activeTab excluded to prevent feedback loop (observer sets activeTab → useEffect restarts → observer resets)
-  
+
+  // After registration from onboarding: stay in place, slight autoscroll to show blog generation area
+  const hasScrolledForNewRegistrationRef = useRef(false);
+  useEffect(() => {
+    if (!user || !isNewRegistration || hasScrolledForNewRegistrationRef.current) return;
+    hasScrolledForNewRegistrationRef.current = true;
+    const scrollToContent = () => {
+      const postsSection = document.getElementById('posts');
+      const audienceSection = document.getElementById('audience-segments');
+      if (postsSection) {
+        setActiveTab('posts');
+        postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (audienceSection) {
+        setActiveTab('audience-segments');
+        audienceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+    const timeoutId = setTimeout(scrollToContent, 300);
+    return () => clearTimeout(timeoutId);
+  }, [user, isNewRegistration]);
+
   // Handle tab changes with smooth scroll navigation (not wrapped in useCallback to avoid deps churn)
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not useCallback so useEffect listener gets latest handler
   const handleTabChange = (newTab) => {
@@ -733,8 +754,8 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Posts Section - Unlocked after step 2 (light motion) */}
-        {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience.customerStrategy))) && (
+        {/* Posts Section - Unlocked after step 2, or for new registrations from onboarding (have analysis) */}
+        {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience?.customerStrategy || (isNewRegistration && stepResults.home?.analysisCompleted)))) && (
           <section id="posts" className="workflow-section-enter" style={{ 
             minHeight: '100vh',
             background: 'var(--color-background-body)',
