@@ -807,6 +807,7 @@ function OnboardingFunnelView() {
         style={{
           padding: '24px 16px',
           paddingTop: user ? 24 : 120,
+          paddingBottom: 48,
           maxWidth: 800,
           margin: '0 auto',
         }}

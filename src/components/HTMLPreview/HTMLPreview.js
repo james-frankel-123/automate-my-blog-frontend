@@ -278,7 +278,7 @@ function getTweetPlaceholderHtml(index, relatedTweets = []) {
 /**
  * Build HTML for an article placeholder slot: animated loading box or article card.
  * @param {number} index - Placeholder index
- * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string, urlToImage?: string }>} relatedArticles
+ * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string }>} relatedArticles
  * @returns {string} Safe HTML string
  */
 function getArticlePlaceholderHtml(index, relatedArticles = []) {
@@ -291,12 +291,10 @@ function getArticlePlaceholderHtml(index, relatedArticles = []) {
     const title = safeTitle(article.title) || 'Article';
     const source = safeTitle(article.sourceName);
     const meta = [source, article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''].filter(Boolean).join(' · ');
-    const img = article.urlToImage && /^https?:\/\//i.test(article.urlToImage) ? escapeAttr(article.urlToImage) : '';
     const descLen = 120;
     const desc = article.description ? escapeAttr(String(article.description).slice(0, descLen)) + (String(article.description).length > descLen ? '…' : '') : '';
-    const thumbBlock = img
-      ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-thumb-wrap"><img src="${img}" alt="" class="markdown-article-card-thumb" loading="lazy" /></a>`
-      : '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true">📰</span></span>';
+    // No news image: link as reference only (title + meta + description)
+    const thumbBlock = '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true">📰</span></span>';
     return (
       '<div class="markdown-article-card">' +
       thumbBlock +
@@ -384,9 +382,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     );
   }
 
+  // Guard rail: normalize hero placeholder when backend sends [IMAGE:hero_image:...] without leading !
+  const normalizedContent = content.replace(/(?<!!)\[(IMAGE:hero_image:[^\]]*)\](?!\()/gim, '![$1]');
+
   // Streamed blog content: always treat as Markdown. Otherwise skip conversion only when content looks like HTML.
-  const looksLikeHtml = !forceMarkdown && /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(content);
-  let rawHtml = looksLikeHtml ? content : markdownToHTML(content, { heroImageUrl });
+  const looksLikeHtml = !forceMarkdown && /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(normalizedContent);
+  let rawHtml = looksLikeHtml ? normalizedContent : markdownToHTML(normalizedContent, { heroImageUrl });
 
   // Replace article placeholder tokens with loading box or article card HTML
   if (rawHtml.includes('__ARTICLE_PLACEHOLDER_')) {
@@ -439,7 +440,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   };
 
   // Hero image: extract alt from first ![IMAGE:hero_image:...] or [IMAGE:hero_image:...] and split content to inject HeroImage with animated placeholder
-  const heroAltMatch = content.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
+  const heroAltMatch = normalizedContent.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
   const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
   const useHeroComponent = Boolean(heroImageUrl && htmlContent.includes(HERO_IMAGE_SENTINEL));
   const contentParts = useHeroComponent ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
