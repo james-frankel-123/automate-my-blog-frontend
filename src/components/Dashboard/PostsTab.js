@@ -913,10 +913,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         )
       );
 
-      // Fire related content fetches in background; don't wait. Blog stream starts immediately
-      // with placeholders; StreamingPreview substitutes tweets/videos/articles when they arrive.
-      runTweetsAndVideos();
-      runArticleStream();
+      // Fetch related content first; show progress UI; then pass into blog generation so content is embedded in the post
+      const [tweetsVideosResult, articlesResult] = await Promise.all([
+        runTweetsAndVideos(),
+        runArticleStream()
+      ]);
+      const [tweetsArr = [], videosArr = []] = Array.isArray(tweetsVideosResult) ? tweetsVideosResult : [[], []];
+      const articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
 
       // Determine if enhanced generation should be used based on available organization data
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
@@ -934,9 +937,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       const enhancementOptions = {
         useEnhancedGeneration: shouldUseEnhancement,
-        preloadedTweets: [],
-        preloadedArticles: [],
-        preloadedVideos: [],
+        preloadedTweets: tweetsArr,
+        preloadedArticles: articlesArr,
+        preloadedVideos: videosArr,
         goal: contentStrategy.goal,
         voice: contentStrategy.voice,
         template: contentStrategy.template,
@@ -984,7 +987,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             stepResults?.home?.webSearchInsights || {},
             enhancementOptions
           );
-          setRelatedContentSteps([]); // Clear fetch steps; related content loads in background and substitutes
+          setRelatedContentSteps([]); // Clear fetch steps; blog generation starts with embedded related content
           setEditingContent('');
           setContentViewMode('preview');
           let accumulatedChunks = '';
