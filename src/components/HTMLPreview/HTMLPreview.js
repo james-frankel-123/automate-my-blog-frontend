@@ -20,11 +20,22 @@ const HERO_PLACEHOLDER_MIN_MS = 400;
  * Handles cached images (checks img.complete) so the real image always replaces the placeholder once ready.
  * Uses inline styles + a scoped style tag so the placeholder is always visible (no dependency on parent styled-jsx).
  */
-function HeroImage({ src, alt, paragraphSpacing = 16 }) {
+/** Set window.__HERO_IMAGE_DEBUG__ = false to disable hero image logging */
+const HERO_LOG = (msg, data) => {
+  if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+    console.log(`[HeroImage] ${msg}`, data ?? '');
+  }
+};
+
+function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [effectiveSrc, setEffectiveSrc] = useState(src);
   const imgRef = useRef(null);
+
+  useEffect(() => {
+    HERO_LOG('received props', { src: src ? `${String(src).slice(0, 80)}...` : src, isFallback: src === heroImageFallback });
+  }, [src]);
 
   useEffect(() => {
     const t = setTimeout(() => setMinTimeElapsed(true), HERO_PLACEHOLDER_MIN_MS);
@@ -52,15 +63,23 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
       if (node.complete && node.naturalWidth > 0) setImageLoaded(true);
     };
     const onError = () => {
+      HERO_LOG('img error', { effectiveSrc: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
       if (effectiveSrc !== heroImageFallback) {
+        HERO_LOG('switching to fallback');
         setEffectiveSrc(heroImageFallback);
       } else {
         setImageLoaded(true); // fallback also failed; hide placeholder
       }
     };
-    imgRef._onLoad = checkComplete;
+    const onLoadSuccess = () => {
+      if (node.complete && node.naturalWidth > 0) {
+        HERO_LOG('img loaded', { naturalWidth: node.naturalWidth, src: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
+      }
+      checkComplete();
+    };
+    imgRef._onLoad = onLoadSuccess;
     imgRef._onError = onError;
-    node.addEventListener('load', checkComplete);
+    node.addEventListener('load', onLoadSuccess);
     node.addEventListener('error', onError);
     checkComplete();
     requestAnimationFrame(checkComplete);
@@ -96,9 +115,10 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(135deg, var(--color-background-container) 0%, var(--color-background-alt) 50%, var(--color-background-container) 100%)',
-    backgroundSize: '400% 400%',
-    animation: 'hero-placeholder-gentle 6s ease-in-out infinite',
+    background: 'linear-gradient(110deg, var(--color-background-container) 25%, var(--color-background-alt) 37%, var(--color-background-container) 63%)',
+    backgroundSize: '200% 100%',
+    animation: 'hero-placeholder-shimmer 2s ease-in-out infinite',
+    animationPlayState: generationComplete ? 'paused' : 'running',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center'
@@ -108,14 +128,25 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
     color: 'var(--color-text-tertiary)',
     fontSize: 15,
     fontWeight: 500,
-    letterSpacing: '0.02em'
+    letterSpacing: '0.02em',
+    animation: 'hero-placeholder-text-pulse 2.5s ease-in-out infinite',
+    animationPlayState: generationComplete ? 'paused' : 'running'
   };
+
+  const placeholderKeyframes = `
+    @keyframes hero-placeholder-shimmer {
+      0%, 100% { background-position: 100% 50%; }
+      50% { background-position: 0% 50%; }
+    }
+    @keyframes hero-placeholder-text-pulse {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+  `;
 
   return (
     <div className="hero-image-wrapper" style={wrapperStyle}>
-      <style dangerouslySetInnerHTML={{
-        __html: `@keyframes hero-placeholder-gentle { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`
-      }} />
+      <style dangerouslySetInnerHTML={{ __html: placeholderKeyframes }} />
       {!showImage && (
         <div
           className="hero-image-placeholder"
@@ -148,50 +179,6 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
         onLoad={() => setImageLoaded(true)}
         onError={() => setImageLoaded(true)}
       />
-    </div>
-  );
-}
-
-/**
- * Visual-only hero placeholder (no image URL yet). Shown in free post claim preview etc.
- * So users see an image placeholder box instead of raw markdown like ![IMAGE:hero_image:...].
- */
-function HeroImagePlaceholder({ paragraphSpacing = 16 }) {
-  const wrapperStyle = {
-    position: 'relative',
-    minHeight: 240,
-    margin: `${paragraphSpacing}px 0`,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: 'var(--color-background-container)'
-  };
-  const placeholderStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(135deg, var(--color-background-container) 0%, var(--color-background-alt) 50%, var(--color-background-container) 100%)',
-    backgroundSize: '400% 400%',
-    animation: 'hero-placeholder-gentle 6s ease-in-out infinite',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  };
-  const messageStyle = {
-    color: 'var(--color-text-tertiary)',
-    fontSize: 15,
-    fontWeight: 500,
-    letterSpacing: '0.02em'
-  };
-  return (
-    <div className="hero-image-wrapper hero-image-placeholder-only" style={wrapperStyle} data-testid="hero-image-placeholder">
-      <style dangerouslySetInnerHTML={{
-        __html: `@keyframes hero-placeholder-gentle { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`
-      }} />
-      <div className="hero-image-placeholder" aria-hidden="true" role="presentation" style={placeholderStyle}>
-        <span style={messageStyle}>Hero image will appear here</span>
-      </div>
     </div>
   );
 }
@@ -579,7 +566,7 @@ function anchorMatchesCta(anchor, cta) {
   return false;
 }
 
-const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos, relatedTweets, ctas = [] }) => {
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos, relatedTweets, generationComplete = false, ctas = [] }) => {
   const containerRef = useRef(null);
 
   // Style CTA links in the preview when result.ctas / data.ctas are provided (match by href or text). Must run unconditionally (hooks rules).
@@ -685,15 +672,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             <React.Fragment key={i}>
               <HtmlWithTweetSlots html={part} relatedTweets={relatedTweets} />
               {i < contentParts.length - 1 && (
-                heroImageUrl ? (
-                  <HeroImage
-                    src={heroImageUrl}
-                    alt={heroImageAlt}
-                    paragraphSpacing={paragraphSpacing}
-                  />
-                ) : (
-                  <HeroImagePlaceholder paragraphSpacing={paragraphSpacing} />
-                )
+                <HeroImage
+                  src={heroImageUrl || heroImageFallback}
+                  alt={heroImageAlt}
+                  paragraphSpacing={paragraphSpacing}
+                  generationComplete={generationComplete}
+                />
               )}
             </React.Fragment>
           ))}
@@ -701,6 +685,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       ) : (
         <>
       <div
+        className="html-preview-content"
         style={{
           // Override default styles for HTML elements
           '& h1': {
@@ -878,14 +863,24 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         }
         
         div blockquote {
-          border-left: 4px solid var(--color-primary);
-          padding-left: ${paragraphSpacing}px;
-          margin: ${paragraphSpacing}px 0;
+          margin: ${paragraphSpacing * 1.25}px 0;
+          padding: ${paragraphSpacing}px ${paragraphSpacing * 1.25}px ${paragraphSpacing}px ${paragraphSpacing * 1.125}px;
+          border-left: 5px solid var(--color-primary);
+          background: linear-gradient(to right, var(--color-primary-50), var(--color-background-alt));
+          color: var(--color-text-primary);
           font-style: italic;
-          color: var(--color-text-secondary);
-          background-color: var(--color-background-container);
-          padding: ${paragraphSpacing * 0.75}px ${paragraphSpacing}px;
-          border-radius: 4px;
+          font-size: 1.05em;
+          line-height: ${typography.lineHeight.relaxed};
+          border-radius: 0 var(--radius-md) var(--radius-md) 0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        
+        div blockquote :first-child {
+          margin-top: 0;
+        }
+        
+        div blockquote :last-child {
+          margin-bottom: 0;
         }
         
         div code {
