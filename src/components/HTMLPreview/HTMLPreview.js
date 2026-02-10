@@ -103,6 +103,15 @@ function isHeroImagePlaceholder(alt) {
 }
 
 /**
+ * Normalize hero placeholder when backend sends [IMAGE:hero_image:...] without leading !
+ * Uses (^|[^!]) instead of lookbehind for broad regex support (e.g. older Safari).
+ */
+function normalizeHeroPlaceholder(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text.replace(/(^|[^!])\[(IMAGE:hero_image:[^\]]*)\](?!\()/g, '$1![$2]');
+}
+
+/**
  * Convert markdown to HTML
  * @param {string} markdown
  * @param {{ heroImageUrl?: string }} [options] - When set, ![IMAGE:hero_image:...] is rendered as <img src={heroImageUrl} />
@@ -133,8 +142,7 @@ const markdownToHTML = (markdown, options = {}) => {
   html = html.replace(/\*(.*?)\*/gim, '<em>$1</em>');
 
   // Normalize hero placeholder when backend streams [IMAGE:hero_image:...] without leading !
-  // (Frontend expects markdown image syntax ![IMAGE:hero_image:...]; without ! no placeholder/image is shown.)
-  html = html.replace(/(?<!!)\[(IMAGE:hero_image:[^\]]*)\](?!\()/gim, '![$1]');
+  html = normalizeHeroPlaceholder(html);
 
   // Images ![alt](url) — before links so ![...](...) is not treated as link; placeholders get span (or hero sentinel if URL provided)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, (_, alt, url) => {
@@ -382,12 +390,17 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     );
   }
 
-  // Guard rail: normalize hero placeholder when backend sends [IMAGE:hero_image:...] without leading !
-  const normalizedContent = content.replace(/(?<!!)\[(IMAGE:hero_image:[^\]]*)\](?!\()/gim, '![$1]');
+  // Normalize hero placeholder when backend sends [IMAGE:hero_image:...] without leading !
+  const normalizedContent = normalizeHeroPlaceholder(content);
 
   // Streamed blog content: always treat as Markdown. Otherwise skip conversion only when content looks like HTML.
   const looksLikeHtml = !forceMarkdown && /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(normalizedContent);
   let rawHtml = looksLikeHtml ? normalizedContent : markdownToHTML(normalizedContent, { heroImageUrl });
+
+  // When content was treated as HTML, hero placeholder stayed as literal text; inject sentinel so hero image still shows
+  if (looksLikeHtml && heroImageUrl && /!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/.test(rawHtml)) {
+    rawHtml = rawHtml.replace(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/, HERO_IMAGE_SENTINEL);
+  }
 
   // Replace article placeholder tokens with loading box or article card HTML
   if (rawHtml.includes('__ARTICLE_PLACEHOLDER_')) {
