@@ -352,7 +352,12 @@ export const topicAPI = {
           },
           onComplete: (data) => {
             const list = data?.topics?.length ? data.topics : accumulated;
-            resolve(list.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
+            const base = list.slice(0, maxTopics);
+            // Preserve .image from accumulated (topic-image-complete); backend complete payload may omit image URLs
+            const withImages = base.map((topic, i) =>
+              accumulated[i]?.image != null ? { ...topic, image: accumulated[i].image } : topic
+            );
+            resolve(withImages.map((t, i) => mapTopic(t, i)));
           },
           onError: (err) => {
             if (accumulated.length > 0) {
