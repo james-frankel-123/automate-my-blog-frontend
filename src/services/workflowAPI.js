@@ -611,12 +611,14 @@ export const contentAPI = {
       : `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
 
     const organizationId = enhancementOptions?.organizationId ?? null;
+    const ctas = enhancementOptions?.ctas ?? enhancementOptions?.organizationCTAs ?? [];
     const { connectionId } = await autoBlogAPI.generateBlogStream({
       topic: selectedTopic,
       businessInfo: analysisData ?? {},
       organizationId,
       additionalInstructions: contextPrompt,
       tweets: tweets.length ? tweets : undefined,
+      ctas: Array.isArray(ctas) ? ctas : undefined,
       options: {
         preloadedTweets: tweets,
         preloadedArticles,

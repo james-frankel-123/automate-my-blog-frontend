@@ -164,6 +164,7 @@ function StreamingTestbed() {
   const [liveRelatedTweets, setLiveRelatedTweets] = useState([]);
   const [liveRelatedArticles, setLiveRelatedArticles] = useState([]);
   const [liveRelatedVideos, setLiveRelatedVideos] = useState([]);
+  const [liveOrganizationCTAs, setLiveOrganizationCTAs] = useState([]);
   const [relatedContentSteps, setRelatedContentSteps] = useState([]);
   const streamClosesRef = useRef([]);
   const articlesTimedOutRef = useRef(false);
@@ -237,6 +238,7 @@ function StreamingTestbed() {
     setLiveRelatedTweets([]);
     setLiveRelatedArticles([]);
     setLiveRelatedVideos([]);
+    setLiveOrganizationCTAs([]);
     setRelatedContentSteps([]);
     streamClosesRef.current = [];
 
@@ -249,13 +251,32 @@ function StreamingTestbed() {
     const topic = { id: 'testbed-live', title: liveTopicTitle || DEFAULT_LIVE_TOPIC_TITLE };
     const websiteAnalysisData = MINIMAL_WEBSITE_ANALYSIS;
 
-    // Same flow as Posts tab: fetch tweets, articles, videos first with visible steps, then start blog stream with preloaded data.
+    // Same flow as Posts tab: fetch tweets, articles, videos, CTAs first with visible steps, then start blog stream with preloaded data.
     const fetchSteps = [
+      { id: 'ctas', label: systemVoice.content.fetchCTAs, status: RelatedContentStepStatus.PENDING },
       { id: 'tweets', label: systemVoice.content.fetchTweets, status: RelatedContentStepStatus.PENDING },
       { id: 'articles', label: systemVoice.content.fetchArticles, status: RelatedContentStepStatus.PENDING },
       { id: 'videos', label: systemVoice.content.fetchVideos, status: RelatedContentStepStatus.PENDING },
     ];
     setRelatedContentSteps(fetchSteps);
+
+    const runFetchCTAs = () =>
+      api
+        .getOrganizationCTAs(organizationId)
+        .then((r) => {
+          const ctas = r?.ctas || [];
+          setLiveOrganizationCTAs(ctas);
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.DONE, count: ctas.length } : s))
+          );
+          return ctas;
+        })
+        .catch(() => {
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+          );
+          return [];
+        });
 
     // Use combined tweets+videos endpoint (backend PR #178) for speed
     const runTweetsAndVideos = () =>
@@ -348,13 +369,13 @@ function StreamingTestbed() {
     let articlesArr = [];
 
     try {
-      const [tweetsVideosResult, articlesResult] = await Promise.all([
+      const [ctasArr, tweetsVideosResult, articlesResult] = await Promise.all([
+        runFetchCTAs(),
         runTweetsAndVideos(),
         runArticleStreamWithTimeout(),
       ]);
-      const tv = Array.isArray(tweetsVideosResult) ? tweetsVideosResult : [];
-      tweetsArr = Array.isArray(tv[0]) ? tv[0] : [];
-      videosArr = Array.isArray(tv[1]) ? tv[1] : [];
+      tweetsArr = Array.isArray(tweetsVideosResult?.[0]) ? tweetsVideosResult[0] : [];
+      videosArr = Array.isArray(tweetsVideosResult?.[1]) ? tweetsVideosResult[1] : [];
       articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
     } catch (_) {
       articlesArr = [];
@@ -368,6 +389,7 @@ function StreamingTestbed() {
         preloadedTweets: Array.isArray(tweetsArr) ? tweetsArr : [],
         preloadedArticles: Array.isArray(articlesArr) ? articlesArr : [],
         preloadedVideos: Array.isArray(videosArr) ? videosArr : [],
+        ctas: Array.isArray(ctasArr) ? ctasArr : [],
       };
 
       const { connectionId } = await contentAPI.startBlogStream(
@@ -510,6 +532,7 @@ function StreamingTestbed() {
             <RelatedContentStepsPanel
               steps={relatedContentSteps}
               title="Preparing related content"
+              ctas={liveOrganizationCTAs}
             />
           )}
           {liveStreaming && (

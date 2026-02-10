@@ -220,6 +220,8 @@ export const systemVoice = {
     fetchArticlesDone: (n) => `Found ${n} article${n !== 1 ? 's' : ''}`,
     fetchVideos: "Fetching related videos…",
     fetchVideosDone: (n) => `Found ${n} video${n !== 1 ? 's' : ''}`,
+    fetchCTAs: "Fetching CTAs for your business…",
+    fetchCTAsDone: (n) => `Found ${n} CTA${n !== 1 ? 's' : ''}`,
     fetchSkipped: "Skipped",
     fetchFailed: "Failed",
   },
