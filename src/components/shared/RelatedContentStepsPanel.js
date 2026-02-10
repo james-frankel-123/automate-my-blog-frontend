@@ -1,7 +1,8 @@
 /**
- * RelatedContentStepsPanel — shows step-by-step status for fetching related content
- * (tweets, news articles, YouTube videos) before blog generation.
- * Each step shows: running → done (Found N) | skipped | failed.
+ * RelatedContentStepsPanel — step-by-step progress for fetching related content
+ * (tweets, news articles, YouTube videos) before blog generation. Fetched items are
+ * passed into the blog post generation call so they are embedded in the post.
+ * Each step shows: running → done (Found N) | skipped | failed. Theme-aligned.
  */
 import React from 'react';
 
@@ -18,7 +19,7 @@ const panelStyles = {
     padding: '12px 16px',
     marginBottom: '12px',
     backgroundColor: 'var(--color-primary-50)',
-    borderRadius: '8px',
+    borderRadius: 'var(--radius-md, 8px)',
     border: '1px solid var(--color-primary-100)',
     boxShadow: 'var(--shadow-card)',
   },
