@@ -529,6 +529,7 @@ function OnboardingFunnelView() {
         isMobile={false}
         onActiveTabChange={() => {}}
         forceWorkflowMode={false}
+        initialActiveTab="posts"
       />
     );
   }

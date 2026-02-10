@@ -55,9 +55,11 @@ const DashboardLayout = ({
   stepResults: _propStepResults = {},
   onEditWorkflowStep: _onEditWorkflowStep,
   // Force workflow mode for logged-out users
-  forceWorkflowMode = false
+  forceWorkflowMode = false,
+  // When handed off from funnel (topic selected): land on Posts so generation can start
+  initialActiveTab = null
 }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(initialActiveTab || 'dashboard');
   const {
     user: contextUser,
     logout,
@@ -500,6 +502,14 @@ const DashboardLayout = ({
       scrollToSectionWhenReady(nextSection);
     }
   };
+
+  // When handed off from funnel with initialActiveTab, scroll to that section once mounted
+  useEffect(() => {
+    if (initialActiveTab && initialActiveTab !== 'dashboard') {
+      const sectionId = initialActiveTab === 'posts' ? 'posts' : initialActiveTab === 'audience-segments' ? 'audience-segments' : 'home';
+      scrollToSectionWhenReady(sectionId);
+    }
+  }, [initialActiveTab]);
 
   const handleStepClick = (stepIndex) => {
     // Only allow navigation to completed steps or current step
@@ -1331,6 +1341,12 @@ const DashboardLayout = ({
           }}
           context={authContext}
           defaultTab={authContext === 'register' ? 'register' : 'login'}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            setAuthContext(null);
+            setActiveTab('posts');
+            scrollToSectionWhenReady('posts');
+          }}
         />
       )}
 
