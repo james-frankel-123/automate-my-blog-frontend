@@ -237,6 +237,11 @@ class JobsAPI {
         if (handlers.onAnalysisChunk) handlers.onAnalysisChunk(data);
       });
 
+      eventSource.addEventListener('business-profile', (event) => {
+        const data = parseData(event);
+        if (handlers.onBusinessProfile) handlers.onBusinessProfile(data);
+      });
+
       eventSource.addEventListener('complete', (event) => {
         const data = parseData(event);
         if (handlers.onComplete) handlers.onComplete(data);
