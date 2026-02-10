@@ -160,9 +160,8 @@ function normalizeHeroPlaceholder(text) {
  * @param {string} markdown
  * @param {{ heroImageUrl?: string }} [options] - When set, ![IMAGE:hero_image:...] is rendered as <img src={heroImageUrl} />
  */
-const markdownToHTML = (markdown, options = {}) => {
+const markdownToHTML = (markdown, _options = {}) => {
   if (!markdown || typeof markdown !== 'string') return '';
-  const { heroImageUrl } = options;
   let html = markdown;
 
   // Headers: only match a single line of heading text (up to next newline). Use [^\n]{1,max}
