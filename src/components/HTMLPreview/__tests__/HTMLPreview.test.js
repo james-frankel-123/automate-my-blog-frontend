@@ -164,5 +164,36 @@ describe('HTMLPreview', () => {
       const link = screen.getByRole('link', { name: /Test Video/i });
       expect(link).toHaveAttribute('href', 'https://www.youtube.com/watch?v=abc');
     });
+
+    it('replaces tweet placeholder with loading state when relatedTweets missing (issue #338)', () => {
+      const content = 'Intro.\n\n__TWEET_PLACEHOLDER_0__\n\nMore.';
+      render(<HTMLPreview content={content} forceMarkdown relatedTweets={[]} />);
+      expect(screen.getByText(/Loading tweet…/)).toBeInTheDocument();
+      expect(screen.getByText(/Intro\./)).toBeInTheDocument();
+      expect(screen.getByText(/More\./)).toBeInTheDocument();
+    });
+
+    it('replaces tweet placeholder with tweet-styled card when relatedTweets provided (issue #338)', () => {
+      const content = 'Before __TWEET_PLACEHOLDER_0__ after.';
+      const relatedTweets = [
+        { text: 'Streaming content changes how we build products.', url: 'https://twitter.com/i/status/123' },
+      ];
+      render(<HTMLPreview content={content} forceMarkdown relatedTweets={relatedTweets} />);
+      expect(screen.getByText(/Streaming content changes how we build products\./)).toBeInTheDocument();
+      expect(screen.getByRole('article', { name: /Embedded post from X/i })).toBeInTheDocument();
+      const link = screen.getByRole('link', { name: /View on X/i });
+      expect(link).toHaveAttribute('href', 'https://twitter.com/i/status/123');
+    });
+
+    it('renders tweet card with author name and handle when provided (issue #338)', () => {
+      const content = 'Post __TWEET_PLACEHOLDER_0__ end.';
+      const relatedTweets = [
+        { text: 'Great insight here.', authorName: 'Jane Dev', authorHandle: 'janedev', url: 'https://x.com/janedev/status/1' },
+      ];
+      render(<HTMLPreview content={content} forceMarkdown relatedTweets={relatedTweets} />);
+      expect(screen.getByText('Jane Dev')).toBeInTheDocument();
+      expect(screen.getByText('@janedev')).toBeInTheDocument();
+      expect(screen.getByText(/Great insight here\./)).toBeInTheDocument();
+    });
   });
 });

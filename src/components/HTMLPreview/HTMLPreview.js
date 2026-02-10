@@ -248,10 +248,8 @@ function getTweetDisplayText(t) {
 }
 
 /**
- * Build HTML for a tweet placeholder: tweet-style card or loading state.
- * @param {number} index - Placeholder index
- * @param {Array<string|{ text?: string, content?: string }>} [relatedTweets]
- * @returns {string} Safe HTML string
+ * Build HTML for a tweet placeholder: X/Twitter-style embed card or loading state (issue #338).
+ * Tweet object may have: text|content, url, authorName?, authorHandle?|username?
  */
 function getTweetPlaceholderHtml(index, relatedTweets = []) {
   const tweets = Array.isArray(relatedTweets) ? relatedTweets : [];
@@ -263,6 +261,14 @@ function getTweetPlaceholderHtml(index, relatedTweets = []) {
     const tweetUrl = typeof tweet === 'object' && tweet?.url && /^https?:\/\//i.test(tweet.url)
       ? escapeAttr(tweet.url)
       : '';
+    const authorName = typeof tweet === 'object' && tweet?.authorName ? escapeAttr(String(tweet.authorName).slice(0, 100)) : '';
+    const handle = typeof tweet === 'object' && (tweet?.authorHandle ?? tweet?.username) ? escapeAttr(String(tweet.authorHandle ?? tweet.username).replace(/^@/, '').slice(0, 50)) : '';
+    const byline = authorName || handle
+      ? '<div class="markdown-tweet-card-byline">' +
+        (authorName ? `<span class="markdown-tweet-card-name">${authorName}</span>` : '') +
+        (handle ? `<span class="markdown-tweet-card-handle">@${handle}</span>` : '') +
+        '</div>'
+      : '<span class="markdown-tweet-card-badge">Post from X</span>';
     const linkWrap = tweetUrl
       ? `<a href="${tweetUrl}" target="_blank" rel="noopener noreferrer" class="markdown-tweet-card-link">View on X</a>`
       : '';
@@ -270,7 +276,7 @@ function getTweetPlaceholderHtml(index, relatedTweets = []) {
       '<div class="markdown-tweet-card" role="article" aria-label="Embedded post from X">' +
       '<div class="markdown-tweet-card-header">' +
       '<span class="markdown-tweet-card-avatar" aria-hidden="true">𝕏</span>' +
-      '<span class="markdown-tweet-card-badge">Post from X</span>' +
+      '<div class="markdown-tweet-card-meta">' + byline + '</div>' +
       '</div>' +
       '<div class="markdown-tweet-card-body">' + escaped(text) + '</div>' +
       (linkWrap ? '<div class="markdown-tweet-card-footer">' + linkWrap + '</div>' : '') +
@@ -431,7 +437,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
                    'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'div', 'span',
                    'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'iframe'],
-    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id', 'title', 'aria-hidden',
+    ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id', 'title', 'aria-hidden', 'aria-label', 'role',
                    'allow', 'allowfullscreen', 'frameborder', 'width', 'height'],
     ALLOW_DATA_ATTR: false
   });
@@ -766,45 +772,70 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           border: 1px solid rgba(220, 38, 38, 0.2);
         }
 
-        /* Markdown tweet card – embedded X/Twitter-style card, visually distinct from article body */
+        /* Markdown tweet card – X/Twitter-style embed (issue #338): left accent, byline, distinct from body */
         div :global(.markdown-tweet-card) {
           position: relative;
-          margin: 16px 0;
-          padding: 16px 18px;
-          max-width: 480px;
+          margin: 20px 0;
+          padding: 16px 18px 16px 20px;
+          max-width: 520px;
           border: 1px solid var(--color-tweet-embed-border, #cfd9de);
+          border-left: 4px solid var(--color-tweet-embed-accent, #1d9bf0);
           border-radius: 16px;
           background: var(--color-tweet-embed-bg, #f7f9f9);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
           transition: box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
         div :global(.markdown-tweet-card:hover) {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
           border-color: var(--color-tweet-embed-border-hover, #8b98a5);
+          border-left-color: var(--color-tweet-embed-accent-hover, #1a8cd8);
         }
 
         div :global(.markdown-tweet-card-header) {
           display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 10px;
+          align-items: flex-start;
+          gap: 12px;
+          margin-bottom: 12px;
         }
 
         div :global(.markdown-tweet-card-avatar) {
-          width: 36px;
-          height: 36px;
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
-          background: #0f1419;
+          background: var(--color-tweet-embed-avatar-bg, #0f1419);
           color: #fff;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 700;
           line-height: 1;
           flex-shrink: 0;
+        }
+
+        div :global(.markdown-tweet-card-meta) {
+          flex: 1;
+          min-width: 0;
+        }
+
+        div :global(.markdown-tweet-card-byline) {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: baseline;
+          gap: 6px 10px;
+        }
+
+        div :global(.markdown-tweet-card-name) {
+          font-size: 15px;
+          font-weight: 700;
+          color: var(--color-text-primary, #0f1419);
+        }
+
+        div :global(.markdown-tweet-card-handle) {
+          font-size: 14px;
+          color: var(--color-text-secondary, #536471);
         }
 
         div :global(.markdown-tweet-card-badge) {
@@ -841,16 +872,17 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           color: #1a8cd8;
         }
 
-        /* Tweet loading placeholder – same embedded-card look */
+        /* Tweet loading placeholder – same X-style embed look (left accent) */
         div :global(.markdown-tweet-placeholder) {
           display: flex;
           align-items: center;
-          gap: 10px;
-          min-height: 72px;
-          margin: 16px 0;
-          padding: 16px 18px;
+          gap: 12px;
+          min-height: 80px;
+          margin: 20px 0;
+          padding: 16px 18px 16px 20px;
           border-radius: 16px;
           border: 1px dashed var(--color-tweet-embed-border, #cfd9de);
+          border-left: 4px solid var(--color-tweet-embed-accent, #1d9bf0);
           background: var(--color-tweet-embed-bg, #f7f9f9);
           color: var(--color-text-tertiary);
         }
