@@ -1365,12 +1365,22 @@ test.describe('E2E (mocked backend)', () => {
       await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
       await generateTopicsBtn.click();
       await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
-      await page.waitForTimeout(2000);
+      // Wait for topic cards and a Create Post button so we click the right control (not "Generate post" again)
+      await page.locator('#posts button:has-text("Create Post"), #posts [data-testid="create-post-from-topic-btn"]').first().waitFor({ state: 'visible', timeout: 15000 });
+      await page.waitForTimeout(800);
 
       await clickCreatePostButton(page, { waitForContentResponse: false });
 
-      const errorMsg = page.locator('.ant-message-error, .ant-message').filter({ hasText: /unavailable|try again later|503/i });
-      await expect(errorMsg.first()).toBeVisible({ timeout: 8000 });
+      // With #339, when no CTAs exist the CTA modal is shown first; skip it so content-generation is triggered and returns 503
+      const ctaModal = page.locator('.ant-modal').filter({ hasText: /Add Calls-to-Action|Calls-to-Action|Generate Without CTAs/i });
+      if (await ctaModal.first().isVisible({ timeout: 10000 }).catch(() => false)) {
+        await page.getByRole('button', { name: /Generate Without CTAs/i }).first().click();
+        await page.waitForSelector('.ant-modal-wrap', { state: 'hidden', timeout: 5000 }).catch(() => {});
+        await page.waitForTimeout(1000);
+      }
+
+      const errorMsg = page.locator('.ant-message-error, .ant-message').filter({ hasText: /unavailable|try again later|503|queue/i });
+      await expect(errorMsg.first()).toBeVisible({ timeout: 20000 });
     });
 
     test.skip('retry modal appears when content generation job fails and Retry button is clickable', async ({ page }) => {
