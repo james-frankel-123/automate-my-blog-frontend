@@ -2038,24 +2038,26 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         }
                       </Paragraph>
 
-                      {generatingContent && relatedContentSteps.length > 0 && (
-                        <RelatedContentStepsPanel
-                          steps={relatedContentSteps}
-                          title="Preparing related content"
-                        />
-                      )}
-                      {generatingContent && relatedContentSteps.length === 0 && (
-                        <ThinkingPanel
-                          isActive={generatingContent}
-                          currentStep={generationProgress?.currentStep}
-                          progress={generationProgress?.progress}
-                          thoughts={[]}
-                          estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
-                          workingForYouLabel={systemVoice.content.workingForYou}
-                          progressPreamble={systemVoice.content.progressPreamble}
-                          fallbackStep={systemVoice.content.generating}
-                          dataTestId="content-generation-progress"
-                        />
+                      {generatingContent && (
+                        <>
+                          <ThinkingPanel
+                            isActive={generatingContent}
+                            currentStep={generationProgress?.currentStep}
+                            progress={generationProgress?.progress}
+                            thoughts={[]}
+                            estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                            workingForYouLabel={systemVoice.content.workingForYou}
+                            progressPreamble={systemVoice.content.progressPreamble}
+                            fallbackStep={systemVoice.content.generating}
+                            dataTestId="content-generation-progress"
+                          />
+                          {relatedContentSteps.length > 0 && (
+                            <RelatedContentStepsPanel
+                              steps={relatedContentSteps}
+                              title="Preparing related content"
+                            />
+                          )}
+                        </>
                       )}
                       
                       {/* ENHANCED TOPIC CARDS — stagger reveal */}
@@ -2799,24 +2801,26 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       }
                     </Paragraph>
 
-                    {generatingContent && relatedContentSteps.length > 0 && (
-                      <RelatedContentStepsPanel
-                        steps={relatedContentSteps}
-                        title="Preparing related content"
-                      />
-                    )}
-                    {generatingContent && relatedContentSteps.length === 0 && (
-                      <ThinkingPanel
-                        isActive={generatingContent}
-                        currentStep={generationProgress?.currentStep}
-                        progress={generationProgress?.progress}
-                        thoughts={[]}
-                        estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
-                        workingForYouLabel={systemVoice.content.workingForYou}
-                        progressPreamble={systemVoice.content.progressPreamble}
-                        fallbackStep={systemVoice.content.generating}
-                        dataTestId="content-generation-progress"
-                      />
+                    {generatingContent && (
+                      <>
+                        <ThinkingPanel
+                          isActive={generatingContent}
+                          currentStep={generationProgress?.currentStep}
+                          progress={generationProgress?.progress}
+                          thoughts={[]}
+                          estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                          workingForYouLabel={systemVoice.content.workingForYou}
+                          progressPreamble={systemVoice.content.progressPreamble}
+                          fallbackStep={systemVoice.content.generating}
+                          dataTestId="content-generation-progress"
+                        />
+                        {relatedContentSteps.length > 0 && (
+                          <RelatedContentStepsPanel
+                            steps={relatedContentSteps}
+                            title="Preparing related content"
+                          />
+                        )}
+                      </>
                     )}
                     
                     {/* ENHANCED TOPIC CARDS — stagger reveal */}
