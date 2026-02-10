@@ -275,7 +275,7 @@ test.describe('Production: Full Flow (extended)', () => {
       if (await firstNameInput.isVisible({ timeout: 3000 }).catch(() => false)) {
         await firstNameInput.fill('E2E');
         await page.locator('input[name="lastName"], input[placeholder*="Last name" i]').first().fill('Demo');
-        await page.locator('input[name="organizationName"], input[placeholder*="Organization" i], input[placeholder*="Company" i]').first().fill('E2E Production Test');
+        await page.locator('input[name="websiteUrl"], input[placeholder*="yoursite" i], input[placeholder*="Website" i]').first().fill('https://e2e-production-test.example.com');
         await page.locator('input[name="email"], input[type="email"]').first().fill(E2E_TEST_EMAIL);
         await page.locator('input[name="password"], input[type="password"]').first().fill(E2E_TEST_PASSWORD);
         await page.locator('button:has-text("Create account")').first().click();

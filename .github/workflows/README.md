@@ -8,8 +8,8 @@ This directory contains GitHub Actions workflows for CI/CD.
 Standalone E2E test workflow that can be triggered independently or as part of CI/CD.
 
 **Triggers:**
-- Push to main, feat/**, or fix/** branches
-- Pull requests to main
+- Push to main, staging, feat/**, or fix/** branches
+- Pull requests to main, staging
 - Manual dispatch
 
 **What it does:**
@@ -22,27 +22,36 @@ Standalone E2E test workflow that can be triggered independently or as part of C
 Deployment workflow that runs lint, unit tests, build (one job), then Vercel deploy. E2E is **not** run here; the standalone **E2E Tests** workflow runs once per push/PR. Require **"Run E2E Tests"** and **"Test and Build"** in branch protection.
 
 **Triggers:**
-- Push to main
-- Pull requests to main
+- Push to main, staging
+- Pull requests to main, staging
 - merge_group (for merge queue)
 
 **What it does:**
 1. **Test and Build** (one job): lint, unit tests, build — single `npm ci`
-2. Deploys to preview (PRs) or production (main branch)
+2. Deploys to preview (PRs) or production (main branch only). Staging branch runs Test and Build and gets previews on PRs; actual staging deploy is via Vercel from the `staging` branch.
 
 **Important:** In branch protection for `main`, require **"Run E2E Tests"** and **"Test and Build"**. Remove any old **"Run Tests"** / **"Verify Build"** if you upgraded from the two-job setup.
+
+### `promote-staging-to-production.yml`
+Manual “approve and push to production” workflow. Use when staging is deployed from branch `staging` and production from `main`. **Works with branch protection:** it creates a PR instead of pushing directly.
+
+**Triggers:**
+- **Manual:** Actions → Promote staging to production → Run workflow (must type `production` to confirm)
+
+**What it does:**
+- Creates a PR from `staging` into `main` (or outputs the existing open PR). You merge the PR in GitHub; the deploy workflow then runs and deploys to production.
 
 ### `ci.yml`
 General CI workflow for running tests on all PRs and pushes.
 
 **Triggers:**
-- Push to main, feat/**, or fix/** branches
-- Pull requests to main
+- Push to main, staging, feat/**, or fix/** branches
+- Pull requests to main, staging
 - **merge_group** – when a PR is in the merge queue (so required checks run on the merge group ref)
 
 **What it does:**
 - Runs E2E tests
-- Runs unit tests on push to feat/** or fix/** only (on PR and main they run once in deploy.yml)
+- Runs unit tests on push to feat/** or fix/** only (on main and staging they run once in deploy.yml)
 
 ### `daily-merge-digest.yml`
 Summarizes in plain language everything merged into `main` in the last 24 hours and shares it with project owners.
@@ -92,6 +101,13 @@ Summarizes in plain language everything merged into `main` in the last 24 hours 
        └──────────────│ (Vercel)     │
                       └──────────────┘
 ```
+
+## Staging branch
+
+The **staging** branch is included in deploy, E2E, CI, lint, and security workflows so that:
+
+- Pushes to `staging` and PRs targeting `staging` run **Test and Build** and **E2E Tests** (and get preview deployments for PRs).
+- **Promote staging to production** (manual workflow) creates a PR from `staging` → `main`; merging that PR deploys to production and respects branch protection on `main`.
 
 ## Blocking Deployment
 

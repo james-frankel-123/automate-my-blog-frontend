@@ -33,11 +33,13 @@ export class EnhancedContentAPI {
     const preloadedTweets = enhancementOptions.preloadedTweets ?? enhancementOptions.tweets ?? [];
     const preloadedArticles = enhancementOptions.preloadedArticles ?? [];
     const preloadedVideos = enhancementOptions.preloadedVideos ?? [];
+    const ctas = enhancementOptions.ctas ?? enhancementOptions.organizationCTAs ?? [];
 
     return {
       topic: selectedTopic,
       businessInfo: analysisData || {},
       organizationId: enhancementOptions.organizationId,
+      ctas: Array.isArray(ctas) ? ctas : undefined,
       additionalInstructions: enhancementOptions.additionalInstructions || '',
       options: {
         autoSave: true,
@@ -69,9 +71,15 @@ export class EnhancedContentAPI {
     const rawContent = blogPost?.content || data.content || (typeof blogPost === 'string' ? blogPost : undefined);
     const content = typeof rawContent === 'string' ? normalizeContentString(rawContent) : rawContent;
 
+    const ctas = (result.data && result.data.ctas) || result.ctas || data.ctas || [];
+    const normalizedCtas = Array.isArray(ctas)
+      ? ctas.map((c) => (typeof c === 'object' && c !== null ? { text: c.text ?? '', href: c.href, type: c.type, placement: c.placement } : { text: String(c) }))
+      : [];
+
     return {
       success: true,
       content: content ?? '',
+      ctas: normalizedCtas,
       visualSuggestions: data.visualSuggestions || [],
       enhancedMetadata: data.enhancedMetadata || {
         seoAnalysis: data.seoAnalysis,
@@ -317,7 +325,7 @@ export class EnhancedContentAPI {
   /**
    * Generate content with AI feedback loop (for future implementation)
    */
-  async generateWithFeedbackLoop(topic, analysisData, strategy, previousVersions = []) {
+  async generateWithFeedbackLoop(topic, analysisData, strategy, _previousVersions = []) {
     // This will be implemented in a future phase
     // For now, return standard generation
     return this.generateEnhancedContent(topic, analysisData, strategy);
@@ -346,7 +354,7 @@ export class EnhancedContentAPI {
   /**
    * Build change explanations for user understanding
    */
-  buildChangeExplanations(changes) {
+  buildChangeExplanations(_changes) {
     // This will provide detailed explanations of why changes were made
     return {
       structuralChanges: 'Explanations of structural improvements',
@@ -358,7 +366,7 @@ export class EnhancedContentAPI {
   /**
    * Build improvement suggestions based on analysis
    */
-  buildImprovementSuggestions(changes) {
+  buildImprovementSuggestions(_changes) {
     return [
       'Suggested improvements based on content analysis',
       'SEO optimization recommendations',

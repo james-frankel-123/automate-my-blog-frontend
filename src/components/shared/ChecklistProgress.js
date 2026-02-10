@@ -112,7 +112,7 @@ const styles = {
 function ChecklistProgress({
   steps = [],
   currentStep,
-  phase,
+  phase: _phase,
   progress,
   estimatedTimeRemaining,
   completed = false,

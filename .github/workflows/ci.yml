@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - staging
       - 'feat/**'
       - 'fix/**'
     paths:
@@ -21,6 +22,7 @@ on:
   pull_request:
     branches:
       - main
+      - staging
     paths:
       - 'src/**'
       - 'public/**'
@@ -43,7 +45,7 @@ jobs:
     name: Unit Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    if: github.event_name == 'push' && github.ref != 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref != 'refs/heads/main' && github.ref != 'refs/heads/staging'
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
