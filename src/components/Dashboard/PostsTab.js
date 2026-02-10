@@ -388,6 +388,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [_ctasLoading, setCtasLoading] = useState(false);
   const [_hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
   const [showManualCTAModal, setShowManualCTAModal] = useState(false);
+  // When user clicks Create Post but has no CTAs, we show CTA modal first; this stores the topic to start after they submit/skip (issue #339)
+  const [pendingTopicIdAfterCTA, setPendingTopicIdAfterCTA] = useState(null);
+  const ctaPromptSkippedForSessionRef = React.useRef(false);
 
   // User credits state (live from API)
   const [userCredits, setUserCredits] = useState(null);
@@ -835,6 +838,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           `You have ${remainingPosts} post${remainingPosts === 1 ? '' : 's'} remaining. Consider upgrading your plan.`,
           6
         );
+      }
+
+      // If no CTAs exist, prompt user to add CTAs before generating (issue #339)
+      if (!_hasSufficientCTAs && organizationCTAs.length === 0 && !ctaPromptSkippedForSessionRef.current) {
+        setPendingTopicIdAfterCTA(topicId);
+        setShowManualCTAModal(true);
+        contentGenerationInProgressRef.current = false;
+        setGeneratingContent(false);
+        setSelectedTopic(null);
+        return;
       }
 
       // Step 1: Fetch related content (tweets, articles, videos) with visible steps before blog generation
@@ -1785,6 +1798,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         setHasSufficientCTAs(updatedCTAs.has_sufficient_ctas || false);
 
         setShowManualCTAModal(false);
+        // If user was prompted from Create Post (issue #339), continue with content generation
+        if (pendingTopicIdAfterCTA) {
+          const topicId = pendingTopicIdAfterCTA;
+          setPendingTopicIdAfterCTA(null);
+          setTimeout(() => handleTopicSelection(topicId), 0);
+        }
       }
     } catch (error) {
       console.error('Failed to add manual CTAs:', error);
@@ -1794,8 +1813,15 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
   // Handle user choosing to skip manual CTA entry
   const handleSkipManualCTAs = () => {
+    ctaPromptSkippedForSessionRef.current = true;
     message.info('Continuing without additional CTAs');
     setShowManualCTAModal(false);
+    // If user was prompted from Create Post (issue #339), continue with content generation
+    if (pendingTopicIdAfterCTA) {
+      const topicId = pendingTopicIdAfterCTA;
+      setPendingTopicIdAfterCTA(null);
+      setTimeout(() => handleTopicSelection(topicId), 0);
+    }
   };
 
   const getPostActions = (post) => {
@@ -3575,14 +3601,21 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         </Modal>
       )}
 
-      {/* Manual CTA Input Modal */}
+      {/* Manual CTA Input Modal - prompt when no CTAs exist before generating (issue #339) */}
       <ManualCTAInputModal
         visible={showManualCTAModal}
-        onCancel={() => setShowManualCTAModal(false)}
+        onCancel={() => {
+          setShowManualCTAModal(false);
+          if (pendingTopicIdAfterCTA) {
+            setPendingTopicIdAfterCTA(null);
+            contentGenerationInProgressRef.current = false;
+            setGeneratingContent(false);
+          }
+        }}
         onSubmit={handleManualCTAsSubmit}
         onSkip={handleSkipManualCTAs}
         existingCTAs={organizationCTAs}
-        minCTAs={3}
+        minCTAs={pendingTopicIdAfterCTA ? 1 : 3}
         websiteName={organizationName || 'your website'}
       />
     </div>
