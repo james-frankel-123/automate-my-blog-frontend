@@ -25,7 +25,7 @@ export function WebsiteInputSection({
   loading = false,
   scanningMessage = '',
   analysisProgress = null,
-  analysisThoughts = [],
+  analysisThoughts: _analysisThoughts = [],
   analysisComplete = false,
   headerAnimationComplete = false,
   onHoldTightNarrationComplete = null,

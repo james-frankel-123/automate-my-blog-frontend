@@ -21,7 +21,7 @@ import AudienceCard from './AudienceCard';
 import TopicCard from './TopicCard';
 import SignupGateCard from './SignupGateCard';
 import EditConfirmActions from './EditConfirmActions';
-import AnalysisEditSection from './AnalysisEditSection';
+import _AnalysisEditSection from './AnalysisEditSection';
 import LoggedOutProgressHeader from '../Dashboard/LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
 import ThinkingPanel from '../shared/ThinkingPanel';
@@ -92,7 +92,7 @@ function OnboardingFunnelView() {
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(null);
   const [_analysisConfirmed, setAnalysisConfirmed] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [originalAnalysisSnapshot, setOriginalAnalysisSnapshot] = useState(null);
+  const [_originalAnalysisSnapshot, setOriginalAnalysisSnapshot] = useState(null);
   const [fetchedTopicItems, setFetchedTopicItems] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [audiencePlaceholderVisible, setAudiencePlaceholderVisible] = useState(false);
@@ -108,7 +108,7 @@ function OnboardingFunnelView() {
   const [contentNarrationContent, setContentNarrationContent] = useState('');
   const [contentNarrationStreaming, setContentNarrationStreaming] = useState(false);
   const [headerAnimationComplete, setHeaderAnimationComplete] = useState(false);
-  const [holdTightNarrationComplete, setHoldTightNarrationComplete] = useState(false);
+  const [_holdTightNarrationComplete, setHoldTightNarrationComplete] = useState(false);
   const [audienceNarrationComplete, setAudienceNarrationComplete] = useState(false);
   const [topicNarrationComplete, setTopicNarrationComplete] = useState(false);
   const sectionRefs = useRef({});
@@ -166,6 +166,8 @@ function OnboardingFunnelView() {
     } else if (fallbackScenarios.length > 0) {
       console.log('🕐 [OnboardingFunnelView] Using fallback scenario:', fallbackScenarios);
     }
+  // Intentionally depend only on lengths to avoid re-running on every render (scenarios/fallbackScenarios are new refs each time)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- displayScenarios, fallbackScenarios, scenarios used only for logging
   }, [scenarios.length, fallbackScenarios.length]);
 
   const scrollTo = (key) => {
@@ -635,7 +637,7 @@ function OnboardingFunnelView() {
     setEditedBusinessProfile(null);
   }, []);
 
-  const handleRequestSuggestion = useCallback(async (values, setFieldsValue) => {
+  const _handleRequestSuggestion = useCallback(async (values, setFieldsValue) => {
     if (!values || typeof setFieldsValue !== 'function') return;
     try {
       const response = await autoBlogAPI.getCleanedAnalysisSuggestion({

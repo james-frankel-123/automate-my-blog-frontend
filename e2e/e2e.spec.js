@@ -75,9 +75,10 @@ async function runWebsiteAnalysisToCompletion(page) {
     throw new Error('Create New Post button not visible');
   }
   await createBtn.click();
-  await page.waitForTimeout(500);
+  // Wait for header animation so WebsiteInputSection form is shown (headerAnimationComplete)
+  await page.waitForTimeout(2000);
   const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-  if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+  if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
     throw new Error('Website URL input not visible');
   }
   await input.fill('https://example.com');
@@ -371,7 +372,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(500);
       }
       const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-      if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+      if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
         test.skip();
         return;
       }
@@ -391,7 +392,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(500);
       }
       const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-      if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+      if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
         test.skip();
         return;
       }
@@ -407,7 +408,7 @@ test.describe('E2E (mocked backend)', () => {
 
     test('should handle workflow state persistence', async ({ page }) => {
       const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-      if (await input.isVisible({ timeout: 5000 }).catch(() => false)) {
+      if (await input.isVisible({ timeout: 15000 }).catch(() => false)) {
         await input.fill('https://example.com');
         await page.reload();
         await page.waitForLoadState('load');
@@ -442,7 +443,7 @@ test.describe('E2E (mocked backend)', () => {
         await createBtn.click();
         await page.waitForTimeout(500);
         const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+        if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
           test.skip();
           return;
         }
@@ -466,7 +467,7 @@ test.describe('E2E (mocked backend)', () => {
         await createBtn.click();
         await page.waitForTimeout(500);
         const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+        if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
           test.skip();
           return;
         }
@@ -487,7 +488,7 @@ test.describe('E2E (mocked backend)', () => {
         await createBtn.click();
         await page.waitForTimeout(500);
         const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+        if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
           test.skip();
           return;
         }
@@ -513,7 +514,7 @@ test.describe('E2E (mocked backend)', () => {
         await createBtn.click();
         await page.waitForTimeout(500);
         const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+        if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
           test.skip();
           return;
         }
@@ -533,7 +534,7 @@ test.describe('E2E (mocked backend)', () => {
         await createBtn.click();
         await page.waitForTimeout(500);
         const input = page.locator('input[placeholder*="website" i], input[placeholder*="url" i]').first();
-        if (!(await input.isVisible({ timeout: 5000 }).catch(() => false))) {
+        if (!(await input.isVisible({ timeout: 15000 }).catch(() => false))) {
           test.skip();
           return;
         }
