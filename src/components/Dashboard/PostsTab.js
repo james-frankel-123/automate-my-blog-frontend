@@ -704,6 +704,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       setTopicImageGeneratingIndex(null);
       setHint(systemVoice.topics.generatingTopics, 'hint', 0);
 
+      // Reset CTA prompt skip so "need to create CTAs" modal can show again for this topic generation flow
+      ctaPromptSkippedForSessionRef.current = false;
+
       const creditsPromise = user ? api.getUserCredits().catch(() => null) : Promise.resolve(null);
       const ctasPromise = organizationId
         ? api.getOrganizationCTAs(organizationId).catch(() => null)
@@ -847,7 +850,22 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }
 
       // If no CTAs exist, prompt user to add CTAs before generating (issue #339)
-      if (!_hasSufficientCTAs && organizationCTAs.length === 0 && !ctaPromptSkippedForSessionRef.current) {
+      // Re-fetch CTAs when user clicks Create Post so we use live API result and avoid stale state
+      let ctasForCheck = { ctas: organizationCTAs, hasSufficient: _hasSufficientCTAs };
+      if (organizationId) {
+        try {
+          const ctasResponse = await api.getOrganizationCTAs(organizationId);
+          ctasForCheck = {
+            ctas: ctasResponse.ctas || [],
+            hasSufficient: ctasResponse.has_sufficient_ctas || false
+          };
+          setOrganizationCTAs(ctasForCheck.ctas);
+          setHasSufficientCTAs(ctasForCheck.hasSufficient);
+        } catch (err) {
+          console.error('Failed to fetch CTAs for Create Post check:', err);
+        }
+      }
+      if (!ctasForCheck.hasSufficient && ctasForCheck.ctas.length === 0 && !ctaPromptSkippedForSessionRef.current) {
         setPendingTopicIdAfterCTA(topicId);
         setShowManualCTAModal(true);
         contentGenerationInProgressRef.current = false;
