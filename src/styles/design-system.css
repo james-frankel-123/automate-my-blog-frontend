@@ -2515,3 +2515,19 @@ html.dark-mode [class*="ant-badge"] * {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
 }
+
+/* HTML preview: CTA links (matched from result.ctas) – button-like styling */
+.html-preview-container a.cta-link {
+  display: inline-block;
+  padding: 6px 14px;
+  margin: 2px 4px 2px 0;
+  background: var(--color-primary);
+  color: var(--color-text-on-primary) !important;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background 0.15s ease;
+}
+.html-preview-container a.cta-link:hover {
+  background: var(--color-primary-hover);
+}

@@ -356,7 +356,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [relatedArticles, setRelatedArticles] = useState([]); // News articles from search-for-topic-stream; shown alongside post
   const [relatedVideos, setRelatedVideos] = useState([]); // YouTube videos from search-for-topic-stream; shown alongside post
   const [postState, _setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
-  
+  // CTAs returned with generated content (result.ctas / data.ctas) for preview styling and "CTAs in this post" list
+  const [postCTAs, setPostCTAs] = useState([]);
+
   // Editor state for TipTap integration
   const [richTextEditor, setRichTextEditor] = useState(null);
 
@@ -1052,7 +1054,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 const finalContent = fromComplete || accumulatedChunks;
                 if (finalContent) setEditingContent(finalContent);
                 setContentGenerated(true);
-                resolve({ success: true, content: finalContent, blogPost: data?.blogPost ?? data?.result });
+                const ctas = Array.isArray(data?.ctas) ? data.ctas : [];
+                setPostCTAs(ctas);
+                resolve({ success: true, content: finalContent, blogPost: data?.blogPost ?? data?.result, ctas });
               },
               onError: (errData) => {
                 reject(new Error(errData?.message || 'Stream error'));
@@ -1085,7 +1089,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 createdAt: saveResult.post.created_at ?? new Date().toISOString(),
                 topic: topic,
                 blogPost: result.blogPost,
-                relatedTweets: relatedTweets?.length ? relatedTweets : undefined
+                relatedTweets: relatedTweets?.length ? relatedTweets : undefined,
+                postCTAs: result.ctas || []
               });
               setLastSavedContent(streamContent);
               setLastSaved(new Date());
@@ -1119,6 +1124,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       if (result.success) {
         setEditingContent(normalizeContentString(result.content) || result.content);
         setContentGenerated(true);
+        setPostCTAs(Array.isArray(result.ctas) ? result.ctas : []);
 
         // If images are generating in background, show indicator and update when ready
         if (result.imageGenerationPromise) {
@@ -1198,7 +1204,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             status: 'draft',
             createdAt: savedPost.created_at ?? savedPost.createdAt ?? new Date().toISOString(),
             topic: topic,
-            blogPost: result.blogPost
+            blogPost: result.blogPost,
+            postCTAs: Array.isArray(result.ctas) ? result.ctas : []
           });
           setLastSavedContent(result.content);
           setLastSaved(new Date());
@@ -1236,7 +1243,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               status: 'draft',
               createdAt: saveResult.post.created_at ?? new Date().toISOString(),
               topic: topic,
-              blogPost: result.blogPost
+              blogPost: result.blogPost,
+              postCTAs: Array.isArray(result.ctas) ? result.ctas : []
             });
             setLastSavedContent(result.content);
             setLastSaved(new Date());
@@ -1472,6 +1480,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       setCurrentDraft(null);
                       setSelectedTopic(null);
                       setEditingContent('');
+                      setPostCTAs([]);
                       setAvailableTopics([]);
                       setLastSavedContent('');
                       setLastSaved(null);
@@ -1793,6 +1802,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       setCurrentDraft(null);
       setSelectedTopic(null);
       setEditingContent('');
+      setPostCTAs([]);
       setAvailableTopics([]);
       setLastSavedContent('');
       setLastSaved(null);
@@ -2513,6 +2523,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               setEditingContent('');
                               setSelectedTopic(null);
                               setCurrentDraft(null);
+                              setPostCTAs([]);
                               setRelatedTweets([]);
                               setRelatedArticles([]);
                               setRelatedVideos([]);
@@ -3285,12 +3296,29 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   padding: 'var(--space-5)',
                   minHeight: '320px'
                 }}>
+                  {(postCTAs?.length ? postCTAs : currentDraft?.postCTAs || []).length > 0 && (
+                    <div style={{ marginBottom: 12, padding: '10px 14px', backgroundColor: 'var(--color-background-container)', borderRadius: 6, border: '1px solid var(--color-border-base)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 6 }}>CTAs in this post</div>
+                      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--color-text-primary)' }}>
+                        {(postCTAs?.length ? postCTAs : currentDraft?.postCTAs || []).map((cta, i) => (
+                          <li key={i}>
+                            {cta.href ? (
+                              <a href={cta.href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>{cta.text || cta.href}</a>
+                            ) : (
+                              <span>{cta.text || '—'}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <StreamingPreview
                     content={editingContent || (generatingContent ? 'Waiting for content…' : '')}
                     relatedArticles={relatedArticles || []}
                     relatedVideos={relatedVideos || []}
                     relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                     heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
+                    ctas={postCTAs?.length ? postCTAs : (currentDraft?.postCTAs || [])}
                     style={{
                       minHeight: '300px',
                       padding: '20px',
@@ -3353,6 +3381,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     setEditingContent('');
                     setSelectedTopic(null);
                     setCurrentDraft(null);
+                    setPostCTAs([]);
                     setRelatedTweets([]);
                     setRelatedArticles([]);
                     setRelatedVideos([]);
@@ -3499,6 +3528,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       relatedVideos={relatedVideos || []}
                       relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                       heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
+                      ctas={postCTAs?.length ? postCTAs : (currentDraft?.postCTAs || [])}
                       style={{
                         minHeight: '400px',
                         padding: '24px',
