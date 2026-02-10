@@ -826,7 +826,7 @@ function OnboardingFunnelView() {
           const ctas = r.ctas || [];
           const hasSufficient = r.has_sufficient_ctas ?? false;
           updateCTAData?.({ ctas, ctaCount: ctas.length, hasSufficientCTAs: hasSufficient });
-          if (!hasSufficient && ctas.length === 0 && !ctaPromptSkippedForSessionRef.current) {
+          if (!hasSufficient && !ctaPromptSkippedForSessionRef.current) {
             setShowManualCTAModal(true);
             return;
           }
@@ -838,7 +838,7 @@ function OnboardingFunnelView() {
         });
       return;
     }
-    if (!hasSufficientCTAs && organizationCTAs.length === 0 && !ctaPromptSkippedForSessionRef.current) {
+    if (!hasSufficientCTAs && !ctaPromptSkippedForSessionRef.current) {
       setShowManualCTAModal(true);
       return;
     }
@@ -1339,7 +1339,7 @@ function OnboardingFunnelView() {
         </section>
       )}
     </div>
-    {/* Manual CTA modal when no CTAs exist before content generation (issue #339 – onboarding) */}
+    {/* Manual CTA modal when CTAs are insufficient before content generation (issue #339 – onboarding) */}
     <ManualCTAInputModal
       visible={showManualCTAModal}
       onCancel={() => setShowManualCTAModal(false)}
