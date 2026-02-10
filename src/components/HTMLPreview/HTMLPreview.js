@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
+import { Tweet } from 'react-tweet';
+import 'react-tweet/theme.css';
 import { typography } from '../DesignSystem/tokens';
 
 function escapeAttr(s) {
@@ -295,6 +297,21 @@ const ARTICLE_PLACEHOLDER_TOKEN_REGEX = /__ARTICLE_PLACEHOLDER_(\d+)__/g;
 
 const TWEET_PLACEHOLDER_TOKEN_REGEX = /__TWEET_PLACEHOLDER_(\d+)__/g;
 
+/** Sentinel injected so we can split and render react-tweet or fallback card. */
+const TWEET_EMBED_SENTINEL_REGEX = /__TWEET_EMBED_(\d+)__/g;
+
+/**
+ * Extract Twitter/X tweet ID from a status URL.
+ * Supports twitter.com/.../status/ID, x.com/.../status/ID, twitter.com/i/status/ID.
+ * @param {string} [url]
+ * @returns {string|null}
+ */
+function getTweetIdFromUrl(url) {
+  if (!url || typeof url !== 'string') return null;
+  const m = url.match(/(?:twitter\.com|x\.com)\/(?:i\/)?(?:\w+\/)?status\/(\d+)/i);
+  return m ? m[1] : null;
+}
+
 /** Inline X logo SVG for embed header (safe, no user content). */
 const X_LOGO_SVG = '<svg class="markdown-tweet-card-xlogo-svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
 
@@ -360,6 +377,61 @@ function getTweetPlaceholderHtml(index, relatedTweets = []) {
     '<span class="markdown-tweet-placeholder-text">Loading tweet…</span>' +
     '</div>'
   );
+}
+
+/**
+ * Renders a single tweet slot: react-tweet when we have a tweet ID from URL, else fallback card HTML.
+ */
+function TweetEmbed({ index, relatedTweets }) {
+  const tweets = Array.isArray(relatedTweets) ? relatedTweets : [];
+  const tweet = tweets[index];
+  const id = tweet?.url ? getTweetIdFromUrl(tweet.url) : null;
+  const fallbackHtml = getTweetPlaceholderHtml(index, relatedTweets);
+
+  if (id) {
+    return (
+      <div className="markdown-tweet-embed-wrapper" style={{ margin: '20px 0' }}>
+        <Tweet
+          id={id}
+          fallback={
+            <div
+              className="markdown-tweet-card-fallback"
+              dangerouslySetInnerHTML={{ __html: fallbackHtml }}
+            />
+          }
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      className="markdown-tweet-card-fallback"
+      dangerouslySetInnerHTML={{ __html: fallbackHtml }}
+    />
+  );
+}
+
+/**
+ * Renders HTML content, splitting on __TWEET_EMBED_n__ and rendering react-tweet (or fallback) for each slot.
+ */
+function HtmlWithTweetSlots({ html, relatedTweets }) {
+  if (!html) return null;
+  if (!html.includes('__TWEET_EMBED_')) {
+    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+  }
+  const parts = html.split(TWEET_EMBED_SENTINEL_REGEX);
+  const result = [];
+  for (let i = 0; i < parts.length; i++) {
+    if (i % 2 === 0) {
+      if (parts[i]) result.push(<div key={`html-${i}`} dangerouslySetInnerHTML={{ __html: parts[i] }} />);
+    } else {
+      const index = parseInt(parts[i], 10);
+      if (!Number.isNaN(index) && index >= 0) {
+        result.push(<TweetEmbed key={`tweet-${i}-${index}`} index={index} relatedTweets={relatedTweets} />);
+      }
+    }
+  }
+  return <>{result}</>;
 }
 
 /**
@@ -495,11 +567,11 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       return Number.isNaN(index) || index < 0 ? '' : getVideoPlaceholderHtml(index, relatedVideos);
     });
   }
-  // Replace tweet placeholder tokens with tweet-style card or loading UI
+  // Replace tweet placeholder tokens with sentinels so we can render react-tweet or fallback per slot
   if (rawHtml.includes('__TWEET_PLACEHOLDER_')) {
     rawHtml = rawHtml.replace(TWEET_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
       const index = parseInt(indexStr, 10);
-      return Number.isNaN(index) || index < 0 ? '' : getTweetPlaceholderHtml(index, relatedTweets);
+      return Number.isNaN(index) || index < 0 ? '' : `__TWEET_EMBED_${index}__`;
     });
   }
 
@@ -543,7 +615,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         <>
           {contentParts.map((part, i) => (
             <React.Fragment key={i}>
-              <div dangerouslySetInnerHTML={{ __html: part }} />
+              <HtmlWithTweetSlots html={part} relatedTweets={relatedTweets} />
               {i < contentParts.length - 1 && (
                 heroImageUrl ? (
                   <HeroImage
@@ -561,7 +633,6 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       ) : (
         <>
       <div
-        dangerouslySetInnerHTML={{ __html: htmlContent }}
         style={{
           // Override default styles for HTML elements
           '& h1': {
@@ -649,7 +720,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             margin: `${paragraphSpacing * 2}px 0`
           }
         }}
-      />
+      >
+        <HtmlWithTweetSlots html={htmlContent} relatedTweets={relatedTweets} />
+      </div>
       
       <style jsx>{`
         div h1 {
