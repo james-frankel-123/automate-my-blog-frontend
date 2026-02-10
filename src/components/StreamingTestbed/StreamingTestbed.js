@@ -367,13 +367,15 @@ function StreamingTestbed() {
     let tweetsArr = [];
     let videosArr = [];
     let articlesArr = [];
+    let ctasArr = [];
 
     try {
-      const [ctasArr, tweetsVideosResult, articlesResult] = await Promise.all([
+      const [ctas, tweetsVideosResult, articlesResult] = await Promise.all([
         runFetchCTAs(),
         runTweetsAndVideos(),
         runArticleStreamWithTimeout(),
       ]);
+      ctasArr = Array.isArray(ctas) ? ctas : [];
       tweetsArr = Array.isArray(tweetsVideosResult?.[0]) ? tweetsVideosResult[0] : [];
       videosArr = Array.isArray(tweetsVideosResult?.[1]) ? tweetsVideosResult[1] : [];
       articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
