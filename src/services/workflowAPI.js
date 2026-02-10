@@ -302,7 +302,7 @@ export const topicAPI = {
    * @param {{ onTopicComplete?: (topic: Object) => void, onTopicImageStart?: (data: { index, total, topic }) => void, onTopicImageComplete?: (topic: Object, index: number) => void }} options - Optional stream callbacks
    * @returns {Promise<Object>} Generated topics
    */
-  async generateTrendingTopics(analysisData, selectedStrategy = null, webSearchInsights = {}, options = {}) {
+  async generateTrendingTopics(analysisData, selectedStrategy = null, _webSearchInsights = {}, options = {}) {
     const audienceLabel = analysisData.decisionMakers || analysisData.targetAudience || 'General Audience';
     const targetAudience = selectedStrategy
       ? `${audienceLabel} struggling with: ${selectedStrategy.customerProblem}`

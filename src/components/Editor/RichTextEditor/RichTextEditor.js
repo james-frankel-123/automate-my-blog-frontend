@@ -115,11 +115,11 @@ const checkHeadingContentBoundary = (state, pos) => {
 
   // Find previous block node
   let prevBlock = null;
-  let prevBlockPos = null;
+  let _prevBlockPos = null;
   state.doc.nodesBetween(0, $pos.pos, (node, nodePos) => {
     if (node.isBlock && nodePos < $pos.pos) {
       prevBlock = node;
-      prevBlockPos = nodePos;
+      _prevBlockPos = nodePos;
     }
   });
 
@@ -603,7 +603,7 @@ const RichTextEditor = ({
           }
           return false;
         },
-        drop: (view, event) => {
+        drop: (view, _event) => {
           // Clear zone indicator and preview on drop
           try {
             previewUpdateScheduled.current = false;
@@ -625,7 +625,7 @@ const RichTextEditor = ({
         },
       },
       // Handle drop events for highlight boxes
-      handleDrop: (view, event, slice, moved) => {
+      handleDrop: (view, event, _slice, _moved) => {
         // Check if it's a highlight box being moved
         const highlightData = event.dataTransfer?.getData('application/x-tiptap-highlight');
 

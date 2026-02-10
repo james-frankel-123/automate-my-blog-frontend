@@ -54,7 +54,7 @@
     "test:coverage": "react-scripts test --coverage --watchAll=false",
     "test:watch": "react-scripts test --watchAll",
     "test:verbose": "react-scripts test --verbose --watchAll=false",
-    "lint": "eslint src/ --ext .js,.jsx --max-warnings 0 || true",
+    "lint": "eslint src/ --ext .js,.jsx --max-warnings 0",
     "eject": "react-scripts eject",
     "test:phase1": "node scripts/test-phase1.js",
     "test:phase1:manual": "echo 'Open http://localhost:3000/test-runner.html in browser while app is running'",
@@ -72,7 +72,10 @@
       "react-app",
       "react-app/jest"
     ],
-    "ignorePatterns": ["src/__mocks__/**"]
+    "ignorePatterns": ["src/__mocks__/**"],
+    "rules": {
+      "no-unused-vars": ["warn", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }]
+    }
   },
   "browserslist": {
     "production": [
@@ -97,10 +100,10 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 0,
-        "functions": 0,
-        "lines": 0,
-        "statements": 0
+        "branches": 1,
+        "functions": 1,
+        "lines": 1,
+        "statements": 1
       }
     },
     "transformIgnorePatterns": [

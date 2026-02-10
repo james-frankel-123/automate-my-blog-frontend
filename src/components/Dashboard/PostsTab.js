@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Modal, Progress } from 'antd';
+import { Card, Button, Table, Tag, Dropdown, Space, Switch, Input, Select, Row, Col, Typography, message, Modal, Progress } from 'antd';
 import { 
   PlusOutlined, 
   ScheduleOutlined,
@@ -27,9 +27,7 @@ import enhancedContentAPI from '../../services/enhancedContentAPI';
 import SchedulingModal from '../Modals/SchedulingModal';
 import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
-import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
 import StreamingPreview from '../StreamingTestbed/StreamingPreview';
-import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
@@ -325,7 +323,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Workflow content generation state
   const [contentGenerated, setContentGenerated] = useState(false);
   const [generatingContent, setGeneratingContent] = useState(false);
-  const [generatingImages, setGeneratingImages] = useState(false);
+  const [, setGeneratingImages] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(null); // { progress, currentStep, status } from job polling
   const [relatedContentSteps, setRelatedContentSteps] = useState([]); // [{ id, label, status, count? }] for fetch steps UI
   const [availableTopics, setAvailableTopics] = useState([]);
@@ -357,7 +355,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [relatedTweets, setRelatedTweets] = useState([]); // Fetched in background after stream starts; shown alongside post
   const [relatedArticles, setRelatedArticles] = useState([]); // News articles from search-for-topic-stream; shown alongside post
   const [relatedVideos, setRelatedVideos] = useState([]); // YouTube videos from search-for-topic-stream; shown alongside post
-  const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
+  const [postState, _setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
   
   // Editor state for TipTap integration
   const [richTextEditor, setRichTextEditor] = useState(null);
@@ -387,13 +385,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
   // CTA state management
   const [organizationCTAs, setOrganizationCTAs] = useState([]);
-  const [ctasLoading, setCtasLoading] = useState(false);
-  const [hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
+  const [_ctasLoading, setCtasLoading] = useState(false);
+  const [_hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
   const [showManualCTAModal, setShowManualCTAModal] = useState(false);
 
   // User credits state (live from API)
   const [userCredits, setUserCredits] = useState(null);
-  const [loadingCredits, setLoadingCredits] = useState(false);
+  const [_loadingCredits, setLoadingCredits] = useState(false);
 
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
@@ -486,6 +484,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         clearInterval(autosaveInterval);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- editingContent/handleAutosave intentionally excluded to avoid resets
   }, [contentGenerated, currentDraft]); // Re-setup when editing state changes, but not on every content change
 
   // Keyboard shortcut for manual save (Ctrl+S / Cmd+S)
@@ -506,6 +505,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleAutosave stable
   }, [contentGenerated, currentDraft, editingContent]);
 
   // Fetch CTAs when organization ID is available
@@ -556,6 +556,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }, 300);
       return () => clearTimeout(t);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedTopic?.id used for scroll trigger only
   }, [generatingContent, selectedTopic?.id]);
 
   const loadPosts = async () => {
@@ -1485,8 +1486,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     }));
   };
 
-  // Typography handler
-  const handleTypographyChange = (newTypography) => {
+  // Typography handler (reserved for future use)
+  const _handleTypographyChange = (newTypography) => {
     setTypography(newTypography);
   };
 
@@ -1578,6 +1579,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }, 800);
       return () => clearTimeout(t);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- forceWorkflowMode intentionally excluded
   }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent, selectedCustomerStrategy, stepResults?.home?.websiteAnalysis]);
 
   // Edit post functionality - restore post to editor
@@ -1856,7 +1858,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (title, record) => (
+      render: (title, _record) => (
         <div>
           <div style={{ fontWeight: 500, marginBottom: '4px' }}>{title}</div>
         </div>

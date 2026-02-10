@@ -107,7 +107,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject
     if (typeof onInject === 'function') onInject(type, index);
   };
 
-  const tweetLabel = (t, i) => {
+  const tweetLabel = (t, _i) => {
     const str = typeof t === 'string' ? t : (t?.text || t?.content || '');
     const truncated = String(str).slice(0, TRUNCATE.tweet);
     return (truncated + (String(str).length > TRUNCATE.tweet ? '…' : ''));

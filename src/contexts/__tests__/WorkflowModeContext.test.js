@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { WorkflowModeProvider, useWorkflowMode } from '../WorkflowModeContext';
 import { AuthProvider } from '../AuthContext';
 import { setupTests, cleanupTests, createMockUser } from '../../tests/testUtils';
@@ -148,8 +148,8 @@ describe('WorkflowModeContext', () => {
     });
 
     it('does not advance beyond step 6', async () => {
-      let contextState;
-      renderWithProviders(<TestWorkflowConsumer onContextState={(state) => { contextState = state; }} />);
+      let _contextState;
+      renderWithProviders(<TestWorkflowConsumer onContextState={(state) => { _contextState = state; }} />);
       
       // Advance to step 6
       for (let i = 0; i < 7; i++) {
@@ -239,8 +239,8 @@ describe('WorkflowModeContext', () => {
 
   describe('Workflow Reset', () => {
     it('resets workflow state to defaults', async () => {
-      let contextState;
-      renderWithProviders(<TestWorkflowConsumer onContextState={(state) => { contextState = state; }} />);
+      let _contextState;
+      renderWithProviders(<TestWorkflowConsumer onContextState={(state) => { _contextState = state; }} />);
       
       // Set up some state
       fireEvent.click(screen.getByTestId('update-analysis'));
@@ -275,8 +275,8 @@ describe('WorkflowModeContext', () => {
       
       autoBlogAPI.getOrCreateSessionId = jest.fn().mockReturnValue('session-123');
       
-      let contextState;
-      renderWithProviders(<TestWorkflowConsumer onContextState={(state) => { contextState = state; }} />);
+      let _contextState;
+      renderWithProviders(<TestWorkflowConsumer onContextState={(state) => { _contextState = state; }} />);
       
       await waitFor(() => {
         // Session initialization happens automatically

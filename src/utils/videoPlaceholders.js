@@ -19,7 +19,7 @@ function getVideoPlaceholderToken(index) {
  * @param {Array<{ url?: string, videoId?: string, title?: string, channelTitle?: string, thumbnailUrl?: string, viewCount?: number, duration?: string }>} [relatedVideos] - Videos by index
  * @returns {string} Content with placeholders replaced by tokens
  */
-function replaceVideoPlaceholders(content, relatedVideos = []) {
+function replaceVideoPlaceholders(content, _relatedVideos = []) {
   if (!content || typeof content !== 'string') return content || '';
   return content.replace(VIDEO_PLACEHOLDER_REGEX, (_, indexStr) => {
     const index = parseInt(indexStr, 10);

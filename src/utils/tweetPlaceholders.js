@@ -23,7 +23,7 @@ function getTweetText(t) {
  * @param {Array<string|{ text?: string, content?: string }>} [relatedTweets] - Tweets by index
  * @returns {string} Content with placeholders replaced by __TWEET_PLACEHOLDER_n__ tokens
  */
-function replaceTweetPlaceholders(content, relatedTweets = []) {
+function replaceTweetPlaceholders(content, _relatedTweets = []) {
   if (!content || typeof content !== 'string') return content || '';
   return content.replace(TWEET_PLACEHOLDER_REGEX, (_, indexStr) => {
     const index = parseInt(indexStr, 10);

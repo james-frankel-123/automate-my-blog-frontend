@@ -12,12 +12,12 @@ import ThemeToggle from '../ThemeToggle/ThemeToggle';
  * Provides navigation and visual feedback of current step
  */
 const LoggedOutProgressHeader = ({
-  currentStep = 0,
-  completedSteps = [],
-  onStepClick,
-  showAuthModal,
+  currentStep: _currentStep = 0,
+  completedSteps: _completedSteps = [],
+  onStepClick: _onStepClick,
+  showAuthModal: _showAuthModal,
   setShowAuthModal,
-  authContext,
+  authContext: _authContext,
   setAuthContext,
   // New props for registration state
   user = null,

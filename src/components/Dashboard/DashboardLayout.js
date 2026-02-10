@@ -45,15 +45,15 @@ import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
 const DashboardLayout = ({ 
   user: propUser, 
-  loginContext, 
-  workflowContent, 
+  loginContext: _loginContext, 
+  workflowContent: _workflowContent, 
   showDashboard, 
   isMobile, 
   onActiveTabChange,
   // Progressive headers props
-  completedWorkflowSteps = [],
-  stepResults: propStepResults = {},
-  onEditWorkflowStep,
+  completedWorkflowSteps: _completedWorkflowSteps = [],
+  stepResults: _propStepResults = {},
+  onEditWorkflowStep: _onEditWorkflowStep,
   // Force workflow mode for logged-out users
   forceWorkflowMode = false
 }) => {
@@ -88,8 +88,8 @@ const DashboardLayout = ({
   const { setHint } = useSystemHint();
   
   // Restore collapsed state (needed for sidebar)
-  const [collapsed, setCollapsed] = useState(false);
-  const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null);
+  const [collapsed, _setCollapsed] = useState(false);
+  const [_hasSeenSaveProject, setHasSeenSaveProject] = useState(null);
   
   // Step management for logged-out users
   const [currentStep, setCurrentStep] = useState(0);
@@ -247,6 +247,7 @@ const DashboardLayout = ({
       
       message.info('Payment was cancelled. You can try again anytime.');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- trackEvent from analytics context
   }, [user, loading, refreshQuota]); // Re-run when user or loading changes
 
   // Check if user has seen Save Project button before and handle login/registration
@@ -371,9 +372,11 @@ const DashboardLayout = ({
         observerCleanup();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTab excluded to prevent feedback loop
   }, [user, onActiveTabChange, projectMode, showDashboardLocal]); // Note: activeTab excluded to prevent feedback loop (observer sets activeTab → useEffect restarts → observer resets)
   
-  // Handle tab changes with smooth scroll navigation
+  // Handle tab changes with smooth scroll navigation (not wrapped in useCallback to avoid deps churn)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not useCallback so useEffect listener gets latest handler
   const handleTabChange = (newTab) => {
     // Track tab_switched event
     trackEvent('tab_switched', {
@@ -439,6 +442,7 @@ const DashboardLayout = ({
     return () => {
       window.removeEventListener('navigateToTab', handleCustomNavigation);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleTabChange intentionally not in deps; listener uses latest handler
   }, [handleTabChange]);
 
   // Handle ending impersonation

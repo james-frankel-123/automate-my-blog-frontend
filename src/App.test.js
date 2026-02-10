@@ -8,12 +8,7 @@ import autoBlogAPI from './services/api';
 jest.mock('./services/api');
 
 // Mock DashboardLayout to avoid deep component tree issues
-jest.mock('./components/Dashboard/DashboardLayout', () => ({
-  workflowContent,
-  showDashboard,
-  isMobile,
-  forceWorkflowMode,
-}) => (
+jest.mock('./components/Dashboard/DashboardLayout', () => ({ forceWorkflowMode = false, isMobile = false } = {}) => (
   <div data-testid="dashboard-layout">
     <span data-testid="workflow-mode">{forceWorkflowMode ? 'workflow' : 'normal'}</span>
     <span data-testid="mobile">{isMobile ? 'mobile' : 'desktop'}</span>

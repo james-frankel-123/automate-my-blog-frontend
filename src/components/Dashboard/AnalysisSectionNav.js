@@ -19,7 +19,7 @@ const THRESHOLD = 0;
  * @param {boolean} [props.collapsibleOnMobile=true] - On small screens, show as compact/collapsible
  * @param {Function} [props.onSectionClick] - Called with (id) before scrolling; use e.g. to expand a collapse that contains the section
  */
-export function AnalysisSectionNav({ sections, className = '', style = {}, collapsibleOnMobile = true, onSectionClick }) {
+export function AnalysisSectionNav({ sections, className = '', style = {}, collapsibleOnMobile: _collapsibleOnMobile = true, onSectionClick }) {
   const [activeId, setActiveId] = useState(sections[0]?.id ?? null);
   const observerRef = useRef(null);
   const containerRef = useRef(null);
