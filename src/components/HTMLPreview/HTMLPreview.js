@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DOMPurify from 'dompurify';
 import { typography } from '../DesignSystem/tokens';
 
@@ -9,23 +9,39 @@ function escapeAttr(s) {
 
 const HERO_IMAGE_SENTINEL = '__HERO_IMAGE__';
 
-/** Minimum time (ms) to show the shimmer placeholder so users see the loading state. */
-const HERO_PLACEHOLDER_MIN_MS = 2500;
+/** Brief minimum time (ms) for placeholder so transition isn’t jarring; image still swaps in as soon as loaded after this. */
+const HERO_PLACEHOLDER_MIN_MS = 400;
 
 /**
  * Hero image with animated placeholder until loaded, then swaps in the image.
- * Keeps the placeholder visible for at least HERO_PLACEHOLDER_MIN_MS so the shimmer is visible
- * even when the image loads quickly (e.g. from cache).
+ * Handles cached images (checks img.complete) so the real image always replaces the placeholder once ready.
  * Uses inline styles + a scoped style tag so the placeholder is always visible (no dependency on parent styled-jsx).
  */
 function HeroImage({ src, alt, paragraphSpacing = 16 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const imgRef = useRef(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMinTimeElapsed(true), HERO_PLACEHOLDER_MIN_MS);
     return () => clearTimeout(t);
   }, []);
+
+  // When src changes, reset loaded state and (after paint) check if image is already complete (e.g. cached)
+  useEffect(() => {
+    if (!src) return;
+    setImageLoaded(false);
+    const checkComplete = () => {
+      if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
+        setImageLoaded(true);
+      }
+    };
+    // Check after React has committed the img so ref is set
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(checkComplete);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [src]);
 
   const showImage = imageLoaded && minTimeElapsed;
 
@@ -75,9 +91,10 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
         </div>
       )}
       <img
+        ref={imgRef}
         src={src}
         alt={alt || 'Hero image'}
-        loading="lazy"
+        loading="eager"
         className="hero-image"
         style={{
           width: '100%',
