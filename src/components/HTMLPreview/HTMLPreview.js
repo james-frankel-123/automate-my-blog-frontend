@@ -257,10 +257,10 @@ function getTweetPlaceholderHtml(index, relatedTweets = []) {
       ? `<a href="${tweetUrl}" target="_blank" rel="noopener noreferrer" class="markdown-tweet-card-link">View on X</a>`
       : '';
     return (
-      '<div class="markdown-tweet-card">' +
+      '<div class="markdown-tweet-card" role="article" aria-label="Embedded post from X">' +
       '<div class="markdown-tweet-card-header">' +
       '<span class="markdown-tweet-card-avatar" aria-hidden="true">𝕏</span>' +
-      '<span class="markdown-tweet-card-badge">Post</span>' +
+      '<span class="markdown-tweet-card-badge">Post from X</span>' +
       '</div>' +
       '<div class="markdown-tweet-card-body">' + escaped(text) + '</div>' +
       (linkWrap ? '<div class="markdown-tweet-card-footer">' + linkWrap + '</div>' : '') +
@@ -750,89 +750,92 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           border: 1px solid rgba(220, 38, 38, 0.2);
         }
 
-        /* Markdown tweet card – compact, distinct X/Post style with dark accent */
+        /* Markdown tweet card – embedded X/Twitter-style card, visually distinct from article body */
         div :global(.markdown-tweet-card) {
           position: relative;
-          margin: 8px 0;
-          padding: 10px 12px;
-          max-width: 400px;
-          border-left: 3px solid #1a1a1a;
-          border-radius: 8px;
-          background: var(--color-background-container);
-          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-          transition: box-shadow 0.2s ease;
+          margin: 16px 0;
+          padding: 16px 18px;
+          max-width: 480px;
+          border: 1px solid var(--color-tweet-embed-border, #cfd9de);
+          border-radius: 16px;
+          background: var(--color-tweet-embed-bg, #f7f9f9);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
         }
 
         div :global(.markdown-tweet-card:hover) {
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          border-color: var(--color-tweet-embed-border-hover, #8b98a5);
         }
 
         div :global(.markdown-tweet-card-header) {
           display: flex;
           align-items: center;
-          gap: 8px;
-          margin-bottom: 6px;
+          gap: 10px;
+          margin-bottom: 10px;
         }
 
         div :global(.markdown-tweet-card-avatar) {
-          width: 28px;
-          height: 28px;
+          width: 36px;
+          height: 36px;
           border-radius: 50%;
-          background: var(--color-text-primary);
-          color: var(--color-background-body);
-          display: flex;
+          background: #0f1419;
+          color: #fff;
+          display: inline-flex;
           align-items: center;
           justify-content: center;
-          font-size: 12px;
+          font-size: 16px;
+          font-weight: 700;
+          line-height: 1;
           flex-shrink: 0;
         }
 
         div :global(.markdown-tweet-card-badge) {
-          font-size: 11px;
+          font-size: 13px;
           font-weight: 600;
-          color: var(--color-text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.03em;
+          color: var(--color-text-secondary, #536471);
+          letter-spacing: 0.01em;
         }
 
         div :global(.markdown-tweet-card-body) {
-          font-size: 13px;
-          line-height: 1.4;
-          color: var(--color-text-primary);
+          font-size: 15px;
+          line-height: 1.5;
+          color: var(--color-text-primary, #0f1419);
           white-space: pre-wrap;
           word-break: break-word;
-          max-height: 4.2em;
-          overflow: hidden;
+          margin: 0;
         }
 
         div :global(.markdown-tweet-card-footer) {
-          margin-top: 6px;
-          padding-top: 6px;
-          border-top: 1px solid var(--color-border-base);
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid var(--color-tweet-embed-border, #cfd9de);
         }
 
         div :global(.markdown-tweet-card-link) {
-          font-size: 11px;
-          color: var(--color-primary);
+          font-size: 13px;
+          font-weight: 500;
+          color: #1d9bf0;
           text-decoration: none;
         }
 
         div :global(.markdown-tweet-card-link:hover) {
           text-decoration: underline;
+          color: #1a8cd8;
         }
 
-        /* Tweet loading placeholder */
+        /* Tweet loading placeholder – same embedded-card look */
         div :global(.markdown-tweet-placeholder) {
           display: flex;
           align-items: center;
-          gap: 8px;
-          min-height: 52px;
-          margin: 8px 0;
-          padding: 10px 12px;
-          border-radius: 8px;
-          border: 1px dashed var(--color-border-base);
-          border-left: 3px solid #1a1a1a;
-          background: var(--color-background-alt);
+          gap: 10px;
+          min-height: 72px;
+          margin: 16px 0;
+          padding: 16px 18px;
+          border-radius: 16px;
+          border: 1px dashed var(--color-tweet-embed-border, #cfd9de);
+          background: var(--color-tweet-embed-bg, #f7f9f9);
           color: var(--color-text-tertiary);
         }
 
