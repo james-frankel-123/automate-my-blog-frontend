@@ -29,20 +29,23 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
     return () => clearTimeout(t);
   }, []);
 
-  // When src changes, reset loaded state and (after paint) check if image is already complete (e.g. cached)
+  // When src changes, reset loaded state so a new image shows placeholder until it loads.
+  useEffect(() => {
+    setImageLoaded(false);
+  }, [src]);
+
+  // After mount or src change: if the image is already complete (e.g. cached),
+  // onLoad may have fired before we attached the listener, so set loaded state.
   useEffect(() => {
     if (!src) return;
-    setImageLoaded(false);
+    const img = imgRef.current;
+    if (!img) return;
     const checkComplete = () => {
-      if (imgRef.current?.complete && imgRef.current?.naturalWidth > 0) {
-        setImageLoaded(true);
-      }
+      if (img.complete && img.naturalWidth > 0) setImageLoaded(true);
     };
-    // Check after React has committed the img so ref is set
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(checkComplete);
-    });
-    return () => cancelAnimationFrame(id);
+    checkComplete();
+    img.addEventListener('load', checkComplete);
+    return () => img.removeEventListener('load', checkComplete);
   }, [src]);
 
   const showImage = imageLoaded && minTimeElapsed;
