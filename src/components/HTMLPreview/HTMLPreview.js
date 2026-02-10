@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { Tweet } from 'react-tweet';
 import 'react-tweet/theme.css';
@@ -34,8 +34,29 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
     setImageLoaded(false);
   }, [src]);
 
-  // After mount or src change: if the image is already complete (e.g. cached),
-  // onLoad may have fired before we attached the listener, so set loaded state.
+  // Callback ref: attach load/error listeners as soon as the img mounts.
+  // Handles: cached images (complete before listener attach), async load, and failed load.
+  const imgCallbackRef = useCallback((node) => {
+    if (imgRef.current) {
+      const prev = imgRef.current;
+      prev.removeEventListener('load', imgRef._onLoad);
+      prev.removeEventListener('error', imgRef._onError);
+    }
+    imgRef.current = node;
+    if (!node || !src) return;
+    const checkComplete = () => {
+      if (node.complete && node.naturalWidth > 0) setImageLoaded(true);
+    };
+    const onError = () => setImageLoaded(true); // Hide placeholder on failure (show broken img)
+    imgRef._onLoad = checkComplete;
+    imgRef._onError = onError;
+    node.addEventListener('load', checkComplete);
+    node.addEventListener('error', onError);
+    checkComplete();
+    requestAnimationFrame(checkComplete); // Extra check next frame (browser may set complete async)
+  }, [src]);
+
+  // Also run checkComplete after paint (useEffect) for timing edge cases
   useEffect(() => {
     if (!src) return;
     const img = imgRef.current;
@@ -44,8 +65,8 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
       if (img.complete && img.naturalWidth > 0) setImageLoaded(true);
     };
     checkComplete();
-    img.addEventListener('load', checkComplete);
-    return () => img.removeEventListener('load', checkComplete);
+    const t = setTimeout(checkComplete, 0);
+    return () => clearTimeout(t);
   }, [src]);
 
   const showImage = imageLoaded && minTimeElapsed;
@@ -96,7 +117,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
         </div>
       )}
       <img
-        ref={imgRef}
+        ref={imgCallbackRef}
         src={src}
         alt={alt || 'Hero image'}
         loading="eager"
@@ -115,6 +136,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
           pointerEvents: showImage ? undefined : 'none'
         }}
         onLoad={() => setImageLoaded(true)}
+        onError={() => setImageLoaded(true)}
       />
     </div>
   );
