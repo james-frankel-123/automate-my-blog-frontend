@@ -28,6 +28,7 @@ function applyRelatedContentPlaceholders(content) {
  * @param {Array} relatedVideos - For __VIDEO_PLACEHOLDER_n__
  * @param {Array} relatedTweets - For __TWEET_PLACEHOLDER_n__
  * @param {string} [heroImageUrl] - Hero image URL when content has hero slot
+ * @param {Array<{ text: string, href?: string, type?: string, placement?: string }>} [ctas] - CTAs returned with content; used to style matching links in preview
  * @param {Object} [style] - Optional style for the preview container
  */
 function StreamingPreview({
@@ -36,6 +37,7 @@ function StreamingPreview({
   relatedVideos = [],
   relatedTweets = [],
   heroImageUrl,
+  ctas = [],
   style = {},
 }) {
   const contentWithPlaceholders = applyRelatedContentPlaceholders(content || '');
@@ -53,6 +55,7 @@ function StreamingPreview({
       relatedArticles={relatedArticles}
       relatedVideos={relatedVideos}
       relatedTweets={relatedTweets}
+      ctas={ctas}
       forceMarkdown={true}
       heroImageUrl={heroImageUrl || undefined}
       style={style}

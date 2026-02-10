@@ -71,9 +71,15 @@ export class EnhancedContentAPI {
     const rawContent = blogPost?.content || data.content || (typeof blogPost === 'string' ? blogPost : undefined);
     const content = typeof rawContent === 'string' ? normalizeContentString(rawContent) : rawContent;
 
+    const ctas = (result.data && result.data.ctas) || result.ctas || data.ctas || [];
+    const normalizedCtas = Array.isArray(ctas)
+      ? ctas.map((c) => (typeof c === 'object' && c !== null ? { text: c.text ?? '', href: c.href, type: c.type, placement: c.placement } : { text: String(c) }))
+      : [];
+
     return {
       success: true,
       content: content ?? '',
+      ctas: normalizedCtas,
       visualSuggestions: data.visualSuggestions || [],
       enhancedMetadata: data.enhancedMetadata || {
         seoAnalysis: data.seoAnalysis,

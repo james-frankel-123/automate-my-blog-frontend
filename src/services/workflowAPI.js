@@ -497,6 +497,7 @@ export const contentAPI = {
           return {
             success: true,
             content: enhancedResult.content,
+            ctas: enhancedResult.ctas || [],
             blogPost,
             savedPost: enhancedResult.blogPost?.id ? enhancedResult.blogPost : undefined,
             imageGenerationPromise: enhancedResult.imageGenerationPromise,

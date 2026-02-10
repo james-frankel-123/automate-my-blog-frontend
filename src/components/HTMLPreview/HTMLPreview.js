@@ -529,10 +529,43 @@ function getVideoPlaceholderHtml(index, relatedVideos = []) {
  * Optional relatedVideos: used to replace __VIDEO_PLACEHOLDER_n__ tokens with video cards or loading UI.
  * Optional relatedTweets: used to replace __TWEET_PLACEHOLDER_n__ tokens with tweet-style cards or loading UI.
  */
-const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos, relatedTweets }) => {
+/** Normalize for CTA matching: trim and lower. */
+function normalizeForCtaMatch(s) {
+  if (typeof s !== 'string') return '';
+  return s.trim().toLowerCase();
+}
+
+/** True if anchor matches CTA by href or link text. */
+function anchorMatchesCta(anchor, cta) {
+  const href = anchor.getAttribute('href');
+  const text = anchor.textContent || '';
+  const ctaHref = cta.href != null ? String(cta.href).trim() : '';
+  const ctaText = cta.text != null ? String(cta.text).trim() : '';
+  if (ctaHref && href && normalizeForCtaMatch(href) === normalizeForCtaMatch(ctaHref)) return true;
+  if (ctaText && normalizeForCtaMatch(text) === normalizeForCtaMatch(ctaText)) return true;
+  if (ctaText && text.trim() && normalizeForCtaMatch(text).includes(normalizeForCtaMatch(ctaText))) return true;
+  return false;
+}
+
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos, relatedTweets, ctas = [] }) => {
+  const containerRef = useRef(null);
+
+  // Style CTA links in the preview when result.ctas / data.ctas are provided (match by href or text). Must run unconditionally (hooks rules).
+  useEffect(() => {
+    if (!containerRef.current || !Array.isArray(ctas) || ctas.length === 0) return;
+    const links = containerRef.current.querySelectorAll('a');
+    links.forEach((a) => {
+      const isCta = ctas.some((cta) => anchorMatchesCta(a, cta));
+      if (isCta) a.classList.add('cta-link');
+    });
+    return () => {
+      links.forEach((a) => a.classList.remove('cta-link'));
+    };
+  }, [content, ctas]);
+
   if (!content || !content.trim()) {
     return (
-      <div style={{
+      <div ref={containerRef} style={{
         color: 'var(--color-text-tertiary)',
         fontStyle: 'italic',
         padding: '20px',
@@ -613,7 +646,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const contentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
 
   return (
-    <div style={previewStyles}>
+    <div ref={containerRef} className="html-preview-container" style={previewStyles}>
       {contentParts && contentParts.length > 1 ? (
         <>
           {contentParts.map((part, i) => (
