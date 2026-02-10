@@ -666,6 +666,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       ) : (
         <>
       <div
+        className="html-preview-content"
         style={{
           // Override default styles for HTML elements
           '& h1': {
@@ -843,14 +844,24 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         }
         
         div blockquote {
-          border-left: 4px solid var(--color-primary);
-          padding-left: ${paragraphSpacing}px;
-          margin: ${paragraphSpacing}px 0;
+          margin: ${paragraphSpacing * 1.25}px 0;
+          padding: ${paragraphSpacing}px ${paragraphSpacing * 1.25}px ${paragraphSpacing}px ${paragraphSpacing * 1.125}px;
+          border-left: 5px solid var(--color-primary);
+          background: linear-gradient(to right, var(--color-primary-50), var(--color-background-alt));
+          color: var(--color-text-primary);
           font-style: italic;
-          color: var(--color-text-secondary);
-          background-color: var(--color-background-container);
-          padding: ${paragraphSpacing * 0.75}px ${paragraphSpacing}px;
-          border-radius: 4px;
+          font-size: 1.05em;
+          line-height: ${typography.lineHeight.relaxed};
+          border-radius: 0 var(--radius-md) var(--radius-md) 0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+        
+        div blockquote :first-child {
+          margin-top: 0;
+        }
+        
+        div blockquote :last-child {
+          margin-bottom: 0;
         }
         
         div code {
