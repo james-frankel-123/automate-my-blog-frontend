@@ -1342,6 +1342,23 @@ test.describe('E2E (mocked backend)', () => {
         return route.continue();
       });
 
+      // Return sufficient CTAs so the app skips the CTA modal and proceeds to content-generation (which we 503)
+      await page.route('**/api/v1/organizations/*/ctas', (route) => {
+        if (route.request().method() === 'GET') {
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              ctas: [{ text: 'Contact us', href: '/contact', type: 'contact', placement: 'end-of-post' }],
+              count: 1,
+              has_sufficient_ctas: true,
+            }),
+          });
+        }
+        return route.continue();
+      });
+
       await removeOverlay(page);
       await page.locator('button:has-text("Create New Post")').first().click({ force: true });
       await page.waitForTimeout(800);
@@ -1371,14 +1388,7 @@ test.describe('E2E (mocked backend)', () => {
 
       await clickCreatePostButton(page, { waitForContentResponse: false });
 
-      // With #339, when no CTAs exist the CTA modal is shown first; skip it so content-generation is triggered and returns 503
-      const ctaModal = page.locator('.ant-modal').filter({ hasText: /Add Calls-to-Action|Calls-to-Action|Generate Without CTAs/i });
-      if (await ctaModal.first().isVisible({ timeout: 10000 }).catch(() => false)) {
-        await page.getByRole('button', { name: /Generate Without CTAs/i }).first().click();
-        await page.waitForSelector('.ant-modal-wrap', { state: 'hidden', timeout: 5000 }).catch(() => {});
-        await page.waitForTimeout(1000);
-      }
-
+      // CTAs are mocked as sufficient above so the app does not show the CTA modal; content-generation is triggered and returns 503
       const errorMsg = page.locator('.ant-message-error, .ant-message').filter({ hasText: /unavailable|try again later|503|queue/i });
       await expect(errorMsg.first()).toBeVisible({ timeout: 20000 });
     });

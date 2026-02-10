@@ -21,7 +21,8 @@ export function SignupGateCard({ onSuccess, dataTestId = 'signup-gate-card' }) {
         password: values.password,
         firstName: values.firstName,
         lastName: values.lastName,
-        organizationName: values.organizationName,
+        websiteUrl: values.websiteUrl,
+        organizationName: values.websiteUrl,
       });
       message.success('Account created. Continuing…');
       onSuccess?.();
@@ -70,8 +71,8 @@ export function SignupGateCard({ onSuccess, dataTestId = 'signup-gate-card' }) {
                 <Form.Item name="lastName" rules={[{ required: true, message: 'Last name is required' }]} label="Last name">
                   <Input placeholder="Last name" />
                 </Form.Item>
-                <Form.Item name="organizationName" rules={[{ required: true, message: 'Organization name is required' }]} label="Organization name">
-                  <Input placeholder="Company or blog name" />
+                <Form.Item name="websiteUrl" rules={[{ required: true, message: 'Website is required' }]} label="Website">
+                  <Input placeholder="https://yoursite.com" />
                 </Form.Item>
                 <Form.Item name="email" rules={[{ required: true, type: 'email' }]} label="Email">
                   <Input placeholder="you@example.com" />
