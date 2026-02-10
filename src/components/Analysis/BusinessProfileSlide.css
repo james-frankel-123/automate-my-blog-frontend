@@ -1,101 +1,106 @@
 .business-profile-slide {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 0;
 }
 
 .profile-slide-card {
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: #FFFFFF;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
   padding: 32px;
-  animation: slideInUp 0.6s ease-out;
+  animation: fadeInUp 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Header - Hero section */
 .profile-header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #E5E7EB;
 }
 
 .profile-title {
-  margin-bottom: 8px !important;
-  color: #1a1a1a;
+  margin-bottom: 12px !important;
+  color: #111827;
   font-weight: 700;
-  font-size: 32px;
+  font-size: 48px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .profile-domain {
-  color: #666;
-  font-size: 16px;
+  color: #6B7280;
+  font-size: 18px;
+  font-weight: 400;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 12px;
 }
 
+.profile-domain .anticon {
+  font-size: 20px;
+  color: #9CA3AF;
+}
+
+/* Section cards - Clean, flat design */
 .profile-section {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
   height: 100%;
-  border: 1px solid #e8e8e8;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border: none;
+  transition: none;
 }
 
-.profile-section:hover {
-  border-color: #1890ff;
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
-  transform: translateY(-2px);
-}
-
+/* Section header - Clean alignment without icons */
 .section-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 0;
+  margin-bottom: 8px;
 }
 
+/* Hide icons */
 .section-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
-  color: white;
-  font-size: 18px;
+  display: none;
 }
 
+/* Typography refinement */
 .section-title {
   margin: 0 !important;
-  color: #1a1a1a;
+  color: #111827;
   font-weight: 600;
   font-size: 16px;
+  letter-spacing: -0.01em;
 }
 
 .section-content {
-  color: #595959;
-  line-height: 1.6;
+  color: #4B5563;
+  line-height: 1.7;
+  font-size: 15px;
 }
 
 .section-text {
   margin-bottom: 0 !important;
-  color: #595959;
+  color: #374151;
 }
 
 .section-note {
   display: block;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #8c8c8c;
+  margin-top: 12px;
+  font-size: 13px;
+  color: #9CA3AF;
+  font-style: italic;
 }
 
-@keyframes slideInUp {
+/* Animations - Smooth entrance */
+@keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(32px);
   }
   to {
     opacity: 1;
@@ -103,21 +108,29 @@
   }
 }
 
-/* Responsive */
+/* Responsive - Maintain elegance */
 @media (max-width: 768px) {
   .profile-slide-card {
-    padding: 20px;
+    padding: 24px;
   }
 
   .profile-title {
-    font-size: 24px;
+    font-size: 32px;
   }
 
   .profile-domain {
-    font-size: 14px;
+    font-size: 16px;
   }
+}
 
-  .profile-section {
-    padding: 16px;
-  }
+/* Grid polish */
+.ant-row {
+  margin-left: -12px !important;
+  margin-right: -12px !important;
+}
+
+.ant-col {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  margin-bottom: 24px;
 }

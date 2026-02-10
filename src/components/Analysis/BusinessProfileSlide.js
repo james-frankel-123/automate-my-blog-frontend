@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, Row, Col, Typography, Tag, Space, Divider } from 'antd';
+import { Card, Row, Col, Typography, Tag, Space, Divider, Input } from 'antd';
 import {
   GlobalOutlined,
   TeamOutlined,
@@ -15,18 +15,82 @@ import './BusinessProfileSlide.css';
 
 const { Title, Text, Paragraph } = Typography;
 
-const BusinessProfileSlide = ({ profileData }) => {
+const EditableField = ({ value, onChange, multiline = false, placeholder = '' }) => {
+  if (multiline) {
+    return (
+      <Input.TextArea
+        value={value || ''}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoSize={{ minRows: 2, maxRows: 6 }}
+        style={{
+          fontSize: '15px',
+          lineHeight: '1.7',
+          border: '1px solid #3B82F6',
+          borderRadius: '8px',
+          padding: '12px'
+        }}
+      />
+    );
+  }
+
+  return (
+    <Input
+      value={value || ''}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      style={{
+        fontSize: '15px',
+        border: '1px solid #3B82F6',
+        borderRadius: '8px',
+        padding: '8px 12px'
+      }}
+    />
+  );
+};
+
+const BusinessProfileSlide = ({ profileData, editMode = false, onUpdate }) => {
+  const handleFieldChange = (fieldKey, newValue) => {
+    if (onUpdate) {
+      onUpdate({
+        ...profileData,
+        [fieldKey]: newValue
+      });
+    }
+  };
+
   return (
     <div className="business-profile-slide">
       <Card className="profile-slide-card" bordered={false}>
         {/* Header Section */}
         <div className="profile-header">
-          <Title level={2} className="profile-title">
-            {profileData.businessName}
-          </Title>
-          <Text className="profile-domain">
-            <GlobalOutlined /> {profileData.domain} • {profileData.tagline}
-          </Text>
+          {editMode ? (
+            <>
+              <div style={{ marginBottom: 16 }}>
+                <EditableField
+                  value={profileData.businessName}
+                  onChange={(v) => handleFieldChange('businessName', v)}
+                  placeholder="Business name"
+                />
+              </div>
+              <div>
+                <EditableField
+                  value={profileData.tagline}
+                  onChange={(v) => handleFieldChange('tagline', v)}
+                  placeholder="Tagline"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <Title level={2} className="profile-title">
+                {profileData.businessName}
+              </Title>
+              <Text className="profile-domain">
+                <GlobalOutlined /> {profileData.domain} • {profileData.tagline}
+              </Text>
+            </>
+          )}
         </div>
 
         <Divider />
@@ -39,6 +103,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               icon={<BulbOutlined />}
               title="What They Do"
               content={profileData.whatTheyDo}
+              editMode={editMode}
+              fieldKey="whatTheyDo"
+              onFieldChange={handleFieldChange}
             />
           </Col>
 
@@ -48,6 +115,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               icon={<TeamOutlined />}
               title="Target Audience"
               content={profileData.targetAudience}
+              editMode={editMode}
+              fieldKey="targetAudience"
+              onFieldChange={handleFieldChange}
             />
           </Col>
 
@@ -57,6 +127,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               icon={<FileTextOutlined />}
               title="Brand Voice"
               content={profileData.brandVoice}
+              editMode={editMode}
+              fieldKey="brandVoice"
+              onFieldChange={handleFieldChange}
             />
           </Col>
 
@@ -66,6 +139,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               icon={<AimOutlined />}
               title="Content Focus"
               content={profileData.contentFocus}
+              editMode={editMode}
+              fieldKey="contentFocus"
+              onFieldChange={handleFieldChange}
             />
           </Col>
 
@@ -99,6 +175,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               icon={<DollarOutlined />}
               title="Business Model"
               content={profileData.businessModel}
+              editMode={editMode}
+              fieldKey="businessModel"
+              onFieldChange={handleFieldChange}
             />
           </Col>
 
@@ -108,6 +187,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               icon={<AimOutlined />}
               title="Website Goals"
               content={profileData.websiteGoals}
+              editMode={editMode}
+              fieldKey="websiteGoals"
+              onFieldChange={handleFieldChange}
             />
           </Col>
 
@@ -117,6 +199,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               icon={<BookOutlined />}
               title="Blog Strategy"
               content={profileData.blogStrategy}
+              editMode={editMode}
+              fieldKey="blogStrategy"
+              onFieldChange={handleFieldChange}
             />
           </Col>
 
@@ -127,6 +212,9 @@ const BusinessProfileSlide = ({ profileData }) => {
               title="Key Topics & Keywords"
               content={profileData.keyTopics || 'Could not fetch keyword data'}
               note={!profileData.keyTopics && 'API rate limits, or the site is new or not yet indexed. We can still suggest topics from the rest of the analysis.'}
+              editMode={editMode}
+              fieldKey="keyTopics"
+              onFieldChange={handleFieldChange}
             />
           </Col>
         </Row>
@@ -135,17 +223,26 @@ const BusinessProfileSlide = ({ profileData }) => {
   );
 };
 
-const ProfileSection = ({ icon, title, content, note }) => (
+const ProfileSection = ({ icon, title, content, note, editMode, fieldKey, onFieldChange }) => (
   <div className="profile-section">
     <div className="section-header">
       <span className="section-icon">{icon}</span>
       <Title level={5} className="section-title">{title}</Title>
     </div>
     <div className="section-content">
-      {typeof content === 'string' ? (
-        <Paragraph className="section-text">{content}</Paragraph>
+      {editMode ? (
+        <EditableField
+          value={content}
+          onChange={(newValue) => onFieldChange(fieldKey, newValue)}
+          multiline={typeof content === 'string' && content.length > 100}
+          placeholder={`Enter ${title.toLowerCase()}...`}
+        />
       ) : (
-        content
+        typeof content === 'string' ? (
+          <Paragraph className="section-text">{content}</Paragraph>
+        ) : (
+          content
+        )
       )}
       {note && <Text type="secondary" italic className="section-note">{note}</Text>}
     </div>

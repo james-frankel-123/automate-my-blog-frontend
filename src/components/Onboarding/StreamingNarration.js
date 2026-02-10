@@ -11,7 +11,6 @@ const { Paragraph } = Typography;
 
 const MIN_DISPLAY_TIME_MS = 5000;
 const NARRATION_STYLE = {
-  maxWidth: 700,
   fontSize: 18,
   lineHeight: 1.8,
   color: 'var(--color-text-primary)',

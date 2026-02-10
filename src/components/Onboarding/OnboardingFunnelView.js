@@ -3,7 +3,7 @@
  * Issue #261.
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Typography, message, Empty, Spin, Button, Skeleton } from 'antd';
+import { Typography, message, Empty, Spin, Button, Skeleton, Row, Col } from 'antd';
 import { motion } from 'framer-motion';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { analysisAPI, topicAPI } from '../../services/workflowAPI';
@@ -147,7 +147,18 @@ function OnboardingFunnelView() {
 
   const scrollTo = (key) => {
     const el = sectionRefs.current[key];
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!el) return;
+
+    // Calculate target position with offset from top
+    const elementRect = el.getBoundingClientRect();
+    const absoluteElementTop = elementRect.top + window.pageYOffset;
+    const offsetTop = 100; // 100px from top of viewport
+    const targetScrollPosition = absoluteElementTop - offsetTop;
+
+    window.scrollTo({
+      top: targetScrollPosition,
+      behavior: 'smooth'
+    });
   };
 
   const prevUnlocked = useRef({ ...DEFAULT_UNLOCKED });
@@ -742,7 +753,7 @@ function OnboardingFunnelView() {
         style={{
           padding: '24px 16px',
           paddingTop: user ? 24 : 88,
-          maxWidth: 800,
+          maxWidth: '80vw',
           margin: '0 auto',
         }}
         data-testid="onboarding-funnel"
@@ -935,21 +946,31 @@ function OnboardingFunnelView() {
                   Using your target audience from the analysis. You can select it to continue.
                 </Typography.Text>
               )}
-              <CardCarousel onAllCardsViewed={() => {}} dataTestId="audience-carousel">
-                {displayScenarios.map((s, i) => (
-                  <motion.div key={s.id || i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
-                    <AudienceCard
-                      targetSegment={s.targetSegment}
-                      customerProblem={s.customerProblem}
-                      pitch={s.pitch}
-                      imageUrl={s.imageUrl}
-                      selected={selectedAudienceIndex === i}
-                      onClick={() => handleSelectAudience(i)}
-                      dataTestId={`audience-card-${i}`}
-                    />
-                  </motion.div>
-                ))}
-              </CardCarousel>
+              <Row gutter={[16, 16]} style={{ marginTop: 16 }} data-testid="audience-carousel">
+                {(() => {
+                  console.log('🕐 [OnboardingFunnelView] Rendering audience cards:', displayScenarios.length, displayScenarios);
+                  return displayScenarios.map((s, i) => (
+                    <Col xs={24} sm={12} lg={8} key={s.id || i}>
+                      <motion.div
+                        initial={cardInitial}
+                        animate={cardAnimate}
+                        transition={cardTransition(i)}
+                        style={{ height: '100%' }}
+                      >
+                        <AudienceCard
+                          targetSegment={s.targetSegment}
+                          customerProblem={s.customerProblem}
+                          pitch={s.pitch}
+                          imageUrl={s.imageUrl}
+                          selected={selectedAudienceIndex === i}
+                          onClick={() => handleSelectAudience(i)}
+                          dataTestId={`audience-card-${i}`}
+                        />
+                      </motion.div>
+                    </Col>
+                  ));
+                })()}
+              </Row>
             </>
           ) : (
             <div style={{ marginTop: 16 }} data-testid="audience-results-loading">

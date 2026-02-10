@@ -5,7 +5,7 @@
  * Supports completed state to show all steps as done with success styling.
  */
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { CheckOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design/icons';
 
 const styles = {
@@ -118,28 +118,75 @@ function ChecklistProgress({
   completed = false,
   dataTestId = 'checklist-progress',
 }) {
+  // State for animated current step
+  const [animatedStepIndex, setAnimatedStepIndex] = useState(-1);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const animationTimeoutRef = useRef(null);
+
+  // Minimum time per step (0.5 seconds)
+  const STEP_DURATION_MS = 500;
+
   // Track the maximum step index reached to prevent backwards movement
   const maxStepIndexRef = useRef(-1);
 
-  // Reset max step when progress goes to 0-2% (new job starting)
+  // Reset when new job starts
   useEffect(() => {
     if (progress != null && progress <= 2) {
       maxStepIndexRef.current = -1;
+      setAnimatedStepIndex(-1);
+      setIsAnimating(false);
     }
   }, [progress]);
 
-  // Determine current step index based on progress percentage
-  let currentStepIndex = -1;
+  // Animate through steps one by one when progress jumps to 100 (cached case)
+  useEffect(() => {
+    // Detect instant completion: progress is 100 but we haven't animated yet
+    if (progress === 100 && !isAnimating && animatedStepIndex < steps.length - 1 && !completed) {
+      console.log('🕐 [ChecklistProgress] Detected instant completion - animating through', steps.length, 'steps');
+      setIsAnimating(true);
 
-  if (progress != null && steps.length > 0) {
-    // Calculate step index from progress (0-100%)
+      // Animate through each step
+      let currentStep = 0;
+      const animateNextStep = () => {
+        if (currentStep < steps.length) {
+          console.log('🕐 [ChecklistProgress] Animating step', currentStep + 1, '/', steps.length);
+          setAnimatedStepIndex(currentStep);
+          currentStep++;
+          animationTimeoutRef.current = setTimeout(animateNextStep, STEP_DURATION_MS);
+        } else {
+          console.log('🕐 [ChecklistProgress] Animation complete - all steps shown');
+          setIsAnimating(false);
+        }
+      };
+
+      animateNextStep();
+
+      return () => {
+        if (animationTimeoutRef.current) {
+          clearTimeout(animationTimeoutRef.current);
+        }
+      };
+    } else if (progress < 100) {
+      // Normal case: follow backend progress
+      const calculatedStep = Math.floor((progress / 100) * steps.length);
+      if (calculatedStep > animatedStepIndex) {
+        setAnimatedStepIndex(calculatedStep);
+      }
+    }
+  }, [progress, animatedStepIndex, isAnimating, steps.length, completed, STEP_DURATION_MS]);
+
+  // Use animated step index or calculated from progress
+  let currentStepIndex = animatedStepIndex;
+
+  // If not animating and we have real progress, calculate from progress
+  if (!isAnimating && progress != null && steps.length > 0) {
     currentStepIndex = Math.min(
       Math.floor((progress / 100) * steps.length),
       steps.length - 1
     );
   }
 
-  // Prevent backwards movement: don't allow currentStepIndex to go lower than max
+  // Prevent backwards movement
   if (currentStepIndex !== -1 && currentStepIndex < maxStepIndexRef.current) {
     currentStepIndex = maxStepIndexRef.current;
   } else if (currentStepIndex > maxStepIndexRef.current) {

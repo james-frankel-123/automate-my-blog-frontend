@@ -72,11 +72,8 @@ export function WebsiteInputSection({
       }, 500);
 
       return () => clearTimeout(startDelay);
-    } else if (!loading) {
-      setShowStreamingText(false);
-      setStreamingText('');
-      setHoldTightComplete(false);
     }
+    // Don't reset state when loading completes - keep narration visible
   }, [loading, showStreamingText, onHoldTightNarrationComplete]);
 
   return (
@@ -111,7 +108,7 @@ export function WebsiteInputSection({
       )}
 
       {/* Streaming narration text */}
-      {loading && showStreamingText && streamingText && (
+      {(loading || !analysisComplete) && showStreamingText && streamingText && (
         <div
           style={{
             textAlign: 'center',

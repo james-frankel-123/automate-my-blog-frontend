@@ -1251,6 +1251,10 @@ Please provide analysis in this JSON format:
             const data = dataStr ? JSON.parse(dataStr) : {};
             if (eventType.endsWith('-chunk')) onChunk(data);
             else if (eventType.endsWith('-complete')) onComplete(data);
+            else if (eventType === 'business-profile' && handlers.onBusinessProfile) {
+              console.log('📊 [API] business-profile event received, calling handler');
+              handlers.onBusinessProfile(data);
+            }
           } catch (e) { /* skip parse errors */ }
         }
       }
