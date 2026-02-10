@@ -123,7 +123,8 @@
       "^antd/(.*)$": "<rootDir>/src/__mocks__/antd.js",
       "^@ant-design/icons$": "<rootDir>/src/__mocks__/@ant-design/icons.js",
       "^@tiptap/(.*)$": "<rootDir>/src/__mocks__/tiptap.js",
-      "\\.(css|less|scss|sass)$": "<rootDir>/src/__mocks__/styleMock.js"
+      "\\.(css|less|scss|sass)$": "<rootDir>/src/__mocks__/styleMock.js",
+      "\\.(png|jpg|jpeg|gif|svg|webp)$": "<rootDir>/src/__mocks__/fileMock.js"
     }
   }
 }
