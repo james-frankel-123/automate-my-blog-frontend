@@ -84,10 +84,11 @@ describe('HTMLPreview', () => {
       expect(screen.getByText('bold')).toBeInTheDocument();
     });
 
-    it('renders image placeholder for non-URL refs like ![IMAGE:hero_image:...] (with ! visible)', () => {
+    it('renders visual hero placeholder instead of raw markdown for ![IMAGE:hero_image:...] (fixes #337)', () => {
       const markdown = 'Text before ![IMAGE:hero_image:placeholder](ref) after.';
       render(<HTMLPreview content={markdown} forceMarkdown />);
-      expect(screen.getByText(/!\[IMAGE:hero_image:placeholder\]/)).toBeInTheDocument();
+      expect(screen.getByTestId('hero-image-placeholder')).toBeInTheDocument();
+      expect(screen.getByText(/Hero image will appear here/)).toBeInTheDocument();
     });
 
     it('renders actual hero image when heroImageUrl is passed for ![IMAGE:hero_image:...]', () => {
@@ -100,10 +101,11 @@ describe('HTMLPreview', () => {
       expect(img).toHaveClass('hero-image');
     });
 
-    it('renders placeholder when heroImageUrl is not passed for standalone ![IMAGE:hero_image:...] (with ! visible)', () => {
+    it('renders visual hero placeholder when heroImageUrl is not passed for standalone ![IMAGE:hero_image:...]', () => {
       const markdown = 'Text ![IMAGE:hero_image:description] end.';
       render(<HTMLPreview content={markdown} forceMarkdown />);
-      expect(screen.getByText(/!\[IMAGE:hero_image:description\]/)).toBeInTheDocument();
+      expect(screen.getByTestId('hero-image-placeholder')).toBeInTheDocument();
+      expect(screen.getByText(/Hero image will appear here/)).toBeInTheDocument();
     });
 
     it('renders hero image when backend streams [IMAGE:hero_image:...] without leading ! (normalization)', () => {
