@@ -3433,7 +3433,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     flexDirection: 'column',
                     overflow: 'auto',
                     backgroundColor: 'var(--color-background-body)',
-                    padding: 'var(--space-5)'
+                    padding: '24px'
                   }}>
                     <StreamingPreview
                       content={editingContent || 'Enter your blog content...'}
@@ -3443,16 +3443,19 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
                       style={{
                         minHeight: '400px',
-                        padding: '20px',
-                        backgroundColor: 'var(--color-background-alt)'
+                        padding: '24px',
+                        backgroundColor: 'var(--color-background-alt)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-border-light)'
                       }}
                     />
                   </div>
                 ) : (
                   <EditorPane>
-                    <div style={{ position: 'relative', height: '100%' }}>
+                    <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                       <EditorToolbar
                         editor={richTextEditor}
+                        content={editingContent}
                         onBold={() => richTextEditor?.chain().focus().toggleBold().run()}
                         onItalic={() => richTextEditor?.chain().focus().toggleItalic().run()}
                         onUnderline={() => richTextEditor?.chain().focus().toggleUnderline().run()}
@@ -3465,8 +3468,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         placeholder="Enter your blog content..."
                         minHeight="400px"
                         style={{
-                          marginTop: '8px',
-                          fontSize: '14px'
+                          marginTop: 0,
+                          flex: 1,
+                          minHeight: '360px'
                         }}
                       />
                     </div>
@@ -3476,12 +3480,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               
               {/* Content Actions */}
               <div style={{ 
-                marginTop: '20px', 
+                marginTop: '24px', 
+                padding: '16px 20px',
                 display: 'flex', 
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                backgroundColor: 'var(--color-background-alt)',
+                borderRadius: '8px',
+                border: '1px solid var(--color-border-light)'
               }}>
-                <Space>
+                <Space size="middle">
                   <SaveStatusIndicator 
                     isAutosaving={isAutosaving}
                     lastSaved={lastSaved}
@@ -3490,7 +3498,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   <Button 
                     type="default"
                     onClick={handleClosePost}
-                    style={{ marginRight: '8px' }}
                   >
                     Close Post
                   </Button>
@@ -3502,7 +3509,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     style={{
                       backgroundColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
                       borderColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
-                      fontWeight: '500'
+                      fontWeight: 500
                     }}
                   >
                     {postState === 'exported' ? 'Content Exported' : 'Save Changes'}
