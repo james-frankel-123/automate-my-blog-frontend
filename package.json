@@ -72,7 +72,10 @@
       "react-app",
       "react-app/jest"
     ],
-    "ignorePatterns": ["src/__mocks__/**"]
+    "ignorePatterns": ["src/__mocks__/**"],
+    "rules": {
+      "no-unused-vars": ["warn", { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }]
+    }
   },
   "browserslist": {
     "production": [

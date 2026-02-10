@@ -317,7 +317,7 @@ export class EnhancedContentAPI {
   /**
    * Generate content with AI feedback loop (for future implementation)
    */
-  async generateWithFeedbackLoop(topic, analysisData, strategy, previousVersions = []) {
+  async generateWithFeedbackLoop(topic, analysisData, strategy, _previousVersions = []) {
     // This will be implemented in a future phase
     // For now, return standard generation
     return this.generateEnhancedContent(topic, analysisData, strategy);
@@ -346,7 +346,7 @@ export class EnhancedContentAPI {
   /**
    * Build change explanations for user understanding
    */
-  buildChangeExplanations(changes) {
+  buildChangeExplanations(_changes) {
     // This will provide detailed explanations of why changes were made
     return {
       structuralChanges: 'Explanations of structural improvements',
@@ -358,7 +358,7 @@ export class EnhancedContentAPI {
   /**
    * Build improvement suggestions based on analysis
    */
-  buildImprovementSuggestions(changes) {
+  buildImprovementSuggestions(_changes) {
     return [
       'Suggested improvements based on content analysis',
       'SEO optimization recommendations',

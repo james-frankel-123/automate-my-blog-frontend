@@ -42,7 +42,7 @@ const ManualCTAInputModal = ({
   const isOpen = open || visible;
   const handleClose = onClose || onCancel || (() => {});
   const handleSuccess = onSuccess || onSubmit || (() => {});
-  const [form] = Form.useForm();
+  const [_form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
   // Initialize with existing CTAs if available, otherwise use empty defaults

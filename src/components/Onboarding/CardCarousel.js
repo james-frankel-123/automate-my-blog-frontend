@@ -8,7 +8,6 @@ import { Button, Empty } from 'antd';
 import { LeftOutlined } from '@ant-design/icons';
 
 const CARD_GAP = 16;
-const SCROLL_MS = 300;
 
 export function CardCarousel({
   children,
@@ -20,7 +19,7 @@ export function CardCarousel({
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [allViewed, setAllViewed] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [_currentIndex, setCurrentIndex] = useState(0);
 
   const cards = Array.isArray(children) ? children : children != null ? [children] : [];
   const count = cards.length;
@@ -42,6 +41,7 @@ export function CardCarousel({
     el.addEventListener('scroll', updateScrollState);
     updateScrollState();
     return () => el.removeEventListener('scroll', updateScrollState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateScrollState stable
   }, [count]);
 
   const scrollBy = (direction) => {

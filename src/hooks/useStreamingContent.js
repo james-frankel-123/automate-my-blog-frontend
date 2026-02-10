@@ -63,6 +63,7 @@ export function useStreamingContent(options = {}) {
         }
       });
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- options/useRawContent intentionally not in deps to avoid reconnect churn
     [options.onComplete, options.onError, options.useRawContent]
   );
 

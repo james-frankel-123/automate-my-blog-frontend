@@ -3,7 +3,7 @@
  * Issue #261.
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Typography, message, Empty, Spin, Button, Skeleton } from 'antd';
+import { Typography, message, Empty, Button, Skeleton } from 'antd';
 import { motion } from 'framer-motion';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { analysisAPI, topicAPI } from '../../services/workflowAPI';
@@ -67,10 +67,8 @@ function OnboardingFunnelView() {
     updateCTAData,
     updateWebSearchInsights,
     webSearchInsights,
-    setStepResults,
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
-    navigateToTab,
     saveWorkflowState,
     showAuthModal,
     setShowAuthModal,
@@ -85,7 +83,7 @@ function OnboardingFunnelView() {
   const [unlocked, setUnlocked] = useState(DEFAULT_UNLOCKED);
   const [selectedAudienceIndex, setSelectedAudienceIndex] = useState(null);
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(null);
-  const [analysisConfirmed, setAnalysisConfirmed] = useState(false);
+  const [_analysisConfirmed, setAnalysisConfirmed] = useState(false);
   const [funnelComplete, setFunnelComplete] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [originalAnalysisSnapshot, setOriginalAnalysisSnapshot] = useState(null);
@@ -108,6 +106,7 @@ function OnboardingFunnelView() {
 
   const analysis = stepResults?.home?.websiteAnalysis || {};
   const scenarios = analysis.scenarios || [];
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas intentionally not useMemo
   const contentIdeas = analysis.contentIdeas || [];
   const hasAnalysis = stepResults?.home?.analysisCompleted && analysis?.businessName;
 
@@ -208,6 +207,7 @@ function OnboardingFunnelView() {
       .finally(() => {
         setTopicsLoading(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas/displayScenarios/fetchedTopicItems/topicsLoading used inside
   }, [
     unlocked.topicOutput,
     contentIdeas.length,
@@ -297,6 +297,8 @@ function OnboardingFunnelView() {
         }
       )
       .catch(() => setContentNarrationStreaming(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas expression intentionally not wrapped in useMemo
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas expression intentionally not useMemo
   }, [unlocked.contentNarration, analysis?.organizationId, selectedTopicIndex, contentIdeas, fetchedTopicItems]);
 
   const handleAnalyze = useCallback(async (url) => {

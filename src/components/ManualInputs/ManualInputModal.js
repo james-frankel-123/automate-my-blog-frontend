@@ -9,14 +9,11 @@ import {
   Typography, 
   Space,
   Alert,
-  Tag,
   Tooltip,
   Spin
 } from 'antd';
 import { 
   InfoCircleOutlined, 
-  PlusOutlined, 
-  DeleteOutlined,
   SaveOutlined,
   BulbOutlined
 } from '@ant-design/icons';
@@ -34,7 +31,7 @@ const ManualInputModal = ({
   visible, 
   onClose, 
   onSave, 
-  organizationId,
+  organizationId: _organizationId,
   initialData = {},
   loading = false 
 }) => {
