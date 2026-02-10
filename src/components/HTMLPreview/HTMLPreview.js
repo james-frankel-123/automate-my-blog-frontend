@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { Tweet } from 'react-tweet';
 import 'react-tweet/theme.css';
 import { typography } from '../DesignSystem/tokens';
+import heroImageFallback from '../../assets/hero-image-fallback.png';
 
 function escapeAttr(s) {
   if (typeof s !== 'string') return '';
@@ -22,6 +23,7 @@ const HERO_PLACEHOLDER_MIN_MS = 400;
 function HeroImage({ src, alt, paragraphSpacing = 16 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
+  const [effectiveSrc, setEffectiveSrc] = useState(src);
   const imgRef = useRef(null);
 
   useEffect(() => {
@@ -29,24 +31,53 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
     return () => clearTimeout(t);
   }, []);
 
-  // When src changes, reset loaded state so a new image shows placeholder until it loads.
+  // When src changes, reset to primary and clear loaded state
   useEffect(() => {
+    setEffectiveSrc(src);
     setImageLoaded(false);
   }, [src]);
 
-  // After mount or src change: if the image is already complete (e.g. cached),
-  // onLoad may have fired before we attached the listener, so set loaded state.
+  // Callback ref: attach load/error listeners as soon as the img mounts.
+  // Handles: cached images (complete before listener attach), async load, and failed load.
+  // On error: swap to fallback image instead of showing broken img.
+  const imgCallbackRef = useCallback((node) => {
+    const prev = imgRef.current;
+    if (prev && imgRef._onLoad) {
+      prev.removeEventListener('load', imgRef._onLoad);
+      prev.removeEventListener('error', imgRef._onError);
+    }
+    imgRef.current = node;
+    if (!node || !effectiveSrc) return;
+    const checkComplete = () => {
+      if (node.complete && node.naturalWidth > 0) setImageLoaded(true);
+    };
+    const onError = () => {
+      if (effectiveSrc !== heroImageFallback) {
+        setEffectiveSrc(heroImageFallback);
+      } else {
+        setImageLoaded(true); // fallback also failed; hide placeholder
+      }
+    };
+    imgRef._onLoad = checkComplete;
+    imgRef._onError = onError;
+    node.addEventListener('load', checkComplete);
+    node.addEventListener('error', onError);
+    checkComplete();
+    requestAnimationFrame(checkComplete);
+  }, [effectiveSrc]);
+
+  // Also run checkComplete after paint (useEffect) for timing edge cases
   useEffect(() => {
-    if (!src) return;
+    if (!effectiveSrc) return;
     const img = imgRef.current;
     if (!img) return;
     const checkComplete = () => {
       if (img.complete && img.naturalWidth > 0) setImageLoaded(true);
     };
     checkComplete();
-    img.addEventListener('load', checkComplete);
-    return () => img.removeEventListener('load', checkComplete);
-  }, [src]);
+    const t = setTimeout(checkComplete, 0);
+    return () => clearTimeout(t);
+  }, [effectiveSrc]);
 
   const showImage = imageLoaded && minTimeElapsed;
 
@@ -96,8 +127,8 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
         </div>
       )}
       <img
-        ref={imgRef}
-        src={src}
+        ref={imgCallbackRef}
+        src={effectiveSrc}
         alt={alt || 'Hero image'}
         loading="eager"
         className="hero-image"
@@ -115,6 +146,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
           pointerEvents: showImage ? undefined : 'none'
         }}
         onLoad={() => setImageLoaded(true)}
+        onError={() => setImageLoaded(true)}
       />
     </div>
   );
