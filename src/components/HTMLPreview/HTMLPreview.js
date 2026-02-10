@@ -98,6 +98,50 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
   );
 }
 
+/**
+ * Visual-only hero placeholder (no image URL yet). Shown in free post claim preview etc.
+ * So users see an image placeholder box instead of raw markdown like ![IMAGE:hero_image:...].
+ */
+function HeroImagePlaceholder({ paragraphSpacing = 16 }) {
+  const wrapperStyle = {
+    position: 'relative',
+    minHeight: 240,
+    margin: `${paragraphSpacing}px 0`,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: 'var(--color-background-container)'
+  };
+  const placeholderStyle = {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'linear-gradient(135deg, var(--color-background-container) 0%, var(--color-background-alt) 50%, var(--color-background-container) 100%)',
+    backgroundSize: '400% 400%',
+    animation: 'hero-placeholder-gentle 6s ease-in-out infinite',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+  const messageStyle = {
+    color: 'var(--color-text-tertiary)',
+    fontSize: 15,
+    fontWeight: 500,
+    letterSpacing: '0.02em'
+  };
+  return (
+    <div className="hero-image-wrapper hero-image-placeholder-only" style={wrapperStyle} data-testid="hero-image-placeholder">
+      <style dangerouslySetInnerHTML={{
+        __html: `@keyframes hero-placeholder-gentle { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`
+      }} />
+      <div className="hero-image-placeholder" aria-hidden="true" role="presentation" style={placeholderStyle}>
+        <span style={messageStyle}>Hero image will appear here</span>
+      </div>
+    </div>
+  );
+}
+
 function isHeroImagePlaceholder(alt) {
   return typeof alt === 'string' && /^IMAGE:hero_image:/i.test(alt.trim());
 }
@@ -144,27 +188,25 @@ const markdownToHTML = (markdown, options = {}) => {
   // Normalize hero placeholder when backend streams [IMAGE:hero_image:...] without leading !
   html = normalizeHeroPlaceholder(html);
 
-  // Images ![alt](url) — before links so ![...](...) is not treated as link; placeholders get span (or hero sentinel if URL provided)
+  // Images ![alt](url) — before links so ![...](...) is not treated as link; hero placeholder → sentinel so we show visual placeholder (never raw markdown)
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/gim, (_, alt, url) => {
     const u = url.trim();
     const isPlaceholder = /^[a-z]+:[^:]+:?/i.test(u) || !/^https?:\/\//i.test(u);
     const safeAlt = String(alt || 'Image').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
-    if (isPlaceholder && isHeroImagePlaceholder(alt) && heroImageUrl) {
+    if (isPlaceholder && isHeroImagePlaceholder(alt)) {
       return HERO_IMAGE_SENTINEL;
     }
-    const showExclamation = isHeroImagePlaceholder(alt);
-    if (isPlaceholder) return `<span class="markdown-image-placeholder" title="${escapeAttr(alt || u)}">${showExclamation ? '!' : ''}[${safeAlt}]</span>`;
+    if (isPlaceholder) return `<span class="markdown-image-placeholder" title="${escapeAttr(alt || u)}">[${safeAlt}]</span>`;
     return `<img src="${escapeAttr(u)}" alt="${escapeAttr(alt)}" loading="lazy" />`;
   });
 
-  // Standalone image placeholder with no URL: ![IMAGE:hero_image:description] → sentinel if heroImageUrl, else placeholder span (keep ! visible for hero)
+  // Standalone hero placeholder: ![IMAGE:hero_image:description] → sentinel so we show visual placeholder (fixes #337 free post claim preview)
   html = html.replace(/!\[([^\]]*)\](?!\()/gim, (_, alt) => {
     const safeAlt = String(alt || 'Image').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
-    if (isHeroImagePlaceholder(alt) && heroImageUrl) {
+    if (isHeroImagePlaceholder(alt)) {
       return HERO_IMAGE_SENTINEL;
     }
-    const showExclamation = isHeroImagePlaceholder(alt);
-    return `<span class="markdown-image-placeholder" title="${escapeAttr(alt)}">${showExclamation ? '!' : ''}[${safeAlt}]</span>`;
+    return `<span class="markdown-image-placeholder" title="${escapeAttr(alt)}">[${safeAlt}]</span>`;
   });
 
   // Links [text](url)
@@ -399,8 +441,8 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const looksLikeHtml = !forceMarkdown && /<\s*[a-zA-Z][a-zA-Z0-9-]*[\s>/]/.test(normalizedContent);
   let rawHtml = looksLikeHtml ? normalizedContent : markdownToHTML(normalizedContent, { heroImageUrl });
 
-  // When content was treated as HTML, hero placeholder stayed as literal text; inject sentinel so hero image still shows
-  if (looksLikeHtml && heroImageUrl && /!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/.test(rawHtml)) {
+  // When content was treated as HTML, hero placeholder stayed as literal text; inject sentinel so we show visual placeholder or hero image
+  if (looksLikeHtml && /!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/.test(rawHtml)) {
     rawHtml = rawHtml.replace(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/, HERO_IMAGE_SENTINEL);
   }
 
@@ -454,11 +496,11 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     ...style
   };
 
-  // Hero image: extract alt from first ![IMAGE:hero_image:...] or [IMAGE:hero_image:...] and split content to inject HeroImage with animated placeholder
+  // Hero image: extract alt from first ![IMAGE:hero_image:...] or [IMAGE:hero_image:...]; split and inject visual placeholder or real image
   const heroAltMatch = normalizedContent.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
   const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
-  const useHeroComponent = Boolean(heroImageUrl && htmlContent.includes(HERO_IMAGE_SENTINEL));
-  const contentParts = useHeroComponent ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+  const useHeroSlot = htmlContent.includes(HERO_IMAGE_SENTINEL);
+  const contentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
 
   return (
     <div style={previewStyles}>
@@ -468,11 +510,15 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             <React.Fragment key={i}>
               <div dangerouslySetInnerHTML={{ __html: part }} />
               {i < contentParts.length - 1 && (
-                <HeroImage
-                  src={heroImageUrl}
-                  alt={heroImageAlt}
-                  paragraphSpacing={paragraphSpacing}
-                />
+                heroImageUrl ? (
+                  <HeroImage
+                    src={heroImageUrl}
+                    alt={heroImageAlt}
+                    paragraphSpacing={paragraphSpacing}
+                  />
+                ) : (
+                  <HeroImagePlaceholder paragraphSpacing={paragraphSpacing} />
+                )
               )}
             </React.Fragment>
           ))}
