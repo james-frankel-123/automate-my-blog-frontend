@@ -28,6 +28,7 @@ import ThinkingPanel from '../shared/ThinkingPanel';
 import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
 import RelatedContentPanel from '../shared/RelatedContentPanel';
 import StreamingPreview from '../StreamingTestbed/StreamingPreview';
+import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 
 const { Title } = Typography;
 
@@ -119,8 +120,14 @@ function OnboardingFunnelView() {
   const [editingContent, setEditingContent] = useState('');
   const [contentGenerated, setContentGenerated] = useState(false);
   const [contentGenerationError, setContentGenerationError] = useState(null);
+  // CTA prompt when none exist before content generation (issue #339 – onboarding)
+  const [showManualCTAModal, setShowManualCTAModal] = useState(false);
+  const [startContentGenerationTrigger, setStartContentGenerationTrigger] = useState(0);
+  const ctaPromptSkippedForSessionRef = useRef(false);
 
   const analysis = stepResults?.home?.websiteAnalysis || {};
+  const organizationCTAs = stepResults?.home?.ctas ?? [];
+  const hasSufficientCTAs = stepResults?.home?.hasSufficientCTAs ?? false;
   const scenarios = analysis.scenarios || [];
   const contentIdeas = React.useMemo(() => analysis.contentIdeas || [], [analysis.contentIdeas]);
   const hasAnalysis = stepResults?.home?.analysisCompleted && analysis?.businessName;
@@ -534,6 +541,34 @@ function OnboardingFunnelView() {
     // Content generation section is shown below; generation is started by useEffect
   }, [saveWorkflowState]);
 
+  const handleOnboardingManualCTAsSubmit = useCallback(
+    async (ctas) => {
+      const orgId = analysis?.organizationId;
+      if (!orgId) {
+        message.error('Organization not found');
+        return;
+      }
+      try {
+        await autoBlogAPI.addManualCTAs(orgId, ctas);
+        const updated = await autoBlogAPI.getOrganizationCTAs(orgId);
+        updateCTAData?.({ ctas: updated.ctas || [], ctaCount: updated.ctas?.length ?? 0, hasSufficientCTAs: updated.has_sufficient_ctas ?? false });
+        setShowManualCTAModal(false);
+        setStartContentGenerationTrigger((prev) => prev + 1);
+      } catch (err) {
+        console.error('Failed to add manual CTAs:', err);
+        message.error(err?.message || 'Failed to add CTAs. Please try again.');
+      }
+    },
+    [analysis?.organizationId, updateCTAData]
+  );
+
+  const handleOnboardingSkipManualCTAs = useCallback(() => {
+    ctaPromptSkippedForSessionRef.current = true;
+    message.info('Continuing without additional CTAs');
+    setShowManualCTAModal(false);
+    setStartContentGenerationTrigger((prev) => prev + 1);
+  }, []);
+
   // Start content generation when content narration section unlocks (same flow as PostsTab)
   useEffect(() => {
     if (
@@ -568,6 +603,17 @@ function OnboardingFunnelView() {
     const websiteAnalysisData = analysis;
     const organizationId = analysis?.organizationId ?? null;
     const organizationName = analysis?.businessName ?? '';
+
+    // If no CTAs exist, prompt user to add CTAs before generating (issue #339 – onboarding)
+    if (
+      organizationId &&
+      !hasSufficientCTAs &&
+      organizationCTAs.length === 0 &&
+      !ctaPromptSkippedForSessionRef.current
+    ) {
+      setShowManualCTAModal(true);
+      return;
+    }
 
     contentGenerationStartedRef.current = true;
     setGeneratingContent(true);
@@ -753,7 +799,7 @@ function OnboardingFunnelView() {
         });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content section unlocks; contentIdeas intentionally not useMemo
-  }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis]);
+  }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis, hasSufficientCTAs, organizationCTAs.length, startContentGenerationTrigger]);
 
   const iconUrls = analysis.iconUrls || analysis.cardIcons || {};
   const analysisCards = [
@@ -1247,6 +1293,16 @@ function OnboardingFunnelView() {
         </section>
       )}
     </div>
+    {/* Manual CTA modal when no CTAs exist before content generation (issue #339 – onboarding) */}
+    <ManualCTAInputModal
+      visible={showManualCTAModal}
+      onCancel={() => setShowManualCTAModal(false)}
+      onSubmit={handleOnboardingManualCTAsSubmit}
+      onSkip={handleOnboardingSkipManualCTAs}
+      existingCTAs={organizationCTAs}
+      minCTAs={1}
+      websiteName={analysis?.businessName || 'your website'}
+    />
     </>
   );
 }
