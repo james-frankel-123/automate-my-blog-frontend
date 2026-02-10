@@ -1,0 +1,123 @@
+.business-profile-slide {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+.profile-slide-card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 32px;
+  animation: slideInUp 0.6s ease-out;
+}
+
+.profile-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.profile-title {
+  margin-bottom: 8px !important;
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 32px;
+}
+
+.profile-domain {
+  color: #666;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profile-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  height: 100%;
+  border: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.profile-section:hover {
+  border-color: #1890ff;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  color: white;
+  font-size: 18px;
+}
+
+.section-title {
+  margin: 0 !important;
+  color: #1a1a1a;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.section-content {
+  color: #595959;
+  line-height: 1.6;
+}
+
+.section-text {
+  margin-bottom: 0 !important;
+  color: #595959;
+}
+
+.section-note {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  color: #8c8c8c;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .profile-slide-card {
+    padding: 20px;
+  }
+
+  .profile-title {
+    font-size: 24px;
+  }
+
+  .profile-domain {
+    font-size: 14px;
+  }
+
+  .profile-section {
+    padding: 16px;
+  }
+}
