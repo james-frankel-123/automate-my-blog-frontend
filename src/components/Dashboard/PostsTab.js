@@ -3319,6 +3319,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                     heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
                     ctas={postCTAs?.length ? postCTAs : (currentDraft?.postCTAs || [])}
+                    generationComplete={!generatingContent}
                     style={{
                       minHeight: '300px',
                       padding: '20px',
@@ -3529,6 +3530,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                       heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
                       ctas={postCTAs?.length ? postCTAs : (currentDraft?.postCTAs || [])}
+                      generationComplete={!generatingContent}
                       style={{
                         minHeight: '400px',
                         padding: '24px',

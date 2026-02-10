@@ -30,6 +30,7 @@ function applyRelatedContentPlaceholders(content) {
  * @param {string} [heroImageUrl] - Hero image URL when content has hero slot
  * @param {Array<{ text: string, href?: string, type?: string, placement?: string }>} [ctas] - CTAs returned with content; used to style matching links in preview
  * @param {Object} [style] - Optional style for the preview container
+ * @param {boolean} [generationComplete] - When true, post generation is done (stops hero placeholder animation)
  */
 function StreamingPreview({
   content,
@@ -39,6 +40,7 @@ function StreamingPreview({
   heroImageUrl,
   ctas = [],
   style = {},
+  generationComplete = false,
 }) {
   const contentWithPlaceholders = applyRelatedContentPlaceholders(content || '');
   const resolvedContent = replaceTweetPlaceholders(
@@ -59,6 +61,7 @@ function StreamingPreview({
       forceMarkdown={true}
       heroImageUrl={heroImageUrl || undefined}
       style={style}
+      generationComplete={generationComplete}
     />
   );
 }
