@@ -615,12 +615,17 @@ function OnboardingFunnelView() {
     setRelatedVideos([]);
     setEditingContent('');
 
+    const onboardingCTAs = organizationCTAs || [];
     const fetchSteps = [
+      { id: 'ctas', label: systemVoice.content?.fetchCTAs ?? 'Fetching CTAs…', status: RelatedContentStepStatus.PENDING },
       { id: 'tweets', label: systemVoice.content?.fetchTweets ?? 'Fetching tweets…', status: RelatedContentStepStatus.PENDING },
       { id: 'articles', label: systemVoice.content?.fetchArticles ?? 'Fetching articles…', status: RelatedContentStepStatus.PENDING },
       { id: 'videos', label: systemVoice.content?.fetchVideos ?? 'Fetching videos…', status: RelatedContentStepStatus.PENDING },
     ];
     setRelatedContentSteps(fetchSteps);
+    setRelatedContentSteps((prev) =>
+      prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.DONE, count: onboardingCTAs.length } : s))
+    );
 
     const runTweetsAndVideos = () =>
       autoBlogAPI
@@ -717,6 +722,7 @@ function OnboardingFunnelView() {
         preloadedTweets: tweetsArr,
         preloadedArticles: articlesArr,
         preloadedVideos: videosArr,
+        ctas: onboardingCTAs,
         organizationId,
         organizationName,
         comprehensiveContext: shouldUseEnhancement
@@ -1282,6 +1288,7 @@ function OnboardingFunnelView() {
                   <RelatedContentStepsPanel
                     steps={relatedContentSteps}
                     title="Preparing related content"
+                    ctas={organizationCTAs}
                   />
                 )}
               </>

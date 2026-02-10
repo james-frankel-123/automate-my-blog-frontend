@@ -874,13 +874,19 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         return;
       }
 
-      // Step 1: Fetch related content (tweets, articles, videos) with visible steps before blog generation
+      // Step 1: Fetch related content (tweets, articles, videos, CTAs) with visible steps before blog generation
+      const ctasForGeneration = ctasForCheck.ctas || [];
       const fetchSteps = [
+        { id: 'ctas', label: systemVoice.content.fetchCTAs, status: RelatedContentStepStatus.PENDING },
         { id: 'tweets', label: systemVoice.content.fetchTweets, status: RelatedContentStepStatus.PENDING },
         { id: 'articles', label: systemVoice.content.fetchArticles, status: RelatedContentStepStatus.PENDING },
         { id: 'videos', label: systemVoice.content.fetchVideos, status: RelatedContentStepStatus.PENDING },
       ];
       setRelatedContentSteps(fetchSteps);
+      // CTAs are already loaded from the Create Post check; mark step done immediately
+      setRelatedContentSteps((prev) =>
+        prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.DONE, count: ctasForGeneration.length } : s))
+      );
 
       // Use combined tweets+videos endpoint (backend PR #178) for speed
       const runTweetsAndVideos = () =>
@@ -979,6 +985,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         preloadedTweets: tweetsArr,
         preloadedArticles: articlesArr,
         preloadedVideos: videosArr,
+        ctas: ctasForGeneration,
         goal: contentStrategy.goal,
         voice: contentStrategy.voice,
         template: contentStrategy.template,
@@ -2099,6 +2106,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                             <RelatedContentStepsPanel
                               steps={relatedContentSteps}
                               title="Preparing related content"
+                              ctas={organizationCTAs}
                             />
                           )}
                         </>
@@ -2861,6 +2869,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           <RelatedContentStepsPanel
                             steps={relatedContentSteps}
                             title="Preparing related content"
+                            ctas={organizationCTAs}
                           />
                         )}
                       </>

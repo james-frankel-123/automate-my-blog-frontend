@@ -55,8 +55,9 @@ const panelStyles = {
  * @param {Object} props
  * @param {Array<{ id: string, label: string, status: 'pending'|'running'|'done'|'skipped'|'failed', count?: number }>} props.steps
  * @param {string} [props.title] - Panel title
+ * @param {Array<{ text: string, href?: string, type?: string }>} [props.ctas] - CTAs found for the business (shown when present)
  */
-function RelatedContentStepsPanel({ steps = [], title = 'Preparing related content' }) {
+function RelatedContentStepsPanel({ steps = [], title = 'Preparing related content', ctas = [] }) {
   if (!steps?.length) return null;
 
   const getIcon = (status) => {
@@ -89,6 +90,8 @@ function RelatedContentStepsPanel({ steps = [], title = 'Preparing related conte
     return step.label;
   };
 
+  const hasCTAs = Array.isArray(ctas) && ctas.length > 0;
+
   return (
     <div
       style={panelStyles.panel}
@@ -103,7 +106,7 @@ function RelatedContentStepsPanel({ steps = [], title = 'Preparing related conte
           key={step.id}
           style={{
             ...panelStyles.step,
-            ...(i === steps.length - 1 ? panelStyles.stepLast : {}),
+            ...(i === steps.length - 1 && !hasCTAs ? panelStyles.stepLast : {}),
           }}
           aria-busy={step.status === STATUS.RUNNING}
         >
@@ -119,6 +122,32 @@ function RelatedContentStepsPanel({ steps = [], title = 'Preparing related conte
           <span>{getStepLabel(step)}</span>
         </div>
       ))}
+      {hasCTAs && (
+        <div style={{ ...panelStyles.step, ...panelStyles.stepLast, marginTop: '10px', flexDirection: 'column', alignItems: 'flex-start', gap: '6px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-primary-700)' }}>CTAs we&apos;ll use in your post</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }} data-testid="related-content-ctas">
+            {ctas.map((cta, idx) => (
+              <a
+                key={idx}
+                href={cta.href || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  fontSize: '12px',
+                  padding: '4px 10px',
+                  backgroundColor: 'var(--color-primary-100)',
+                  color: 'var(--color-primary-700)',
+                  borderRadius: 'var(--radius-sm, 4px)',
+                  textDecoration: 'none',
+                  border: '1px solid var(--color-primary-200)',
+                }}
+              >
+                {cta.text || 'CTA'}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

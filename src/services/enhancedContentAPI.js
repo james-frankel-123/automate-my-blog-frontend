@@ -33,11 +33,13 @@ export class EnhancedContentAPI {
     const preloadedTweets = enhancementOptions.preloadedTweets ?? enhancementOptions.tweets ?? [];
     const preloadedArticles = enhancementOptions.preloadedArticles ?? [];
     const preloadedVideos = enhancementOptions.preloadedVideos ?? [];
+    const ctas = enhancementOptions.ctas ?? enhancementOptions.organizationCTAs ?? [];
 
     return {
       topic: selectedTopic,
       businessInfo: analysisData || {},
       organizationId: enhancementOptions.organizationId,
+      ctas: Array.isArray(ctas) ? ctas : undefined,
       additionalInstructions: enhancementOptions.additionalInstructions || '',
       options: {
         autoSave: true,

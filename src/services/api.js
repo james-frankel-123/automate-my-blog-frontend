@@ -4008,7 +4008,8 @@ Please provide analysis in this JSON format:
       organizationId: payload.organizationId,
       additionalInstructions: payload.additionalInstructions || '',
       ...(payload.tweets?.length ? { tweets: payload.tweets } : {}),
-      ...(payload.options && typeof payload.options === 'object' ? { options: payload.options } : {})
+      ...(payload.options && typeof payload.options === 'object' ? { options: payload.options } : {}),
+      ...(payload.ctas?.length ? { ctas: payload.ctas } : {})
     };
     const response = await this.makeRequest('/api/v1/blog/generate-stream', {
       method: 'POST',
