@@ -152,17 +152,19 @@ const markdownToHTML = (markdown, options = {}) => {
     if (isPlaceholder && isHeroImagePlaceholder(alt) && heroImageUrl) {
       return HERO_IMAGE_SENTINEL;
     }
-    if (isPlaceholder) return `<span class="markdown-image-placeholder" title="${escapeAttr(alt || u)}">[${safeAlt}]</span>`;
+    const showExclamation = isHeroImagePlaceholder(alt);
+    if (isPlaceholder) return `<span class="markdown-image-placeholder" title="${escapeAttr(alt || u)}">${showExclamation ? '!' : ''}[${safeAlt}]</span>`;
     return `<img src="${escapeAttr(u)}" alt="${escapeAttr(alt)}" loading="lazy" />`;
   });
 
-  // Standalone image placeholder with no URL: ![IMAGE:hero_image:description] → sentinel if heroImageUrl, else placeholder span
+  // Standalone image placeholder with no URL: ![IMAGE:hero_image:description] → sentinel if heroImageUrl, else placeholder span (keep ! visible for hero)
   html = html.replace(/!\[([^\]]*)\](?!\()/gim, (_, alt) => {
     const safeAlt = String(alt || 'Image').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/&/g, '&amp;');
     if (isHeroImagePlaceholder(alt) && heroImageUrl) {
       return HERO_IMAGE_SENTINEL;
     }
-    return `<span class="markdown-image-placeholder" title="${escapeAttr(alt)}">[${safeAlt}]</span>`;
+    const showExclamation = isHeroImagePlaceholder(alt);
+    return `<span class="markdown-image-placeholder" title="${escapeAttr(alt)}">${showExclamation ? '!' : ''}[${safeAlt}]</span>`;
   });
 
   // Links [text](url)
