@@ -3,7 +3,7 @@
  * Ensures streamed plain text (markdown source) is parsed and rendered, not shown as raw text.
  */
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import HTMLPreview from '../HTMLPreview';
 
 jest.mock('react-tweet', () => ({
@@ -14,6 +14,9 @@ jest.mock('react-tweet', () => ({
   )
 }));
 jest.mock('react-tweet/theme.css', () => ({}));
+
+/** Minimal 1x1 PNG data URL so hero image "loads" in JSDOM and placeholder can hide. */
+const TINY_IMAGE_DATA_URL = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
 describe('HTMLPreview', () => {
   describe('streamed markdown rendering', () => {
@@ -134,6 +137,25 @@ describe('HTMLPreview', () => {
       const img = screen.getByRole('img', { name: /IMAGE:hero_image/i });
       expect(img).toBeInTheDocument();
       expect(img).toHaveAttribute('src', heroUrl);
+    });
+
+    it('hides hero placeholder once image has loaded and minimum display time has elapsed', async () => {
+      jest.useFakeTimers();
+      const markdown = 'Intro.\n\n![IMAGE:hero_image:Test.]\n\nMore.';
+      render(<HTMLPreview content={markdown} forceMarkdown heroImageUrl={TINY_IMAGE_DATA_URL} />);
+      expect(screen.getByText(/Waiting for image…/)).toBeInTheDocument();
+      const img = screen.getByRole('img', { name: /IMAGE:hero_image/i });
+      // Simulate image loaded (cached or onLoad); in JSDOM data URL may already be complete.
+      await act(async () => {
+        Object.defineProperty(img, 'complete', { value: true, configurable: true });
+        Object.defineProperty(img, 'naturalWidth', { value: 1, configurable: true });
+        img.dispatchEvent(new Event('load'));
+      });
+      await act(async () => {
+        jest.advanceTimersByTime(3000);
+      });
+      expect(screen.queryByText(/Waiting for image…/)).not.toBeInTheDocument();
+      jest.useRealTimers();
     });
 
     it('replaces article placeholder token with loading UI when relatedArticles missing', () => {
