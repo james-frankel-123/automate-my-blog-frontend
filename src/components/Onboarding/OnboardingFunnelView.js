@@ -606,18 +606,8 @@ function OnboardingFunnelView() {
     const organizationId = analysis?.organizationId ?? null;
     const organizationName = analysis?.businessName ?? '';
 
-    // If no CTAs exist, prompt user to add CTAs before generating (issue #339 – onboarding)
-    if (
-      organizationId &&
-      !hasSufficientCTAs &&
-      organizationCTAs.length === 0 &&
-      !ctaPromptSkippedForSessionRef.current
-    ) {
-      setShowManualCTAModal(true);
-      return;
-    }
-
-    contentGenerationStartedRef.current = true;
+    const startOnboardingContentGeneration = () => {
+      contentGenerationStartedRef.current = true;
     setGeneratingContent(true);
     setContentGenerationError(null);
     setRelatedTweets([]);
@@ -819,6 +809,34 @@ function OnboardingFunnelView() {
           });
         });
     });
+    };
+
+    // If no CTAs exist, prompt user to add CTAs before generating (issue #339 – onboarding)
+    // Re-fetch CTAs when starting content so we use live API result (same as PostsTab)
+    if (organizationId) {
+      autoBlogAPI
+        .getOrganizationCTAs(organizationId)
+        .then((r) => {
+          const ctas = r.ctas || [];
+          const hasSufficient = r.has_sufficient_ctas ?? false;
+          updateCTAData?.({ ctas, ctaCount: ctas.length, hasSufficientCTAs: hasSufficient });
+          if (!hasSufficient && ctas.length === 0 && !ctaPromptSkippedForSessionRef.current) {
+            setShowManualCTAModal(true);
+            return;
+          }
+          startOnboardingContentGeneration();
+        })
+        .catch((err) => {
+          console.error('Failed to fetch CTAs for onboarding:', err);
+          startOnboardingContentGeneration();
+        });
+      return;
+    }
+    if (!hasSufficientCTAs && organizationCTAs.length === 0 && !ctaPromptSkippedForSessionRef.current) {
+      setShowManualCTAModal(true);
+      return;
+    }
+    startOnboardingContentGeneration();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content section unlocks; contentIdeas intentionally not useMemo
   }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis, hasSufficientCTAs, organizationCTAs.length, startContentGenerationTrigger]);
 

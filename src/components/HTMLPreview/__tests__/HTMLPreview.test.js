@@ -6,6 +6,15 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import HTMLPreview from '../HTMLPreview';
 
+jest.mock('react-tweet', () => ({
+  Tweet: ({ id, fallback }) => (
+    <div data-testid="react-tweet" data-tweet-id={id}>
+      {fallback}
+    </div>
+  )
+}));
+jest.mock('react-tweet/theme.css', () => ({}));
+
 describe('HTMLPreview', () => {
   describe('streamed markdown rendering', () => {
     it('renders streamed prose as paragraphs (treat as markdown, not raw text)', () => {
