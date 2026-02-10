@@ -57,7 +57,10 @@ const DashboardLayout = ({
   // Force workflow mode for logged-out users
   forceWorkflowMode = false
 }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  // Allow URL ?tab=posts (or other tab) so onboarding funnel can link to /dashboard?tab=posts
+  const tabFromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
+  const validTab = tabFromUrl && ['dashboard', 'posts', 'audience-segments', 'analytics', 'settings'].includes(tabFromUrl) ? tabFromUrl : null;
+  const [activeTab, setActiveTab] = useState(validTab || 'dashboard');
   const {
     user: contextUser,
     logout,
