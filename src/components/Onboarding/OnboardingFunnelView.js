@@ -1206,12 +1206,6 @@ function OnboardingFunnelView() {
                   tweets={relatedTweets}
                   articles={relatedArticles}
                   videos={relatedVideos}
-                  onInject={(type, index) => {
-                    const token = `[${type}:${index}]`;
-                    const insert = (editingContent?.trim() ? '\n\n' : '') + token + '\n\n';
-                    setEditingContent((prev) => (prev || '') + insert);
-                    message.success(`Added ${type.toLowerCase()} to post`);
-                  }}
                 />
               </div>
             )}

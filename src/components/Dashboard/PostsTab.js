@@ -718,6 +718,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               setHint(systemVoice.topics.topicsStreamingIn(next.length), 'hint', 0);
               return next;
             });
+            // Allow topic selection as soon as text streams in; don't wait for images
+            setTopicsGenerationInProgress(false);
           },
           onTopicImageStart: (data) => {
             setTopicImageGeneratingIndex(data?.index != null ? data.index : null);
@@ -1319,14 +1321,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     }
   };
 
-  // Inject related content placeholder at end of post (e.g. [ARTICLE:0], [VIDEO:1])
-  const handleInjectRelated = (type, index) => {
-    const token = `[${type}:${index}]`;
-    const insert = (editingContent?.trim() ? '\n\n' : '') + token + '\n\n';
-    handleContentChange((editingContent || '') + insert);
-    message.success(`Added ${type.toLowerCase()} to post`);
-  };
-  
   // Autosave function - saves silently without user notifications
   const handleAutosave = async (showUserFeedback = false) => {
     if (currentDraft) {
@@ -2246,7 +2240,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     tweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                     articles={relatedArticles || []}
                     videos={relatedVideos || []}
-                    onInject={handleInjectRelated}
                   />
 
                   {/* Enhanced Generation Toggle - Standalone Panel */}
@@ -3384,7 +3377,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 tweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                 articles={relatedArticles || []}
                 videos={relatedVideos || []}
-                onInject={handleInjectRelated}
               />
 
               {/* SEO Analysis Toggle */}
