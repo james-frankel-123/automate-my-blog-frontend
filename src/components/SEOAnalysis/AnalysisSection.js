@@ -1,20 +1,20 @@
 import React from 'react';
-import { Card, Progress, Typography, List, Tag, Divider, Space } from 'antd';
+import { Card, Progress, Typography, List, Space } from 'antd';
 import { CheckCircleOutlined, ExclamationCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 /**
  * Analysis Section Component
  * Displays detailed analysis for a specific SEO area (e.g., Title Analysis, Content Flow)
  */
 const AnalysisSection = ({ 
-  title, 
-  subtitle, 
-  icon, 
+  title: _title, 
+  subtitle: _subtitle, 
+  icon: _icon, 
   items = {}, 
   description,
-  collapsed = false 
+  collapsed: _collapsed = false 
 }) => {
   // Get score color based on value
   const getScoreColor = (score) => {
@@ -40,8 +40,8 @@ const AnalysisSection = ({
       .replace(/\b\w/g, l => l.toUpperCase()); // Capitalize each word
   };
 
-  // Format field value for display
-  const formatValue = (value) => {
+  // Format field value for display (reserved for future use)
+  const _formatValue = (value) => {
     if (typeof value === 'number') {
       return value.toLocaleString();
     }

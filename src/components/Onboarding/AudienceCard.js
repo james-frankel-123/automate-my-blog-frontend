@@ -1,10 +1,11 @@
 /**
- * AudienceCard — white card with image, segment, problem, pitch. Selectable.
+ * AudienceCard — white card with image, segment, problem. Selectable.
  * Issue #261.
  */
 import React, { useState } from 'react';
 import { Card, Typography } from 'antd';
 import { CheckCircleFilled } from '@ant-design/icons';
+import { getPlaceholderStyle } from '../../utils/placeholderStyles';
 
 const { Text } = Typography;
 
@@ -83,7 +84,7 @@ function toDisplayString(val) {
   if (typeof val === 'string') return val.trim() || '';
   if (typeof val === 'object') {
     const parts = [];
-    Object.entries(val).forEach(([k, v]) => {
+    Object.entries(val).forEach(([_k, v]) => {
       if (v == null) return;
       const s = typeof v === 'string' ? v : (typeof v === 'object' ? JSON.stringify(v) : String(v));
       if (s.trim()) parts.push(s);
@@ -104,13 +105,14 @@ export function AudienceCard({
   imageUrl,
   targetSegment,
   customerProblem,
-  pitch,
   selected,
   onClick,
   dataTestId,
+  placeholderSeed = 0,
 }) {
   const [imageError, setImageError] = useState(false);
   const showImage = imageUrl && !imageError;
+  const placeholderStyle = getPlaceholderStyle(placeholderSeed);
   return (
     <Card
       data-testid={dataTestId}
@@ -126,7 +128,17 @@ export function AudienceCard({
         {showImage ? (
           <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImageError(true)} />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}>
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-tertiary)',
+              ...placeholderStyle,
+            }}
+          >
             Audience
           </div>
         )}
@@ -150,9 +162,6 @@ export function AudienceCard({
           <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 8, color: 'var(--color-text-secondary)' }}>
             {toDisplayString(customerProblem)}
           </Text>
-        )}
-        {toDisplayString(pitch) && (
-          <Text style={{ fontSize: 14, color: 'var(--color-text-primary)' }}>{toDisplayString(pitch)}</Text>
         )}
       </div>
     </Card>

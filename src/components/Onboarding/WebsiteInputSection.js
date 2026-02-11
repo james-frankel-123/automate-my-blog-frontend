@@ -25,7 +25,7 @@ export function WebsiteInputSection({
   loading = false,
   scanningMessage = '',
   analysisProgress = null,
-  analysisThoughts = [],
+  analysisThoughts: _analysisThoughts = [],
   analysisComplete = false,
   headerAnimationComplete = false,
   onHoldTightNarrationComplete = null,
@@ -66,7 +66,7 @@ export function WebsiteInputSection({
             onHoldTightNarrationComplete?.();
             console.log('🕐 [WebsiteInputSection] "Hold tight" narration complete');
           }
-        }, 40); // 40ms per character
+        }, 28); // ~30% faster than 40ms per character
 
         return () => clearInterval(typingInterval);
       }, 500);

@@ -4,7 +4,8 @@
  */
 import React, { useState } from 'react';
 import { Card, Typography } from 'antd';
-import { CheckCircleFilled } from '@ant-design/icons';
+import { CheckCircleFilled, FileTextOutlined } from '@ant-design/icons';
+import { getPlaceholderStyle } from '../../utils/placeholderStyles';
 
 const { Text } = Typography;
 
@@ -13,7 +14,7 @@ function toDisplayString(val) {
   if (typeof val === 'string') return val.trim() || '';
   if (typeof val === 'object') {
     const parts = [];
-    Object.entries(val).forEach(([k, v]) => {
+    Object.entries(val).forEach(([_k, v]) => {
       if (v == null) return;
       const s = typeof v === 'string' ? v : (typeof v === 'object' ? JSON.stringify(v) : String(v));
       if (s.trim()) parts.push(s);
@@ -37,9 +38,11 @@ export function TopicCard({
   selected,
   onClick,
   dataTestId,
+  placeholderSeed = 0,
 }) {
   const [imageError, setImageError] = useState(false);
   const showImage = imageUrl && !imageError;
+  const placeholderStyle = getPlaceholderStyle(placeholderSeed);
   return (
     <Card
       data-testid={dataTestId}
@@ -55,8 +58,21 @@ export function TopicCard({
         {showImage ? (
           <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImageError(true)} />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}>
-            Topic
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              color: 'var(--color-text-tertiary)',
+              ...placeholderStyle,
+            }}
+          >
+            <FileTextOutlined style={{ fontSize: 32, opacity: 0.6 }} />
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Topic image</span>
           </div>
         )}
         {selected && (

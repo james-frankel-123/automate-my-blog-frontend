@@ -37,7 +37,7 @@ function insightToString(insight) {
  * NarrativeAnalysisCard - Displays website analysis as a multi-step journey.
  * Renders markdown and breaks content into paragraph cards (streaming-style UX).
  */
-export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) => {
+export const NarrativeAnalysisCard = ({ narrative, confidence: _confidence, keyInsights }) => {
   const [visibleSections, setVisibleSections] = useState([]);
 
   // Parse narrative into sections (bold header style) or use paragraph-based fallback
@@ -52,7 +52,7 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
       const title = match[1].trim();
       const content = match[2].trim();
 
-      const bulletPattern = /^[•\-\*]\s+(.+)$/gm;
+      const bulletPattern = /^[•\-*]\s+(.+)$/gm;
       const bullets = [];
       let bulletMatch;
       while ((bulletMatch = bulletPattern.exec(content)) !== null) {
@@ -69,7 +69,7 @@ export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) =>
     }
 
     if (parsedSections.length === 0) {
-      const bulletPattern = /^[•\-\*]\s+(.+)$/gm;
+      const bulletPattern = /^[•\-*]\s+(.+)$/gm;
       const bullets = [];
       let bulletMatch;
       while ((bulletMatch = bulletPattern.exec(narrative)) !== null) {

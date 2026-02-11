@@ -4,55 +4,58 @@
   "private": true,
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
-    "@tiptap/extension-color": "^3.18.0",
-    "@tiptap/extension-font-family": "^3.18.0",
-    "@tiptap/extension-image": "^3.18.0",
-    "@tiptap/extension-link": "^3.18.0",
-    "@tiptap/extension-placeholder": "^3.18.0",
-    "@tiptap/extension-table": "^3.18.0",
-    "@tiptap/extension-table-cell": "^3.18.0",
-    "@tiptap/extension-table-header": "^3.18.0",
-    "@tiptap/extension-table-row": "^3.18.0",
-    "@tiptap/extension-text-align": "^3.18.0",
-    "@tiptap/extension-text-style": "^3.15.3",
-    "@tiptap/extension-underline": "^3.18.0",
-    "@tiptap/pm": "^3.15.3",
-    "@tiptap/react": "^3.18.0",
-    "@tiptap/starter-kit": "^3.18.0",
+    "@tiptap/extension-color": "^3.19.0",
+    "@tiptap/extension-font-family": "^3.19.0",
+    "@tiptap/extension-image": "^3.19.0",
+    "@tiptap/extension-link": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.19.0",
+    "@tiptap/extension-table": "^3.19.0",
+    "@tiptap/extension-table-cell": "^3.19.0",
+    "@tiptap/extension-table-header": "^3.19.0",
+    "@tiptap/extension-table-row": "^3.19.0",
+    "@tiptap/extension-text-align": "^3.19.0",
+    "@tiptap/extension-text-style": "^3.19.0",
+    "@tiptap/extension-underline": "^3.19.0",
+    "@tiptap/pm": "^3.19.0",
+    "@tiptap/react": "^3.19.0",
+    "@tiptap/starter-kit": "^3.19.0",
     "antd": "^6.2.3",
     "date-fns": "^4.1.0",
     "dayjs": "^1.11.19",
     "dompurify": "^3.3.1",
-    "framer-motion": "^12.29.2",
+    "framer-motion": "^12.33.0",
     "react": "^19.2.4",
     "react-big-calendar": "^1.8.2",
     "react-dom": "^19.2.4",
     "react-helmet-async": "^2.0.5",
     "react-icons": "^5.5.0",
     "react-scripts": "5.0.1",
+    "react-tweet": "^3.3.0",
     "recharts": "^3.7.0",
     "uuid": "^13.0.0",
     "web-vitals": "^5.1.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.1",
+    "@playwright/test": "^1.58.2",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
     "ajv": "^8.12.0",
-    "identity-obj-proxy": "^3.0.0"
+    "identity-obj-proxy": "^3.0.0",
+    "sharp": "^0.34.5",
+    "sharp-ico": "^0.1.5"
   },
   "scripts": {
-    "start": "REACT_APP_GIT_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'dev') react-scripts start",
+    "start": "REACT_APP_GIT_COMMIT_SHA=$(git rev-parse HEAD 2>/dev/null || echo 'dev') REACT_APP_BUILD_TIME=$(date +%s) react-scripts start",
     "start:e2e": "REACT_APP_GIT_COMMIT_SHA=dev REACT_APP_STREAMING_ENABLED=false react-scripts start",
-    "build": "REACT_APP_GIT_COMMIT_SHA=${VERCEL_GIT_COMMIT_SHA:-$(git rev-parse HEAD 2>/dev/null || echo 'dev')} DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "build": "REACT_APP_GIT_COMMIT_SHA=${VERCEL_GIT_COMMIT_SHA:-$(git rev-parse HEAD 2>/dev/null || echo 'dev')} REACT_APP_BUILD_TIME=$(date +%s) DISABLE_ESLINT_PLUGIN=true react-scripts build",
     "test": "react-scripts test",
     "test:ci": "react-scripts test --coverage --watchAll=false --passWithNoTests",
     "test:coverage": "react-scripts test --coverage --watchAll=false",
     "test:watch": "react-scripts test --watchAll",
     "test:verbose": "react-scripts test --verbose --watchAll=false",
-    "lint": "eslint src/ --ext .js,.jsx --max-warnings 0 || true",
+    "lint": "eslint src/ --ext .js,.jsx --max-warnings 0",
     "eject": "react-scripts eject",
     "test:phase1": "node scripts/test-phase1.js",
     "test:phase1:manual": "echo 'Open http://localhost:3000/test-runner.html in browser while app is running'",
@@ -62,13 +65,26 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:record": "playwright test --grep \"walkthrough: auth\" --config=playwright.record.config.js --workers=1 && node scripts/copy-e2e-video.js",
     "test:e2e:report": "playwright show-report",
-    "test:e2e:production": "playwright test --config=playwright.production.config.js"
+    "test:e2e:production": "playwright test --config=playwright.production.config.js",
+    "generate-favicons": "node scripts/generate-favicons.js"
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "ignorePatterns": [
+      "src/__mocks__/**"
+    ],
+    "rules": {
+      "no-unused-vars": [
+        "warn",
+        {
+          "varsIgnorePattern": "^_",
+          "argsIgnorePattern": "^_"
+        }
+      ]
+    }
   },
   "browserslist": {
     "production": [
@@ -93,10 +109,10 @@
     ],
     "coverageThreshold": {
       "global": {
-        "branches": 0,
-        "functions": 0,
-        "lines": 0,
-        "statements": 0
+        "branches": 1,
+        "functions": 1,
+        "lines": 1,
+        "statements": 1
       }
     },
     "transformIgnorePatterns": [
@@ -107,7 +123,8 @@
       "^antd/(.*)$": "<rootDir>/src/__mocks__/antd.js",
       "^@ant-design/icons$": "<rootDir>/src/__mocks__/@ant-design/icons.js",
       "^@tiptap/(.*)$": "<rootDir>/src/__mocks__/tiptap.js",
-      "\\.(css|less|scss|sass)$": "<rootDir>/src/__mocks__/styleMock.js"
+      "\\.(css|less|scss|sass)$": "<rootDir>/src/__mocks__/styleMock.js",
+      "\\.(png|jpg|jpeg|gif|svg|webp)$": "<rootDir>/src/__mocks__/fileMock.js"
     }
   }
 }

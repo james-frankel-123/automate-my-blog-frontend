@@ -8,6 +8,7 @@ on:
   push:
     branches:
       - main
+      - staging
     paths:
       - 'src/**'
       - 'public/**'
@@ -17,9 +18,11 @@ on:
       - 'playwright.config.js'
       - 'vercel.json'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/promote-staging-to-production.yml'
   pull_request:
     branches:
       - main
+      - staging
     paths:
       - 'src/**'
       - 'public/**'
@@ -29,6 +32,7 @@ on:
       - 'playwright.config.js'
       - 'vercel.json'
       - '.github/workflows/deploy.yml'
+      - '.github/workflows/promote-staging-to-production.yml'
   # Run required checks when a PR is in the merge queue
   merge_group:
 
@@ -57,7 +61,6 @@ jobs:
 
       - name: Run linting
         run: npm run lint --if-present
-        continue-on-error: true
 
       - name: Run unit tests
         run: npm test -- --coverage --watchAll=false --passWithNoTests

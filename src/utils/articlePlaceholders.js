@@ -19,9 +19,8 @@ function getArticlePlaceholderToken(index) {
  * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string, urlToImage?: string }>} [relatedArticles] - Articles by index
  * @returns {string} Content with placeholders replaced by tokens
  */
-function replaceArticlePlaceholders(content, relatedArticles = []) {
+function replaceArticlePlaceholders(content, _relatedArticles = []) {
   if (!content || typeof content !== 'string') return content || '';
-  const articles = Array.isArray(relatedArticles) ? relatedArticles : [];
   return content.replace(ARTICLE_PLACEHOLDER_REGEX, (_, indexStr) => {
     const index = parseInt(indexStr, 10);
     if (Number.isNaN(index) || index < 0) return '[ARTICLE:?]';

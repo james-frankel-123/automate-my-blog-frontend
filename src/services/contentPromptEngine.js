@@ -42,7 +42,7 @@ export class ContentPromptEngine {
    * Multi-layered content generation context
    * Goes beyond goal/voice/template/length to include comprehensive business intelligence
    */
-  buildMultiLayeredContext(analysisData, strategy = {}, options = {}) {
+  buildMultiLayeredContext(analysisData, strategy = {}, _options = {}) {
     return {
       // Business Context Layer
       businessContext: {
@@ -102,7 +102,7 @@ export class ContentPromptEngine {
   /**
    * SEO Instructions with keyword integration
    */
-  buildSEOInstructions(analysisData, strategy = {}, options = {}) {
+  buildSEOInstructions(analysisData, strategy = {}, _options = {}) {
     const primaryKeywords = (strategy && strategy.seoKeywords) || analysisData.keywords || [];
     const secondaryKeywords = this.buildSecondaryKeywords(analysisData, strategy);
     
@@ -336,7 +336,7 @@ export class ContentPromptEngine {
   /**
    * Build heading strategy for markdown formatting
    */
-  buildHeadingStrategy(options = {}) {
+  buildHeadingStrategy(_options = {}) {
     return {
       primaryHeadings: 'Use ## for main section headings',
       secondaryHeadings: 'Use ### for subsections and key points',
@@ -363,14 +363,14 @@ export class ContentPromptEngine {
   /**
    * Determine introduction style
    */
-  determineIntroStyle(strategy = {}) {
+  determineIntroStyle(_strategy = {}) {
     return 'Engaging hook + problem identification + value proposition preview';
   }
 
   /**
    * Build conclusion strategy
    */
-  buildConclusionStrategy(strategy = {}) {
+  buildConclusionStrategy(_strategy = {}) {
     return 'Summary of key points + actionable next steps + strategic CTA';
   }
 
@@ -497,14 +497,14 @@ export class ContentPromptEngine {
   /**
    * Suggest visual elements
    */
-  suggestVisualElements(strategy = {}) {
+  suggestVisualElements(_strategy = {}) {
     return 'Bold text for key points, italic for emphasis, code blocks for examples';
   }
 
   /**
    * Set readability targets
    */
-  setReadabilityTargets(options = {}) {
+  setReadabilityTargets(_options = {}) {
     return {
       paragraphLength: '2-4 sentences per paragraph',
       sentenceLength: '15-25 words average',
@@ -525,7 +525,7 @@ export class ContentPromptEngine {
   /**
    * Build content differentiation strategy
    */
-  buildContentDifferentiation(analysisData, strategy) {
+  buildContentDifferentiation(analysisData, _strategy) {
     const focus = analysisData.contentFocus || 'business solutions';
     const audience = analysisData.targetAudience || 'professionals';
     return `Unique ${focus} perspective tailored for ${audience}`;
@@ -767,7 +767,7 @@ export class StrategicCTABuilder {
     };
   }
 
-  customizeCTA(template, analysisData, strategy) {
+  customizeCTA(template, analysisData, _strategy) {
     return template
       .replace('{solution}', analysisData.contentFocus || 'solutions')
       .replace('{industry}', analysisData.businessType || 'business')
@@ -787,7 +787,7 @@ export class StrategicCTABuilder {
     return placements[goal] || placements.consideration;
   }
 
-  determineCTAStyle(goal, strategy) {
+  determineCTAStyle(goal, _strategy) {
     const styles = {
       awareness: { urgency: 'low', tone: 'educational', format: 'soft-offer' },
       consideration: { urgency: 'medium', tone: 'solution-focused', format: 'value-offer' },

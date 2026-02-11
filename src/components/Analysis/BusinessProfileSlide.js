@@ -26,7 +26,7 @@ const EditableField = ({ value, onChange, multiline = false, placeholder = '' })
         style={{
           fontSize: '15px',
           lineHeight: '1.7',
-          border: '1px solid #3B82F6',
+          border: '1px solid var(--color-primary)',
           borderRadius: '8px',
           padding: '12px'
         }}
@@ -41,7 +41,7 @@ const EditableField = ({ value, onChange, multiline = false, placeholder = '' })
       placeholder={placeholder}
       style={{
         fontSize: '15px',
-        border: '1px solid #3B82F6',
+        border: '1px solid var(--color-primary)',
         borderRadius: '8px',
         padding: '8px 12px'
       }}

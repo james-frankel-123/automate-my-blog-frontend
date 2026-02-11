@@ -2,8 +2,8 @@
  * OnboardingFunnelView — guided sequential funnel: website → analysis → audience → topic → signup (optional) → content.
  * Issue #261.
  */
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Typography, message, Empty, Spin, Button, Skeleton, Row, Col } from 'antd';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { Typography, message, Empty, Button, Skeleton, Row, Col } from 'antd';
 import { motion } from 'framer-motion';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { analysisAPI, topicAPI } from '../../services/workflowAPI';
@@ -19,11 +19,10 @@ import AudienceCard from './AudienceCard';
 import TopicCard from './TopicCard';
 import SignupGateCard from './SignupGateCard';
 import EditConfirmActions from './EditConfirmActions';
-import AnalysisEditSection from './AnalysisEditSection';
-import DashboardLayout from '../Dashboard/DashboardLayout';
 import LoggedOutProgressHeader from '../Dashboard/LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
 import BusinessProfileSlide from '../Analysis/BusinessProfileSlide';
+import InlineFunnelContentGeneration from './InlineFunnelContentGeneration';
 
 const { Title } = Typography;
 
@@ -46,6 +45,31 @@ function toNarrationParamString(val) {
   return String(val);
 }
 
+/** Normalize a scenario from backend (camelCase or snake_case) so AudienceCard always gets displayable fields. */
+function normalizeScenarioForCard(s, index, analysisContext = {}) {
+  const rawSegment = s.targetSegment ?? s.target_segment;
+  const segmentStr = typeof rawSegment === 'string'
+    ? rawSegment
+    : (rawSegment && typeof rawSegment === 'object'
+      ? (rawSegment.description ?? rawSegment.searchBehavior ?? rawSegment.psychographics ?? rawSegment.demographics ?? rawSegment.title ?? '')
+      : '');
+  const targetSegment = segmentStr && segmentStr.trim()
+    ? segmentStr.trim()
+    : (analysisContext.targetAudience ?? analysisContext.decisionMakers ?? analysisContext.businessName ?? 'Primary audience');
+  const customerProblem = (s.customerProblem ?? s.customer_problem ?? s.painPoint ?? '').trim()
+    || 'Looking for solutions that match their goals';
+  const pitch = (s.pitch ?? s.valueProposition ?? '').trim()
+    || (analysisContext.contentFocus ?? 'Content that resonates with this audience');
+  const imageUrl = s.imageUrl ?? s.image_url ?? null;
+  return {
+    id: s.id ?? `scenario-${index}`,
+    targetSegment,
+    customerProblem,
+    pitch,
+    imageUrl,
+  };
+}
+
 const DEFAULT_UNLOCKED = {
   analysisNarration: false,
   analysisOutput: false,
@@ -56,6 +80,31 @@ const DEFAULT_UNLOCKED = {
   signupGate: false,
   contentNarration: false,
 };
+
+/** Build BusinessProfileSlide profileData from analysis so the website analysis section is never empty. */
+function buildProfileFromAnalysis(analysis, websiteUrl, ctas = []) {
+  const domain = (analysis.websiteUrl || websiteUrl || '')
+    .replace(/^https?:\/\//, '')
+    .replace(/\/$/, '')
+    .split('/')[0] || '';
+  const keyTopics = analysis.keywords?.length
+    ? analysis.keywords.join(', ')
+    : (Array.isArray(analysis.contentIdeas) ? analysis.contentIdeas.slice(0, 8).join(' • ') : '') || '';
+  return {
+    businessName: analysis.businessName || 'Your Business',
+    tagline: analysis.tagline || analysis.description?.slice(0, 80) || '',
+    domain: domain || 'your-site.com',
+    whatTheyDo: analysis.description || analysis.contentFocus || 'Business description from website analysis.',
+    targetAudience: analysis.targetAudience || analysis.decisionMakers || 'General Audience',
+    brandVoice: analysis.brandVoice || 'Professional',
+    contentFocus: analysis.contentFocus || 'Content that resonates with your audience',
+    businessModel: analysis.businessModel || '',
+    websiteGoals: analysis.websiteGoals || '',
+    blogStrategy: analysis.blogStrategy || '',
+    keyTopics: keyTopics || 'Key topics will appear after analysis.',
+    ctas: ctas || analysis.ctas || [],
+  };
+}
 
 function OnboardingFunnelView() {
   const {
@@ -68,10 +117,10 @@ function OnboardingFunnelView() {
     updateCTAData,
     updateWebSearchInsights,
     webSearchInsights,
-    setStepResults,
+    setStepResults: _setStepResults,
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
-    navigateToTab,
+    navigateToTab: _navigateToTab,
     saveWorkflowState,
     showAuthModal,
     setShowAuthModal,
@@ -86,10 +135,10 @@ function OnboardingFunnelView() {
   const [unlocked, setUnlocked] = useState(DEFAULT_UNLOCKED);
   const [selectedAudienceIndex, setSelectedAudienceIndex] = useState(null);
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(null);
-  const [analysisConfirmed, setAnalysisConfirmed] = useState(false);
+  const [_analysisConfirmed, setAnalysisConfirmed] = useState(false);
   const [funnelComplete, setFunnelComplete] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [originalAnalysisSnapshot, setOriginalAnalysisSnapshot] = useState(null);
+  const [_originalAnalysisSnapshot, setOriginalAnalysisSnapshot] = useState(null);
   const [fetchedTopicItems, setFetchedTopicItems] = useState([]);
   const [topicsLoading, setTopicsLoading] = useState(false);
   const [audiencePlaceholderVisible, setAudiencePlaceholderVisible] = useState(false);
@@ -105,7 +154,7 @@ function OnboardingFunnelView() {
   const [contentNarrationContent, setContentNarrationContent] = useState('');
   const [contentNarrationStreaming, setContentNarrationStreaming] = useState(false);
   const [headerAnimationComplete, setHeaderAnimationComplete] = useState(false);
-  const [holdTightNarrationComplete, setHoldTightNarrationComplete] = useState(false);
+  const [_holdTightNarrationComplete, setHoldTightNarrationComplete] = useState(false);
   const [audienceNarrationComplete, setAudienceNarrationComplete] = useState(false);
   const [topicNarrationComplete, setTopicNarrationComplete] = useState(false);
   const sectionRefs = useRef({});
@@ -117,22 +166,32 @@ function OnboardingFunnelView() {
   const reassuranceStepRef = useRef(0);
   const analysisInProgressRef = useRef(false);
 
-  const analysis = stepResults?.home?.websiteAnalysis || {};
-  const scenarios = analysis.scenarios || [];
-  const contentIdeas = analysis.contentIdeas || [];
+  const analysis = useMemo(
+    () => stepResults?.home?.websiteAnalysis || {},
+    [stepResults?.home?.websiteAnalysis]
+  );
+  const scenarios = useMemo(() => analysis.scenarios || [], [analysis.scenarios]);
+  const contentIdeas = useMemo(
+    () => analysis.contentIdeas || [],
+    [analysis.contentIdeas]
+  );
   const hasAnalysis = stepResults?.home?.analysisCompleted && analysis?.businessName;
 
-  // When backend doesn't return audience scenarios, show one segment derived from analysis so the funnel can continue
-  const fallbackScenarios = scenarios.length === 0 && (analysis.targetAudience || analysis.businessName)
-    ? [
-        {
-          id: 'fallback-primary',
-          targetSegment: analysis.targetAudience || analysis.businessName || 'Primary audience',
-          customerProblem: 'Looking for solutions that match their goals',
-          pitch: analysis.contentFocus || 'Content that resonates with this audience',
-        },
-      ]
-    : [];
+  // When backend doesn't return audience scenarios, show at least one segment so the funnel can continue (never leave user on loading)
+  const fallbackScenarios = useMemo(
+    () =>
+      scenarios.length === 0
+        ? [
+            {
+              id: 'fallback-primary',
+              targetSegment: analysis.targetAudience || analysis.businessName || analysis.decisionMakers || 'Primary audience',
+              customerProblem: 'Looking for solutions that match their goals',
+              pitch: analysis.contentFocus || 'Content that resonates with this audience',
+            },
+          ]
+        : [],
+    [scenarios.length, analysis.targetAudience, analysis.businessName, analysis.decisionMakers, analysis.contentFocus]
+  );
   const displayScenarios = scenarios.length > 0 ? scenarios : fallbackScenarios;
 
   // Log audience scenarios data
@@ -143,7 +202,7 @@ function OnboardingFunnelView() {
     } else if (fallbackScenarios.length > 0) {
       console.log('🕐 [OnboardingFunnelView] Using fallback scenario:', fallbackScenarios);
     }
-  }, [scenarios.length, fallbackScenarios.length]);
+  }, [scenarios, displayScenarios, fallbackScenarios]);
 
   const scrollTo = (key) => {
     const el = sectionRefs.current[key];
@@ -177,6 +236,14 @@ function OnboardingFunnelView() {
     }
   }, [businessProfile]);
 
+  // Populate website analysis slide from analysis when stream never sends business-profile (so the section is never empty)
+  useEffect(() => {
+    const hasAnalysisData = analysis?.businessName || analysis?.description || analysis?.targetAudience;
+    if (!hasAnalysisData || businessProfile != null) return;
+    const ctas = stepResults?.home?.ctas ?? [];
+    setBusinessProfile(buildProfileFromAnalysis(analysis, websiteUrl, ctas));
+  }, [analysis, analysis?.businessName, analysis?.description, analysis?.targetAudience, websiteUrl, stepResults?.home?.ctas, businessProfile]);
+
   // Log when analysis completes
   useEffect(() => {
     if (!loading && hasAnalysis) {
@@ -204,9 +271,26 @@ function OnboardingFunnelView() {
   useEffect(() => {
     if (!unlocked.audienceOutput) return;
     setAudiencePlaceholderVisible(true);
-    const t = setTimeout(() => setAudiencePlaceholderVisible(false), 1800);
+    const t = setTimeout(() => setAudiencePlaceholderVisible(false), 0);
     return () => clearTimeout(t);
   }, [unlocked.audienceOutput]);
+
+  const unlockAudienceOutput = useCallback(() => {
+    console.log('🕐 [OnboardingFunnelView] Audience narration complete - unlocking audience cards');
+    setAudienceNarrationComplete(true);
+    setUnlocked((u) => ({ ...u, audienceOutput: true }));
+  }, []);
+
+  const unlockTopicOutput = useCallback(() => {
+    console.log('🕐 [OnboardingFunnelView] Topic narration complete - unlocking topic cards');
+    setTopicNarrationComplete(true);
+    setUnlocked((u) => ({ ...u, topicOutput: true }));
+  }, []);
+
+  const handleContentNarrationComplete = useCallback(() => {
+    setFunnelComplete(true);
+    saveWorkflowState?.();
+  }, [saveWorkflowState]);
 
   // When analysis starts loading, scroll to "What I found" placeholders so they're visible
   const prevLoading = useRef(false);
@@ -255,6 +339,14 @@ function OnboardingFunnelView() {
         onTopicComplete: (topic) => {
           setFetchedTopicItems((prev) => [...prev, topic]);
         },
+        onTopicImageComplete: (topicWithImage, index) => {
+          setFetchedTopicItems((prev) => {
+            if (prev[index] == null) return prev;
+            const next = [...prev];
+            next[index] = { ...next[index], image: topicWithImage?.image ?? next[index].image };
+            return next;
+          });
+        },
       })
       .then((result) => {
         if (result?.success && Array.isArray(result.topics) && result.topics.length > 0) {
@@ -271,13 +363,16 @@ function OnboardingFunnelView() {
   }, [
     unlocked.topicOutput,
     contentIdeas.length,
+    fetchedTopicItems.length,
+    topicsLoading,
     hasAnalysis,
     selectedAudienceIndex,
+    displayScenarios,
     analysis,
     webSearchInsights,
   ]);
 
-  // Issue #303: fetch analysis narration from GET /api/v1/analysis/narration/analysis when section unlocks
+  // Analysis narration: no SSE endpoint; api.connectNarrationStream('analysis') uses GET /api/narrative/:organizationId and simulates streaming
   useEffect(() => {
     console.log('🎙️ [FRONTEND] Analysis narration useEffect triggered', {
       unlocked: unlocked.analysisNarration,
@@ -337,11 +432,26 @@ function OnboardingFunnelView() {
       alreadyStarted: audienceNarrationStreamStartedRef.current
     });
 
-    if (!unlocked.audienceNarration || !analysis?.organizationId || audienceNarrationStreamStartedRef.current) return;
+    if (!unlocked.audienceNarration || audienceNarrationStreamStartedRef.current) return;
+
+    // No organizationId (e.g. sync analysis or backend didn't return it): show cards immediately so funnel can continue
+    if (!analysis?.organizationId) {
+      console.log('👥 [FRONTEND] No organizationId — skipping audience narration stream, unlocking cards');
+      setAudienceNarrationStreaming(false);
+      audienceNarrationStreamStartedRef.current = true;
+      unlockAudienceOutput();
+      return;
+    }
 
     console.log('🚀 [FRONTEND] Starting audience narration stream for orgId:', analysis.organizationId);
     audienceNarrationStreamStartedRef.current = true;
     setAudienceNarrationStreaming(true);
+
+    const safetyTimeoutId = setTimeout(() => {
+      console.log('👥 [FRONTEND] Audience narration safety timeout — unlocking cards');
+      setAudienceNarrationStreaming(false);
+      unlockAudienceOutput();
+    }, 12000);
 
     autoBlogAPI
       .connectNarrationStream(
@@ -354,21 +464,29 @@ function OnboardingFunnelView() {
             if (text) setAudienceNarrationContent((prev) => prev + text);
           },
           onComplete: (data) => {
+            clearTimeout(safetyTimeoutId);
             console.log('✅ [FRONTEND] Audience narration complete');
             setAudienceNarrationStreaming(false);
             if (data?.text) setAudienceNarrationContent(data.text);
+            unlockAudienceOutput();
           },
           onError: (err) => {
+            clearTimeout(safetyTimeoutId);
             console.error('❌ [FRONTEND] Audience narration error:', err);
             setAudienceNarrationStreaming(false);
+            unlockAudienceOutput();
           },
         }
       )
       .catch((err) => {
+        clearTimeout(safetyTimeoutId);
         console.error('❌ [FRONTEND] Audience narration catch:', err);
         setAudienceNarrationStreaming(false);
+        unlockAudienceOutput();
       });
-  }, [unlocked.audienceNarration, analysis?.organizationId]);
+
+    return () => clearTimeout(safetyTimeoutId);
+  }, [unlocked.audienceNarration, analysis?.organizationId, unlockAudienceOutput]);
 
   // Issue #261: fetch topic narration when topic section unlocks (after user selects audience)
   useEffect(() => {
@@ -379,7 +497,15 @@ function OnboardingFunnelView() {
       alreadyStarted: topicNarrationStreamStartedRef.current
     });
 
-    if (!unlocked.topicNarration || !analysis?.organizationId || selectedAudienceIndex == null || topicNarrationStreamStartedRef.current) return;
+    if (!unlocked.topicNarration || selectedAudienceIndex == null || topicNarrationStreamStartedRef.current) return;
+
+    if (!analysis?.organizationId) {
+      console.log('📝 [FRONTEND] No organizationId — skipping topic narration stream, unlocking topic cards');
+      setTopicNarrationStreaming(false);
+      topicNarrationStreamStartedRef.current = true;
+      unlockTopicOutput();
+      return;
+    }
 
     const raw = displayScenarios[selectedAudienceIndex]?.targetSegment ?? '';
     const selectedAudience = toNarrationParamString(raw);
@@ -415,12 +541,21 @@ function OnboardingFunnelView() {
       .catch((err) => {
         console.error('❌ [FRONTEND] Topic narration catch:', err);
         setTopicNarrationStreaming(false);
+        unlockTopicOutput();
       });
-  }, [unlocked.topicNarration, analysis?.organizationId, selectedAudienceIndex, displayScenarios]);
+  }, [unlocked.topicNarration, analysis?.organizationId, selectedAudienceIndex, displayScenarios, unlockTopicOutput]);
 
   // Issue #261: fetch content narration when content section unlocks (after user selects topic)
   useEffect(() => {
-    if (!unlocked.contentNarration || !analysis?.organizationId || contentNarrationStreamStartedRef.current) return;
+    if (!unlocked.contentNarration || contentNarrationStreamStartedRef.current) return;
+
+    if (!analysis?.organizationId) {
+      setContentNarrationStreaming(false);
+      contentNarrationStreamStartedRef.current = true;
+      handleContentNarrationComplete();
+      return;
+    }
+
     const items =
       contentIdeas.length > 0
         ? contentIdeas.slice(0, 5).map((t) => ({
@@ -428,7 +563,15 @@ function OnboardingFunnelView() {
           }))
         : fetchedTopicItems.map((t) => ({ title: toNarrationParamString(t?.title ?? t?.subheader ?? 'Topic') }));
     const rawTopic = items[selectedTopicIndex]?.title ?? items[selectedTopicIndex ?? 0]?.title ?? '';
-    const selectedTopic = toNarrationParamString(rawTopic);
+    const selectedTopic = toNarrationParamString(rawTopic).trim();
+
+    if (!selectedTopic) {
+      setContentNarrationStreaming(false);
+      contentNarrationStreamStartedRef.current = true;
+      handleContentNarrationComplete();
+      return;
+    }
+
     contentNarrationStreamStartedRef.current = true;
     setContentNarrationStreaming(true);
     autoBlogAPI
@@ -444,11 +587,17 @@ function OnboardingFunnelView() {
             setContentNarrationStreaming(false);
             if (data?.text) setContentNarrationContent(data.text);
           },
-          onError: () => setContentNarrationStreaming(false),
+          onError: () => {
+            setContentNarrationStreaming(false);
+            handleContentNarrationComplete();
+          },
         }
       )
-      .catch(() => setContentNarrationStreaming(false));
-  }, [unlocked.contentNarration, analysis?.organizationId, selectedTopicIndex, contentIdeas, fetchedTopicItems]);
+      .catch(() => {
+        setContentNarrationStreaming(false);
+        handleContentNarrationComplete();
+      });
+  }, [unlocked.contentNarration, analysis?.organizationId, selectedTopicIndex, contentIdeas, fetchedTopicItems, handleContentNarrationComplete]);
 
   const handleAnalyze = useCallback(async (url) => {
     if (analysisInProgressRef.current) return;
@@ -469,6 +618,15 @@ function OnboardingFunnelView() {
     topicNarrationStreamStartedRef.current = false;
     contentNarrationStreamStartedRef.current = false;
     addStickyWorkflowStep?.('websiteAnalysis', { websiteUrl: validation.formattedUrl, businessName: '', businessType: '' });
+
+    // Step 0 (handoff): ensure anonymous users have a backend session_id before analysis
+    if (!user) {
+      try {
+        await autoBlogAPI.createAnonymousSession();
+      } catch (e) {
+        console.warn('Anonymous session create failed, continuing with client session id', e);
+      }
+    }
 
     const ANALYSIS_MAX_WAIT_MS = 6 * 60 * 1000;
     const safetyTimeoutId = setTimeout(() => {
@@ -503,8 +661,11 @@ function OnboardingFunnelView() {
           }
         },
         onAnalysisResult: (data) => {
-          if (data?.analysis) {
-            updateWebsiteAnalysis(data.analysis);
+          if (data?.analysis || data?.organizationId != null) {
+            updateWebsiteAnalysis({
+              ...(data.analysis || {}),
+              organizationId: data.organizationId ?? data.analysis?.organizationId,
+            });
           }
         },
         onAudiencesResult: (data) => {
@@ -574,7 +735,7 @@ function OnboardingFunnelView() {
       analysisInProgressRef.current = false;
       setLoading(false);
     }
-  }, [setWebsiteUrl, updateWebsiteAnalysis, updateAnalysisCompleted, updateCTAData, updateWebSearchInsights, addStickyWorkflowStep, updateStickyWorkflowStep]);
+  }, [user, setWebsiteUrl, updateWebsiteAnalysis, updateAnalysisCompleted, updateCTAData, updateWebSearchInsights, addStickyWorkflowStep, updateStickyWorkflowStep]);
 
   const unlockAnalysisOutput = useCallback(() => {
     console.log('🕐 [OnboardingFunnelView] Analysis narration complete - unlocking output');
@@ -586,14 +747,29 @@ function OnboardingFunnelView() {
     }, 300); // Small delay before showing slide to create clear sequencing
   }, []);
 
-  const handleConfirmAnalysis = useCallback(() => {
+  const handleConfirmAnalysis = useCallback(async () => {
+    // Step 2 (handoff): persist confirmation (and current analysis fields) to backend
+    if (analysis?.organizationId) {
+      try {
+        await autoBlogAPI.confirmAnalysis(analysis.organizationId, {
+          analysisConfirmed: true,
+          analysisEdited: false,
+          editedFields: [],
+          businessName: analysis.businessName ?? businessProfile?.businessName ?? '',
+          targetAudience: analysis.targetAudience ?? analysis.decisionMakers ?? businessProfile?.targetAudience ?? '',
+          contentFocus: analysis.contentFocus ?? businessProfile?.contentFocus ?? '',
+        });
+      } catch (e) {
+        console.warn('Analysis confirm API failed', e);
+      }
+    }
     setAnalysisConfirmed(true);
     setEditMode(false);
     setOriginalAnalysisSnapshot(null);
     setEditedBusinessProfile(null);
     setUnlocked((u) => ({ ...u, audienceNarration: true, audienceOutput: true }));
     saveWorkflowState?.();
-  }, [saveWorkflowState]);
+  }, [analysis, businessProfile, saveWorkflowState]);
 
   const handleEditAnalysis = useCallback(() => {
     setOriginalAnalysisSnapshot(businessProfile);
@@ -622,7 +798,7 @@ function OnboardingFunnelView() {
     setEditedBusinessProfile(null);
   }, []);
 
-  const handleRequestSuggestion = useCallback(async (values, setFieldsValue) => {
+  const _handleRequestSuggestion = useCallback(async (values, setFieldsValue) => {
     if (!values || typeof setFieldsValue !== 'function') return;
     try {
       const response = await autoBlogAPI.getCleanedAnalysisSuggestion({
@@ -630,7 +806,7 @@ function OnboardingFunnelView() {
         targetAudience: values.targetAudience ?? '',
         contentFocus: values.contentFocus ?? '',
       });
-      const suggestion = response?.suggestion ?? response;
+      const suggestion = response?.suggested ?? response?.suggestion ?? response;
       if (suggestion && (suggestion.businessName != null || suggestion.targetAudience != null || suggestion.contentFocus != null)) {
         setFieldsValue({
           businessName: suggestion.businessName ?? values.businessName,
@@ -650,25 +826,9 @@ function OnboardingFunnelView() {
     }
   }, []);
 
-  const unlockAudienceOutput = useCallback(() => {
-    console.log('🕐 [OnboardingFunnelView] Audience narration complete - unlocking audience cards');
-    setAudienceNarrationComplete(true);
-    setTimeout(() => {
-      setUnlocked((u) => ({ ...u, audienceOutput: true }));
-    }, 300); // Small delay for visual sequencing
-  }, []);
-
   const handleSelectAudience = useCallback((index) => {
     setSelectedAudienceIndex(index);
     setUnlocked((u) => ({ ...u, topicNarration: true, topicOutput: true }));
-  }, []);
-
-  const unlockTopicOutput = useCallback(() => {
-    console.log('🕐 [OnboardingFunnelView] Topic narration complete - unlocking topic cards');
-    setTopicNarrationComplete(true);
-    setTimeout(() => {
-      setUnlocked((u) => ({ ...u, topicOutput: true }));
-    }, 300); // Small delay for visual sequencing
   }, []);
 
   const handleSelectTopic = useCallback((index) => {
@@ -683,23 +843,6 @@ function OnboardingFunnelView() {
   const handleSignupSuccess = useCallback(() => {
     setUnlocked((u) => ({ ...u, contentNarration: true }));
   }, []);
-
-  const handleContentNarrationComplete = useCallback(() => {
-    setFunnelComplete(true);
-    saveWorkflowState?.();
-  }, [saveWorkflowState]);
-
-  if (funnelComplete) {
-    return (
-      <DashboardLayout
-        workflowContent={true}
-        showDashboard={true}
-        isMobile={false}
-        onActiveTabChange={() => {}}
-        forceWorkflowMode={false}
-      />
-    );
-  }
 
   const iconUrls = analysis.iconUrls || analysis.cardIcons || {};
   const analysisCards = [
@@ -763,7 +906,7 @@ function OnboardingFunnelView() {
         currentStep={0}
         enableSequentialAnimation={true}
         inputIsEditing={true}
-        onSequenceComplete={() => setTimeout(() => setHeaderAnimationComplete(true), 500)}
+        onSequenceComplete={() => setHeaderAnimationComplete(true)}
       />
 
       <section ref={(el) => (sectionRefs.current.websiteInput = el)}>
@@ -797,8 +940,8 @@ function OnboardingFunnelView() {
           </motion.div>
         </section>
 
-          {/* Phase 2: Business Profile PowerPoint slide (only after narration completes) */}
-          {analysisNarrationComplete && (
+          {/* Phase 2: Business Profile PowerPoint slide (only after narration is done — wait for stream to finish) */}
+          {analysisNarrationComplete && !analysisNarrationStreaming && (
             businessProfile ? (
                 <section style={{ marginTop: 32 }}>
                   <motion.div initial={sectionInitial} animate={sectionAnimate} transition={{ ...sectionTransition, delay: 0.3 }}>
@@ -836,8 +979,8 @@ function OnboardingFunnelView() {
             )
           )}
 
-          {/* Phase 3: Edit and Continue buttons (only after slide appears) */}
-          {analysisNarrationComplete && businessProfile && (
+          {/* Phase 3: Edit and Continue buttons (after narration is done so user can proceed to audience) */}
+          {analysisNarrationComplete && !analysisNarrationStreaming && (
             <section ref={(el) => (sectionRefs.current.analysisOutput = el)} style={{ marginTop: 32 }}>
               <motion.div initial={sectionInitial} animate={sectionAnimate} transition={{ ...sectionTransition, delay: 0.5 }}>
               <EditConfirmActions
@@ -947,10 +1090,10 @@ function OnboardingFunnelView() {
                 </Typography.Text>
               )}
               <Row gutter={[16, 16]} style={{ marginTop: 16 }} data-testid="audience-carousel">
-                {(() => {
-                  console.log('🕐 [OnboardingFunnelView] Rendering audience cards:', displayScenarios.length, displayScenarios);
-                  return displayScenarios.map((s, i) => (
-                    <Col xs={24} sm={12} lg={8} key={s.id || i}>
+                {displayScenarios.map((s, i) => {
+                  const card = normalizeScenarioForCard(s, i, analysis);
+                  return (
+                    <Col xs={24} sm={12} lg={8} key={card.id}>
                       <motion.div
                         initial={cardInitial}
                         animate={cardAnimate}
@@ -958,18 +1101,18 @@ function OnboardingFunnelView() {
                         style={{ height: '100%' }}
                       >
                         <AudienceCard
-                          targetSegment={s.targetSegment}
-                          customerProblem={s.customerProblem}
-                          pitch={s.pitch}
-                          imageUrl={s.imageUrl}
+                          targetSegment={card.targetSegment}
+                          customerProblem={card.customerProblem}
+                          imageUrl={card.imageUrl}
                           selected={selectedAudienceIndex === i}
                           onClick={() => handleSelectAudience(i)}
                           dataTestId={`audience-card-${i}`}
+                          placeholderSeed={i}
                         />
                       </motion.div>
                     </Col>
-                  ));
-                })()}
+                  );
+                })}
               </Row>
             </>
           ) : (
@@ -1028,7 +1171,23 @@ function OnboardingFunnelView() {
           {topicNarrationComplete && (
             <>
               <Title level={4} style={{ marginTop: 24 }}>Choose a topic</Title>
-              {topicsLoading ? (
+              {topicItems.length > 0 ? (
+            <CardCarousel onAllCardsViewed={() => {}} dataTestId="topic-carousel">
+              {topicItems.map((t, i) => (
+                <motion.div key={i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
+                  <TopicCard
+                    title={t.title}
+                    description={t.description}
+                    imageUrl={t.imageUrl}
+                    selected={selectedTopicIndex === i}
+                    onClick={() => handleSelectTopic(i)}
+                    dataTestId={`topic-card-${i}`}
+                    placeholderSeed={i}
+                  />
+                </motion.div>
+              ))}
+            </CardCarousel>
+          ) : topicsLoading ? (
             <div style={{ marginTop: 16 }} data-testid="topics-loading">
               <div style={{ display: 'flex', gap: 16, overflow: 'hidden', paddingBottom: 8 }}>
                 {[1, 2].map((i) => (
@@ -1048,21 +1207,6 @@ function OnboardingFunnelView() {
                 ))}
               </div>
             </div>
-          ) : topicItems.length > 0 ? (
-            <CardCarousel onAllCardsViewed={() => {}} dataTestId="topic-carousel">
-              {topicItems.map((t, i) => (
-                <motion.div key={i} initial={cardInitial} animate={cardAnimate} transition={cardTransition(i)} style={{ height: '100%' }}>
-                  <TopicCard
-                    title={t.title}
-                    description={t.description}
-                    imageUrl={t.imageUrl}
-                    selected={selectedTopicIndex === i}
-                    onClick={() => handleSelectTopic(i)}
-                    dataTestId={`topic-card-${i}`}
-                  />
-                </motion.div>
-              ))}
-            </CardCarousel>
           ) : contentIdeas.length === 0 ? (
             <div style={{ padding: '32px 16px', marginTop: 16, background: 'var(--color-background-alt)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-border-base)' }}>
               <Empty
@@ -1105,6 +1249,19 @@ function OnboardingFunnelView() {
           />
           </motion.div>
         </section>
+      )}
+
+      {user && selectedTopicIndex != null && (fetchedTopicItems[selectedTopicIndex] || topicItems[selectedTopicIndex]) && (funnelComplete || unlocked.contentNarration) && (
+        <InlineFunnelContentGeneration
+          selectedTopic={
+            fetchedTopicItems[selectedTopicIndex]
+              ? { ...fetchedTopicItems[selectedTopicIndex], title: fetchedTopicItems[selectedTopicIndex]?.title ?? topicItems[selectedTopicIndex]?.title }
+              : { id: selectedTopicIndex, title: topicItems[selectedTopicIndex]?.title, subheader: topicItems[selectedTopicIndex]?.description, image: topicItems[selectedTopicIndex]?.imageUrl }
+          }
+          analysis={analysis}
+          organizationId={analysis?.organizationId || user?.organizationId || user?.id}
+          ctas={stepResults?.home?.ctas}
+        />
       )}
     </div>
     </>

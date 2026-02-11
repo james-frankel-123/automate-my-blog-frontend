@@ -33,7 +33,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import DiscoverySettingsModal from '../Modals/DiscoverySettingsModal';
 import { format } from 'date-fns';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 // DUMMY DATA - Discovery automation settings
 const dummyAutomationSettings = {
@@ -103,7 +103,6 @@ const DiscoveryTab = () => {
   const [loading, setLoading] = useState(false);
 
   // Check user access - ALL users can use discovery, but pay-as-you-go needs remaining allocation
-  const hasAccess = user ? true : false;
   const isPaidUser = user && user.plan && !['payasyougo', 'free'].includes(user.plan);
   const hasRemainingPosts = user?.remainingPosts > 0; // DUMMY DATA - will be real from user object
   

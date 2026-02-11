@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+      - staging
       - develop
   pull_request:
     branches:
       - main
+      - staging
       - develop
   schedule:
     # Run weekly security scan
@@ -161,13 +163,10 @@ jobs:
       - name: Initialize CodeQL
         if: steps.check-code.outputs.changed == 'true'
         uses: github/codeql-action/init@v4
-        
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
         with:
           languages: javascript
           queries: +security-and-quality
-          
+
       - name: Setup Node.js
         if: steps.check-code.outputs.changed == 'true'
         uses: actions/setup-node@v6

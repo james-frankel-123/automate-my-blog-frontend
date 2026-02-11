@@ -112,7 +112,7 @@ const styles = {
 function ChecklistProgress({
   steps = [],
   currentStep,
-  phase,
+  phase: _phase,
   progress,
   estimatedTimeRemaining,
   completed = false,
@@ -123,8 +123,8 @@ function ChecklistProgress({
   const [isAnimating, setIsAnimating] = useState(false);
   const animationTimeoutRef = useRef(null);
 
-  // Minimum time per step (1 second for ~10 seconds total with 10 steps)
-  const STEP_DURATION_MS = 1000;
+  // Minimum time per step (0.5 seconds)
+  const STEP_DURATION_MS = 500;
 
   // Track the maximum step index reached to prevent backwards movement
   const maxStepIndexRef = useRef(-1);
