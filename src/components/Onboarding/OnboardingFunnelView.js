@@ -960,9 +960,9 @@ function OnboardingFunnelView() {
                   padding: '0 32px'
                 }}>
                   <div style={{
-                    background: '#FFFFFF',
+                    background: 'var(--color-background-container)',
                     borderRadius: '12px',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    boxShadow: 'var(--shadow-card)',
                     padding: window.innerWidth <= 768 ? '48px 28px' : '80px 64px'
                   }}>
                     <Skeleton active paragraph={{ rows: 8 }} title={{ width: '50%' }} />

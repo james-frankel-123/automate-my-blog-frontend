@@ -16,6 +16,9 @@ const HERO_IMAGE_SENTINEL = '__HERO_IMAGE__';
 
 /** Brief minimum time (ms) for placeholder so transition isn’t jarring; image still swaps in as soon as loaded after this. */
 const HERO_PLACEHOLDER_MIN_MS = 400;
+const KEN_BURNS_MIN_DIMENSION = 1200;
+const KEN_BURNS_MIN_ASPECT_RATIO = 1.15;
+const KEN_BURNS_ANIMATION_SECONDS = 18;
 
 /**
  * Hero image with animated placeholder until loaded, then swaps in the image.
@@ -33,6 +36,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [effectiveSrc, setEffectiveSrc] = useState(src);
+  const [imageMetrics, setImageMetrics] = useState({ width: 0, height: 0 });
   const imgRef = useRef(null);
 
   useEffect(() => {
@@ -48,7 +52,21 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
   useEffect(() => {
     setEffectiveSrc(src);
     setImageLoaded(false);
+    setImageMetrics({ width: 0, height: 0 });
   }, [src]);
+
+  const updateImageMetrics = useCallback((node) => {
+    if (!node) return;
+    const { naturalWidth, naturalHeight } = node;
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setImageMetrics((prev) => {
+        if (prev.width === naturalWidth && prev.height === naturalHeight) {
+          return prev;
+        }
+        return { width: naturalWidth, height: naturalHeight };
+      });
+    }
+  }, []);
 
   // Callback ref: attach load/error listeners as soon as the img mounts.
   // Handles: cached images (complete before listener attach), async load, and failed load.
@@ -62,7 +80,10 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     imgRef.current = node;
     if (!node || !effectiveSrc) return;
     const checkComplete = () => {
-      if (node.complete && node.naturalWidth > 0) setImageLoaded(true);
+      if (node.complete && node.naturalWidth > 0) {
+        setImageLoaded(true);
+        updateImageMetrics(node);
+      }
     };
     const onError = () => {
       HERO_LOG('img error', { effectiveSrc: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
@@ -77,6 +98,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
       if (node.complete && node.naturalWidth > 0) {
         HERO_LOG('img loaded', { naturalWidth: node.naturalWidth, src: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
       }
+      updateImageMetrics(node);
       checkComplete();
     };
     imgRef._onLoad = onLoadSuccess;
@@ -85,7 +107,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     node.addEventListener('error', onError);
     checkComplete();
     requestAnimationFrame(checkComplete);
-  }, [effectiveSrc]);
+  }, [effectiveSrc, updateImageMetrics]);
 
   // Also run checkComplete after paint (useEffect) for timing edge cases
   useEffect(() => {
@@ -93,22 +115,39 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     const img = imgRef.current;
     if (!img) return;
     const checkComplete = () => {
-      if (img.complete && img.naturalWidth > 0) setImageLoaded(true);
+      if (img.complete && img.naturalWidth > 0) {
+        setImageLoaded(true);
+        updateImageMetrics(img);
+      }
     };
     checkComplete();
     const t = setTimeout(checkComplete, 0);
     return () => clearTimeout(t);
-  }, [effectiveSrc]);
+  }, [effectiveSrc, updateImageMetrics]);
 
   const showImage = imageLoaded && minTimeElapsed;
+  const hasDimensions = imageMetrics.width > 0 && imageMetrics.height > 0;
+  const aspectRatio = hasDimensions ? imageMetrics.width / imageMetrics.height : null;
+  const isLandscapeish = hasDimensions ? aspectRatio >= KEN_BURNS_MIN_ASPECT_RATIO : false;
+  const isLargeEnough = hasDimensions
+    ? imageMetrics.width >= KEN_BURNS_MIN_DIMENSION || imageMetrics.height >= KEN_BURNS_MIN_DIMENSION
+    : false;
+  const shouldApplyKenBurns = isLandscapeish && isLargeEnough;
+  const kenBurnsActive = shouldApplyKenBurns && showImage;
 
   const wrapperStyle = {
     position: 'relative',
-    minHeight: 240,
     margin: `${paragraphSpacing}px 0`,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: 'var(--color-background-container)'
+    backgroundColor: 'var(--color-background-container)',
+    minHeight: 240,
+    ...(shouldApplyKenBurns && hasDimensions
+      ? {
+          aspectRatio: `${imageMetrics.width} / ${imageMetrics.height}`,
+          maxHeight: 420,
+        }
+      : {})
   };
 
   const heroPlaceholderStyle = getPlaceholderStyle(0);
@@ -139,7 +178,40 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
       0%, 100% { opacity: 0.85; }
       50% { opacity: 1; }
     }
+    @keyframes hero-ken-burns {
+      0% { transform: scale(1.045) translate3d(-3%, -2%, 0); }
+      50% { transform: scale(1.12) translate3d(3%, 2%, 0); }
+      100% { transform: scale(1.045) translate3d(-2%, 3%, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-image-ken-burns {
+        animation: none !important;
+        transform: none !important;
+      }
+    }
   `;
+
+  const imageStyle = {
+    width: '100%',
+    maxWidth: '100%',
+    height: shouldApplyKenBurns ? '100%' : 'auto',
+    borderRadius: '8px',
+    margin: 0,
+    opacity: showImage ? 1 : 0,
+    position: showImage ? 'relative' : 'absolute',
+    top: showImage ? undefined : 0,
+    left: showImage ? undefined : 0,
+    transition: 'opacity 0.35s ease-in',
+    pointerEvents: showImage ? undefined : 'none',
+    objectFit: shouldApplyKenBurns ? 'cover' : 'contain',
+    objectPosition: 'center',
+    willChange: kenBurnsActive ? 'transform' : undefined,
+    transform: kenBurnsActive ? 'scale(1.045)' : undefined,
+    animation: kenBurnsActive
+      ? `hero-ken-burns ${KEN_BURNS_ANIMATION_SECONDS}s ease-in-out alternate infinite`
+      : undefined,
+    animationPlayState: kenBurnsActive ? 'running' : undefined
+  };
 
   return (
     <div className="hero-image-wrapper" style={wrapperStyle}>
@@ -159,21 +231,12 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
         src={effectiveSrc}
         alt={alt || 'Hero image'}
         loading="eager"
-        className="hero-image"
-        style={{
-          width: '100%',
-          maxWidth: '100%',
-          height: 'auto',
-          borderRadius: '8px',
-          margin: 0,
-          opacity: showImage ? 1 : 0,
-          position: showImage ? 'relative' : 'absolute',
-          top: showImage ? undefined : 0,
-          left: showImage ? undefined : 0,
-          transition: 'opacity 0.25s ease-in',
-          pointerEvents: showImage ? undefined : 'none'
+        className={`hero-image${shouldApplyKenBurns ? ' hero-image-ken-burns' : ''}`}
+        style={imageStyle}
+        onLoad={() => {
+          setImageLoaded(true);
+          if (imgRef.current) updateImageMetrics(imgRef.current);
         }}
-        onLoad={() => setImageLoaded(true)}
         onError={() => setImageLoaded(true)}
       />
     </div>

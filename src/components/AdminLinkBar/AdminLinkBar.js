@@ -26,7 +26,7 @@ const AdminLinkBar = () => {
         justifyContent: 'center',
         padding: '8px 16px',
         background: 'var(--color-primary, #6366F1)',
-        color: '#fff',
+        color: 'var(--color-text-on-primary)',
         fontSize: 'var(--font-size-sm, 14px)',
         fontWeight: 500,
         boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
@@ -37,7 +37,7 @@ const AdminLinkBar = () => {
         target="_blank"
         rel="noopener noreferrer"
         style={{
-          color: '#fff',
+          color: 'var(--color-text-on-primary)',
           textDecoration: 'none',
           padding: '4px 12px',
           borderRadius: 4,
