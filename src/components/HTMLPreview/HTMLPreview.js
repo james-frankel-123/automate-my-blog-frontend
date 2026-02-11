@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import { typography } from '../DesignSystem/tokens';
-import heroImageFallback from '../../assets/hero-image-fallback.png';
+import heroImageFallback from '../../assets/hero_image_fallback.png';
 import { getPlaceholderStyle, getPlaceholderNthVariation } from '../../utils/placeholderStyles';
 
 function escapeAttr(s) {
@@ -20,7 +20,7 @@ const HERO_PLACEHOLDER_MIN_MS = 2500;
  * even when the image loads quickly (e.g. from cache).
  * Uses inline styles + a scoped style tag so the placeholder is always visible (no dependency on parent styled-jsx).
  */
-function HeroImage({ src, alt, paragraphSpacing = 16 }) {
+function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
