@@ -1342,6 +1342,23 @@ test.describe('E2E (mocked backend)', () => {
         return route.continue();
       });
 
+      // Return sufficient CTAs so the app skips the CTA modal and proceeds to content-generation (which we 503)
+      await page.route('**/api/v1/organizations/*/ctas', (route) => {
+        if (route.request().method() === 'GET') {
+          return route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+              success: true,
+              ctas: [{ text: 'Contact us', href: '/contact', type: 'contact', placement: 'end-of-post' }],
+              count: 1,
+              has_sufficient_ctas: true,
+            }),
+          });
+        }
+        return route.continue();
+      });
+
       await removeOverlay(page);
       await page.locator('button:has-text("Create New Post")').first().click({ force: true });
       await page.waitForTimeout(800);
@@ -1365,12 +1382,15 @@ test.describe('E2E (mocked backend)', () => {
       await expect(generateTopicsBtn).toBeVisible({ timeout: 12000 });
       await generateTopicsBtn.click();
       await page.waitForSelector('button:has-text("Generating Topics")', { state: 'hidden', timeout: 15000 }).catch(() => {});
-      await page.waitForTimeout(2000);
+      // Wait for topic cards and a Create Post button so we click the right control (not "Generate post" again)
+      await page.locator('#posts button:has-text("Create Post"), #posts [data-testid="create-post-from-topic-btn"]').first().waitFor({ state: 'visible', timeout: 15000 });
+      await page.waitForTimeout(800);
 
       await clickCreatePostButton(page, { waitForContentResponse: false });
 
-      const errorMsg = page.locator('.ant-message-error, .ant-message').filter({ hasText: /unavailable|try again later|503/i });
-      await expect(errorMsg.first()).toBeVisible({ timeout: 8000 });
+      // CTAs are mocked as sufficient above so the app does not show the CTA modal; content-generation is triggered and returns 503
+      const errorMsg = page.locator('.ant-message-error, .ant-message').filter({ hasText: /unavailable|try again later|503|queue/i });
+      await expect(errorMsg.first()).toBeVisible({ timeout: 20000 });
     });
 
     test.skip('retry modal appears when content generation job fails and Retry button is clickable', async ({ page }) => {

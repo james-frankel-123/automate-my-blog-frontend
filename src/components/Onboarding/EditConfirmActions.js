@@ -9,7 +9,7 @@ import { EditOutlined, CheckOutlined } from '@ant-design/icons';
 export function EditConfirmActions({
   onEdit,
   onConfirm,
-  editMode = false,
+  editMode: _editMode = false,
   loading = false,
   dataTestId = 'edit-confirm-actions',
 }) {

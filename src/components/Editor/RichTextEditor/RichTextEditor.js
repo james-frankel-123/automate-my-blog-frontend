@@ -115,11 +115,11 @@ const checkHeadingContentBoundary = (state, pos) => {
 
   // Find previous block node
   let prevBlock = null;
-  let prevBlockPos = null;
+  let _prevBlockPos = null;
   state.doc.nodesBetween(0, $pos.pos, (node, nodePos) => {
     if (node.isBlock && nodePos < $pos.pos) {
       prevBlock = node;
-      prevBlockPos = nodePos;
+      _prevBlockPos = nodePos;
     }
   });
 
@@ -603,7 +603,7 @@ const RichTextEditor = ({
           }
           return false;
         },
-        drop: (view, event) => {
+        drop: (view, _event) => {
           // Clear zone indicator and preview on drop
           try {
             previewUpdateScheduled.current = false;
@@ -625,7 +625,7 @@ const RichTextEditor = ({
         },
       },
       // Handle drop events for highlight boxes
-      handleDrop: (view, event, slice, moved) => {
+      handleDrop: (view, event, _slice, _moved) => {
         // Check if it's a highlight box being moved
         const highlightData = event.dataTransfer?.getData('application/x-tiptap-highlight');
 
@@ -814,21 +814,24 @@ const RichTextEditor = ({
   }, [editor, showInlineToolbar]);
 
   const editorStyles = {
-    border: `1px solid ${colors.border.light}`,
+    border: `1px solid ${colors.border.base}`,
     borderRadius: borderRadius.md,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.body,
     minHeight: '300px',
     maxHeight: '600px',
     overflow: 'auto',
-    fontFamily: typography.fontFamily.primary,
+    fontFamily: typography.fontFamily.body,
     fontSize: typography.fontSize.base,
-    lineHeight: typography.lineHeight.normal,
+    lineHeight: typography.lineHeight.relaxed,
+    boxShadow: 'inset 0 1px 2px rgba(10, 37, 64, 0.04)',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
     ...style
   };
 
   const editorContentStyles = {
-    padding: spacing.lg,
+    padding: spacing.xl,
     outline: 'none',
+    minHeight: '280px',
   };
 
   return (
@@ -914,10 +917,17 @@ const RichTextEditor = ({
         .rich-text-editor {
           position: relative;
         }
+
+        .rich-text-editor:focus-within {
+          border-color: ${colors.primary};
+          box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.12);
+        }
         
         .rich-text-editor .ProseMirror {
           outline: none;
           color: ${colors.text.primary};
+          font-family: ${typography.fontFamily.body};
+          line-height: ${typography.lineHeight.relaxed};
         }
         
         .rich-text-editor .ProseMirror:focus {
@@ -934,7 +944,7 @@ const RichTextEditor = ({
         
         /* Typography styles */
         .rich-text-editor h1 {
-          font-size: ${typography.fontSize.xxl};
+          font-size: ${typography.fontSize['2xl']};
           font-weight: ${typography.fontWeight.bold};
           color: ${colors.text.primary};
           margin: ${spacing.lg} 0 ${spacing.md} 0;
@@ -1038,19 +1048,24 @@ const RichTextEditor = ({
         
         .rich-text-editor blockquote {
           border-left: 4px solid ${colors.primary};
-          padding-left: ${spacing.lg};
+          padding: ${spacing.sm} 0 ${spacing.sm} ${spacing.lg};
           margin: ${spacing.lg} 0;
           font-style: italic;
           color: ${colors.text.secondary};
+          background: linear-gradient(90deg, ${colors.primary50} 0%, transparent 100%);
+          border-radius: 0 ${borderRadius.sm} ${borderRadius.sm} 0;
         }
         
         .rich-text-editor .editor-link {
           color: ${colors.primary};
-          text-decoration: underline;
+          text-decoration: none;
+          border-bottom: 1px solid ${colors.primary200};
+          transition: color 0.15s ease, border-color 0.15s ease;
         }
         
         .rich-text-editor .editor-link:hover {
           color: ${colors.primaryHover};
+          border-bottom-color: ${colors.primary};
         }
         
         .rich-text-editor .editor-image {

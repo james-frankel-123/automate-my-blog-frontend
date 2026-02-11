@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider, message, Alert } from 'antd';
-import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, LoadingOutlined, GiftOutlined, CopyOutlined } from '@ant-design/icons';
+import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, GiftOutlined, CopyOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 
@@ -15,7 +15,7 @@ const PricingModal = ({
   onClose,
   user,
   onCreateAccount,
-  onSelectPlan
+  onSelectPlan: _onSelectPlan
 }) => {
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
@@ -32,6 +32,7 @@ const PricingModal = ({
         isAuthenticated: !!user
       }).catch(err => console.error('Failed to track pricing_modal_opened:', err));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- trackEvent from analytics
   }, [open, user, trackPageView, trackFunnelStep]);
 
   // Stripe Price ID mapping
@@ -201,7 +202,7 @@ const PricingModal = ({
     }
   };
 
-  const handleCreateAccount = () => {
+  const _handleCreateAccount = () => {
     if (onCreateAccount) {
       onCreateAccount();
     }

@@ -35,13 +35,6 @@ export function WebsiteInputSection({
   const [showStreamingText, setShowStreamingText] = useState(false);
   const [holdTightComplete, setHoldTightComplete] = useState(false);
 
-  // Log when analysis complete state changes
-  useEffect(() => {
-    if (analysisComplete && !loading) {
-      console.log('🕐 [WebsiteInputSection] Analysis complete - keeping checklist visible');
-    }
-  }, [analysisComplete, loading]);
-
   const handleSubmit = () => {
     if (websiteUrl?.trim()) onAnalyze?.(websiteUrl.trim());
   };

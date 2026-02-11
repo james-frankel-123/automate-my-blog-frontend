@@ -84,7 +84,7 @@ class ExportService {
    * Export complete package (all formats in ZIP)
    * EXTRACTED FROM: App.js exportCompletePackage() function (placeholder)
    */
-  static exportCompletePackage(selectedTopic, generatedContent, stepResults, websiteUrl, setPostState, setPreviewMode) {
+  static exportCompletePackage(selectedTopic, generatedContent, stepResults, websiteUrl, _setPostState, _setPreviewMode) {
     const post = postUtils.createPostObject(selectedTopic, generatedContent, stepResults, websiteUrl);
     
     if (!post) {
