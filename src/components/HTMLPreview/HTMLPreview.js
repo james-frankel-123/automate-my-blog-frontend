@@ -30,7 +30,7 @@ const HERO_LOG = (msg, data) => {
   }
 };
 
-function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
+function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [effectiveSrc, setEffectiveSrc] = useState(src);
@@ -233,8 +233,60 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
         }}
         onError={() => setImageLoaded(true)}
       />
+      {title && (
+        <div
+          className="hero-image-title-overlay"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 40%, transparent 100%)',
+            padding: '32px 24px 24px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            pointerEvents: 'none',
+            zIndex: 1
+          }}
+          aria-hidden="true"
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontFamily: 'var(--font-family-display, system-ui, sans-serif)',
+              fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
+              fontWeight: 700,
+              color: '#fff',
+              textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.7), 0 0 24px rgba(0,0,0,0.5)',
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
+              maxWidth: '100%'
+            }}
+          >
+            {title}
+          </h1>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Extract the first h1 from HTML and return its text plus HTML with that h1 removed.
+ * Used to overlay the title on the hero image.
+ */
+function extractFirstH1(html) {
+  if (!html || typeof html !== 'string') return { title: null, htmlWithoutH1: html || '' };
+  const m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  if (!m) return { title: null, htmlWithoutH1: html };
+  const rawTitle = m[1]
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+  const stripped = html.replace(/<h1[^>]*>[\s\S]*?<\/h1>\s*/i, '').trim();
+  return { title: rawTitle.trim() || null, htmlWithoutH1: stripped };
 }
 
 function isHeroImagePlaceholder(alt) {
@@ -794,7 +846,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const heroAltMatch = normalizedContent.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
   const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
   const useHeroSlot = htmlContent.includes(HERO_IMAGE_SENTINEL);
-  const contentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+  const rawContentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+  const { title: heroTitle, htmlWithoutH1 } = rawContentParts?.length
+    ? extractFirstH1(rawContentParts[0])
+    : { title: null, htmlWithoutH1: '' };
+  const contentParts = rawContentParts?.length
+    ? [htmlWithoutH1, ...rawContentParts.slice(1)]
+    : null;
 
   // Nth-of-type variation for markdown placeholders (each instance different color + animation stagger)
   const NTH_PLACEHOLDER_COUNT = 12;
@@ -822,6 +880,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
                 <HeroImage
                   src={heroImageUrl || heroImageFallback}
                   alt={heroImageAlt}
+                  title={heroTitle}
                   paragraphSpacing={paragraphSpacing}
                   generationComplete={generationComplete}
                 />
