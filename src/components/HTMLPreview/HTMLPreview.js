@@ -4,6 +4,7 @@ import { Tweet } from 'react-tweet';
 import 'react-tweet/theme.css';
 import { typography } from '../DesignSystem/tokens';
 import heroImageFallback from '../../assets/hero-image-fallback.png';
+import { getPlaceholderStyle, getPlaceholderNthVariation } from '../../utils/placeholderStyles';
 
 function escapeAttr(s) {
   if (typeof s !== 'string') return '';
@@ -109,6 +110,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     backgroundColor: 'var(--color-background-container)'
   };
 
+  const heroPlaceholderStyle = getPlaceholderStyle(0);
   const placeholderStyle = {
     position: 'absolute',
     top: 0,
@@ -118,10 +120,11 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     background: 'linear-gradient(110deg, var(--color-background-container) 25%, var(--color-background-alt) 37%, var(--color-background-container) 63%)',
     backgroundSize: '200% 100%',
     animation: 'hero-placeholder-shimmer 2s ease-in-out infinite',
-    animationPlayState: generationComplete ? 'paused' : 'running',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    ...heroPlaceholderStyle,
+    animationPlayState: generationComplete ? 'paused' : 'running',
   };
 
   const messageStyle = {
@@ -664,6 +667,21 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const useHeroSlot = htmlContent.includes(HERO_IMAGE_SENTINEL);
   const contentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
 
+  // Nth-of-type variation for markdown placeholders (each instance different color + animation stagger)
+  const NTH_PLACEHOLDER_COUNT = 12;
+  const nthImageRules = Array.from({ length: NTH_PLACEHOLDER_COUNT }, (_, i) => {
+    const { hue, durationSec, delaySec } = getPlaceholderNthVariation(i);
+    return `div :global(.markdown-image-placeholder:nth-of-type(${i + 1})) { --ph-hue: ${hue}; --ph-duration: ${durationSec}; --ph-delay: ${delaySec}; }`;
+  }).join('\n        ');
+  const nthVideoRules = Array.from({ length: NTH_PLACEHOLDER_COUNT }, (_, i) => {
+    const { hue, durationSec, delaySec } = getPlaceholderNthVariation(i + 20);
+    return `div :global(.markdown-video-placeholder:nth-of-type(${i + 1})) { --ph-hue: ${hue}; --ph-duration: ${durationSec}; --ph-delay: ${delaySec}; }`;
+  }).join('\n        ');
+  const nthArticleRules = Array.from({ length: NTH_PLACEHOLDER_COUNT }, (_, i) => {
+    const { hue, durationSec, delaySec } = getPlaceholderNthVariation(i + 40);
+    return `div :global(.markdown-article-placeholder:nth-of-type(${i + 1})) { --ph-hue: ${hue}; --ph-duration: ${durationSec}; --ph-delay: ${delaySec}; }`;
+  }).join('\n        ');
+
   return (
     <div ref={containerRef} className="html-preview-container" style={previewStyles}>
       {contentParts && contentParts.length > 1 ? (
@@ -1152,17 +1170,21 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-style: italic;
         }
 
-        /* Image placeholder: shimmer animation (animated loading) */
+        /* Image placeholder: varied hue + stagger per nth-of-type */
+        ${nthImageRules}
         div :global(.markdown-image-placeholder) {
+          --ph-hue: 200;
+          --ph-duration: 2s;
+          --ph-delay: 0s;
           display: inline-block;
           min-width: 120px;
           min-height: 68px;
           border-radius: 6px;
-          animation: imagePlaceholderShimmer 2s ease-in-out infinite;
+          animation: imagePlaceholderShimmer var(--ph-duration) ease-in-out var(--ph-delay) infinite;
           background: linear-gradient(90deg,
-            var(--color-gray-200) 0%,
-            var(--color-gray-300) 50%,
-            var(--color-gray-200) 100%);
+            hsl(var(--ph-hue), 14%, 92%) 0%,
+            hsl(var(--ph-hue), 20%, 88%) 50%,
+            hsl(var(--ph-hue), 14%, 92%) 100%);
           background-size: 200px 100%;
           color: var(--color-text-tertiary);
           font-size: 12px;
@@ -1175,8 +1197,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           100% { background-position: calc(200px + 100%) 0; }
         }
 
-        /* Video placeholder: compact, YouTube-style red accent */
+        /* Video placeholder: varied hue + stagger per nth-of-type */
+        ${nthVideoRules}
         div :global(.markdown-video-placeholder) {
+          --ph-hue: 0;
+          --ph-duration: 1.8s;
+          --ph-delay: 0s;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1186,9 +1212,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           padding: 10px 12px;
           border-radius: 6px;
           border: 1px dashed var(--color-border-base);
-          border-left: 3px solid #dc2626;
-          background: linear-gradient(135deg, rgba(220, 38, 38, 0.04) 0%, rgba(200, 50, 50, 0.06) 100%);
-          animation: videoPlaceholderPulse 1.8s ease-in-out infinite;
+          border-left: 3px solid hsl(var(--ph-hue), 60%, 45%);
+          background: linear-gradient(135deg, hsl(var(--ph-hue), 30%, 96%) 0%, hsl(var(--ph-hue), 25%, 94%) 100%);
+          animation: videoPlaceholderPulse var(--ph-duration) ease-in-out var(--ph-delay) infinite;
           color: var(--color-text-tertiary);
         }
 
@@ -1356,8 +1382,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           100% { background-position: -200% 0; }
         }
 
-        /* Article placeholder: compact, blue accent */
+        /* Article placeholder: varied hue + stagger per nth-of-type */
+        ${nthArticleRules}
         div :global(.markdown-article-placeholder) {
+          --ph-hue: 220;
+          --ph-duration: 1.8s;
+          --ph-delay: 0s;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1367,9 +1397,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           padding: 10px 12px;
           border-radius: 6px;
           border: 1px dashed var(--color-border-base);
-          border-left: 3px solid #2563eb;
-          background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.08) 100%);
-          animation: articlePlaceholderPulse 1.8s ease-in-out infinite;
+          border-left: 3px solid hsl(var(--ph-hue), 60%, 45%);
+          background: linear-gradient(135deg, hsl(var(--ph-hue), 25%, 97%) 0%, hsl(var(--ph-hue), 20%, 95%) 100%);
+          animation: articlePlaceholderPulse var(--ph-duration) ease-in-out var(--ph-delay) infinite;
           color: var(--color-text-tertiary);
         }
         div :global(.markdown-article-placeholder-icon) {

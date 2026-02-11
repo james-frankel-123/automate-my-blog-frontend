@@ -1,19 +1,25 @@
 /**
  * StreamingNarration — first-person AI narration with smooth reveal.
- * No typing cursor. Minimum display time before unlock. Fallback on error.
- * Issue #261.
+ * Optional typing effect with blinking cursor to match "hold tight" style.
+ * Fallback on error. Issue #261.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Typography, Skeleton } from 'antd';
+import { Typography } from 'antd';
 
 const { Paragraph } = Typography;
 
-const MIN_DISPLAY_TIME_MS = 5000;
 const NARRATION_STYLE = {
-  maxWidth: 700,
   fontSize: 18,
   lineHeight: 1.8,
   color: 'var(--color-text-primary)',
+  marginBottom: 0,
+};
+
+const TYPING_STYLE = {
+  fontSize: '16px',
+  color: 'var(--color-text-secondary)',
+  fontStyle: 'italic',
+  lineHeight: 1.5,
   marginBottom: 0,
 };
 
@@ -22,30 +28,51 @@ export function StreamingNarration({
   isStreaming = false,
   onComplete,
   fallbackText = 'Something went wrong loading this section. Please continue.',
-  minimumDisplayTime = MIN_DISPLAY_TIME_MS,
   dataTestId = 'streaming-narration',
+  enableTypingEffect = false,
 }) {
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [hasCalledComplete, setHasCalledComplete] = useState(false);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setMinTimeElapsed(true), minimumDisplayTime);
-    return () => clearTimeout(t);
-  }, [minimumDisplayTime]);
+    if (!isStreaming) {
+      console.log('🕐 [StreamingNarration] Content streaming finished');
+    }
+  }, [isStreaming]);
 
   useEffect(() => {
     if (!onComplete || hasCalledComplete) return;
-    const done = !isStreaming && minTimeElapsed;
+
+    const typingComplete = !enableTypingEffect || !isTyping;
+    const done = !isStreaming && typingComplete;
+
     if (done) {
+      console.log('🕐 [StreamingNarration] Narration complete — calling onComplete');
       setHasCalledComplete(true);
       onComplete();
     }
-  }, [isStreaming, minTimeElapsed, onComplete, hasCalledComplete]);
+  }, [isStreaming, onComplete, hasCalledComplete, enableTypingEffect, isTyping]);
+
+  // When streaming finished: show full content (no re-typing, since we showed it live during stream)
+  useEffect(() => {
+    if (enableTypingEffect && content && !isStreaming) {
+      setDisplayedText(content);
+      setIsTyping(false);
+    } else if (!enableTypingEffect) {
+      setDisplayedText(content);
+      setIsTyping(false);
+    }
+  }, [content, enableTypingEffect, isStreaming]);
 
   const showFallback = !content && !isStreaming;
-  const displayContent = showFallback ? fallbackText : content;
+  // Show streamed content as it arrives; only use typing-effect displayedText when not streaming
+  const displayContent = showFallback
+    ? fallbackText
+    : (enableTypingEffect && !isStreaming ? displayedText : content);
   const showLoading = isStreaming && !content;
+  const textStyle = enableTypingEffect ? TYPING_STYLE : NARRATION_STYLE;
 
   return (
     <div
@@ -54,25 +81,32 @@ export function StreamingNarration({
       style={{
         ...NARRATION_STYLE,
         padding: '24px 0',
-        borderLeft: '3px solid var(--color-primary)',
-        paddingLeft: 20,
+        borderLeft: enableTypingEffect ? 'none' : '3px solid var(--color-primary)',
+        paddingLeft: enableTypingEffect ? 0 : 20,
       }}
     >
       {showLoading ? (
         <div data-testid="narration-loading">
-          <Skeleton
-            active
-            paragraph={{ rows: 2, width: ['100%', '85%'] }}
-            title={false}
-            style={{ marginBottom: 0 }}
-          />
-          <Paragraph style={{ ...NARRATION_STYLE, color: 'var(--color-text-tertiary)', marginTop: 8, marginBottom: 0 }}>
+          <Paragraph style={{ ...NARRATION_STYLE, color: 'var(--color-text-tertiary)', marginBottom: 0 }}>
             Preparing your personalized message…
           </Paragraph>
         </div>
       ) : (
-        <Paragraph style={NARRATION_STYLE}>
+        <Paragraph style={textStyle}>
           {displayContent}
+          {enableTypingEffect && isStreaming && content && (
+            <span
+              style={{
+                display: 'inline-block',
+                width: '2px',
+                height: '1em',
+                backgroundColor: 'var(--color-primary)',
+                marginLeft: '2px',
+                animation: 'blink 1s step-end infinite',
+                verticalAlign: 'text-bottom'
+              }}
+            />
+          )}
           {showFallback && (
             <span data-testid="narration-fallback" style={{ color: 'var(--color-text-secondary)' }}>
               {' '}(fallback)
