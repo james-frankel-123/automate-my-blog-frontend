@@ -2544,10 +2544,10 @@ Please provide analysis in this JSON format:
    * Get or create session ID for anonymous users
    */
   getOrCreateSessionId() {
-    let sessionId = sessionStorage.getItem('audience_session_id');
+    let sessionId = localStorage.getItem('audience_session_id');
     if (!sessionId) {
       sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('audience_session_id', sessionId);
+      localStorage.setItem('audience_session_id', sessionId);
       console.log('🆔 Created new audience session:', sessionId);
     }
     return sessionId;
