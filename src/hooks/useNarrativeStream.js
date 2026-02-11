@@ -1,10 +1,11 @@
 /**
  * useNarrativeStream — Hook for narrative-driven website analysis streaming (Issue #157, #261).
  * Connects to GET /api/v1/jobs/:jobId/narrative-stream and accumulates
- * analysis status updates (preferred event: analysis-status-update; legacy: scraping-thought) + analysis narrative for the 3-moment UX.
+ * analysis status updates (analysis-status-update; legacy: scraping-thought), short opening (analysis-chunk),
+ * insight cards (insight-card, 4–6 total), then narrative-complete and complete for 3-moment UX.
  *
  * @param {string|null} jobId - Job ID from website analysis job
- * @returns {{ scrapingNarrative: string, analysisNarrative: string, currentMoment: string, isStreaming: boolean, narrativeAvailable: boolean }}
+ * @returns {{ scrapingNarrative: string, analysisNarrative: string, insightCards: Array<{ title?: string, content?: string, text?: string }>, currentMoment: string, isStreaming: boolean, narrativeAvailable: boolean }}
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import jobsAPI from '../services/jobsAPI';
@@ -19,6 +20,7 @@ const MOMENTS = {
 export function useNarrativeStream(jobId) {
   const [scrapingNarrative, setScrapingNarrative] = useState('');
   const [analysisNarrative, setAnalysisNarrative] = useState('');
+  const [insightCards, setInsightCards] = useState([]);
   const [currentMoment, setCurrentMoment] = useState(MOMENTS.SCRAPING);
   const [isStreaming, setIsStreaming] = useState(false);
   const [narrativeAvailable, setNarrativeAvailable] = useState(true);
@@ -30,6 +32,7 @@ export function useNarrativeStream(jobId) {
     startedRef.current = true;
     setScrapingNarrative('');
     setAnalysisNarrative('');
+    setInsightCards([]);
     setCurrentMoment(MOMENTS.SCRAPING);
     setIsStreaming(true);
     setNarrativeAvailable(true);
@@ -52,10 +55,23 @@ export function useNarrativeStream(jobId) {
             setTimeout(() => setCurrentMoment(MOMENTS.ANALYSIS), 500);
           },
           onAnalysisChunk: (data) => {
-            const content = data.content ?? data.message ?? '';
+            const content = data.content ?? data.message ?? data.text ?? '';
             if (content) {
               setAnalysisNarrative((prev) => prev + content);
             }
+            setCurrentMoment(MOMENTS.ANALYSIS);
+          },
+          onInsightCard: (data) => {
+            const card = {
+              title: data.title ?? data.heading ?? '',
+              content: data.content ?? data.text ?? data.body ?? '',
+            };
+            if (card.title || card.content) {
+              setInsightCards((prev) => [...prev, card]);
+            }
+            setCurrentMoment(MOMENTS.ANALYSIS);
+          },
+          onNarrativeComplete: () => {
             setCurrentMoment(MOMENTS.ANALYSIS);
           },
           onComplete: () => {
@@ -97,6 +113,7 @@ export function useNarrativeStream(jobId) {
   return {
     scrapingNarrative,
     analysisNarrative,
+    insightCards,
     currentMoment,
     isStreaming,
     narrativeAvailable,
