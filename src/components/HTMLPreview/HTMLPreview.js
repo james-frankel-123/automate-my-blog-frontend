@@ -20,7 +20,7 @@ const HERO_PLACEHOLDER_MIN_MS = 2500;
  * even when the image loads quickly (e.g. from cache).
  * Uses inline styles + a scoped style tag so the placeholder is always visible (no dependency on parent styled-jsx).
  */
-function HeroImage({ src, alt, paragraphSpacing = 16 }) {
+function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
 
