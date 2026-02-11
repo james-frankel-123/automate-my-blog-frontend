@@ -636,14 +636,17 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     ALLOW_DATA_ATTR: false
   });
 
-  // Extract typography settings with defaults
+  // Extract typography settings with defaults (display font for headings, body for content)
   const {
-    headingFont = typography.fontFamily.primary,
-    bodyFont = typography.fontFamily.primary, 
+    headingFont = typography.fontFamily.display,
+    bodyFont = typography.fontFamily.body,
     fontSize = typography.fontSize.base,
     lineHeight = typography.lineHeight.normal,
-    paragraphSpacing = 16
+    paragraphSpacing = 20
   } = typographySettings;
+
+  // Ensure numeric base for size calculations (fontSize may be '16px')
+  const baseFontSizePx = typeof fontSize === 'string' ? parseInt(String(fontSize).replace(/[^0-9.]/g, ''), 10) || 16 : (Number(fontSize) || 16);
 
   const previewStyles = {
     fontFamily: bodyFont,
@@ -789,94 +792,112 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       </div>
       
       <style jsx>{`
+        /* Article typography – clear hierarchy, readable body, polished lists */
         div h1 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 2.25}px;
+          font-size: ${Math.round(baseFontSizePx * 2)}px;
           font-weight: ${typography.fontWeight.bold};
+          letter-spacing: ${typography.letterSpacing.tight};
           color: var(--color-text-primary);
-          margin: ${paragraphSpacing * 1.5}px 0 ${paragraphSpacing}px 0;
+          margin: 0 0 ${paragraphSpacing}px 0;
           line-height: ${typography.lineHeight.tight};
         }
-        
+
+        div h1:first-child { margin-top: 0; }
+
         div h2 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.875}px;
+          font-size: ${Math.round(baseFontSizePx * 1.5)}px;
           font-weight: ${typography.fontWeight.semibold};
+          letter-spacing: ${typography.letterSpacing.normal};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing * 1.25}px 0 ${paragraphSpacing * 0.75}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
-        
+
         div h3 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.5}px;
+          font-size: ${Math.round(baseFontSizePx * 1.25)}px;
           font-weight: ${typography.fontWeight.semibold};
+          letter-spacing: ${typography.letterSpacing.normal};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing}px 0 ${paragraphSpacing * 0.5}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div h4 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.25}px;
+          font-size: ${Math.round(baseFontSizePx * 1.125)}px;
           font-weight: ${typography.fontWeight.semibold};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing * 0.875}px 0 ${paragraphSpacing * 0.375}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div h5 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.125}px;
+          font-size: ${baseFontSizePx}px;
           font-weight: ${typography.fontWeight.semibold};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing * 0.75}px 0 ${paragraphSpacing * 0.25}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div h6 {
           font-family: ${headingFont};
-          font-size: ${fontSize}px;
-          font-weight: ${typography.fontWeight.semibold};
+          font-size: ${Math.round(baseFontSizePx * 0.9375)}px;
+          font-weight: ${typography.fontWeight.medium};
           color: var(--color-text-secondary);
           margin: ${paragraphSpacing * 0.625}px 0 ${paragraphSpacing * 0.25}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div p {
           margin: 0 0 ${paragraphSpacing}px 0;
-          line-height: ${lineHeight};
+          line-height: ${typography.lineHeight.relaxed};
           font-family: ${bodyFont};
-          font-size: ${fontSize}px;
+          font-size: ${baseFontSizePx}px;
+          color: var(--color-text-primary);
         }
-        
+
+        div p:last-child { margin-bottom: 0; }
+
         div strong {
           font-weight: ${typography.fontWeight.semibold};
           color: var(--color-text-primary);
         }
-        
+
         div em {
           font-style: italic;
           color: var(--color-text-primary);
         }
-        
+
         div ul, div ol {
           margin: ${paragraphSpacing}px 0;
-          padding-left: 20px;
+          padding-left: 1.5em;
           font-family: ${bodyFont};
-          font-size: ${fontSize}px;
-          line-height: ${lineHeight};
+          font-size: ${baseFontSizePx}px;
+          line-height: ${typography.lineHeight.relaxed};
+          color: var(--color-text-primary);
         }
-        
+
+        div ul { list-style-type: disc; }
+        div ol { list-style-type: decimal; }
+
         div li {
-          margin: ${Math.round(paragraphSpacing / 2)}px 0;
-          line-height: ${lineHeight};
+          margin: 0.35em 0;
+          padding-left: 0.25em;
+          line-height: ${typography.lineHeight.relaxed};
         }
-        
+
+        div li::marker {
+          color: var(--color-text-secondary);
+        }
+
         div blockquote {
           margin: ${paragraphSpacing * 1.25}px 0;
           padding: ${paragraphSpacing}px ${paragraphSpacing * 1.25}px ${paragraphSpacing}px ${paragraphSpacing * 1.125}px;
-          border-left: 5px solid var(--color-primary);
+          border-left: 4px solid var(--color-primary);
           background: linear-gradient(to right, var(--color-primary-50), var(--color-background-alt));
           color: var(--color-text-primary);
           font-style: italic;
@@ -885,24 +906,19 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           border-radius: 0 var(--radius-md) var(--radius-md) 0;
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
         }
-        
-        div blockquote :first-child {
-          margin-top: 0;
-        }
-        
-        div blockquote :last-child {
-          margin-bottom: 0;
-        }
-        
+
+        div blockquote :first-child { margin-top: 0; }
+        div blockquote :last-child { margin-bottom: 0; }
+
         div code {
           background-color: var(--color-background-container);
           padding: 2px 6px;
           border-radius: 4px;
           font-family: ${typography.fontFamily.mono};
-          font-size: ${fontSize * 0.9}px;
+          font-size: ${Math.round(baseFontSizePx * 0.9)}px;
           color: var(--color-text-primary);
         }
-        
+
         div pre {
           background-color: var(--color-background-container);
           padding: ${paragraphSpacing}px;
@@ -910,14 +926,14 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           overflow: auto;
           margin: ${paragraphSpacing}px 0;
         }
-        
+
         div pre code {
           background: none;
           padding: 0;
           font-family: ${typography.fontFamily.mono};
-          font-size: ${fontSize * 0.875}px;
+          font-size: ${Math.round(baseFontSizePx * 0.875)}px;
         }
-        
+
         div hr {
           border: none;
           border-top: 1px solid var(--color-border-base);
