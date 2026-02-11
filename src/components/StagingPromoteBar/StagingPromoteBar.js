@@ -150,7 +150,7 @@ const StagingPromoteBar = () => {
         gap: 12,
         padding: '8px 16px',
         background: 'var(--color-primary, #6366F1)',
-        color: '#fff',
+        color: 'var(--color-text-on-primary)',
         fontSize: 14,
         boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
       }}
@@ -172,10 +172,10 @@ const StagingPromoteBar = () => {
         type="button"
         onClick={() => setChangesModalOpen(true)}
         style={{
-          background: 'rgba(255,255,255,0.2)',
+          background: 'var(--color-overlay-on-primary)',
           border: '1px solid rgba(255,255,255,0.5)',
           borderRadius: 4,
-          color: '#fff',
+          color: 'var(--color-text-on-primary)',
           cursor: 'pointer',
           fontSize: 13,
           padding: '4px 10px',
@@ -191,7 +191,7 @@ const StagingPromoteBar = () => {
           target="_blank"
           rel="noopener noreferrer"
           style={{
-            color: '#fff',
+            color: 'var(--color-text-on-primary)',
             fontWeight: 600,
             textDecoration: 'underline',
           }}
