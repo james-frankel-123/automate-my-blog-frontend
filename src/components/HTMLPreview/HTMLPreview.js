@@ -16,8 +16,6 @@ const HERO_IMAGE_SENTINEL = '__HERO_IMAGE__';
 
 /** Brief minimum time (ms) for placeholder so transition isn’t jarring; image still swaps in as soon as loaded after this. */
 const HERO_PLACEHOLDER_MIN_MS = 400;
-const KEN_BURNS_MIN_DIMENSION = 1200;
-const KEN_BURNS_MIN_ASPECT_RATIO = 1.15;
 const KEN_BURNS_ANIMATION_SECONDS = 18;
 
 /**
@@ -127,12 +125,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
 
   const showImage = imageLoaded && minTimeElapsed;
   const hasDimensions = imageMetrics.width > 0 && imageMetrics.height > 0;
-  const aspectRatio = hasDimensions ? imageMetrics.width / imageMetrics.height : null;
-  const isLandscapeish = hasDimensions ? aspectRatio >= KEN_BURNS_MIN_ASPECT_RATIO : false;
-  const isLargeEnough = hasDimensions
-    ? imageMetrics.width >= KEN_BURNS_MIN_DIMENSION || imageMetrics.height >= KEN_BURNS_MIN_DIMENSION
-    : false;
-  const shouldApplyKenBurns = isLandscapeish && isLargeEnough;
+  const shouldApplyKenBurns = hasDimensions;
   const kenBurnsActive = shouldApplyKenBurns && showImage;
 
   const wrapperStyle = {
