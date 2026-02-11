@@ -148,7 +148,8 @@ async function setupLoggedIn(page) {
   await page.goto('/dashboard');
   await page.waitForLoadState('load');
   await page.waitForSelector('text=Loading...', { state: 'hidden', timeout: 15000 }).catch(() => {});
-  await page.waitForTimeout(500);
+  // Wait for getRecentAnalysis to complete and state to settle (no localStorage restore)
+  await page.waitForTimeout(1500);
   await removeOverlay(page);
   await page.waitForTimeout(300);
   await removeOverlay(page);

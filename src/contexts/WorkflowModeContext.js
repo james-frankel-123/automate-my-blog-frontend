@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import autoBlogAPI from '../services/api';
-import { isTestMode } from '../utils/storageUtils';
-
 /**
  * Workflow Mode Context
  * Manages global workflow state including Focus vs Workflow modes,
@@ -519,225 +517,6 @@ export const WorkflowModeProvider = ({ children }) => {
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
   const isSuperAdmin = user && user.role === 'super_admin';
 
-  // =============================================================================
-  // WORKFLOW STATE PERSISTENCE (for seamless authentication transitions)
-  // =============================================================================
-  
-  // Save current workflow state to localStorage (auth-aware)
-  const saveWorkflowState = useCallback(() => {
-
-    // Validate that we have meaningful data to save
-    const hasValidAnalysisData = stepResults?.home?.websiteAnalysis?.businessName &&
-                                 stepResults?.home?.websiteAnalysis?.targetAudience &&
-                                 stepResults?.home?.websiteAnalysis?.contentFocus;
-
-    console.log('💾 saveWorkflowState called:', {
-      analysisCompleted,
-      hasValidAnalysisData,
-      websiteUrl,
-      websiteAnalysisUrl: stepResults?.home?.websiteAnalysis?.websiteUrl,
-      businessName: stepResults?.home?.websiteAnalysis?.businessName
-    });
-
-    // Only save if we have valid analysis data when analysis is marked complete
-    if (analysisCompleted && !hasValidAnalysisData) {
-      console.log('❌ Not saving - analysis marked complete but data invalid');
-      return false;
-    }
-
-    // ?test=true: skip persistence so workflow can be tested repeatedly with a clean slate
-    if (isTestMode()) return false;
-
-    try {
-      const workflowStateSnapshot = {
-        // Authentication context
-        userId: user?.id || null,
-        isAuthenticated,
-
-        // Core workflow progression
-        mode,
-        currentWorkflowStep,
-        currentStep,
-        completedWorkflowSteps,
-
-        // Step data and results
-        stepResults,
-        progressiveHeaders,
-
-        // User inputs (may contain sensitive data)
-        websiteUrl,
-        selectedTopic,
-        generatedContent,
-
-        // Workflow status
-        analysisCompleted,
-        strategyCompleted,
-        strategySelectionCompleted,
-
-        // Business logic state
-        selectedCustomerStrategy,
-        contentStrategy,
-        postState,
-        selectedCMS,
-
-        // Research data
-        webSearchInsights,
-
-        // UI state that should persist
-        expandedSteps,
-
-        // Timestamp for validation
-        savedAt: new Date().toISOString(),
-        version: '1.1' // Updated version for auth-aware state
-      };
-
-      localStorage.setItem('automate-my-blog-workflow-state', JSON.stringify(workflowStateSnapshot));
-
-      console.log('✅ Workflow state saved to localStorage');
-
-      return true;
-    } catch (error) {
-      console.error('Failed to save workflow state:', error);
-      return false;
-    }
-  }, [
-    user, isAuthenticated, mode, currentWorkflowStep, currentStep, completedWorkflowSteps, stepResults, progressiveHeaders,
-    websiteUrl, selectedTopic, generatedContent, analysisCompleted, strategyCompleted,
-    strategySelectionCompleted, selectedCustomerStrategy, contentStrategy, postState,
-    selectedCMS, webSearchInsights, expandedSteps
-  ]);
-  
-  // Clear saved workflow state (no deps by design)
-  const clearSavedWorkflowState = useCallback(() => {
-    try {
-      localStorage.removeItem('automate-my-blog-workflow-state');
-      return true;
-    } catch (error) {
-      console.error('Failed to clear saved workflow state:', error);
-      return false;
-    }
-  }, []);
-  
-  // Restore workflow state from localStorage (auth-aware)
-  const restoreWorkflowState = useCallback(() => {
-    if (isTestMode()) {
-      localStorage.removeItem('automate-my-blog-workflow-state');
-      return false;
-    }
-
-    try {
-      const savedState = localStorage.getItem('automate-my-blog-workflow-state');
-      if (!savedState) {
-        return false;
-      }
-      
-      const workflowStateSnapshot = JSON.parse(savedState);
-      
-      // AUTH SECURITY CHECK: Prevent data leakage across user sessions
-      if (workflowStateSnapshot.userId && workflowStateSnapshot.userId !== user?.id) {
-        localStorage.removeItem('automate-my-blog-workflow-state');
-        return false;
-      }
-      
-      // If saved state was authenticated but current user is not, only restore public data
-      if (workflowStateSnapshot.isAuthenticated && !isAuthenticated) {
-        // Restore only non-sensitive workflow state
-        if (workflowStateSnapshot.mode) setMode(workflowStateSnapshot.mode);
-        if (typeof workflowStateSnapshot.currentWorkflowStep === 'number') {
-          setCurrentWorkflowStep(workflowStateSnapshot.currentWorkflowStep);
-        }
-        // Skip user-specific data restoration
-        return true;
-      }
-      
-      // Validate saved state (check version and age)
-      const savedAt = new Date(workflowStateSnapshot.savedAt);
-      const ageHours = (new Date() - savedAt) / (1000 * 60 * 60);
-      
-      if (ageHours > 24) {
-        clearSavedWorkflowState();
-        return false;
-      }
-      
-      // Restore core workflow state
-      if (workflowStateSnapshot.mode) setMode(workflowStateSnapshot.mode);
-      if (typeof workflowStateSnapshot.currentWorkflowStep === 'number') {
-        setCurrentWorkflowStep(workflowStateSnapshot.currentWorkflowStep);
-      }
-      if (typeof workflowStateSnapshot.currentStep === 'number') {
-        setCurrentStep(workflowStateSnapshot.currentStep);
-      }
-      if (workflowStateSnapshot.completedWorkflowSteps) {
-        setCompletedWorkflowSteps(workflowStateSnapshot.completedWorkflowSteps);
-      }
-      
-      // Restore step data
-      if (workflowStateSnapshot.stepResults) {
-        setStepResults(workflowStateSnapshot.stepResults);
-        
-        // Validate that analysis data is complete if marked as completed
-        const restoredAnalysis = workflowStateSnapshot.stepResults.home?.websiteAnalysis;
-        const hasCompleteAnalysisData = restoredAnalysis?.businessName && 
-                                       restoredAnalysis?.targetAudience && 
-                                       restoredAnalysis?.contentFocus;
-        
-        // Analysis data validation check
-        
-        // If analysis is marked complete but data is incomplete, reset completion flag
-        if (workflowStateSnapshot.analysisCompleted && !hasCompleteAnalysisData) {
-          setAnalysisCompleted(false);
-        }
-      }
-      if (workflowStateSnapshot.progressiveHeaders) {
-        setProgressiveHeaders(workflowStateSnapshot.progressiveHeaders);
-      }
-      
-      // Restore user inputs
-      if (workflowStateSnapshot.websiteUrl) setWebsiteUrl(workflowStateSnapshot.websiteUrl);
-      if (workflowStateSnapshot.selectedTopic) setSelectedTopic(workflowStateSnapshot.selectedTopic);
-      if (workflowStateSnapshot.generatedContent) setGeneratedContent(workflowStateSnapshot.generatedContent);
-      
-      // Restore completion status (only if not already handled above)
-      if (typeof workflowStateSnapshot.analysisCompleted === 'boolean' && !workflowStateSnapshot.stepResults) {
-        setAnalysisCompleted(workflowStateSnapshot.analysisCompleted);
-      }
-      if (typeof workflowStateSnapshot.strategyCompleted === 'boolean') {
-        setStrategyCompleted(workflowStateSnapshot.strategyCompleted);
-      }
-      if (typeof workflowStateSnapshot.strategySelectionCompleted === 'boolean') {
-        setStrategySelectionCompleted(workflowStateSnapshot.strategySelectionCompleted);
-      }
-      
-      // Restore business logic state
-      if (workflowStateSnapshot.selectedCustomerStrategy) {
-        setSelectedCustomerStrategy(workflowStateSnapshot.selectedCustomerStrategy);
-      }
-      if (workflowStateSnapshot.contentStrategy) {
-        setContentStrategy(workflowStateSnapshot.contentStrategy);
-      }
-      if (workflowStateSnapshot.postState) setPostState(workflowStateSnapshot.postState);
-      if (workflowStateSnapshot.selectedCMS) setSelectedCMS(workflowStateSnapshot.selectedCMS);
-      
-      // Restore research data
-      if (workflowStateSnapshot.webSearchInsights) {
-        setWebSearchInsights(workflowStateSnapshot.webSearchInsights);
-      }
-      
-      // Restore UI state
-      if (workflowStateSnapshot.expandedSteps) {
-        setExpandedSteps(workflowStateSnapshot.expandedSteps);
-      }
-      
-      // Workflow state successfully restored
-      return true;
-      
-    } catch (error) {
-      console.error('Failed to restore workflow state:', error);
-      localStorage.removeItem('automate-my-blog-workflow-state');
-      return false;
-    }
-  }, [user, isAuthenticated, clearSavedWorkflowState]);
-  
   // Clear user-specific workflow data on logout (SECURITY)
   const clearUserSpecificData = useCallback(() => {
     
@@ -792,26 +571,6 @@ export const WorkflowModeProvider = ({ children }) => {
     
     // Clear progressive headers
     setProgressiveHeaders([]);
-    
-    // Clear saved state from localStorage
-    clearSavedWorkflowState();
-  }, [clearSavedWorkflowState]);
-  
-  // Check if there's saved workflow state available
-  const hasSavedWorkflowState = useCallback(() => {
-    if (isTestMode()) return false;
-    try {
-      const savedState = localStorage.getItem('automate-my-blog-workflow-state');
-      if (!savedState) return false;
-      
-      const workflowStateSnapshot = JSON.parse(savedState);
-      const savedAt = new Date(workflowStateSnapshot.savedAt);
-      const ageHours = (new Date() - savedAt) / (1000 * 60 * 60);
-      
-      return ageHours <= 24; // Valid if less than 24 hours old
-    } catch (error) {
-      return false;
-    }
   }, []);
 
   // =============================================================================
@@ -1064,80 +823,6 @@ export const WorkflowModeProvider = ({ children }) => {
     return stickyWorkflowSteps.find(step => step.type === stepType);
   }, [stickyWorkflowSteps]);
   
-  // Auto-restore workflow state AFTER authentication completes (RACE CONDITION FIX)
-  useEffect(() => {
-    if (authLoading) return;
-    if (isTestMode()) return;
-
-    try {
-      const savedState = localStorage.getItem('automate-my-blog-workflow-state');
-      
-      if (savedState) {
-        const workflowStateSnapshot = JSON.parse(savedState);
-        const savedAt = new Date(workflowStateSnapshot.savedAt);
-        const ageHours = (new Date() - savedAt) / (1000 * 60 * 60);
-        
-        // Validating saved state
-        
-        if (ageHours <= 24) {
-          const _restored = restoreWorkflowState();
-        } else {
-          // Saved state too old, skipping restoration
-        }
-      } else {
-        // No saved state found in localStorage
-      }
-    } catch (error) {
-      console.error('❌ Failed to check for saved workflow state after auth loading:', error);
-    }
-  }, [authLoading, user, isAuthenticated, restoreWorkflowState]); // Wait for auth completion
-  
-  // Fallback restore mechanism - Retry restoration after a delay if race condition still occurs
-  useEffect(() => {
-    let timeoutId;
-    if (authLoading) return;
-    if (isTestMode()) return;
-
-    const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName && 
-                                stepResults.home.websiteAnalysis?.targetAudience &&
-                                stepResults.home.websiteAnalysis?.contentFocus;
-    
-    if (user && isAuthenticated && !hasValidAnalysisData) {
-      const savedState = localStorage.getItem('automate-my-blog-workflow-state');
-      
-      if (savedState) {
-        try {
-          const workflowStateSnapshot = JSON.parse(savedState);
-          const savedUserId = workflowStateSnapshot.userId;
-          const savedBusinessName = workflowStateSnapshot.stepResults?.home?.websiteAnalysis?.businessName;
-          
-          // If localStorage has valid data for current user but state is empty, retry restore
-          if (savedUserId === user.id && savedBusinessName && !hasValidAnalysisData) {
-            timeoutId = setTimeout(() => {
-              const _restored = restoreWorkflowState();
-            }, 500); // Small delay to allow auth context to fully settle
-          }
-        } catch (error) {
-          console.error('❌ Fallback restore setup failed:', error);
-        }
-      }
-    }
-    
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentFocus/targetAudience intentionally not in deps
-  }, [authLoading, user, isAuthenticated, stepResults.home.websiteAnalysis?.businessName, restoreWorkflowState]);
-
-  // ?test=true: clear any persisted workflow state on load so workflow is repeatable
-  useEffect(() => {
-    if (isTestMode()) {
-      localStorage.removeItem('automate-my-blog-workflow-state');
-    }
-  }, []);
-  
   // SECURITY: Clear user data when user logs out (FIXED - track previous auth state)
   useEffect(() => {
     // Get previous authentication state
@@ -1368,14 +1053,7 @@ export const WorkflowModeProvider = ({ children }) => {
     updateTrendingTopics,
     updateCustomerStrategy,
     
-    // =============================================================================
-    // WORKFLOW STATE PERSISTENCE
-    // =============================================================================
-    saveWorkflowState,
-    restoreWorkflowState,
-    clearSavedWorkflowState,
     clearUserSpecificData,
-    hasSavedWorkflowState,
     
     // =============================================================================
     // SESSION MANAGEMENT
@@ -1464,11 +1142,7 @@ export const WorkflowModeProvider = ({ children }) => {
     updateAnalysisCompleted,
     updateTrendingTopics,
     updateCustomerStrategy,
-    saveWorkflowState,
-    restoreWorkflowState,
-    clearSavedWorkflowState,
     clearUserSpecificData,
-    hasSavedWorkflowState,
     initializeSession,
     loadUserAudiences,
     saveAudience,

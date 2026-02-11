@@ -59,12 +59,6 @@ const TestWorkflowConsumer = ({ onContextState }) => {
       <button data-testid="require-auth" onClick={() => workflowMode.requireAuth('test-action')}>
         Require Auth
       </button>
-      <button data-testid="save-state" onClick={() => workflowMode.saveWorkflowState()}>
-        Save State
-      </button>
-      <button data-testid="restore-state" onClick={() => workflowMode.restoreWorkflowState()}>
-        Restore State
-      </button>
       <button data-testid="reset-workflow" onClick={() => workflowMode.resetUnifiedWorkflow()}>
         Reset Workflow
       </button>
@@ -216,24 +210,6 @@ describe('WorkflowModeContext', () => {
       
       expect(result).toBe(true);
       expect(contextState.showAuthModal).toBe(false);
-    });
-  });
-
-  describe('State Persistence', () => {
-    it('provides state persistence functions', async () => {
-      let contextState;
-      renderWithProviders(<TestWorkflowConsumer onContextState={(state) => { contextState = state; }} />);
-      
-      // Context should have persistence functions
-      expect(typeof contextState.saveWorkflowState).toBe('function');
-      expect(typeof contextState.restoreWorkflowState).toBe('function');
-    });
-
-    it('has save and restore buttons available', async () => {
-      renderWithProviders(<TestWorkflowConsumer />);
-      
-      expect(screen.getByTestId('save-state')).toBeInTheDocument();
-      expect(screen.getByTestId('restore-state')).toBeInTheDocument();
     });
   });
 

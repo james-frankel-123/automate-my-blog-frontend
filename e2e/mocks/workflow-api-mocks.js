@@ -311,6 +311,7 @@ async function installWorkflowMocksBase(page, options = {}) {
     { path: '/api/v1/jobs/website-analysis', method: 'POST', body: () => (analysisSyncFails ? { status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) } : { status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_ANALYSIS }) }) },
     { path: '/api/v1/session/create', method: 'POST', body: () => json({ session_id: 'e2e-session-id' }) },
     { path: '/api/v1/auth/me', method: 'GET', body: () => json({ success: true, user: MOCK_USER }) },
+    { path: '/api/v1/user/recent-analysis', method: 'GET', body: () => json(MOCK_ANALYSIS) },
     { path: '/api/v1/auth/refresh', method: 'POST', body: () => json({ success: true, accessToken: fakeJWT(), refreshToken: fakeJWT() }) },
     { path: '/api/v1/auth/logout', method: 'POST', body: () => json({}) },
     { path: '/api/v1/user/credits', method: 'GET', body: () => json({ data: creditsPayload }) },
@@ -436,75 +437,13 @@ async function installWorkflowMocksBase(page, options = {}) {
   });
 }
 
-/** Minimal workflow state so App shows dashboard (not onboarding funnel) for E2E. */
-function getE2ECompletedWorkflowState() {
-  return {
-    userId: MOCK_USER.id,
-    isAuthenticated: true,
-    mode: 'authenticated',
-    currentWorkflowStep: 1,
-    currentStep: 1,
-    completedWorkflowSteps: ['home'],
-    stepResults: {
-      home: {
-        websiteAnalysis: {
-          businessType: 'Technology',
-          businessName: 'Example Inc',
-          targetAudience: 'Developers and technical leads',
-          contentFocus: 'Developer tools, APIs, and best practices',
-          brandVoice: 'Professional, helpful',
-          description: 'Example Inc provides developer tools.',
-          keywords: [],
-          decisionMakers: '',
-          endUsers: '',
-          customerProblems: [],
-          searchBehavior: '',
-          customerLanguage: [],
-          contentIdeas: ['Getting started with APIs', 'Best practices for developers'],
-          connectionMessage: '',
-          businessModel: '',
-          websiteGoals: '',
-          blogStrategy: '',
-          scenarios: [],
-          brandColors: { primary: '', secondary: '', accent: '' },
-          websiteUrl: 'https://example.com'
-        },
-        webSearchInsights: { brandResearch: null, keywordResearch: null, researchQuality: 'basic' },
-        analysisCompleted: true,
-        ctas: [],
-        ctaCount: 0,
-        hasSufficientCTAs: false
-      },
-      audience: { customerStrategy: null, targetSegments: [] },
-      content: { trendingTopics: [], selectedContent: null, finalContent: '' },
-      analytics: { performance: null }
-    },
-    analysisCompleted: true,
-    strategyCompleted: false,
-    strategySelectionCompleted: false,
-    websiteUrl: 'https://example.com',
-    selectedTopic: null,
-    generatedContent: '',
-    savedAt: new Date().toISOString(),
-    version: '1.1'
-  };
-}
-
-/** Inject localStorage tokens and completed workflow state so app shows dashboard. Call before goto. */
+/** Inject localStorage tokens so app treats user as logged in. App loads analysis via getRecentAnalysis mock. Call before goto. */
 async function injectLoggedInUser(page) {
   const token = fakeJWT();
-  const workflowState = getE2ECompletedWorkflowState();
-  await page.addInitScript((t, stateJson) => {
+  await page.addInitScript((t) => {
     localStorage.setItem('accessToken', t);
     localStorage.setItem('refreshToken', t);
-    if (stateJson) {
-      try {
-        localStorage.setItem('automate-my-blog-workflow-state', stateJson);
-      } catch (e) {
-        // ignore
-      }
-    }
-  }, token, JSON.stringify(workflowState));
+  }, token);
 }
 
 module.exports = {

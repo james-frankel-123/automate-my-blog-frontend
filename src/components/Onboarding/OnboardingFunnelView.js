@@ -121,7 +121,6 @@ function OnboardingFunnelView() {
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
     navigateToTab: _navigateToTab,
-    saveWorkflowState,
     showAuthModal,
     setShowAuthModal,
     authContext,
@@ -289,8 +288,7 @@ function OnboardingFunnelView() {
 
   const handleContentNarrationComplete = useCallback(() => {
     setFunnelComplete(true);
-    saveWorkflowState?.();
-  }, [saveWorkflowState]);
+  }, []);
 
   // When analysis starts loading, scroll to "What I found" placeholders so they're visible
   const prevLoading = useRef(false);
@@ -768,8 +766,7 @@ function OnboardingFunnelView() {
     setOriginalAnalysisSnapshot(null);
     setEditedBusinessProfile(null);
     setUnlocked((u) => ({ ...u, audienceNarration: true, audienceOutput: true }));
-    saveWorkflowState?.();
-  }, [analysis, businessProfile, saveWorkflowState]);
+  }, [analysis, businessProfile]);
 
   const handleEditAnalysis = useCallback(() => {
     setOriginalAnalysisSnapshot(businessProfile);
