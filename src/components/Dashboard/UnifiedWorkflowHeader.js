@@ -180,9 +180,8 @@ const UnifiedWorkflowHeader = ({
     return () => {
       timeouts.forEach(timeout => clearTimeout(timeout));
     };
-    // Only re-run when enableSequentialAnimation changes; use ref for onSequenceComplete to avoid
-    // effect re-running every parent render (which cleared timeouts and left title stuck at "The")
-  }, [enableSequentialAnimation]);
+    // Re-run only when enableSequentialAnimation changes; animationComplete in deps for exhaustive-deps
+  }, [enableSequentialAnimation, animationComplete]);
 
   // Skip animation handler
   const handleSkipAnimation = () => {
