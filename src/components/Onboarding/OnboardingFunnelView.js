@@ -763,7 +763,7 @@ function OnboardingFunnelView() {
         currentStep={0}
         enableSequentialAnimation={true}
         inputIsEditing={true}
-        onSequenceComplete={() => setHeaderAnimationComplete(true)}
+        onSequenceComplete={() => setTimeout(() => setHeaderAnimationComplete(true), 500)}
       />
 
       <section ref={(el) => (sectionRefs.current.websiteInput = el)}>
