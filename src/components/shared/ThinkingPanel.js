@@ -81,7 +81,7 @@ function ThinkingPanel({
   phase,
   detail,
   workingForYouLabel,
-  progressPreamble,
+  progressPreamble: _progressPreamble,
   fallbackStep,
   dataTestId = 'thinking-panel',
 }) {

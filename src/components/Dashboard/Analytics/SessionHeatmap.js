@@ -9,6 +9,7 @@ const SessionHeatmap = ({ dateRange }) => {
 
   useEffect(() => {
     loadSessionData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadSessionData uses dateRange from closure
   }, [dateRange]);
 
   const loadSessionData = async () => {

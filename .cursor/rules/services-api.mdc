@@ -1,0 +1,12 @@
+---
+description: API service layer and backend contracts
+globs: src/services/**/*.js
+alwaysApply: false
+---
+
+# Services / API Layer
+
+- **Contracts**: Request/response shapes and endpoints must match `docs/API_SPECIFICATION.md`. Do not change API contracts without updating that doc and checking backend compatibility.
+- **Base**: Use the shared client in `src/services/api.js` for HTTP; keep endpoint paths and payloads consistent with the spec.
+- **Errors**: Handle errors explicitly; surface meaningful messages for UI. Do not swallow errors.
+- **Streaming/SSE**: Follow existing job stream and SSE patterns; see `docs/` for streaming contracts.

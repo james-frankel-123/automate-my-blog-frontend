@@ -669,7 +669,7 @@ const BillingSettings = () => {
       title: 'Invoice',
       dataIndex: 'invoiceUrl',
       key: 'invoiceUrl',
-      render: (url, record) => url ? (
+      render: (url, _record) => url ? (
         <Button size="small" type="link" href={url} target="_blank">
           View Invoice
         </Button>
@@ -1130,7 +1130,7 @@ const SubscriptionSettings = () => {
   const [usageHistory, setUsageHistory] = useState([]);
   const [requestingPlan, setRequestingPlan] = useState(false);
   const [userCredits, setUserCredits] = useState(null);
-  const [loadingCredits, setLoadingCredits] = useState(true);
+  const [_loadingCredits, setLoadingCredits] = useState(true);
   
   // Calculate usage statistics from billing service (includes referral rewards)
   const usageLimit = userCredits?.totalCredits || 1; // Default to 1 free post if billing service not available

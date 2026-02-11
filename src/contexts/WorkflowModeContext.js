@@ -26,7 +26,7 @@ export const WorkflowModeProvider = ({ children }) => {
   // AUTHENTICATION INTEGRATION
   // =============================================================================
   
-  const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+  const { user, isAuthenticated, loading: authLoading, logout: _logout } = useAuth();
   
   // Track previous authentication state for logout detection
   const prevAuthStateRef = useRef(null);
@@ -478,6 +478,7 @@ export const WorkflowModeProvider = ({ children }) => {
     } catch (error) {
       console.error('🔍 DEBUG: Failed to adopt session - error details:', error);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- updateAnalysisCompleted/updateStickyWorkflowStep/updateWebsiteAnalysis from context
   }, [sessionId, user, loadUserAudiences, audiences]);
 
   // =============================================================================
@@ -485,7 +486,7 @@ export const WorkflowModeProvider = ({ children }) => {
   // =============================================================================
   
   // Authentication gate helper (preserved from WorkflowContainer-v2.js)
-  const requireAuth = useCallback((action = '', context = 'gate') => {
+  const requireAuth = useCallback((_action = '', context = 'gate') => {
     if (!user) {
       setAuthContext(context);
       setShowAuthModal(true);
@@ -497,7 +498,7 @@ export const WorkflowModeProvider = ({ children }) => {
   // Sign-up focused gate helper - defaults to register tab for conversion
   // Optional onSuccessCallback: run after successful login (Fixes #85 - save/post flow)
   // Callback stored in ref to avoid state-driven re-renders that trigger React #301.
-  const requireSignUp = useCallback((action = '', context = 'Create your account', onSuccessCallback = null) => {
+  const requireSignUp = useCallback((_action = '', _context = 'Create your account', onSuccessCallback = null) => {
     if (!user) {
       setAuthContext('register');
       setShowAuthModal(true);
@@ -605,6 +606,17 @@ export const WorkflowModeProvider = ({ children }) => {
     strategySelectionCompleted, selectedCustomerStrategy, contentStrategy, postState,
     selectedCMS, webSearchInsights, expandedSteps
   ]);
+  
+  // Clear saved workflow state (no deps by design)
+  const clearSavedWorkflowState = useCallback(() => {
+    try {
+      localStorage.removeItem('automate-my-blog-workflow-state');
+      return true;
+    } catch (error) {
+      console.error('Failed to clear saved workflow state:', error);
+      return false;
+    }
+  }, []);
   
   // Restore workflow state from localStorage (auth-aware)
   const restoreWorkflowState = useCallback(() => {
@@ -724,18 +736,7 @@ export const WorkflowModeProvider = ({ children }) => {
       localStorage.removeItem('automate-my-blog-workflow-state');
       return false;
     }
-  }, [user, isAuthenticated]);
-  
-  // Clear saved workflow state
-  const clearSavedWorkflowState = useCallback(() => {
-    try {
-      localStorage.removeItem('automate-my-blog-workflow-state');
-      return true;
-    } catch (error) {
-      console.error('Failed to clear saved workflow state:', error);
-      return false;
-    }
-  }, []);
+  }, [user, isAuthenticated, clearSavedWorkflowState]);
   
   // Clear user-specific workflow data on logout (SECURITY)
   const clearUserSpecificData = useCallback(() => {
@@ -903,7 +904,7 @@ export const WorkflowModeProvider = ({ children }) => {
   const autoScrollToTab = useCallback((tabKey, options = {}) => {
     const {
       smooth = true,
-      offset = -100,
+      offset: _offset = -100,
       preserveWorkflowMode = false
     } = options;
     
@@ -1026,6 +1027,7 @@ export const WorkflowModeProvider = ({ children }) => {
     if (!isWorkflowMode) return false;
     const currentStep = getCurrentStep();
     return currentStep && currentStep.tab === tabKey;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getCurrentStep from same context
   }, [isWorkflowMode, currentWorkflowStep]);
   
   // =============================================================================
@@ -1078,7 +1080,7 @@ export const WorkflowModeProvider = ({ children }) => {
         // Validating saved state
         
         if (ageHours <= 24) {
-          const restored = restoreWorkflowState();
+          const _restored = restoreWorkflowState();
         } else {
           // Saved state too old, skipping restoration
         }
@@ -1112,7 +1114,7 @@ export const WorkflowModeProvider = ({ children }) => {
           // If localStorage has valid data for current user but state is empty, retry restore
           if (savedUserId === user.id && savedBusinessName && !hasValidAnalysisData) {
             timeoutId = setTimeout(() => {
-              const restored = restoreWorkflowState();
+              const _restored = restoreWorkflowState();
             }, 500); // Small delay to allow auth context to fully settle
           }
         } catch (error) {
@@ -1126,6 +1128,7 @@ export const WorkflowModeProvider = ({ children }) => {
         clearTimeout(timeoutId);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentFocus/targetAudience intentionally not in deps
   }, [authLoading, user, isAuthenticated, stepResults.home.websiteAnalysis?.businessName, restoreWorkflowState]);
 
   // ?test=true: clear any persisted workflow state on load so workflow is repeatable
@@ -1193,6 +1196,7 @@ export const WorkflowModeProvider = ({ children }) => {
     };
     
     handleAuthenticationChange();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- stepResults used inside; adoptAnonymousSession/initializeSession/loadUserAudiences stable
   }, [user, isAuthenticated, authLoading, sessionId, sessionDataLoaded]);
   
   // Memoize context value so consumers only re-render when actual state changes.
@@ -1398,6 +1402,7 @@ export const WorkflowModeProvider = ({ children }) => {
     // =============================================================================
     WORKFLOW_STEPS,
     TAB_ORDER
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- many context helpers intentionally excluded to avoid re-create on every render
   }), [
     mode,
     user,

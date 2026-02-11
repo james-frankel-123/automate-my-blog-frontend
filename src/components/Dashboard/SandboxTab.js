@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Card, Button, Empty, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Alert, Table } from 'antd';
+import React, { useState } from 'react';
+import { Card, Button, Empty, Tag, Space, Switch, Divider, Select, Row, Col, Typography, message, Alert } from 'antd';
 import { 
   SearchOutlined,
   RobotOutlined,
@@ -45,8 +45,8 @@ const defaultAutomationSettings = {
   failedRuns: 0
 };
 
-// Highlight test cases data
-const highlightTestCases = [
+// Highlight test cases data (reserved for future use)
+const _highlightTestCases = [
   {
     id: 'stat-highlight',
     title: 'Statistic Highlight',
@@ -197,7 +197,7 @@ const SandboxTab = () => {
   
   // Calendar state
   const [calendarViewMode, setCalendarViewMode] = useState('list'); // 'list' or 'calendar'
-  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [calendarEvents, _setCalendarEvents] = useState([]);
   
   // Check if user has access to sandbox features
   const hasAccess = isSuperAdmin;

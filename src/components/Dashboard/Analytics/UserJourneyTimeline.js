@@ -5,7 +5,7 @@ import autoBlogAPI from '../../../services/api';
 
 const { Option } = Select;
 
-const UserJourneyTimeline = ({ dateRange }) => {
+const UserJourneyTimeline = ({ dateRange: _dateRange }) => {
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [journeyData, setJourneyData] = useState(null);
   const [loading, setLoading] = useState(false);

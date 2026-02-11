@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Table, Tag, Dropdown, Space, Switch, Divider, Input, Select, Row, Col, Typography, message, Modal, Progress } from 'antd';
+import { Card, Button, Table, Tag, Dropdown, Space, Switch, Input, Select, Row, Col, Typography, message, Modal, Progress } from 'antd';
 import { 
   PlusOutlined, 
   ScheduleOutlined,
@@ -27,9 +27,7 @@ import enhancedContentAPI from '../../services/enhancedContentAPI';
 import SchedulingModal from '../Modals/SchedulingModal';
 import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 import { ComponentHelpers } from '../Workflow/interfaces/WorkflowComponentInterface';
-import MarkdownPreview from '../MarkdownPreview/MarkdownPreview';
 import StreamingPreview from '../StreamingTestbed/StreamingPreview';
-import TypographySettings from '../TypographySettings/TypographySettings';
 import FormattingToolbar from '../FormattingToolbar/FormattingToolbar';
 import ExportModal from '../ExportModal/ExportModal';
 import { EmptyState } from '../EmptyStates';
@@ -325,7 +323,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Workflow content generation state
   const [contentGenerated, setContentGenerated] = useState(false);
   const [generatingContent, setGeneratingContent] = useState(false);
-  const [generatingImages, setGeneratingImages] = useState(false);
+  const [, setGeneratingImages] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(null); // { progress, currentStep, status } from job polling
   const [relatedContentSteps, setRelatedContentSteps] = useState([]); // [{ id, label, status, count? }] for fetch steps UI
   const [availableTopics, setAvailableTopics] = useState([]);
@@ -357,8 +355,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [relatedTweets, setRelatedTweets] = useState([]); // Fetched in background after stream starts; shown alongside post
   const [relatedArticles, setRelatedArticles] = useState([]); // News articles from search-for-topic-stream; shown alongside post
   const [relatedVideos, setRelatedVideos] = useState([]); // YouTube videos from search-for-topic-stream; shown alongside post
-  const [postState, setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
-  
+  const [postState, _setPostState] = useState('draft'); // 'draft', 'exported', 'locked'
+  // CTAs returned with generated content (result.ctas / data.ctas) for preview styling and "CTAs in this post" list
+  const [postCTAs, setPostCTAs] = useState([]);
+
   // Editor state for TipTap integration
   const [richTextEditor, setRichTextEditor] = useState(null);
 
@@ -387,13 +387,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
   // CTA state management
   const [organizationCTAs, setOrganizationCTAs] = useState([]);
-  const [ctasLoading, setCtasLoading] = useState(false);
-  const [hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
+  const [_ctasLoading, setCtasLoading] = useState(false);
+  const [_hasSufficientCTAs, setHasSufficientCTAs] = useState(false);
   const [showManualCTAModal, setShowManualCTAModal] = useState(false);
+  // When user clicks Create Post but has no CTAs, we show CTA modal first; this stores the topic to start after they submit/skip (issue #339)
+  const [pendingTopicIdAfterCTA, setPendingTopicIdAfterCTA] = useState(null);
+  const ctaPromptSkippedForSessionRef = React.useRef(false);
 
   // User credits state (live from API)
   const [userCredits, setUserCredits] = useState(null);
-  const [loadingCredits, setLoadingCredits] = useState(false);
+  const [_loadingCredits, setLoadingCredits] = useState(false);
 
   // UI helpers
   const responsive = ComponentHelpers.getResponsiveStyles();
@@ -486,6 +489,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         clearInterval(autosaveInterval);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- editingContent/handleAutosave intentionally excluded to avoid resets
   }, [contentGenerated, currentDraft]); // Re-setup when editing state changes, but not on every content change
 
   // Keyboard shortcut for manual save (Ctrl+S / Cmd+S)
@@ -506,6 +510,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         document.removeEventListener('keydown', handleKeyDown);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleAutosave stable
   }, [contentGenerated, currentDraft, editingContent]);
 
   // Fetch CTAs when organization ID is available
@@ -556,6 +561,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }, 300);
       return () => clearTimeout(t);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- selectedTopic?.id used for scroll trigger only
   }, [generatingContent, selectedTopic?.id]);
 
   const loadPosts = async () => {
@@ -700,6 +706,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       setTopicImageGeneratingIndex(null);
       setHint(systemVoice.topics.generatingTopics, 'hint', 0);
 
+      // Reset CTA prompt skip so "need to create CTAs" modal can show again for this topic generation flow
+      ctaPromptSkippedForSessionRef.current = false;
+
       const creditsPromise = user ? api.getUserCredits().catch(() => null) : Promise.resolve(null);
       const ctasPromise = organizationId
         ? api.getOrganizationCTAs(organizationId).catch(() => null)
@@ -717,16 +726,31 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               setHint(systemVoice.topics.topicsStreamingIn(next.length), 'hint', 0);
               return next;
             });
+            // Allow topic selection as soon as text streams in; don't wait for images
+            setTopicsGenerationInProgress(false);
           },
           onTopicImageStart: (data) => {
             setTopicImageGeneratingIndex(data?.index != null ? data.index : null);
           },
           onTopicImageComplete: (topic, index) => {
+            if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+              console.log('[HeroImage] topic-image-complete', { index, topicId: topic?.id, image: topic?.image ? `${String(topic.image).slice(0, 60)}...` : topic?.image });
+            }
             setTopicImageGeneratingIndex((prev) => (prev === index ? null : prev));
             setAvailableTopics((prev) => {
               const next = [...prev];
               if (next[index] != null && topic?.image) next[index] = { ...next[index], image: topic.image };
               return next;
+            });
+            // So preview gets heroImageUrl: keep selectedTopic in sync when its topic's image arrives
+            setSelectedTopic((prev) => {
+              if (prev?.id != null && topic?.id != null && prev.id === topic.id && topic?.image) {
+                if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+                  console.log('[HeroImage] selectedTopic updated with image', { topicId: prev.id });
+                }
+                return { ...prev, image: topic.image };
+              }
+              return prev;
             });
           },
         }
@@ -834,13 +858,44 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         );
       }
 
-      // Step 1: Fetch related content (tweets, articles, videos) with visible steps before blog generation
+      // If no CTAs exist, prompt user to add CTAs before generating (issue #339)
+      // Re-fetch CTAs when user clicks Create Post so we use live API result and avoid stale state
+      let ctasForCheck = { ctas: organizationCTAs, hasSufficient: _hasSufficientCTAs };
+      if (organizationId) {
+        try {
+          const ctasResponse = await api.getOrganizationCTAs(organizationId);
+          ctasForCheck = {
+            ctas: ctasResponse.ctas || [],
+            hasSufficient: ctasResponse.has_sufficient_ctas || false
+          };
+          setOrganizationCTAs(ctasForCheck.ctas);
+          setHasSufficientCTAs(ctasForCheck.hasSufficient);
+        } catch (err) {
+          console.error('Failed to fetch CTAs for Create Post check:', err);
+        }
+      }
+      if (!ctasForCheck.hasSufficient && ctasForCheck.ctas.length === 0 && !ctaPromptSkippedForSessionRef.current) {
+        setPendingTopicIdAfterCTA(topicId);
+        setShowManualCTAModal(true);
+        contentGenerationInProgressRef.current = false;
+        setGeneratingContent(false);
+        setSelectedTopic(null);
+        return;
+      }
+
+      // Step 1: Fetch related content (tweets, articles, videos, CTAs) with visible steps before blog generation
+      const ctasForGeneration = ctasForCheck.ctas || [];
       const fetchSteps = [
+        { id: 'ctas', label: systemVoice.content.fetchCTAs, status: RelatedContentStepStatus.PENDING },
         { id: 'tweets', label: systemVoice.content.fetchTweets, status: RelatedContentStepStatus.PENDING },
         { id: 'articles', label: systemVoice.content.fetchArticles, status: RelatedContentStepStatus.PENDING },
         { id: 'videos', label: systemVoice.content.fetchVideos, status: RelatedContentStepStatus.PENDING },
       ];
       setRelatedContentSteps(fetchSteps);
+      // CTAs are already loaded from the Create Post check; mark step done immediately
+      setRelatedContentSteps((prev) =>
+        prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.DONE, count: ctasForGeneration.length } : s))
+      );
 
       // Use combined tweets+videos endpoint (backend PR #178) for speed
       const runTweetsAndVideos = () =>
@@ -912,10 +967,13 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         )
       );
 
-      // Fire related content fetches in background; don't wait. Blog stream starts immediately
-      // with placeholders; StreamingPreview substitutes tweets/videos/articles when they arrive.
-      runTweetsAndVideos();
-      runArticleStream();
+      // Fetch related content first; show progress UI; then pass into blog generation so content is embedded in the post
+      const [tweetsVideosResult, articlesResult] = await Promise.all([
+        runTweetsAndVideos(),
+        runArticleStream()
+      ]);
+      const [tweetsArr = [], videosArr = []] = Array.isArray(tweetsVideosResult) ? tweetsVideosResult : [[], []];
+      const articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
 
       // Determine if enhanced generation should be used based on available organization data
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
@@ -933,9 +991,10 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
       const enhancementOptions = {
         useEnhancedGeneration: shouldUseEnhancement,
-        preloadedTweets: [],
-        preloadedArticles: [],
-        preloadedVideos: [],
+        preloadedTweets: tweetsArr,
+        preloadedArticles: articlesArr,
+        preloadedVideos: videosArr,
+        ctas: ctasForGeneration,
         goal: contentStrategy.goal,
         voice: contentStrategy.voice,
         template: contentStrategy.template,
@@ -983,7 +1042,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             stepResults?.home?.webSearchInsights || {},
             enhancementOptions
           );
-          setRelatedContentSteps([]); // Clear fetch steps; related content loads in background and substitutes
+          setRelatedContentSteps([]); // Clear fetch steps; blog generation starts with embedded related content
           setEditingContent('');
           setContentViewMode('preview');
           let accumulatedChunks = '';
@@ -1002,7 +1061,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 const finalContent = fromComplete || accumulatedChunks;
                 if (finalContent) setEditingContent(finalContent);
                 setContentGenerated(true);
-                resolve({ success: true, content: finalContent, blogPost: data?.blogPost ?? data?.result });
+                const ctas = Array.isArray(data?.ctas) ? data.ctas : [];
+                setPostCTAs(ctas);
+                resolve({ success: true, content: finalContent, blogPost: data?.blogPost ?? data?.result, ctas });
               },
               onError: (errData) => {
                 reject(new Error(errData?.message || 'Stream error'));
@@ -1035,7 +1096,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 createdAt: saveResult.post.created_at ?? new Date().toISOString(),
                 topic: topic,
                 blogPost: result.blogPost,
-                relatedTweets: relatedTweets?.length ? relatedTweets : undefined
+                relatedTweets: relatedTweets?.length ? relatedTweets : undefined,
+                postCTAs: result.ctas || []
               });
               setLastSavedContent(streamContent);
               setLastSaved(new Date());
@@ -1069,6 +1131,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       if (result.success) {
         setEditingContent(normalizeContentString(result.content) || result.content);
         setContentGenerated(true);
+        setPostCTAs(Array.isArray(result.ctas) ? result.ctas : []);
 
         // If images are generating in background, show indicator and update when ready
         if (result.imageGenerationPromise) {
@@ -1148,7 +1211,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
             status: 'draft',
             createdAt: savedPost.created_at ?? savedPost.createdAt ?? new Date().toISOString(),
             topic: topic,
-            blogPost: result.blogPost
+            blogPost: result.blogPost,
+            postCTAs: Array.isArray(result.ctas) ? result.ctas : []
           });
           setLastSavedContent(result.content);
           setLastSaved(new Date());
@@ -1186,7 +1250,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               status: 'draft',
               createdAt: saveResult.post.created_at ?? new Date().toISOString(),
               topic: topic,
-              blogPost: result.blogPost
+              blogPost: result.blogPost,
+              postCTAs: Array.isArray(result.ctas) ? result.ctas : []
             });
             setLastSavedContent(result.content);
             setLastSaved(new Date());
@@ -1315,14 +1380,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     }
   };
 
-  // Inject related content placeholder at end of post (e.g. [ARTICLE:0], [VIDEO:1])
-  const handleInjectRelated = (type, index) => {
-    const token = `[${type}:${index}]`;
-    const insert = (editingContent?.trim() ? '\n\n' : '') + token + '\n\n';
-    handleContentChange((editingContent || '') + insert);
-    message.success(`Added ${type.toLowerCase()} to post`);
-  };
-  
   // Autosave function - saves silently without user notifications
   const handleAutosave = async (showUserFeedback = false) => {
     if (currentDraft) {
@@ -1430,6 +1487,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       setCurrentDraft(null);
                       setSelectedTopic(null);
                       setEditingContent('');
+                      setPostCTAs([]);
                       setAvailableTopics([]);
                       setLastSavedContent('');
                       setLastSaved(null);
@@ -1485,8 +1543,8 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     }));
   };
 
-  // Typography handler
-  const handleTypographyChange = (newTypography) => {
+  // Typography handler (reserved for future use)
+  const _handleTypographyChange = (newTypography) => {
     setTypography(newTypography);
   };
 
@@ -1578,6 +1636,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }, 800);
       return () => clearTimeout(t);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- forceWorkflowMode intentionally excluded
   }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent, selectedCustomerStrategy, stepResults?.home?.websiteAnalysis]);
 
   // Edit post functionality - restore post to editor
@@ -1750,6 +1809,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       setCurrentDraft(null);
       setSelectedTopic(null);
       setEditingContent('');
+      setPostCTAs([]);
       setAvailableTopics([]);
       setLastSavedContent('');
       setLastSaved(null);
@@ -1786,6 +1846,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         setHasSufficientCTAs(updatedCTAs.has_sufficient_ctas || false);
 
         setShowManualCTAModal(false);
+        // If user was prompted from Create Post (issue #339), continue with content generation
+        if (pendingTopicIdAfterCTA) {
+          const topicId = pendingTopicIdAfterCTA;
+          setPendingTopicIdAfterCTA(null);
+          setTimeout(() => handleTopicSelection(topicId), 0);
+        }
       }
     } catch (error) {
       console.error('Failed to add manual CTAs:', error);
@@ -1795,8 +1861,15 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
   // Handle user choosing to skip manual CTA entry
   const handleSkipManualCTAs = () => {
+    ctaPromptSkippedForSessionRef.current = true;
     message.info('Continuing without additional CTAs');
     setShowManualCTAModal(false);
+    // If user was prompted from Create Post (issue #339), continue with content generation
+    if (pendingTopicIdAfterCTA) {
+      const topicId = pendingTopicIdAfterCTA;
+      setPendingTopicIdAfterCTA(null);
+      setTimeout(() => handleTopicSelection(topicId), 0);
+    }
   };
 
   const getPostActions = (post) => {
@@ -1856,7 +1929,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       title: 'Title',
       dataIndex: 'title',
       key: 'title',
-      render: (title, record) => (
+      render: (title, _record) => (
         <div>
           <div style={{ fontWeight: 500, marginBottom: '4px' }}>{title}</div>
         </div>
@@ -2033,24 +2106,27 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         }
                       </Paragraph>
 
-                      {generatingContent && relatedContentSteps.length > 0 && (
-                        <RelatedContentStepsPanel
-                          steps={relatedContentSteps}
-                          title="Preparing related content"
-                        />
-                      )}
-                      {generatingContent && relatedContentSteps.length === 0 && (
-                        <ThinkingPanel
-                          isActive={generatingContent}
-                          currentStep={generationProgress?.currentStep}
-                          progress={generationProgress?.progress}
-                          thoughts={[]}
-                          estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
-                          workingForYouLabel={systemVoice.content.workingForYou}
-                          progressPreamble={systemVoice.content.progressPreamble}
-                          fallbackStep={systemVoice.content.generating}
-                          dataTestId="content-generation-progress"
-                        />
+                      {generatingContent && (
+                        <>
+                          <ThinkingPanel
+                            isActive={generatingContent}
+                            currentStep={generationProgress?.currentStep}
+                            progress={generationProgress?.progress}
+                            thoughts={[]}
+                            estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                            workingForYouLabel={systemVoice.content.workingForYou}
+                            progressPreamble={systemVoice.content.progressPreamble}
+                            fallbackStep={systemVoice.content.generating}
+                            dataTestId="content-generation-progress"
+                          />
+                          {relatedContentSteps.length > 0 && (
+                            <RelatedContentStepsPanel
+                              steps={relatedContentSteps}
+                              title="Preparing related content"
+                              ctas={organizationCTAs}
+                            />
+                          )}
+                        </>
                       )}
                       
                       {/* ENHANCED TOPIC CARDS — stagger reveal */}
@@ -2239,7 +2315,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     tweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                     articles={relatedArticles || []}
                     videos={relatedVideos || []}
-                    onInject={handleInjectRelated}
                   />
 
                   {/* Enhanced Generation Toggle - Standalone Panel */}
@@ -2455,6 +2530,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                               setEditingContent('');
                               setSelectedTopic(null);
                               setCurrentDraft(null);
+                              setPostCTAs([]);
                               setRelatedTweets([]);
                               setRelatedArticles([]);
                               setRelatedVideos([]);
@@ -2794,24 +2870,27 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       }
                     </Paragraph>
 
-                    {generatingContent && relatedContentSteps.length > 0 && (
-                      <RelatedContentStepsPanel
-                        steps={relatedContentSteps}
-                        title="Preparing related content"
-                      />
-                    )}
-                    {generatingContent && relatedContentSteps.length === 0 && (
-                      <ThinkingPanel
-                        isActive={generatingContent}
-                        currentStep={generationProgress?.currentStep}
-                        progress={generationProgress?.progress}
-                        thoughts={[]}
-                        estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
-                        workingForYouLabel={systemVoice.content.workingForYou}
-                        progressPreamble={systemVoice.content.progressPreamble}
-                        fallbackStep={systemVoice.content.generating}
-                        dataTestId="content-generation-progress"
-                      />
+                    {generatingContent && (
+                      <>
+                        <ThinkingPanel
+                          isActive={generatingContent}
+                          currentStep={generationProgress?.currentStep}
+                          progress={generationProgress?.progress}
+                          thoughts={[]}
+                          estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                          workingForYouLabel={systemVoice.content.workingForYou}
+                          progressPreamble={systemVoice.content.progressPreamble}
+                          fallbackStep={systemVoice.content.generating}
+                          dataTestId="content-generation-progress"
+                        />
+                        {relatedContentSteps.length > 0 && (
+                          <RelatedContentStepsPanel
+                            steps={relatedContentSteps}
+                            title="Preparing related content"
+                            ctas={organizationCTAs}
+                          />
+                        )}
+                      </>
                     )}
                     
                     {/* ENHANCED TOPIC CARDS — stagger reveal */}
@@ -3224,12 +3303,30 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   padding: 'var(--space-5)',
                   minHeight: '320px'
                 }}>
+                  {(postCTAs?.length ? postCTAs : currentDraft?.postCTAs || []).length > 0 && (
+                    <div style={{ marginBottom: 12, padding: '10px 14px', backgroundColor: 'var(--color-background-container)', borderRadius: 6, border: '1px solid var(--color-border-base)' }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 6 }}>CTAs in this post</div>
+                      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: 'var(--color-text-primary)' }}>
+                        {(postCTAs?.length ? postCTAs : currentDraft?.postCTAs || []).map((cta, i) => (
+                          <li key={i}>
+                            {cta.href ? (
+                              <a href={cta.href} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-primary)' }}>{cta.text || cta.href}</a>
+                            ) : (
+                              <span>{cta.text || '—'}</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <StreamingPreview
                     content={editingContent || (generatingContent ? 'Waiting for content…' : '')}
                     relatedArticles={relatedArticles || []}
                     relatedVideos={relatedVideos || []}
                     relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                     heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
+                    ctas={postCTAs?.length ? postCTAs : (currentDraft?.postCTAs || [])}
+                    generationComplete={!generatingContent}
                     style={{
                       minHeight: '300px',
                       padding: '20px',
@@ -3292,6 +3389,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     setEditingContent('');
                     setSelectedTopic(null);
                     setCurrentDraft(null);
+                    setPostCTAs([]);
                     setRelatedTweets([]);
                     setRelatedArticles([]);
                     setRelatedVideos([]);
@@ -3375,7 +3473,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 tweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                 articles={relatedArticles || []}
                 videos={relatedVideos || []}
-                onInject={handleInjectRelated}
               />
 
               {/* SEO Analysis Toggle */}
@@ -3431,7 +3528,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     flexDirection: 'column',
                     overflow: 'auto',
                     backgroundColor: 'var(--color-background-body)',
-                    padding: 'var(--space-5)'
+                    padding: '24px'
                   }}>
                     <StreamingPreview
                       content={editingContent || 'Enter your blog content...'}
@@ -3439,18 +3536,23 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                       relatedVideos={relatedVideos || []}
                       relatedTweets={relatedTweets?.length ? relatedTweets : currentDraft?.relatedTweets || []}
                       heroImageUrl={selectedTopic?.image ?? currentDraft?.topic?.image ?? undefined}
+                      ctas={postCTAs?.length ? postCTAs : (currentDraft?.postCTAs || [])}
+                      generationComplete={!generatingContent}
                       style={{
                         minHeight: '400px',
-                        padding: '20px',
-                        backgroundColor: 'var(--color-background-alt)'
+                        padding: '24px',
+                        backgroundColor: 'var(--color-background-alt)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--color-border-light)'
                       }}
                     />
                   </div>
                 ) : (
                   <EditorPane>
-                    <div style={{ position: 'relative', height: '100%' }}>
+                    <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                       <EditorToolbar
                         editor={richTextEditor}
+                        content={editingContent}
                         onBold={() => richTextEditor?.chain().focus().toggleBold().run()}
                         onItalic={() => richTextEditor?.chain().focus().toggleItalic().run()}
                         onUnderline={() => richTextEditor?.chain().focus().toggleUnderline().run()}
@@ -3463,8 +3565,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                         placeholder="Enter your blog content..."
                         minHeight="400px"
                         style={{
-                          marginTop: '8px',
-                          fontSize: '14px'
+                          marginTop: 0,
+                          flex: 1,
+                          minHeight: '360px'
                         }}
                       />
                     </div>
@@ -3474,12 +3577,16 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
               
               {/* Content Actions */}
               <div style={{ 
-                marginTop: '20px', 
+                marginTop: '24px', 
+                padding: '16px 20px',
                 display: 'flex', 
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                backgroundColor: 'var(--color-background-alt)',
+                borderRadius: '8px',
+                border: '1px solid var(--color-border-light)'
               }}>
-                <Space>
+                <Space size="middle">
                   <SaveStatusIndicator 
                     isAutosaving={isAutosaving}
                     lastSaved={lastSaved}
@@ -3488,7 +3595,6 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   <Button 
                     type="default"
                     onClick={handleClosePost}
-                    style={{ marginRight: '8px' }}
                   >
                     Close Post
                   </Button>
@@ -3500,7 +3606,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     style={{
                       backgroundColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
                       borderColor: postState === 'exported' ? 'var(--color-success)' : defaultColors.primary,
-                      fontWeight: '500'
+                      fontWeight: 500
                     }}
                   >
                     {postState === 'exported' ? 'Content Exported' : 'Save Changes'}
@@ -3567,14 +3673,21 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         </Modal>
       )}
 
-      {/* Manual CTA Input Modal */}
+      {/* Manual CTA Input Modal - prompt when no CTAs exist before generating (issue #339) */}
       <ManualCTAInputModal
         visible={showManualCTAModal}
-        onCancel={() => setShowManualCTAModal(false)}
+        onCancel={() => {
+          setShowManualCTAModal(false);
+          if (pendingTopicIdAfterCTA) {
+            setPendingTopicIdAfterCTA(null);
+            contentGenerationInProgressRef.current = false;
+            setGeneratingContent(false);
+          }
+        }}
         onSubmit={handleManualCTAsSubmit}
         onSkip={handleSkipManualCTAs}
         existingCTAs={organizationCTAs}
-        minCTAs={3}
+        minCTAs={pendingTopicIdAfterCTA ? 1 : 3}
         websiteName={organizationName || 'your website'}
       />
     </div>

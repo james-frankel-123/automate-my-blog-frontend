@@ -20,7 +20,7 @@ function toDisplayString(val) {
   if (typeof val === 'string') return val.trim() || '';
   if (typeof val === 'object') {
     const parts = [];
-    Object.entries(val).forEach(([k, v]) => {
+    Object.entries(val).forEach(([_k, v]) => {
       if (v == null) return;
       const s = typeof v === 'string' ? v : (typeof v === 'object' ? JSON.stringify(v) : String(v));
       if (s.trim()) parts.push(s);
