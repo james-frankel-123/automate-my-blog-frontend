@@ -61,6 +61,7 @@ export const AnalyticsProvider = ({ children }) => {
       console.error('Failed to track event:', error);
       // Don't throw - analytics failures shouldn't break the app
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- flushEvents stable, intentionally not in deps
   }, [user, workflowWebsiteUrl]);
 
   /**

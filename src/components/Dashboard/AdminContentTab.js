@@ -204,7 +204,7 @@ const AdminContentTab = () => {
       title: 'Flags',
       dataIndex: 'flagCount',
       key: 'flagCount',
-      render: (count, record) => (
+      render: (count, _record) => (
         <div style={{ 
           border: count > 0 ? '2px solid red' : '1px solid #d9d9d9',
           padding: '4px 8px',
@@ -227,7 +227,7 @@ const AdminContentTab = () => {
       title: 'Status',
       dataIndex: 'moderationStatus',
       key: 'moderationStatus',
-      render: (status, record) => (
+      render: (status, _record) => (
         <div style={{ 
           border: status !== 'approved' ? '2px solid red' : '1px solid #d9d9d9',
           padding: '4px 8px',
@@ -248,7 +248,7 @@ const AdminContentTab = () => {
       title: 'AI Confidence',
       dataIndex: 'aiConfidence',
       key: 'aiConfidence',
-      render: (confidence, record) => (
+      render: (confidence, _record) => (
         <div style={{ 
           border: confidence < 70 ? '2px solid red' : '1px solid #d9d9d9',
           padding: '4px 8px',

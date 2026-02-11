@@ -302,7 +302,7 @@ export const topicAPI = {
    * @param {{ onTopicComplete?: (topic: Object) => void, onTopicImageStart?: (data: { index, total, topic }) => void, onTopicImageComplete?: (topic: Object, index: number) => void }} options - Optional stream callbacks
    * @returns {Promise<Object>} Generated topics
    */
-  async generateTrendingTopics(analysisData, selectedStrategy = null, webSearchInsights = {}, options = {}) {
+  async generateTrendingTopics(analysisData, selectedStrategy = null, _webSearchInsights = {}, options = {}) {
     const audienceLabel = analysisData.decisionMakers || analysisData.targetAudience || 'General Audience';
     const targetAudience = selectedStrategy
       ? `${audienceLabel} struggling with: ${selectedStrategy.customerProblem}`
@@ -352,7 +352,12 @@ export const topicAPI = {
           },
           onComplete: (data) => {
             const list = data?.topics?.length ? data.topics : accumulated;
-            resolve(list.slice(0, maxTopics).map((t, i) => mapTopic(t, i)));
+            const base = list.slice(0, maxTopics);
+            // Preserve .image from accumulated (topic-image-complete); backend complete payload may omit image URLs
+            const withImages = base.map((topic, i) =>
+              accumulated[i]?.image != null ? { ...topic, image: accumulated[i].image } : topic
+            );
+            resolve(withImages.map((t, i) => mapTopic(t, i)));
           },
           onError: (err) => {
             if (accumulated.length > 0) {
@@ -497,6 +502,7 @@ export const contentAPI = {
           return {
             success: true,
             content: enhancedResult.content,
+            ctas: enhancedResult.ctas || [],
             blogPost,
             savedPost: enhancedResult.blogPost?.id ? enhancedResult.blogPost : undefined,
             imageGenerationPromise: enhancedResult.imageGenerationPromise,
@@ -611,12 +617,14 @@ export const contentAPI = {
       : `Make this engaging and actionable for the target audience. ${webSearchInsights.researchQuality === 'enhanced' ? 'Enhanced with web research insights including brand guidelines and keyword analysis.' : ''}`;
 
     const organizationId = enhancementOptions?.organizationId ?? null;
+    const ctas = enhancementOptions?.ctas ?? enhancementOptions?.organizationCTAs ?? [];
     const { connectionId } = await autoBlogAPI.generateBlogStream({
       topic: selectedTopic,
       businessInfo: analysisData ?? {},
       organizationId,
       additionalInstructions: contextPrompt,
       tweets: tweets.length ? tweets : undefined,
+      ctas: Array.isArray(ctas) ? ctas : undefined,
       options: {
         preloadedTweets: tweets,
         preloadedArticles,

@@ -62,7 +62,7 @@ const AdminLeadsTab = () => {
   // UI State
   const [selectedLead, setSelectedLead] = useState(null);
   const [showLeadDetails, setShowLeadDetails] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  const [, setShowFilters] = useState(false);
   const [loadingAnalytics, setLoadingAnalytics] = useState(true);
 
   // Lead status update

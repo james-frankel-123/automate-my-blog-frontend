@@ -25,7 +25,7 @@ const SEOAnalysis = ({
   contentQuality, 
   strategicElements, 
   improvementSuggestions = [], 
-  keywordOptimization,
+  keywordOptimization: _keywordOptimization,
   content, // Add content prop for comprehensive analysis
   context = {}, // Add context prop
   postId = null, // Add postId prop

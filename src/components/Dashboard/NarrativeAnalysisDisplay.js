@@ -89,7 +89,7 @@ const analysisTextStyle = {
  * @param {boolean} [props.isCompletingAnimation] - From parent: checklist completing animation (original PR UI).
  * @param {boolean} [props.isSlideIn] - From parent: checklist slide-in state (original PR UI).
  */
-export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback, onNarrativeComplete, analysisProgress, loading, currentScanningMessage, analysisThoughts, isCompletingAnimation, isSlideIn }) {
+export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallback, onNarrativeComplete, analysisProgress, loading, currentScanningMessage, analysisThoughts, isCompletingAnimation: _isCompletingAnimation, isSlideIn: _isSlideIn }) {
   const {
     scrapingNarrative,
     analysisNarrative,

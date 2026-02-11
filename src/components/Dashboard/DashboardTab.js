@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Button, Space, Typography, message } from 'antd';
-import {
-  PlusOutlined,
-  EditOutlined,
-} from '@ant-design/icons';
+import { Card, Row, Col, Button, Typography } from 'antd';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
-import { format } from 'date-fns';
 import autoBlogAPI from '../../services/api';
 import { systemVoice } from '../../copy/systemVoice';
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
 
 
 const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false, onCreateNewPost }) => {
@@ -36,8 +31,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     saveWorkflowState,
     // Session management
     sessionId,
-    initializeSession,
-    loadUserAudiences
+    initializeSession
   } = useWorkflowMode();
   
   // Keep only UI-specific local state
@@ -90,6 +84,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     };
 
     loadCachedAnalysis();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; many workflow setters used inside
   }, [user, tabMode.mode, forceWorkflowMode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
 
   // Initialize session for anonymous users
@@ -122,6 +117,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
         saveWorkflowState();
       }, 200); // Slightly longer delay for state propagation
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; contentFocus/targetAudience from stepResults
   }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
 
   // Handle create new post action
@@ -179,12 +175,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       console.error('Could not find audience-segments section');
     }
   };
-
-  // Prepare step data for workflow mode
-  const prepareStepData = () => ({
-    selectedAction: 'create-post',
-    timestamp: new Date().toISOString()
-  });
 
   const hasCachedAnalysis = user && tabMode.mode === 'focus' &&
     stepResults.home.websiteAnalysis?.businessName &&

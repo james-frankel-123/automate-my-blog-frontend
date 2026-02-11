@@ -45,22 +45,21 @@ import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
 const DashboardLayout = ({ 
   user: propUser, 
-  loginContext, 
-  workflowContent, 
+  loginContext: _loginContext, 
+  workflowContent: _workflowContent, 
   showDashboard, 
   isMobile, 
   onActiveTabChange,
   // Progressive headers props
-  completedWorkflowSteps = [],
-  stepResults: propStepResults = {},
-  onEditWorkflowStep,
+  completedWorkflowSteps: _completedWorkflowSteps = [],
+  stepResults: _propStepResults = {},
+  onEditWorkflowStep: _onEditWorkflowStep,
   // Force workflow mode for logged-out users
-  forceWorkflowMode = false
+  forceWorkflowMode = false,
+  // When handed off from funnel (topic selected): land on Posts so generation can start
+  initialActiveTab = null
 }) => {
-  // Allow URL ?tab=posts (or other tab) so onboarding funnel can link to /dashboard?tab=posts
-  const tabFromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('tab') : null;
-  const validTab = tabFromUrl && ['dashboard', 'posts', 'audience-segments', 'analytics', 'settings'].includes(tabFromUrl) ? tabFromUrl : null;
-  const [activeTab, setActiveTab] = useState(validTab || 'dashboard');
+  const [activeTab, setActiveTab] = useState(initialActiveTab || 'dashboard');
   const {
     user: contextUser,
     logout,
@@ -91,8 +90,8 @@ const DashboardLayout = ({
   const { setHint } = useSystemHint();
   
   // Restore collapsed state (needed for sidebar)
-  const [collapsed, setCollapsed] = useState(false);
-  const [hasSeenSaveProject, setHasSeenSaveProject] = useState(null);
+  const [collapsed, _setCollapsed] = useState(false);
+  const [_hasSeenSaveProject, setHasSeenSaveProject] = useState(null);
   
   // Step management for logged-out users
   const [currentStep, setCurrentStep] = useState(0);
@@ -104,7 +103,8 @@ const DashboardLayout = ({
   const [projectMode, setProjectMode] = useState(!user || forceWorkflowMode); // Start in project mode for logged-out users or when forced
   const [showSaveProjectButton, setShowSaveProjectButton] = useState(false);
   const [projectJustSaved, setProjectJustSaved] = useState(false);
-  const effectiveShowDashboard = (showDashboard || showDashboardLocal) && !(isNewRegistration && projectMode);
+  // Show sidebar when user has dashboard access, or when they just registered from onboarding (stay in place, show menu)
+  const effectiveShowDashboard = (showDashboard || showDashboardLocal) || isNewRegistration;
 
   // Quota tracking state
   const [userCredits, setUserCredits] = useState(null);
@@ -250,6 +250,7 @@ const DashboardLayout = ({
       
       message.info('Payment was cancelled. You can try again anytime.');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- trackEvent from analytics context
   }, [user, loading, refreshQuota]); // Re-run when user or loading changes
 
   // Check if user has seen Save Project button before and handle login/registration
@@ -263,8 +264,8 @@ const DashboardLayout = ({
         // New user just completed registration - keep in workflow mode
         setProjectMode(true);
         setShowSaveProjectButton(true);
-        // Don't show sidebar until "Save Project" is clicked
-        setShowDashboardLocal(false);
+        // Show sidebar immediately so user stays in place and sees navigation (per onboarding UX)
+        setShowDashboardLocal(true);
       } else {
         // Returning user logging in - go directly to focus mode
         setProjectMode(false);
@@ -374,9 +375,31 @@ const DashboardLayout = ({
         observerCleanup();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTab excluded to prevent feedback loop
   }, [user, onActiveTabChange, projectMode, showDashboardLocal]); // Note: activeTab excluded to prevent feedback loop (observer sets activeTab → useEffect restarts → observer resets)
-  
-  // Handle tab changes with smooth scroll navigation
+
+  // After registration from onboarding: stay in place, slight autoscroll to show blog generation area
+  const hasScrolledForNewRegistrationRef = useRef(false);
+  useEffect(() => {
+    if (!user || !isNewRegistration || hasScrolledForNewRegistrationRef.current) return;
+    hasScrolledForNewRegistrationRef.current = true;
+    const scrollToContent = () => {
+      const postsSection = document.getElementById('posts');
+      const audienceSection = document.getElementById('audience-segments');
+      if (postsSection) {
+        setActiveTab('posts');
+        postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else if (audienceSection) {
+        setActiveTab('audience-segments');
+        audienceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    };
+    const timeoutId = setTimeout(scrollToContent, 300);
+    return () => clearTimeout(timeoutId);
+  }, [user, isNewRegistration]);
+
+  // Handle tab changes with smooth scroll navigation (not wrapped in useCallback to avoid deps churn)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally not useCallback so useEffect listener gets latest handler
   const handleTabChange = (newTab) => {
     // Track tab_switched event
     trackEvent('tab_switched', {
@@ -442,6 +465,7 @@ const DashboardLayout = ({
     return () => {
       window.removeEventListener('navigateToTab', handleCustomNavigation);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleTabChange intentionally not in deps; listener uses latest handler
   }, [handleTabChange]);
 
   // Handle ending impersonation
@@ -499,6 +523,14 @@ const DashboardLayout = ({
       scrollToSectionWhenReady(nextSection);
     }
   };
+
+  // When handed off from funnel with initialActiveTab, scroll to that section once mounted
+  useEffect(() => {
+    if (initialActiveTab && initialActiveTab !== 'dashboard') {
+      const sectionId = initialActiveTab === 'posts' ? 'posts' : initialActiveTab === 'audience-segments' ? 'audience-segments' : 'home';
+      scrollToSectionWhenReady(sectionId);
+    }
+  }, [initialActiveTab]);
 
   const handleStepClick = (stepIndex) => {
     // Only allow navigation to completed steps or current step
@@ -722,8 +754,8 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Posts Section - Unlocked after step 2 (light motion) */}
-        {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience.customerStrategy))) && (
+        {/* Posts Section - Unlocked after step 2, or for new registrations from onboarding (have analysis) */}
+        {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience?.customerStrategy || (isNewRegistration && stepResults.home?.analysisCompleted)))) && (
           <section id="posts" className="workflow-section-enter" style={{ 
             minHeight: '100vh',
             background: 'var(--color-background-body)',
@@ -1330,6 +1362,12 @@ const DashboardLayout = ({
           }}
           context={authContext}
           defaultTab={authContext === 'register' ? 'register' : 'login'}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            setAuthContext(null);
+            setActiveTab('posts');
+            scrollToSectionWhenReady('posts');
+          }}
         />
       )}
 
