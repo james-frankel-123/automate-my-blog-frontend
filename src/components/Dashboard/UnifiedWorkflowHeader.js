@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Typography } from 'antd';
+import { Button, Typography, Steps } from 'antd';
 import { 
   PlusOutlined, 
   GlobalOutlined, 
@@ -26,7 +26,7 @@ const UnifiedWorkflowHeader = ({
   showSaveProjectButton = false,
   onSaveProject,
   isNewRegistration = false,
-  completedSteps: _completedSteps = [],
+  completedSteps = [],
   projectJustSaved = false,
   enableSequentialAnimation = false,
   onSequenceComplete = null,
@@ -43,15 +43,15 @@ const UnifiedWorkflowHeader = ({
   const [displayedSubtitlePart2, setDisplayedSubtitlePart2] = useState('');
   const [showTitleCursor, setShowTitleCursor] = useState(true);
   const [showSubtitleCursor, setShowSubtitleCursor] = useState(false);
-  const [_titleComplete, setTitleComplete] = useState(false);
-  const [_subtitleComplete, setSubtitleComplete] = useState(false);
-  const [_showFlash, _setShowFlash] = useState(null);
+  const [titleComplete, setTitleComplete] = useState(false);
+  const [subtitleComplete, setSubtitleComplete] = useState(false);
+  const [showFlash, setShowFlash] = useState(null);
   const [showClicksHighlight, setShowClicksHighlight] = useState(false);
-  const [_cursorRemoved, setCursorRemoved] = useState(false);
+  const [cursorRemoved, setCursorRemoved] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
-  const [_skipAnimation, setSkipAnimation] = useState(false);
+  const [skipAnimation, setSkipAnimation] = useState(false);
   const [dimText, setDimText] = useState(false);
-  const [_dingPosition, _setDingPosition] = useState(null);
+  const [dingPosition, setDingPosition] = useState(null);
   const [delayedInputIsEditing, setDelayedInputIsEditing] = useState(true);
 
   // Trigger text transition animation when auth state changes
@@ -171,7 +171,6 @@ const UnifiedWorkflowHeader = ({
     return () => {
       timeouts.forEach(timeout => clearTimeout(timeout));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- animationComplete/displayedTitle intentionally excluded
   }, [enableSequentialAnimation, onSequenceComplete]);
 
   // Skip animation handler
@@ -202,8 +201,8 @@ const UnifiedWorkflowHeader = ({
     }, 300);
   };
 
-  // Workflow steps data (reserved for future use)
-  const _workflowSteps = [
+  // Workflow steps data
+  const workflowSteps = [
     {
       title: 'Analyze',
       description: 'Website Analysis',

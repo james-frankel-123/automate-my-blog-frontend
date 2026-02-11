@@ -110,7 +110,6 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for gu
 ## Documentation
 
 - [Docs index](./docs/README.md) – Vision, architecture, goals, and full doc list
-- [AI swarm collaboration](./docs/AI_SWARM_COLLABORATION.md) – Multi-agent / parallel development guidelines
 - [API Specification](./docs/API_SPECIFICATION.md)
 - [Client Integration Guide](./docs/CLIENT_INTEGRATION.md)
 - [E2E Test Setup](./docs/E2E_TEST_SETUP.md)

@@ -38,7 +38,7 @@ const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 
 const ComprehensiveAnalysisTab = () => {
-  const { currentOrganization } = useAuth();
+  const { user, currentOrganization } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [reanalyzing, setReanalyzing] = useState(false);
@@ -60,7 +60,6 @@ const ComprehensiveAnalysisTab = () => {
     if (currentOrganization?.id) {
       loadAnalysisData();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAnalysisData uses currentOrganization from closure
   }, [currentOrganization]);
 
   const loadAnalysisData = async () => {

@@ -97,7 +97,7 @@ const styles = {
 function ChecklistProgress({
   steps = [],
   currentStep,
-  phase: _phase,
+  phase,
   progress,
   estimatedTimeRemaining,
   dataTestId = 'checklist-progress',

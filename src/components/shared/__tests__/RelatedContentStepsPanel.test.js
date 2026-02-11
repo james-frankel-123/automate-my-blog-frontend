@@ -31,16 +31,4 @@ describe('RelatedContentStepsPanel', () => {
     render(<RelatedContentStepsPanel steps={steps} />);
     expect(screen.getByTestId('related-content-steps-panel')).toBeInTheDocument();
   });
-
-  it('renders CTAs when ctas prop is provided', () => {
-    const steps = [{ id: 'ctas', label: 'Fetching CTAs…', status: STATUS.DONE, count: 2 }];
-    const ctas = [
-      { text: 'Book a Demo', href: 'https://example.com/demo' },
-      { text: 'Contact Us', href: '/contact' },
-    ];
-    render(<RelatedContentStepsPanel steps={steps} ctas={ctas} />);
-    expect(screen.getByTestId('related-content-ctas')).toBeInTheDocument();
-    expect(screen.getByText('Book a Demo')).toBeInTheDocument();
-    expect(screen.getByText('Contact Us')).toBeInTheDocument();
-  });
 });

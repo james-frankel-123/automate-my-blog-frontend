@@ -9,7 +9,7 @@ import {
 } from '@ant-design/icons';
 import autoBlogAPI from '../../services/api';
 
-const { Text, Paragraph } = Typography;
+const { Title, Text, Paragraph } = Typography;
 
 /**
  * Analysis History Component
@@ -92,7 +92,6 @@ const AnalysisHistory = ({ onSelectAnalysis, limit = 10 }) => {
 
   useEffect(() => {
     loadHistory();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadHistory runs on mount only
   }, []);
 
   if (loading) {

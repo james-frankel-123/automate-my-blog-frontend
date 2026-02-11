@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { getStreamChunkContentOnly } from '../../utils/streamingUtils';
 import { Button, Card, Typography, Space, Divider, Alert, Input, Collapse } from 'antd';
 import { ArrowLeftOutlined, ClearOutlined, PlayCircleOutlined, SendOutlined, ApiOutlined, StopOutlined, LoginOutlined, LogoutOutlined } from '@ant-design/icons';
 import { extractStreamChunk, extractStreamCompleteContent, normalizeContentString } from '../../utils/streamingUtils';
@@ -164,10 +163,8 @@ function StreamingTestbed() {
   const [liveRelatedTweets, setLiveRelatedTweets] = useState([]);
   const [liveRelatedArticles, setLiveRelatedArticles] = useState([]);
   const [liveRelatedVideos, setLiveRelatedVideos] = useState([]);
-  const [liveOrganizationCTAs, setLiveOrganizationCTAs] = useState([]);
   const [relatedContentSteps, setRelatedContentSteps] = useState([]);
   const streamClosesRef = useRef([]);
-  const articlesTimedOutRef = useRef(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   const appendChunk = useCallback((data) => {
@@ -238,7 +235,6 @@ function StreamingTestbed() {
     setLiveRelatedTweets([]);
     setLiveRelatedArticles([]);
     setLiveRelatedVideos([]);
-    setLiveOrganizationCTAs([]);
     setRelatedContentSteps([]);
     streamClosesRef.current = [];
 
@@ -251,32 +247,13 @@ function StreamingTestbed() {
     const topic = { id: 'testbed-live', title: liveTopicTitle || DEFAULT_LIVE_TOPIC_TITLE };
     const websiteAnalysisData = MINIMAL_WEBSITE_ANALYSIS;
 
-    // Same flow as Posts tab: fetch tweets, articles, videos, CTAs first with visible steps, then start blog stream with preloaded data.
+    // Same flow as Posts tab: fetch tweets, articles, videos first with visible steps, then start blog stream with preloaded data.
     const fetchSteps = [
-      { id: 'ctas', label: systemVoice.content.fetchCTAs, status: RelatedContentStepStatus.PENDING },
       { id: 'tweets', label: systemVoice.content.fetchTweets, status: RelatedContentStepStatus.PENDING },
       { id: 'articles', label: systemVoice.content.fetchArticles, status: RelatedContentStepStatus.PENDING },
       { id: 'videos', label: systemVoice.content.fetchVideos, status: RelatedContentStepStatus.PENDING },
     ];
     setRelatedContentSteps(fetchSteps);
-
-    const runFetchCTAs = () =>
-      api
-        .getOrganizationCTAs(organizationId)
-        .then((r) => {
-          const ctas = r?.ctas || [];
-          setLiveOrganizationCTAs(ctas);
-          setRelatedContentSteps((prev) =>
-            prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.DONE, count: ctas.length } : s))
-          );
-          return ctas;
-        })
-        .catch(() => {
-          setRelatedContentSteps((prev) =>
-            prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
-          );
-          return [];
-        });
 
     // Use combined tweets+videos endpoint (backend PR #178) for speed
     const runTweetsAndVideos = () =>
@@ -304,8 +281,6 @@ function StreamingTestbed() {
           return [[], []];
         });
 
-    const ONBOARDING_ARTICLES_TIMEOUT_MS = 10000;
-
     const runArticleStream = () =>
       api.searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
         .then(({ connectionId, streamUrl }) =>
@@ -315,7 +290,6 @@ function StreamingTestbed() {
             );
             const { close } = api.connectToStream(connectionId, {
               onComplete: (data) => {
-                if (articlesTimedOutRef.current) return;
                 const articles = data?.articles ?? data?.data?.articles ?? [];
                 const arr = Array.isArray(articles) ? articles : [];
                 setLiveRelatedArticles(arr);
@@ -325,7 +299,6 @@ function StreamingTestbed() {
                 resolve(arr);
               },
               onError: () => {
-                if (articlesTimedOutRef.current) return;
                 setRelatedContentSteps((prev) =>
                   prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
                 );
@@ -336,26 +309,11 @@ function StreamingTestbed() {
           })
         )
         .catch(() => {
-          if (articlesTimedOutRef.current) return [];
           setRelatedContentSteps((prev) =>
             prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
           );
           return [];
         });
-
-    const runArticleStreamWithTimeout = () => {
-      articlesTimedOutRef.current = false;
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => {
-          articlesTimedOutRef.current = true;
-          setRelatedContentSteps((prev) =>
-            prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.SKIPPED } : s))
-          );
-          resolve([]);
-        }, ONBOARDING_ARTICLES_TIMEOUT_MS);
-      });
-      return Promise.race([runArticleStream(), timeoutPromise]);
-    };
 
     setRelatedContentSteps((prev) =>
       prev.map((s) =>
@@ -363,48 +321,30 @@ function StreamingTestbed() {
       )
     );
 
-    // Same workflow as onboarding: await related content in parallel (tweets+videos, articles with 10s cap), then start blog stream with preloaded data so backend can embed [TWEET:n], [ARTICLE:n], [VIDEO:n].
-    let tweetsArr = [];
-    let videosArr = [];
-    let articlesArr = [];
-    let ctasArr = [];
-
-    try {
-      const [ctas, tweetsVideosResult, articlesResult] = await Promise.all([
-        runFetchCTAs(),
-        runTweetsAndVideos(),
-        runArticleStreamWithTimeout(),
-      ]);
-      ctasArr = Array.isArray(ctas) ? ctas : [];
-      tweetsArr = Array.isArray(tweetsVideosResult?.[0]) ? tweetsVideosResult[0] : [];
-      videosArr = Array.isArray(tweetsVideosResult?.[1]) ? tweetsVideosResult[1] : [];
-      articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
-    } catch (_) {
-      articlesArr = [];
-    }
+    // Fire related content fetches in background; don't wait. Blog stream starts immediately
+    // with placeholders; StreamingPreview substitutes tweets/videos/articles when they arrive.
+    runTweetsAndVideos();
+    runArticleStream();
 
     try {
       setLastChunk('(streaming…)');
-
-      const enhancementOptions = {
-        organizationId,
-        preloadedTweets: Array.isArray(tweetsArr) ? tweetsArr : [],
-        preloadedArticles: Array.isArray(articlesArr) ? articlesArr : [],
-        preloadedVideos: Array.isArray(videosArr) ? videosArr : [],
-        ctas: Array.isArray(ctasArr) ? ctasArr : [],
-      };
 
       const { connectionId } = await contentAPI.startBlogStream(
         topic,
         websiteAnalysisData,
         null,
         {},
-        enhancementOptions
+        {
+          organizationId,
+          preloadedTweets: [],
+          preloadedArticles: [],
+          preloadedVideos: [],
+        }
       );
-      setRelatedContentSteps([]);
+      setRelatedContentSteps([]); // Clear fetch steps; related content loads in background and substitutes
       const { close } = api.connectToStream(connectionId, {
         onChunk: (data) => {
-          const chunk = getStreamChunkContentOnly(data);
+          const chunk = extractStreamChunk(data);
           if (chunk) {
             setStreamChunks((prev) => [...prev, `content-chunk\t${JSON.stringify(data)}`]);
             setContent((prev) => prev + chunk);
@@ -505,9 +445,9 @@ function StreamingTestbed() {
           </Space>
         </Card>
 
-        <Card size="small" title="Stream from API (onboarding workflow)" style={{ marginBottom: 24 }}>
+        <Card size="small" title="Stream from API" style={{ marginBottom: 24 }}>
           <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
-            Same workflow as onboarding: fetch tweets, articles (10s cap), and videos first with visible steps, then start blog stream with that preloaded data. Tweets are passed to the backend and rendered with react-tweet in the preview when content includes [TWEET:n]. Backend: {process.env.REACT_APP_API_URL || 'default'}. Sign in required.
+            Same workflow as the Posts tab: fetch tweets, articles, and videos first (with visible steps), then start blog stream with preloaded data. [TWEET:n], [ARTICLE:n], [VIDEO:n] in content resolve from preloaded arrays. Backend: {process.env.REACT_APP_API_URL || 'default'}. Sign in required (API requires organizationId).
           </Text>
           {!organizationId && (
             <Alert type="info" message="Sign in to use Stream from API" description="The blog generate-stream API requires topic, businessInfo, and organizationId. Use the Sign in button above to open the login modal." style={{ marginBottom: 12 }} />
@@ -534,7 +474,6 @@ function StreamingTestbed() {
             <RelatedContentStepsPanel
               steps={relatedContentSteps}
               title="Preparing related content"
-              ctas={liveOrganizationCTAs}
             />
           )}
           {liveStreaming && (

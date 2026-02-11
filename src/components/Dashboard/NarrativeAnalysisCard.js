@@ -24,7 +24,7 @@ const paragraphCardStyle = {
  * NarrativeAnalysisCard - Displays website analysis as a multi-step journey.
  * Renders markdown and breaks content into paragraph cards (streaming-style UX).
  */
-export const NarrativeAnalysisCard = ({ narrative, confidence: _confidence, keyInsights }) => {
+export const NarrativeAnalysisCard = ({ narrative, confidence, keyInsights }) => {
   const [visibleSections, setVisibleSections] = useState([]);
 
   // Parse narrative into sections (bold header style) or use paragraph-based fallback

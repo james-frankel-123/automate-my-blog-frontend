@@ -2,8 +2,6 @@
 
 This file tells Claude (and other AI coding agents) how to behave when working in this repository. Follow it so changes align with the project and with **GitHub best practices**.
 
-**When multiple agents (or AI + humans) work in parallel**, also follow [docs/AI_SWARM_COLLABORATION.md](docs/AI_SWARM_COLLABORATION.md): claim issues before starting, prefer one area per branch (components vs services vs e2e), and use the PR/issue templates.
-
 ---
 
 ## GitHub Best Practices
@@ -70,12 +68,3 @@ This file tells Claude (and other AI coding agents) how to behave when working i
 5. **Repo:** Lint and test before pushing; follow existing structure and docs; keep secrets out of the repo.
 
 Following this keeps the repo consistent and makes it easier for humans and other agents to collaborate.
-
----
-
-## AI swarm / multi-agent
-
-- **Claim before work**: Comment on the issue (e.g. “Working on this in branch `fix/xyz`”) so other agents don’t duplicate work.
-- **Scoped work**: Prefer one area per PR when possible (e.g. only `src/components/`, or only `e2e/`) to reduce merge conflicts.
-- **Cursor rules**: File-scoped rules in `.cursor/rules/` give context by area (E2E, services, components); open files in the area you’re editing.
-- **Full guide**: [docs/AI_SWARM_COLLABORATION.md](docs/AI_SWARM_COLLABORATION.md).

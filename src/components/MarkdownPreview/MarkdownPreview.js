@@ -100,7 +100,7 @@ const MarkdownPreview = ({ content, typography = {}, style = {} }) => {
       }
     };
 
-    lines.forEach((line, _index) => {
+    lines.forEach((line, index) => {
       // Handle code blocks
       if (line.trim().startsWith('```')) {
         if (inCodeBlock) {

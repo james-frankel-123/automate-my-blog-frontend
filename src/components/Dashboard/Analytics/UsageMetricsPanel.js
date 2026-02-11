@@ -23,7 +23,6 @@ const UsageMetricsPanel = () => {
 
   useEffect(() => {
     loadUsageMetrics();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadUsageMetrics uses dateRange from closure
   }, [dateRange]);
 
   const loadUsageMetrics = async () => {

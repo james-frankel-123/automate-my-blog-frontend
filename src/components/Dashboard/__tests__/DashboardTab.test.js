@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DashboardTab from '../DashboardTab';
 import { AuthProvider } from '../../../contexts/AuthContext';
 import { AnalyticsProvider } from '../../../contexts/AnalyticsContext';
@@ -9,6 +9,7 @@ import {
   cleanupTests, 
   createMockUser 
 } from '../../../tests/testUtils';
+import autoBlogAPI from '../../../services/api';
 
 // Mock the API service
 jest.mock('../../../services/api');

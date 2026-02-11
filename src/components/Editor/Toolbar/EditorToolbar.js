@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button } from '../../DesignSystem';
-import { colors, spacing, typography, borderRadius } from '../../DesignSystem/tokens';
+import { colors, spacing } from '../../DesignSystem/tokens';
 
 /**
  * Enhanced Editor Toolbar with modern formatting controls
@@ -30,12 +30,11 @@ const EditorToolbar = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: `${spacing.sm} ${spacing.lg}`,
-    backgroundColor: colors.background.container,
+    padding: spacing.md,
+    backgroundColor: colors.background.elevated,
     borderBottom: `1px solid ${colors.border.light}`,
     gap: spacing.md,
     flexWrap: 'wrap',
-    minHeight: '48px',
     ...style
   };
 
@@ -48,24 +47,18 @@ const EditorToolbar = ({
 
   const separatorStyles = {
     width: '1px',
-    height: '22px',
+    height: '20px',
     backgroundColor: colors.border.base,
-    margin: `0 ${spacing.sm}`,
-    borderRadius: borderRadius.full
+    margin: `0 ${spacing.xs}`
   };
 
   const statsStyles = {
     display: 'flex',
     alignItems: 'center',
     gap: spacing.lg,
-    color: colors.text.tertiary,
-    fontSize: typography.fontSize.xs,
-    fontWeight: typography.fontWeight.medium,
-    fontFamily: typography.fontFamily.primary,
-    padding: `${spacing.xs} ${spacing.sm}`,
-    backgroundColor: colors.background.elevated,
-    borderRadius: borderRadius.md,
-    border: `1px solid ${colors.border.light}`
+    color: colors.text.secondary,
+    fontSize: '12px',
+    fontWeight: '500'
   };
 
   const handleInsert = (before, after = '', placeholder = '') => {
@@ -339,9 +332,8 @@ const EditorToolbar = ({
       {/* Word Count & Stats */}
       {showWordCount && (
         <div style={statsStyles}>
-          <span title="Word count">{getWordCount(content)} words</span>
-          <span style={{ color: colors.text.disabled }} aria-hidden>·</span>
-          <span title="Estimated reading time">{getReadingTime(content)} min read</span>
+          <span>{getWordCount(content)} words</span>
+          <span>{getReadingTime(content)} min read</span>
         </div>
       )}
     </div>

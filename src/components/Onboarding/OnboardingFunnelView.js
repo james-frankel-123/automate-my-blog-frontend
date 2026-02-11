@@ -3,7 +3,7 @@
  * Issue #261. Content generation runs on the same page (no redirect to dashboard).
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Typography, message, Empty, Button, Skeleton } from 'antd';
+import { Typography, message, Empty, Spin, Button, Skeleton } from 'antd';
 import { motion } from 'framer-motion';
 import { FileTextOutlined, HomeOutlined } from '@ant-design/icons';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -28,7 +28,6 @@ import ThinkingPanel from '../shared/ThinkingPanel';
 import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
 import RelatedContentPanel from '../shared/RelatedContentPanel';
 import StreamingPreview from '../StreamingTestbed/StreamingPreview';
-import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 
 const { Title } = Typography;
 
@@ -73,8 +72,10 @@ function OnboardingFunnelView() {
     updateCTAData,
     updateWebSearchInsights,
     webSearchInsights,
+    setStepResults,
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
+    navigateToTab,
     saveWorkflowState,
     showAuthModal,
     setShowAuthModal,
@@ -120,18 +121,10 @@ function OnboardingFunnelView() {
   const [editingContent, setEditingContent] = useState('');
   const [contentGenerated, setContentGenerated] = useState(false);
   const [contentGenerationError, setContentGenerationError] = useState(null);
-  // CTA prompt when none exist before content generation (issue #339 – onboarding)
-  const [showManualCTAModal, setShowManualCTAModal] = useState(false);
-  const [startContentGenerationTrigger, setStartContentGenerationTrigger] = useState(0);
-  const ctaPromptSkippedForSessionRef = useRef(false);
-  /** When true, article stream completed after we already timed out — ignore its onComplete/onError so step stays "Skipped". */
-  const articlesTimedOutRef = useRef(false);
 
   const analysis = stepResults?.home?.websiteAnalysis || {};
-  const organizationCTAs = stepResults?.home?.ctas ?? [];
-  const hasSufficientCTAs = stepResults?.home?.hasSufficientCTAs ?? false;
   const scenarios = analysis.scenarios || [];
-  const contentIdeas = React.useMemo(() => analysis.contentIdeas || [], [analysis.contentIdeas]);
+  const contentIdeas = analysis.contentIdeas || [];
   const hasAnalysis = stepResults?.home?.analysisCompleted && analysis?.businessName;
 
   // When backend doesn't return audience scenarios, show one segment derived from analysis so the funnel can continue
@@ -231,7 +224,6 @@ function OnboardingFunnelView() {
       .finally(() => {
         setTopicsLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas/displayScenarios/fetchedTopicItems/topicsLoading used inside
   }, [
     unlocked.topicOutput,
     contentIdeas.length,
@@ -543,34 +535,6 @@ function OnboardingFunnelView() {
     // Content generation section is shown below; generation is started by useEffect
   }, [saveWorkflowState]);
 
-  const handleOnboardingManualCTAsSubmit = useCallback(
-    async (ctas) => {
-      const orgId = analysis?.organizationId;
-      if (!orgId) {
-        message.error('Organization not found');
-        return;
-      }
-      try {
-        await autoBlogAPI.addManualCTAs(orgId, ctas);
-        const updated = await autoBlogAPI.getOrganizationCTAs(orgId);
-        updateCTAData?.({ ctas: updated.ctas || [], ctaCount: updated.ctas?.length ?? 0, hasSufficientCTAs: updated.has_sufficient_ctas ?? false });
-        setShowManualCTAModal(false);
-        setStartContentGenerationTrigger((prev) => prev + 1);
-      } catch (err) {
-        console.error('Failed to add manual CTAs:', err);
-        message.error(err?.message || 'Failed to add CTAs. Please try again.');
-      }
-    },
-    [analysis?.organizationId, updateCTAData]
-  );
-
-  const handleOnboardingSkipManualCTAs = useCallback(() => {
-    ctaPromptSkippedForSessionRef.current = true;
-    message.info('Continuing without additional CTAs');
-    setShowManualCTAModal(false);
-    setStartContentGenerationTrigger((prev) => prev + 1);
-  }, []);
-
   // Start content generation when content narration section unlocks (same flow as PostsTab)
   useEffect(() => {
     if (
@@ -606,8 +570,7 @@ function OnboardingFunnelView() {
     const organizationId = analysis?.organizationId ?? null;
     const organizationName = analysis?.businessName ?? '';
 
-    const startOnboardingContentGeneration = () => {
-      contentGenerationStartedRef.current = true;
+    contentGenerationStartedRef.current = true;
     setGeneratingContent(true);
     setContentGenerationError(null);
     setRelatedTweets([]);
@@ -615,17 +578,12 @@ function OnboardingFunnelView() {
     setRelatedVideos([]);
     setEditingContent('');
 
-    const onboardingCTAs = organizationCTAs || [];
     const fetchSteps = [
-      { id: 'ctas', label: systemVoice.content?.fetchCTAs ?? 'Fetching CTAs…', status: RelatedContentStepStatus.PENDING },
       { id: 'tweets', label: systemVoice.content?.fetchTweets ?? 'Fetching tweets…', status: RelatedContentStepStatus.PENDING },
       { id: 'articles', label: systemVoice.content?.fetchArticles ?? 'Fetching articles…', status: RelatedContentStepStatus.PENDING },
       { id: 'videos', label: systemVoice.content?.fetchVideos ?? 'Fetching videos…', status: RelatedContentStepStatus.PENDING },
     ];
     setRelatedContentSteps(fetchSteps);
-    setRelatedContentSteps((prev) =>
-      prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.DONE, count: onboardingCTAs.length } : s))
-    );
 
     const runTweetsAndVideos = () =>
       autoBlogAPI
@@ -653,8 +611,6 @@ function OnboardingFunnelView() {
           return [[], []];
         });
 
-    const ONBOARDING_ARTICLES_TIMEOUT_MS = 10000;
-
     const runArticleStream = () =>
       autoBlogAPI
         .searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
@@ -665,7 +621,6 @@ function OnboardingFunnelView() {
             );
             autoBlogAPI.connectToStream(connectionId, {
               onComplete: (data) => {
-                if (articlesTimedOutRef.current) return;
                 const articles = data?.articles ?? data?.data?.articles ?? [];
                 const arr = Array.isArray(articles) ? articles : [];
                 setRelatedArticles(arr);
@@ -675,7 +630,6 @@ function OnboardingFunnelView() {
                 resolve(arr);
               },
               onError: () => {
-                if (articlesTimedOutRef.current) return;
                 setRelatedContentSteps((prev) =>
                   prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
                 );
@@ -685,26 +639,11 @@ function OnboardingFunnelView() {
           })
         )
         .catch(() => {
-          if (articlesTimedOutRef.current) return [];
           setRelatedContentSteps((prev) =>
             prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
           );
           return [];
         });
-
-    const runArticleStreamWithTimeout = () => {
-      articlesTimedOutRef.current = false;
-      const timeoutPromise = new Promise((resolve) => {
-        setTimeout(() => {
-          articlesTimedOutRef.current = true;
-          setRelatedContentSteps((prev) =>
-            prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.SKIPPED } : s))
-          );
-          resolve([]);
-        }, ONBOARDING_ARTICLES_TIMEOUT_MS);
-      });
-      return Promise.race([runArticleStream(), timeoutPromise]);
-    };
 
     setRelatedContentSteps((prev) =>
       prev.map((s) =>
@@ -712,7 +651,7 @@ function OnboardingFunnelView() {
       )
     );
 
-    Promise.all([runTweetsAndVideos(), runArticleStreamWithTimeout()]).then(([tweetsVideosResult, articlesResult]) => {
+    Promise.all([runTweetsAndVideos(), runArticleStream()]).then(([tweetsVideosResult, articlesResult]) => {
       const [tweetsArr = [], videosArr = []] = Array.isArray(tweetsVideosResult) ? tweetsVideosResult : [[], []];
       const articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
       const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
@@ -722,7 +661,6 @@ function OnboardingFunnelView() {
         preloadedTweets: tweetsArr,
         preloadedArticles: articlesArr,
         preloadedVideos: videosArr,
-        ctas: onboardingCTAs,
         organizationId,
         organizationName,
         comprehensiveContext: shouldUseEnhancement
@@ -815,36 +753,8 @@ function OnboardingFunnelView() {
           });
         });
     });
-    };
-
-    // If no CTAs exist, prompt user to add CTAs before generating (issue #339 – onboarding)
-    // Re-fetch CTAs when starting content so we use live API result (same as PostsTab)
-    if (organizationId) {
-      autoBlogAPI
-        .getOrganizationCTAs(organizationId)
-        .then((r) => {
-          const ctas = r.ctas || [];
-          const hasSufficient = r.has_sufficient_ctas ?? false;
-          updateCTAData?.({ ctas, ctaCount: ctas.length, hasSufficientCTAs: hasSufficient });
-          if (!hasSufficient && !ctaPromptSkippedForSessionRef.current) {
-            setShowManualCTAModal(true);
-            return;
-          }
-          startOnboardingContentGeneration();
-        })
-        .catch((err) => {
-          console.error('Failed to fetch CTAs for onboarding:', err);
-          startOnboardingContentGeneration();
-        });
-      return;
-    }
-    if (!hasSufficientCTAs && !ctaPromptSkippedForSessionRef.current) {
-      setShowManualCTAModal(true);
-      return;
-    }
-    startOnboardingContentGeneration();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content section unlocks; contentIdeas intentionally not useMemo
-  }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis, hasSufficientCTAs, organizationCTAs.length, startContentGenerationTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content section unlocks
+  }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis]);
 
   const iconUrls = analysis.iconUrls || analysis.cardIcons || {};
   const analysisCards = [
@@ -898,7 +808,6 @@ function OnboardingFunnelView() {
         style={{
           padding: '24px 16px',
           paddingTop: user ? 24 : 120,
-          paddingBottom: 48,
           maxWidth: 800,
           margin: '0 auto',
         }}
@@ -1288,7 +1197,6 @@ function OnboardingFunnelView() {
                   <RelatedContentStepsPanel
                     steps={relatedContentSteps}
                     title="Preparing related content"
-                    ctas={organizationCTAs}
                   />
                 )}
               </>
@@ -1299,6 +1207,12 @@ function OnboardingFunnelView() {
                   tweets={relatedTweets}
                   articles={relatedArticles}
                   videos={relatedVideos}
+                  onInject={(type, index) => {
+                    const token = `[${type}:${index}]`;
+                    const insert = (editingContent?.trim() ? '\n\n' : '') + token + '\n\n';
+                    setEditingContent((prev) => (prev || '') + insert);
+                    message.success(`Added ${type.toLowerCase()} to post`);
+                  }}
                 />
               </div>
             )}
@@ -1339,16 +1253,6 @@ function OnboardingFunnelView() {
         </section>
       )}
     </div>
-    {/* Manual CTA modal when CTAs are insufficient before content generation (issue #339 – onboarding) */}
-    <ManualCTAInputModal
-      visible={showManualCTAModal}
-      onCancel={() => setShowManualCTAModal(false)}
-      onSubmit={handleOnboardingManualCTAsSubmit}
-      onSkip={handleOnboardingSkipManualCTAs}
-      existingCTAs={organizationCTAs}
-      minCTAs={1}
-      websiteName={analysis?.businessName || 'your website'}
-    />
     </>
   );
 }
