@@ -28,6 +28,7 @@ describe('WebsiteInputSection', () => {
         websiteUrl=""
         setWebsiteUrl={() => {}}
         onAnalyze={() => {}}
+        headerAnimationComplete
       />
     );
     expect(screen.getByTestId('website-url-input')).toBeInTheDocument();
@@ -40,6 +41,7 @@ describe('WebsiteInputSection', () => {
         websiteUrl=""
         setWebsiteUrl={() => {}}
         onAnalyze={() => {}}
+        headerAnimationComplete
       />
     );
     expect(screen.getByTestId('analyze-button')).toBeDisabled();
@@ -52,6 +54,7 @@ describe('WebsiteInputSection', () => {
         websiteUrl="https://example.com"
         setWebsiteUrl={() => {}}
         onAnalyze={onAnalyze}
+        headerAnimationComplete
       />
     );
     await userEvent.click(screen.getByTestId('analyze-button'));

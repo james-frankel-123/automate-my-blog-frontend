@@ -4,6 +4,7 @@ import { Tweet } from 'react-tweet';
 import 'react-tweet/theme.css';
 import { typography } from '../DesignSystem/tokens';
 import heroImageFallback from '../../assets/hero-image-fallback.png';
+import { getPlaceholderStyle, getPlaceholderNthVariation } from '../../utils/placeholderStyles';
 
 function escapeAttr(s) {
   if (typeof s !== 'string') return '';
@@ -20,11 +21,22 @@ const HERO_PLACEHOLDER_MIN_MS = 400;
  * Handles cached images (checks img.complete) so the real image always replaces the placeholder once ready.
  * Uses inline styles + a scoped style tag so the placeholder is always visible (no dependency on parent styled-jsx).
  */
-function HeroImage({ src, alt, paragraphSpacing = 16 }) {
+/** Set window.__HERO_IMAGE_DEBUG__ = false to disable hero image logging */
+const HERO_LOG = (msg, data) => {
+  if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+    console.log(`[HeroImage] ${msg}`, data ?? '');
+  }
+};
+
+function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [effectiveSrc, setEffectiveSrc] = useState(src);
   const imgRef = useRef(null);
+
+  useEffect(() => {
+    HERO_LOG('received props', { src: src ? `${String(src).slice(0, 80)}...` : src, isFallback: src === heroImageFallback });
+  }, [src]);
 
   useEffect(() => {
     const t = setTimeout(() => setMinTimeElapsed(true), HERO_PLACEHOLDER_MIN_MS);
@@ -52,15 +64,23 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
       if (node.complete && node.naturalWidth > 0) setImageLoaded(true);
     };
     const onError = () => {
+      HERO_LOG('img error', { effectiveSrc: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
       if (effectiveSrc !== heroImageFallback) {
+        HERO_LOG('switching to fallback');
         setEffectiveSrc(heroImageFallback);
       } else {
         setImageLoaded(true); // fallback also failed; hide placeholder
       }
     };
-    imgRef._onLoad = checkComplete;
+    const onLoadSuccess = () => {
+      if (node.complete && node.naturalWidth > 0) {
+        HERO_LOG('img loaded', { naturalWidth: node.naturalWidth, src: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
+      }
+      checkComplete();
+    };
+    imgRef._onLoad = onLoadSuccess;
     imgRef._onError = onError;
-    node.addEventListener('load', checkComplete);
+    node.addEventListener('load', onLoadSuccess);
     node.addEventListener('error', onError);
     checkComplete();
     requestAnimationFrame(checkComplete);
@@ -90,32 +110,39 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
     backgroundColor: 'var(--color-background-container)'
   };
 
+  const heroPlaceholderStyle = getPlaceholderStyle(0);
   const placeholderStyle = {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'linear-gradient(135deg, var(--color-background-container) 0%, var(--color-background-alt) 50%, var(--color-background-container) 100%)',
-    backgroundSize: '400% 400%',
-    animation: 'hero-placeholder-gentle 6s ease-in-out infinite',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    ...heroPlaceholderStyle,
+    animationPlayState: generationComplete ? 'paused' : 'running',
   };
 
   const messageStyle = {
     color: 'var(--color-text-tertiary)',
     fontSize: 15,
     fontWeight: 500,
-    letterSpacing: '0.02em'
+    letterSpacing: '0.02em',
+    animation: 'hero-placeholder-text-pulse 2.5s ease-in-out infinite',
+    animationPlayState: generationComplete ? 'paused' : 'running'
   };
+
+  const placeholderKeyframes = `
+    @keyframes hero-placeholder-text-pulse {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+  `;
 
   return (
     <div className="hero-image-wrapper" style={wrapperStyle}>
-      <style dangerouslySetInnerHTML={{
-        __html: `@keyframes hero-placeholder-gentle { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`
-      }} />
+      <style dangerouslySetInnerHTML={{ __html: placeholderKeyframes }} />
       {!showImage && (
         <div
           className="hero-image-placeholder"
@@ -148,50 +175,6 @@ function HeroImage({ src, alt, paragraphSpacing = 16 }) {
         onLoad={() => setImageLoaded(true)}
         onError={() => setImageLoaded(true)}
       />
-    </div>
-  );
-}
-
-/**
- * Visual-only hero placeholder (no image URL yet). Shown in free post claim preview etc.
- * So users see an image placeholder box instead of raw markdown like ![IMAGE:hero_image:...].
- */
-function HeroImagePlaceholder({ paragraphSpacing = 16 }) {
-  const wrapperStyle = {
-    position: 'relative',
-    minHeight: 240,
-    margin: `${paragraphSpacing}px 0`,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: 'var(--color-background-container)'
-  };
-  const placeholderStyle = {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: 'linear-gradient(135deg, var(--color-background-container) 0%, var(--color-background-alt) 50%, var(--color-background-container) 100%)',
-    backgroundSize: '400% 400%',
-    animation: 'hero-placeholder-gentle 6s ease-in-out infinite',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  };
-  const messageStyle = {
-    color: 'var(--color-text-tertiary)',
-    fontSize: 15,
-    fontWeight: 500,
-    letterSpacing: '0.02em'
-  };
-  return (
-    <div className="hero-image-wrapper hero-image-placeholder-only" style={wrapperStyle} data-testid="hero-image-placeholder">
-      <style dangerouslySetInnerHTML={{
-        __html: `@keyframes hero-placeholder-gentle { 0%, 100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }`
-      }} />
-      <div className="hero-image-placeholder" aria-hidden="true" role="presentation" style={placeholderStyle}>
-        <span style={messageStyle}>Hero image will appear here</span>
-      </div>
     </div>
   );
 }
@@ -579,7 +562,7 @@ function anchorMatchesCta(anchor, cta) {
   return false;
 }
 
-const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos, relatedTweets, ctas = [] }) => {
+const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdown = false, heroImageUrl, relatedArticles, relatedVideos, relatedTweets, generationComplete = false, ctas = [] }) => {
   const containerRef = useRef(null);
 
   // Style CTA links in the preview when result.ctas / data.ctas are provided (match by href or text). Must run unconditionally (hooks rules).
@@ -653,14 +636,17 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     ALLOW_DATA_ATTR: false
   });
 
-  // Extract typography settings with defaults
+  // Extract typography settings with defaults (display font for headings, body for content)
   const {
-    headingFont = typography.fontFamily.primary,
-    bodyFont = typography.fontFamily.primary, 
+    headingFont = typography.fontFamily.display,
+    bodyFont = typography.fontFamily.body,
     fontSize = typography.fontSize.base,
     lineHeight = typography.lineHeight.normal,
-    paragraphSpacing = 16
+    paragraphSpacing = 20
   } = typographySettings;
+
+  // Ensure numeric base for size calculations (fontSize may be '16px')
+  const baseFontSizePx = typeof fontSize === 'string' ? parseInt(String(fontSize).replace(/[^0-9.]/g, ''), 10) || 16 : (Number(fontSize) || 16);
 
   const previewStyles = {
     fontFamily: bodyFont,
@@ -677,6 +663,21 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const useHeroSlot = htmlContent.includes(HERO_IMAGE_SENTINEL);
   const contentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
 
+  // Nth-of-type variation for markdown placeholders (each instance different color + animation stagger)
+  const NTH_PLACEHOLDER_COUNT = 12;
+  const nthImageRules = Array.from({ length: NTH_PLACEHOLDER_COUNT }, (_, i) => {
+    const { hue, durationSec, delaySec } = getPlaceholderNthVariation(i);
+    return `div :global(.markdown-image-placeholder:nth-of-type(${i + 1})) { --ph-hue: ${hue}; --ph-duration: ${durationSec}; --ph-delay: ${delaySec}; }`;
+  }).join('\n        ');
+  const nthVideoRules = Array.from({ length: NTH_PLACEHOLDER_COUNT }, (_, i) => {
+    const { hue, durationSec, delaySec } = getPlaceholderNthVariation(i + 20);
+    return `div :global(.markdown-video-placeholder:nth-of-type(${i + 1})) { --ph-hue: ${hue}; --ph-duration: ${durationSec}; --ph-delay: ${delaySec}; }`;
+  }).join('\n        ');
+  const nthArticleRules = Array.from({ length: NTH_PLACEHOLDER_COUNT }, (_, i) => {
+    const { hue, durationSec, delaySec } = getPlaceholderNthVariation(i + 40);
+    return `div :global(.markdown-article-placeholder:nth-of-type(${i + 1})) { --ph-hue: ${hue}; --ph-duration: ${durationSec}; --ph-delay: ${delaySec}; }`;
+  }).join('\n        ');
+
   return (
     <div ref={containerRef} className="html-preview-container" style={previewStyles}>
       {contentParts && contentParts.length > 1 ? (
@@ -685,15 +686,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
             <React.Fragment key={i}>
               <HtmlWithTweetSlots html={part} relatedTweets={relatedTweets} />
               {i < contentParts.length - 1 && (
-                heroImageUrl ? (
-                  <HeroImage
-                    src={heroImageUrl}
-                    alt={heroImageAlt}
-                    paragraphSpacing={paragraphSpacing}
-                  />
-                ) : (
-                  <HeroImagePlaceholder paragraphSpacing={paragraphSpacing} />
-                )
+                <HeroImage
+                  src={heroImageUrl || heroImageFallback}
+                  alt={heroImageAlt}
+                  paragraphSpacing={paragraphSpacing}
+                  generationComplete={generationComplete}
+                />
               )}
             </React.Fragment>
           ))}
@@ -701,6 +699,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       ) : (
         <>
       <div
+        className="html-preview-content"
         style={{
           // Override default styles for HTML elements
           '& h1': {
@@ -793,110 +792,133 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       </div>
       
       <style jsx>{`
+        /* Article typography – clear hierarchy, readable body, polished lists */
         div h1 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 2.25}px;
+          font-size: ${Math.round(baseFontSizePx * 2)}px;
           font-weight: ${typography.fontWeight.bold};
+          letter-spacing: ${typography.letterSpacing.tight};
           color: var(--color-text-primary);
-          margin: ${paragraphSpacing * 1.5}px 0 ${paragraphSpacing}px 0;
+          margin: 0 0 ${paragraphSpacing}px 0;
           line-height: ${typography.lineHeight.tight};
         }
-        
+
+        div h1:first-child { margin-top: 0; }
+
         div h2 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.875}px;
+          font-size: ${Math.round(baseFontSizePx * 1.5)}px;
           font-weight: ${typography.fontWeight.semibold};
+          letter-spacing: ${typography.letterSpacing.normal};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing * 1.25}px 0 ${paragraphSpacing * 0.75}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
-        
+
         div h3 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.5}px;
+          font-size: ${Math.round(baseFontSizePx * 1.25)}px;
           font-weight: ${typography.fontWeight.semibold};
+          letter-spacing: ${typography.letterSpacing.normal};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing}px 0 ${paragraphSpacing * 0.5}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div h4 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.25}px;
+          font-size: ${Math.round(baseFontSizePx * 1.125)}px;
           font-weight: ${typography.fontWeight.semibold};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing * 0.875}px 0 ${paragraphSpacing * 0.375}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div h5 {
           font-family: ${headingFont};
-          font-size: ${fontSize * 1.125}px;
+          font-size: ${baseFontSizePx}px;
           font-weight: ${typography.fontWeight.semibold};
           color: var(--color-text-primary);
           margin: ${paragraphSpacing * 0.75}px 0 ${paragraphSpacing * 0.25}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div h6 {
           font-family: ${headingFont};
-          font-size: ${fontSize}px;
-          font-weight: ${typography.fontWeight.semibold};
+          font-size: ${Math.round(baseFontSizePx * 0.9375)}px;
+          font-weight: ${typography.fontWeight.medium};
           color: var(--color-text-secondary);
           margin: ${paragraphSpacing * 0.625}px 0 ${paragraphSpacing * 0.25}px 0;
-          line-height: ${typography.lineHeight.tight};
+          line-height: ${typography.lineHeight.snug};
         }
 
         div p {
           margin: 0 0 ${paragraphSpacing}px 0;
-          line-height: ${lineHeight};
+          line-height: ${typography.lineHeight.relaxed};
           font-family: ${bodyFont};
-          font-size: ${fontSize}px;
+          font-size: ${baseFontSizePx}px;
+          color: var(--color-text-primary);
         }
-        
+
+        div p:last-child { margin-bottom: 0; }
+
         div strong {
           font-weight: ${typography.fontWeight.semibold};
           color: var(--color-text-primary);
         }
-        
+
         div em {
           font-style: italic;
           color: var(--color-text-primary);
         }
-        
+
         div ul, div ol {
           margin: ${paragraphSpacing}px 0;
-          padding-left: 20px;
+          padding-left: 1.5em;
           font-family: ${bodyFont};
-          font-size: ${fontSize}px;
-          line-height: ${lineHeight};
+          font-size: ${baseFontSizePx}px;
+          line-height: ${typography.lineHeight.relaxed};
+          color: var(--color-text-primary);
         }
-        
+
+        div ul { list-style-type: disc; }
+        div ol { list-style-type: decimal; }
+
         div li {
-          margin: ${Math.round(paragraphSpacing / 2)}px 0;
-          line-height: ${lineHeight};
+          margin: 0.35em 0;
+          padding-left: 0.25em;
+          line-height: ${typography.lineHeight.relaxed};
         }
-        
-        div blockquote {
-          border-left: 4px solid var(--color-primary);
-          padding-left: ${paragraphSpacing}px;
-          margin: ${paragraphSpacing}px 0;
-          font-style: italic;
+
+        div li::marker {
           color: var(--color-text-secondary);
-          background-color: var(--color-background-container);
-          padding: ${paragraphSpacing * 0.75}px ${paragraphSpacing}px;
-          border-radius: 4px;
         }
-        
+
+        div blockquote {
+          margin: ${paragraphSpacing * 1.25}px 0;
+          padding: ${paragraphSpacing}px ${paragraphSpacing * 1.25}px ${paragraphSpacing}px ${paragraphSpacing * 1.125}px;
+          border-left: 4px solid var(--color-primary);
+          background: linear-gradient(to right, var(--color-primary-50), var(--color-background-alt));
+          color: var(--color-text-primary);
+          font-style: italic;
+          font-size: 1.05em;
+          line-height: ${typography.lineHeight.relaxed};
+          border-radius: 0 var(--radius-md) var(--radius-md) 0;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        }
+
+        div blockquote :first-child { margin-top: 0; }
+        div blockquote :last-child { margin-bottom: 0; }
+
         div code {
           background-color: var(--color-background-container);
           padding: 2px 6px;
           border-radius: 4px;
           font-family: ${typography.fontFamily.mono};
-          font-size: ${fontSize * 0.9}px;
+          font-size: ${Math.round(baseFontSizePx * 0.9)}px;
           color: var(--color-text-primary);
         }
-        
+
         div pre {
           background-color: var(--color-background-container);
           padding: ${paragraphSpacing}px;
@@ -904,14 +926,14 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           overflow: auto;
           margin: ${paragraphSpacing}px 0;
         }
-        
+
         div pre code {
           background: none;
           padding: 0;
           font-family: ${typography.fontFamily.mono};
-          font-size: ${fontSize * 0.875}px;
+          font-size: ${Math.round(baseFontSizePx * 0.875)}px;
         }
-        
+
         div hr {
           border: none;
           border-top: 1px solid var(--color-border-base);
@@ -1157,17 +1179,21 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           font-style: italic;
         }
 
-        /* Image placeholder: shimmer animation (animated loading) */
+        /* Image placeholder: varied hue + stagger per nth-of-type */
+        ${nthImageRules}
         div :global(.markdown-image-placeholder) {
+          --ph-hue: 200;
+          --ph-duration: 2s;
+          --ph-delay: 0s;
           display: inline-block;
           min-width: 120px;
           min-height: 68px;
           border-radius: 6px;
-          animation: imagePlaceholderShimmer 2s ease-in-out infinite;
+          animation: imagePlaceholderShimmer var(--ph-duration) ease-in-out var(--ph-delay) infinite;
           background: linear-gradient(90deg,
-            var(--color-gray-200) 0%,
-            var(--color-gray-300) 50%,
-            var(--color-gray-200) 100%);
+            hsl(var(--ph-hue), 14%, 92%) 0%,
+            hsl(var(--ph-hue), 20%, 88%) 50%,
+            hsl(var(--ph-hue), 14%, 92%) 100%);
           background-size: 200px 100%;
           color: var(--color-text-tertiary);
           font-size: 12px;
@@ -1180,8 +1206,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           100% { background-position: calc(200px + 100%) 0; }
         }
 
-        /* Video placeholder: compact, YouTube-style red accent */
+        /* Video placeholder: varied hue + stagger per nth-of-type */
+        ${nthVideoRules}
         div :global(.markdown-video-placeholder) {
+          --ph-hue: 0;
+          --ph-duration: 1.8s;
+          --ph-delay: 0s;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1191,9 +1221,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           padding: 10px 12px;
           border-radius: 6px;
           border: 1px dashed var(--color-border-base);
-          border-left: 3px solid #dc2626;
-          background: linear-gradient(135deg, rgba(220, 38, 38, 0.04) 0%, rgba(200, 50, 50, 0.06) 100%);
-          animation: videoPlaceholderPulse 1.8s ease-in-out infinite;
+          border-left: 3px solid hsl(var(--ph-hue), 60%, 45%);
+          background: linear-gradient(135deg, hsl(var(--ph-hue), 30%, 96%) 0%, hsl(var(--ph-hue), 25%, 94%) 100%);
+          animation: videoPlaceholderPulse var(--ph-duration) ease-in-out var(--ph-delay) infinite;
           color: var(--color-text-tertiary);
         }
 
@@ -1361,8 +1391,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           100% { background-position: -200% 0; }
         }
 
-        /* Article placeholder: compact, blue accent */
+        /* Article placeholder: varied hue + stagger per nth-of-type */
+        ${nthArticleRules}
         div :global(.markdown-article-placeholder) {
+          --ph-hue: 220;
+          --ph-duration: 1.8s;
+          --ph-delay: 0s;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1372,9 +1406,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           padding: 10px 12px;
           border-radius: 6px;
           border: 1px dashed var(--color-border-base);
-          border-left: 3px solid #2563eb;
-          background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(37, 99, 235, 0.08) 100%);
-          animation: articlePlaceholderPulse 1.8s ease-in-out infinite;
+          border-left: 3px solid hsl(var(--ph-hue), 60%, 45%);
+          background: linear-gradient(135deg, hsl(var(--ph-hue), 25%, 97%) 0%, hsl(var(--ph-hue), 20%, 95%) 100%);
+          animation: articlePlaceholderPulse var(--ph-duration) ease-in-out var(--ph-delay) infinite;
           color: var(--color-text-tertiary);
         }
         div :global(.markdown-article-placeholder-icon) {

@@ -30,6 +30,7 @@ function applyRelatedContentPlaceholders(content) {
  * @param {string} [heroImageUrl] - Hero image URL when content has hero slot
  * @param {Array<{ text: string, href?: string, type?: string, placement?: string }>} [ctas] - CTAs returned with content; used to style matching links in preview
  * @param {Object} [style] - Optional style for the preview container
+ * @param {boolean} [generationComplete] - When true, post generation is done (stops hero placeholder animation)
  */
 function StreamingPreview({
   content,
@@ -39,7 +40,11 @@ function StreamingPreview({
   heroImageUrl,
   ctas = [],
   style = {},
+  generationComplete = false,
 }) {
+  if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+    console.log('[HeroImage] StreamingPreview received', { heroImageUrl: heroImageUrl ?? '(none)', hasContent: !!content });
+  }
   const contentWithPlaceholders = applyRelatedContentPlaceholders(content || '');
   const resolvedContent = replaceTweetPlaceholders(
     replaceVideoPlaceholders(
@@ -59,6 +64,7 @@ function StreamingPreview({
       forceMarkdown={true}
       heroImageUrl={heroImageUrl || undefined}
       style={style}
+      generationComplete={generationComplete}
     />
   );
 }

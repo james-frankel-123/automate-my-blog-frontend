@@ -9,10 +9,12 @@ import { ComponentHelpers } from '../interfaces/WorkflowComponentInterface';
 import { analysisAPI } from '../../../services/workflowAPI';
 import workflowUtils from '../../../utils/workflowUtils';
 import autoBlogAPI from '../../../services/api';
+import jobsAPI from '../../../services/jobsAPI';
 import { systemVoice } from '../../../copy/systemVoice';
 import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 import { NarrativeAnalysisDisplay } from '../../Dashboard/NarrativeAnalysisDisplay';
+import BusinessProfileSlide from '../../Analysis/BusinessProfileSlide';
 import AnalysisSectionNav from '../../Dashboard/AnalysisSectionNav';
 import ChecklistProgress from '../../shared/ChecklistProgress';
 import AnalysisEmptyState from '../../EmptyStates/AnalysisEmptyState';
@@ -94,6 +96,9 @@ const WebsiteAnalysisStepStandalone = ({
 
   // Job ID for narrative stream (Issue #157); cleared when loading ends
   const [analysisJobId, setAnalysisJobId] = useState(null);
+
+  // Business profile for PowerPoint-style display
+  const [businessProfile, setBusinessProfile] = useState(null);
 
   // Animation state for delayed reveal
   const [inputVisible, setInputVisible] = useState(!delayedReveal);
@@ -244,6 +249,47 @@ const WebsiteAnalysisStepStandalone = ({
       onEditingStateChange(isEditing);
     }
   }, [isEditing, onEditingStateChange]);
+
+  // Listen for business profile event from narrative stream
+  useEffect(() => {
+    if (!analysisJobId) {
+      setBusinessProfile(null);
+      return;
+    }
+
+    const abortController = new AbortController();
+
+    // Connect to narrative stream to listen for business-profile event
+    jobsAPI
+      .connectToNarrativeStream(
+        analysisJobId,
+        {
+          onScrapingThought: () => {}, // Ignore these
+          onTransition: () => {}, // Ignore these
+          onAnalysisChunk: () => {}, // Ignore these
+          onComplete: () => {}, // Ignore these
+          onError: () => {}, // Ignore errors
+          onBusinessProfile: (data) => {
+            // Custom handler for business-profile event
+            try {
+              const profile = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+              console.log('📊 [FRONTEND] Business profile received:', profile);
+              setBusinessProfile(profile);
+            } catch (err) {
+              console.error('❌ [FRONTEND] Failed to parse business profile:', err);
+            }
+          }
+        },
+        { signal: abortController.signal }
+      )
+      .catch((err) => {
+        console.warn('Business profile stream connection failed:', err);
+      });
+
+    return () => {
+      abortController.abort();
+    };
+  }, [analysisJobId]);
 
   // Remove sparkle on input focus or interaction, and restore editing mode
   const handleInputFocus = () => {
@@ -881,16 +927,23 @@ const WebsiteAnalysisStepStandalone = ({
   const renderAnalysisLoading = () => {
     if (analysisJobId) {
       return (
-        <NarrativeAnalysisDisplay
-          jobId={analysisJobId}
-          analysisResults={analysisResults}
-          renderFallback={renderThinkingPanelFallback}
-          onNarrativeComplete={handleNarrativeComplete}
-          analysisProgress={analysisProgress}
-          loading={loading}
-          currentScanningMessage={currentScanningMessage}
-          analysisThoughts={analysisThoughts}
-        />
+        <>
+          <NarrativeAnalysisDisplay
+            jobId={analysisJobId}
+            analysisResults={analysisResults}
+            renderFallback={renderThinkingPanelFallback}
+            onNarrativeComplete={handleNarrativeComplete}
+            analysisProgress={analysisProgress}
+            loading={loading}
+            currentScanningMessage={currentScanningMessage}
+            analysisThoughts={analysisThoughts}
+          />
+          {businessProfile && (
+            <div style={{ marginTop: '32px' }}>
+              <BusinessProfileSlide profileData={businessProfile} />
+            </div>
+          )}
+        </>
       );
     }
     return renderThinkingPanelFallback();

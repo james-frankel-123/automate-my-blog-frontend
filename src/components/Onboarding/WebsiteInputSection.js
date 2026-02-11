@@ -26,10 +26,21 @@ export function WebsiteInputSection({
   scanningMessage = '',
   analysisProgress = null,
   analysisThoughts: _analysisThoughts = [],
+  analysisComplete = false,
+  headerAnimationComplete = false,
+  onHoldTightNarrationComplete = null,
   dataTestId = 'website-input-section',
 }) {
   const [streamingText, setStreamingText] = useState('');
   const [showStreamingText, setShowStreamingText] = useState(false);
+  const [holdTightComplete, setHoldTightComplete] = useState(false);
+
+  // Log when analysis complete state changes
+  useEffect(() => {
+    if (analysisComplete && !loading) {
+      console.log('🕐 [WebsiteInputSection] Analysis complete - keeping checklist visible');
+    }
+  }, [analysisComplete, loading]);
 
   const handleSubmit = () => {
     if (websiteUrl?.trim()) onAnalyze?.(websiteUrl.trim());
@@ -50,50 +61,54 @@ export function WebsiteInputSection({
             currentIndex++;
           } else {
             clearInterval(typingInterval);
+            // Narration complete
+            setHoldTightComplete(true);
+            onHoldTightNarrationComplete?.();
+            console.log('🕐 [WebsiteInputSection] "Hold tight" narration complete');
           }
-        }, 40); // 40ms per character
+        }, 28); // ~30% faster than 40ms per character
 
         return () => clearInterval(typingInterval);
       }, 500);
 
       return () => clearTimeout(startDelay);
-    } else if (!loading) {
-      setShowStreamingText(false);
-      setStreamingText('');
     }
-  }, [loading, showStreamingText]);
+    // Don't reset state when loading completes - keep narration visible
+  }, [loading, showStreamingText, onHoldTightNarrationComplete]);
 
   return (
     <div data-testid={dataTestId} style={{ marginBottom: 32 }}>
-      <Form onFinish={handleSubmit} style={{ maxWidth: 600, margin: '0 auto' }}>
-        <div style={compactRowStyle}>
-          <Input
-            value={websiteUrl}
-            onChange={(e) => setWebsiteUrl?.(e.target.value)}
-            placeholder={systemVoice.analysis.inputPlaceholder}
-            size="large"
-            prefix={<GlobalOutlined style={{ color: 'var(--color-text-tertiary)' }} />}
-            disabled={loading}
-            onPressEnter={handleSubmit}
-            data-testid="website-url-input"
-            style={{ flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
-          />
-          <Button
-            type="primary"
-            size="large"
-            onClick={handleSubmit}
-            loading={loading}
-            disabled={!websiteUrl?.trim()}
-            data-testid="analyze-button"
-            style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
-          >
-            {loading ? systemVoice.analysis.analyzing : systemVoice.analysis.analyze}
-          </Button>
-        </div>
-      </Form>
+      {headerAnimationComplete && (
+        <Form onFinish={handleSubmit} style={{ maxWidth: 600, margin: '0 auto' }}>
+          <div style={compactRowStyle}>
+            <Input
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl?.(e.target.value)}
+              placeholder={systemVoice.analysis.inputPlaceholder}
+              size="large"
+              prefix={<GlobalOutlined style={{ color: 'var(--color-text-tertiary)' }} />}
+              disabled={loading}
+              onPressEnter={handleSubmit}
+              data-testid="website-url-input"
+              style={{ flex: 1, borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
+            />
+            <Button
+              type="primary"
+              size="large"
+              onClick={handleSubmit}
+              loading={loading}
+              disabled={!websiteUrl?.trim()}
+              data-testid="analyze-button"
+              style={{ borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
+            >
+              {loading ? systemVoice.analysis.analyzing : systemVoice.analysis.analyze}
+            </Button>
+          </div>
+        </Form>
+      )}
 
       {/* Streaming narration text */}
-      {loading && showStreamingText && streamingText && (
+      {(loading || !analysisComplete) && showStreamingText && streamingText && (
         <div
           style={{
             textAlign: 'center',
@@ -129,15 +144,16 @@ export function WebsiteInputSection({
         </div>
       )}
 
-      {loading && (
+      {(loading || analysisComplete) && holdTightComplete && (
         <div style={{ marginTop: 20, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
-          {(analysisProgress || scanningMessage) ? (
+          {(analysisProgress || scanningMessage || analysisComplete) ? (
             <ChecklistProgress
               steps={systemVoice.analysis.steps}
               currentStep={analysisProgress?.currentStep || scanningMessage}
-              phase={analysisProgress?.phase}
-              progress={analysisProgress?.progress}
-              estimatedTimeRemaining={analysisProgress?.estimatedTimeRemaining}
+              phase={analysisProgress?.phase || (analysisComplete ? 'complete' : null)}
+              progress={analysisProgress?.progress || (analysisComplete ? 100 : 0)}
+              estimatedTimeRemaining={analysisComplete ? 0 : analysisProgress?.estimatedTimeRemaining}
+              completed={analysisComplete}
               dataTestId="analysis-status-updates"
             />
           ) : (
