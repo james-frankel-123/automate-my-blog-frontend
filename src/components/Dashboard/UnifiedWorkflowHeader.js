@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography } from 'antd';
 import { 
   PlusOutlined, 
@@ -53,6 +53,8 @@ const UnifiedWorkflowHeader = ({
   const [dimText, setDimText] = useState(false);
   const [_dingPosition, _setDingPosition] = useState(null);
   const [delayedInputIsEditing, setDelayedInputIsEditing] = useState(true);
+  const onSequenceCompleteRef = useRef(onSequenceComplete);
+  onSequenceCompleteRef.current = onSequenceComplete;
 
   // Trigger text transition animation when auth state changes
   useEffect(() => {
@@ -78,7 +80,7 @@ const UnifiedWorkflowHeader = ({
     setDelayedInputIsEditing(inputIsEditing);
   }, [inputIsEditing]);
 
-  // Typewriter animation effect (runs every time when enableSequentialAnimation is true)
+  // Typewriter animation effect (runs when enableSequentialAnimation is true)
   useEffect(() => {
     if (!enableSequentialAnimation) {
       return;
@@ -89,10 +91,17 @@ const UnifiedWorkflowHeader = ({
       return;
     }
 
-    // Prevent animation from starting if title is already being typed
-    if (displayedTitle.length > 0) {
-      return;
-    }
+    // Reset displayed state so we always run from scratch (avoids hang when effect
+    // re-runs after cleanup: previously we bailed if displayedTitle.length > 0,
+    // leaving the title stuck at e.g. "The" with no timeouts left)
+    setDisplayedTitle('');
+    setDisplayedSubtitlePart1('');
+    setDisplayedClicks('');
+    setDisplayedSubtitlePart2('');
+    setShowTitleCursor(true);
+    setShowSubtitleCursor(false);
+    setShowClicksHighlight(false);
+
     const subtitlePart1 = "Automate website content to get ";
     const clicksWord = "clicks";
     const subtitlePart2 = " without complication";
@@ -159,7 +168,7 @@ const UnifiedWorkflowHeader = ({
           // Mark animation complete
           const completeTimeout = setTimeout(() => {
             setAnimationComplete(true);
-            onSequenceComplete?.();
+            onSequenceCompleteRef.current?.();
           }, 0);
           timeouts.push(completeTimeout);
         }
@@ -167,12 +176,12 @@ const UnifiedWorkflowHeader = ({
       timeouts.push(timeout);
     }
 
-    // Cleanup timeouts on unmount
+    // Cleanup timeouts on unmount or when deps change
     return () => {
       timeouts.forEach(timeout => clearTimeout(timeout));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- animationComplete/displayedTitle intentionally excluded
-  }, [enableSequentialAnimation, onSequenceComplete]);
+    // Re-run only when enableSequentialAnimation changes; animationComplete in deps for exhaustive-deps
+  }, [enableSequentialAnimation, animationComplete]);
 
   // Skip animation handler
   const handleSkipAnimation = () => {
