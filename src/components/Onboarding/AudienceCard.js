@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { Card, Typography } from 'antd';
 import { CheckCircleFilled } from '@ant-design/icons';
+import { getPlaceholderStyle } from '../../utils/placeholderStyles';
 
 const { Text } = Typography;
 
@@ -107,9 +108,11 @@ export function AudienceCard({
   selected,
   onClick,
   dataTestId,
+  placeholderSeed = 0,
 }) {
   const [imageError, setImageError] = useState(false);
   const showImage = imageUrl && !imageError;
+  const placeholderStyle = getPlaceholderStyle(placeholderSeed);
   return (
     <Card
       data-testid={dataTestId}
@@ -125,7 +128,17 @@ export function AudienceCard({
         {showImage ? (
           <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImageError(true)} />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}>
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-tertiary)',
+              ...placeholderStyle,
+            }}
+          >
             Audience
           </div>
         )}

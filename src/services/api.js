@@ -83,6 +83,12 @@ class AutoBlogAPI {
     try {
       const response = await fetch(url, requestOptions);
       
+      if (response.status === 304) {
+        const err = new Error(`HTTP 304: ${response.statusText || 'Not Modified'}`);
+        err.status = 304;
+        throw err;
+      }
+      
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
         try {
@@ -3357,8 +3363,13 @@ Please provide analysis in this JSON format:
         return { success: false, ctas: [], count: 0 };
       }
     } catch (error) {
-      // Fail softly so callers can continue (e.g. 304/network/CORS); avoid breaking funnel
-      console.warn('⚠️ Get organization CTAs request failed, using empty list:', error?.message || error);
+      const msg = error?.message ?? String(error);
+      const is304 = error?.status === 304 || /304|Not Modified/i.test(msg);
+      if (is304) {
+        console.debug('[CTAs] 304 Not Modified, using empty list');
+      } else {
+        console.warn('⚠️ Get organization CTAs request failed, using empty list:', msg);
+      }
       return { success: false, ctas: [], count: 0 };
     }
   }

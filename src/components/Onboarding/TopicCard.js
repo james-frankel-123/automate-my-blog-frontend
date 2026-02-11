@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { Card, Typography } from 'antd';
 import { CheckCircleFilled, FileTextOutlined } from '@ant-design/icons';
+import { getPlaceholderStyle } from '../../utils/placeholderStyles';
 
 const { Text } = Typography;
 
@@ -37,9 +38,11 @@ export function TopicCard({
   selected,
   onClick,
   dataTestId,
+  placeholderSeed = 0,
 }) {
   const [imageError, setImageError] = useState(false);
   const showImage = imageUrl && !imageError;
+  const placeholderStyle = getPlaceholderStyle(placeholderSeed);
   return (
     <Card
       data-testid={dataTestId}
@@ -64,8 +67,8 @@ export function TopicCard({
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              background: 'linear-gradient(145deg, var(--color-background-container) 0%, var(--color-background-alt) 100%)',
               color: 'var(--color-text-tertiary)',
+              ...placeholderStyle,
             }}
           >
             <FileTextOutlined style={{ fontSize: 32, opacity: 0.6 }} />

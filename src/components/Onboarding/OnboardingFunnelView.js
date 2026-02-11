@@ -1103,11 +1103,11 @@ function OnboardingFunnelView() {
                         <AudienceCard
                           targetSegment={card.targetSegment}
                           customerProblem={card.customerProblem}
-                          pitch={card.pitch}
                           imageUrl={card.imageUrl}
                           selected={selectedAudienceIndex === i}
                           onClick={() => handleSelectAudience(i)}
                           dataTestId={`audience-card-${i}`}
+                          placeholderSeed={i}
                         />
                       </motion.div>
                     </Col>
@@ -1182,6 +1182,7 @@ function OnboardingFunnelView() {
                     selected={selectedTopicIndex === i}
                     onClick={() => handleSelectTopic(i)}
                     dataTestId={`topic-card-${i}`}
+                    placeholderSeed={i}
                   />
                 </motion.div>
               ))}
