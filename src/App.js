@@ -8,6 +8,7 @@ import { SystemHintProvider } from './contexts/SystemHintContext';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RebaseReminder from './components/RebaseReminder/RebaseReminder';
 import StagingPromoteBar from './components/StagingPromoteBar/StagingPromoteBar';
+import AdminLinkBar from './components/AdminLinkBar/AdminLinkBar';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
@@ -350,6 +351,7 @@ const App = () => {
         <StagingPromoteBar />
         <ErrorBoundary>
           <AuthProvider>
+            <AdminLinkBar />
             <WorkflowModeProvider>
               <AnalyticsProvider>
                 <AppContent />
