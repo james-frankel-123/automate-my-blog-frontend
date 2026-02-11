@@ -184,6 +184,10 @@ function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete 
         transform: none !important;
       }
     }
+    .hero-image-title-overlay {
+      background: linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%) !important;
+      background-color: transparent !important;
+    }
   `;
 
   const imageStyle = {
@@ -241,7 +245,7 @@ function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete 
             bottom: 0,
             left: 0,
             right: 0,
-            background: 'linear-gradient(to top, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.05) 40%, transparent 100%)',
+            background: 'linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%)',
             padding: '32px 24px 24px',
             display: 'flex',
             alignItems: 'flex-end',
