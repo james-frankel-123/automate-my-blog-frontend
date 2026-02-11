@@ -385,20 +385,7 @@ export const topicAPI = {
     };
 
     try {
-      // Try trending-topics stream first, then topics stream, then one-shot
-      try {
-        const finalTopics = await runTopicStream((p) => autoBlogAPI.generateTrendingTopicsStream(p));
-        if (finalTopics.length > 0) {
-          return {
-            success: true,
-            topics: finalTopics,
-            message: `Generated ${finalTopics.length} targeted content ideas!`,
-          };
-        }
-      } catch (trendingErr) {
-        console.warn('Trending topics stream not available, trying topics stream:', trendingErr?.message);
-      }
-
+      // Topics content: use topics stream as primary (trending stream often times out), then trending stream, then one-shot
       try {
         const finalTopics = await runTopicStream((p) => autoBlogAPI.generateTopicsStream(p));
         if (finalTopics.length > 0) {
@@ -409,7 +396,20 @@ export const topicAPI = {
           };
         }
       } catch (streamErr) {
-        console.warn('Topic stream not available, falling back to one-shot:', streamErr?.message);
+        console.warn('Topics stream not available, trying trending topics stream:', streamErr?.message);
+      }
+
+      try {
+        const finalTopics = await runTopicStream((p) => autoBlogAPI.generateTrendingTopicsStream(p));
+        if (finalTopics.length > 0) {
+          return {
+            success: true,
+            topics: finalTopics,
+            message: `Generated ${finalTopics.length} targeted content ideas!`,
+          };
+        }
+      } catch (trendingErr) {
+        console.warn('Trending topics stream not available, falling back to one-shot:', trendingErr?.message);
       }
 
       // Fallback: one-shot API
