@@ -10,35 +10,13 @@ import { replaceVideoPlaceholders } from '../../utils/videoPlaceholders';
 import HTMLPreview from '../HTMLPreview/HTMLPreview';
 
 /**
- * Inject [TWEET:n], [ARTICLE:n], [VIDEO:n] placeholders when backend omits them.
- * If we have related content but the body doesn't include placeholders, append them
- * so the preview can show tweet/article/video cards.
+ * Do not append related content to the bottom. The backend should synthesize
+ * preloaded articles/tweets/videos into the content at contextually relevant
+ * points, emitting [TWEET:n], [ARTICLE:n], [VIDEO:n] placeholders. We only
+ * resolve placeholders that exist in the content; we never append blocks.
  */
-function injectRelatedContentPlaceholders(content, relatedTweets = [], relatedArticles = [], relatedVideos = []) {
-  if (!content || typeof content !== 'string') return content || '';
-  const hasPlaceholders = /\[(?:TWEET|ARTICLE|VIDEO):\d+\]/.test(content);
-  if (hasPlaceholders) return content;
-
-  const parts = [];
-  const tweets = Array.isArray(relatedTweets) ? relatedTweets : [];
-  const articles = Array.isArray(relatedArticles) ? relatedArticles : [];
-  const videos = Array.isArray(relatedVideos) ? relatedVideos : [];
-
-  if (tweets.length > 0) {
-    parts.push('\n\n## Related Tweets\n\n');
-    parts.push(tweets.slice(0, 3).map((_, i) => `[TWEET:${i}]`).join('\n\n'));
-  }
-  if (articles.length > 0) {
-    parts.push('\n\n## Related Articles\n\n');
-    parts.push(articles.slice(0, 3).map((_, i) => `[ARTICLE:${i}]`).join('\n\n'));
-  }
-  if (videos.length > 0) {
-    parts.push('\n\n## Related Videos\n\n');
-    parts.push(videos.slice(0, 3).map((_, i) => `[VIDEO:${i}]`).join('\n\n'));
-  }
-
-  if (parts.length === 0) return content;
-  return content.trimEnd() + parts.join('');
+function applyRelatedContentPlaceholders(content) {
+  return content || '';
 }
 
 /**
@@ -50,7 +28,9 @@ function injectRelatedContentPlaceholders(content, relatedTweets = [], relatedAr
  * @param {Array} relatedVideos - For __VIDEO_PLACEHOLDER_n__
  * @param {Array} relatedTweets - For __TWEET_PLACEHOLDER_n__
  * @param {string} [heroImageUrl] - Hero image URL when content has hero slot
+ * @param {Array<{ text: string, href?: string, type?: string, placement?: string }>} [ctas] - CTAs returned with content; used to style matching links in preview
  * @param {Object} [style] - Optional style for the preview container
+ * @param {boolean} [generationComplete] - When true, post generation is done (stops hero placeholder animation)
  */
 function StreamingPreview({
   content,
@@ -58,14 +38,14 @@ function StreamingPreview({
   relatedVideos = [],
   relatedTweets = [],
   heroImageUrl,
+  ctas = [],
   style = {},
+  generationComplete = false,
 }) {
-  const contentWithPlaceholders = injectRelatedContentPlaceholders(
-    content || '',
-    relatedTweets,
-    relatedArticles,
-    relatedVideos
-  );
+  if (typeof window !== 'undefined' && window.__HERO_IMAGE_DEBUG__ !== false) {
+    console.log('[HeroImage] StreamingPreview received', { heroImageUrl: heroImageUrl ?? '(none)', hasContent: !!content });
+  }
+  const contentWithPlaceholders = applyRelatedContentPlaceholders(content || '');
   const resolvedContent = replaceTweetPlaceholders(
     replaceVideoPlaceholders(
       replaceArticlePlaceholders(contentWithPlaceholders, relatedArticles),
@@ -80,9 +60,11 @@ function StreamingPreview({
       relatedArticles={relatedArticles}
       relatedVideos={relatedVideos}
       relatedTweets={relatedTweets}
+      ctas={ctas}
       forceMarkdown={true}
       heroImageUrl={heroImageUrl || undefined}
       style={style}
+      generationComplete={generationComplete}
     />
   );
 }

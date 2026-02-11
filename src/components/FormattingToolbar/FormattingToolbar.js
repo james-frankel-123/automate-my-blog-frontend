@@ -19,7 +19,7 @@ const FormattingToolbar = ({
   onInsert, 
   showStats = true,
   wordCount = 0,
-  readingTime = 0,
+  readingTime: _readingTime = 0,
   style = {} 
 }) => {
   

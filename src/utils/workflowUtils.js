@@ -333,7 +333,7 @@ export const progressUtils = {
    * Calculate workflow progress percentage
    * EXTRACTED FROM: App.js progress calculation logic
    */
-  calculateProgress(currentStep, totalSteps = 6) {
+  calculateProgress(currentStep, _totalSteps = 6) {
     const stepProgress = {
       0: 0,   // Website URL input
       1: 16,  // Website analysis
