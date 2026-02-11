@@ -128,8 +128,10 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
   const shouldApplyKenBurns = hasDimensions;
   const kenBurnsActive = shouldApplyKenBurns && showImage;
 
+  const isLandscape = hasDimensions && imageMetrics.width >= imageMetrics.height;
   const wrapperStyle = {
     position: 'relative',
+    width: '100%',
     margin: `${paragraphSpacing}px 0`,
     borderRadius: 8,
     overflow: 'hidden',
@@ -137,7 +139,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     minHeight: 240,
     ...(shouldApplyKenBurns && hasDimensions
       ? {
-          aspectRatio: `${imageMetrics.width} / ${imageMetrics.height}`,
+          aspectRatio: isLandscape ? `${imageMetrics.width} / ${imageMetrics.height}` : '16 / 9',
           maxHeight: 420,
         }
       : {})
@@ -186,7 +188,6 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
 
   const imageStyle = {
     width: '100%',
-    maxWidth: '100%',
     height: shouldApplyKenBurns ? '100%' : 'auto',
     borderRadius: '8px',
     margin: 0,
@@ -196,7 +197,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     left: showImage ? undefined : 0,
     transition: 'opacity 0.35s ease-in',
     pointerEvents: showImage ? undefined : 'none',
-    objectFit: shouldApplyKenBurns ? 'cover' : 'contain',
+    objectFit: 'cover',
     objectPosition: 'center',
     willChange: kenBurnsActive ? 'transform' : undefined,
     transform: kenBurnsActive ? 'scale(1.045)' : undefined,
