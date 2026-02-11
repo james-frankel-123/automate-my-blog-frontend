@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
+import ReactPlayer from 'react-player';
 import { Tweet } from 'react-tweet';
 import 'react-tweet/theme.css';
 import { typography } from '../DesignSystem/tokens';
@@ -315,9 +316,6 @@ const ARTICLE_PLACEHOLDER_TOKEN_REGEX = /__ARTICLE_PLACEHOLDER_(\d+)__/g;
 
 const TWEET_PLACEHOLDER_TOKEN_REGEX = /__TWEET_PLACEHOLDER_(\d+)__/g;
 
-/** Sentinel injected so we can split and render react-tweet or fallback card. */
-const TWEET_EMBED_SENTINEL_REGEX = /__TWEET_EMBED_(\d+)__/g;
-
 /**
  * Extract Twitter/X tweet ID from a status URL.
  * Supports twitter.com/.../status/ID, x.com/.../status/ID, twitter.com/i/status/ID.
@@ -429,27 +427,102 @@ function TweetEmbed({ index, relatedTweets }) {
   );
 }
 
+/** Regex to find VIDEO_EMBED or TWEET_EMBED sentinels for unified media slot parsing */
+const MEDIA_EMBED_SENTINEL_REGEX = /__(VIDEO_EMBED|TWEET_EMBED)_(\d+)__/g;
+
 /**
- * Renders HTML content, splitting on __TWEET_EMBED_n__ and rendering react-tweet (or fallback) for each slot.
+ * Renders a single video slot as a natural embed: 16:9 container, thumbnail + play button (react-player light mode), caption below.
+ * Plays inline when the user clicks; no iframe until then.
  */
-function HtmlWithTweetSlots({ html, relatedTweets }) {
+function VideoEmbed({ index, relatedVideos }) {
+  const videos = Array.isArray(relatedVideos) ? relatedVideos : [];
+  const video = videos[index];
+  const fallbackLoadingHtml = getVideoPlaceholderHtml(index, []);
+
+  if (!video || (!video.url && !video.videoId)) {
+    return (
+      <div
+        className="markdown-video-embed-wrapper markdown-video-embed-loading"
+        dangerouslySetInnerHTML={{ __html: fallbackLoadingHtml }}
+      />
+    );
+  }
+
+  const url = video.url || (video.videoId ? `https://www.youtube.com/watch?v=${video.videoId}` : '');
+  const title = (video.title && String(video.title).slice(0, 200)) || 'Video';
+  const channel = video.channelTitle ? String(video.channelTitle).slice(0, 100) : '';
+  const meta = [channel, video.viewCount != null ? `${Number(video.viewCount).toLocaleString()} views` : '', video.duration].filter(Boolean).join(' · ');
+  const thumbnailUrl = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl) ? video.thumbnailUrl : true;
+
+  return (
+    <div className="markdown-video-embed-wrapper">
+      <div className="markdown-video-embed-player-wrap">
+        <ReactPlayer
+          url={url}
+          light={thumbnailUrl}
+          width="100%"
+          height="100%"
+          className="markdown-video-embed-player"
+          playIcon={
+            <span className="markdown-video-embed-play-icon" aria-hidden="true">
+              ▶
+            </span>
+          }
+          config={{
+            youtube: {
+              playerVars: { modestbranding: 1, rel: 0 }
+            }
+          }}
+        />
+      </div>
+      {(title || meta) && (
+        <div className="markdown-video-embed-caption">
+          {title && <span className="markdown-video-embed-title">{title}</span>}
+          {meta && <span className="markdown-video-embed-meta">{meta}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Renders HTML content, splitting on __VIDEO_EMBED_n__ and __TWEET_EMBED_n__, rendering VideoEmbed or TweetEmbed for each slot.
+ */
+function HtmlWithMediaSlots({ html, relatedVideos, relatedTweets }) {
   if (!html) return null;
-  if (!html.includes('__TWEET_EMBED_')) {
+  if (!html.includes('__VIDEO_EMBED_') && !html.includes('__TWEET_EMBED_')) {
     return <div dangerouslySetInnerHTML={{ __html: html }} />;
   }
-  const parts = html.split(TWEET_EMBED_SENTINEL_REGEX);
-  const result = [];
-  for (let i = 0; i < parts.length; i++) {
-    if (i % 2 === 0) {
-      if (parts[i]) result.push(<div key={`html-${i}`} dangerouslySetInnerHTML={{ __html: parts[i] }} />);
-    } else {
-      const index = parseInt(parts[i], 10);
-      if (!Number.isNaN(index) && index >= 0) {
-        result.push(<TweetEmbed key={`tweet-${i}-${index}`} index={index} relatedTweets={relatedTweets} />);
-      }
+  const segments = [];
+  let lastIndex = 0;
+  const re = new RegExp(MEDIA_EMBED_SENTINEL_REGEX.source, 'g');
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    if (m.index > lastIndex) {
+      segments.push({ type: 'html', value: html.slice(lastIndex, m.index) });
     }
+    segments.push({
+      type: m[1] === 'VIDEO_EMBED' ? 'video' : 'tweet',
+      index: parseInt(m[2], 10)
+    });
+    lastIndex = m.index + m[0].length;
   }
-  return <>{result}</>;
+  if (lastIndex < html.length) {
+    segments.push({ type: 'html', value: html.slice(lastIndex) });
+  }
+  return (
+    <>
+      {segments.map((seg, i) => {
+        if (seg.type === 'html') {
+          return seg.value ? <div key={`seg-${i}`} dangerouslySetInnerHTML={{ __html: seg.value }} /> : null;
+        }
+        if (seg.type === 'video') {
+          return <VideoEmbed key={`video-${i}-${seg.index}`} index={seg.index} relatedVideos={relatedVideos} />;
+        }
+        return <TweetEmbed key={`tweet-${i}-${seg.index}`} index={seg.index} relatedTweets={relatedTweets} />;
+      })}
+    </>
+  );
 }
 
 /**
@@ -611,11 +684,14 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       return Number.isNaN(index) || index < 0 ? '' : getArticlePlaceholderHtml(index, relatedArticles);
     });
   }
-  // Replace video placeholder tokens with loading box or video card HTML
+  // Replace video placeholder tokens: sentinel for React VideoEmbed when we have data, else loading HTML
   if (rawHtml.includes('__VIDEO_PLACEHOLDER_')) {
     rawHtml = rawHtml.replace(VIDEO_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
       const index = parseInt(indexStr, 10);
-      return Number.isNaN(index) || index < 0 ? '' : getVideoPlaceholderHtml(index, relatedVideos);
+      if (Number.isNaN(index) || index < 0) return '';
+      const video = Array.isArray(relatedVideos) ? relatedVideos[index] : null;
+      const hasVideo = video && (video.url || video.videoId);
+      return hasVideo ? `__VIDEO_EMBED_${index}__` : getVideoPlaceholderHtml(index, relatedVideos);
     });
   }
   // Replace tweet placeholder tokens with sentinels so we can render react-tweet or fallback per slot
@@ -684,7 +760,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         <>
           {contentParts.map((part, i) => (
             <React.Fragment key={i}>
-              <HtmlWithTweetSlots html={part} relatedTweets={relatedTweets} />
+              <HtmlWithMediaSlots html={part} relatedVideos={relatedVideos} relatedTweets={relatedTweets} />
               {i < contentParts.length - 1 && (
                 <HeroImage
                   src={heroImageUrl || heroImageFallback}
@@ -788,7 +864,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           }
         }}
       >
-        <HtmlWithTweetSlots html={htmlContent} relatedTweets={relatedTweets} />
+        <HtmlWithMediaSlots html={htmlContent} relatedVideos={relatedVideos} relatedTweets={relatedTweets} />
       </div>
       
       <style jsx>{`
@@ -1248,7 +1324,76 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.08); }
         }
 
-        /* Section heading + first video card spacing */
+        /* Video embed: natural 16:9 inline embed with caption below */
+        div :global(h2 + .markdown-video-embed-wrapper) {
+          margin-top: 6px;
+        }
+        div :global(.markdown-video-embed-wrapper) {
+          margin: 18px 0;
+          width: 100%;
+        }
+        div :global(.markdown-video-embed-wrapper.markdown-video-embed-loading) {
+          margin: 14px 0;
+        }
+        div :global(.markdown-video-embed-player-wrap) {
+          position: relative;
+          aspect-ratio: 16 / 9;
+          width: 100%;
+          overflow: hidden;
+          border-radius: 10px;
+          background: var(--color-background-alt);
+          border: 1px solid var(--color-border-base);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        div :global(.markdown-video-embed-player-wrap > div) {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+        div :global(.markdown-video-embed-player) {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+        div :global(.markdown-video-embed-play-icon) {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 68px;
+          height: 48px;
+          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.75);
+          color: #fff;
+          font-size: 20px;
+          padding-left: 6px;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        div :global(.markdown-video-embed-player-wrap:hover) .markdown-video-embed-play-icon {
+          background: rgba(220, 38, 38, 0.9);
+          transform: scale(1.05);
+        }
+        div :global(.markdown-video-embed-caption) {
+          margin-top: 10px;
+          padding: 0 2px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        div :global(.markdown-video-embed-title) {
+          font-weight: 600;
+          font-size: 15px;
+          line-height: 1.35;
+          color: var(--color-text-primary);
+        }
+        div :global(.markdown-video-embed-meta) {
+          font-size: 13px;
+          color: var(--color-text-secondary);
+          line-height: 1.4;
+        }
+
+        /* Section heading + first video card spacing (legacy card fallback) */
         div :global(h2 + .markdown-video-card) {
           margin-top: 6px;
         }
