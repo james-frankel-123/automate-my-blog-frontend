@@ -583,6 +583,12 @@ body {
   }
 }
 
+/* Placeholder image blocks: used with getPlaceholderStyle() for varied hues/stagger */
+@keyframes placeholder-shimmer {
+  0%, 100% { background-position: 100% 50%; }
+  50% { background-position: 0% 50%; }
+}
+
 /* Button shimmer effect */
 @keyframes buttonShimmer {
   0% {
