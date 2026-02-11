@@ -87,7 +87,6 @@ const mockWorkflowModeValue = {
   requireAuth: jest.fn(),
   addStickyWorkflowStep: jest.fn(),
   updateStickyWorkflowStep: jest.fn(),
-  saveWorkflowState: jest.fn(),
   sessionId: null,
   initializeSession: jest.fn(),
   loadUserAudiences: jest.fn(),

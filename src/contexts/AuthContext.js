@@ -359,9 +359,6 @@ export const AuthProvider = ({ children }) => {
       // Continue with local cleanup even if server call fails
     }
 
-    // SECURITY: Always clear workflow state so no user/anonymous data persists (fixes #182)
-    localStorage.removeItem('automate-my-blog-workflow-state');
-
     // Clear all user-specific localStorage data (preserve theme preference)
     const theme = localStorage.getItem('theme');
     const keysToRemove = [];
