@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DOMPurify from 'dompurify';
 import { typography } from '../DesignSystem/tokens';
-import heroImageFallback from '../../assets/hero-image-fallback.png';
+import heroImageFallback from '../../assets/hero_image_fallback.png';
 import { getPlaceholderStyle, getPlaceholderNthVariation } from '../../utils/placeholderStyles';
 
 function escapeAttr(s) {
