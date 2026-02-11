@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import StreamingNarration from '../StreamingNarration';
 
 describe('StreamingNarration', () => {
@@ -19,23 +19,18 @@ describe('StreamingNarration', () => {
     expect(screen.getByText(/Something went wrong loading/)).toBeInTheDocument();
   });
 
-  it('calls onComplete when not streaming after min time', async () => {
-    jest.useFakeTimers();
+  it('calls onComplete when not streaming', async () => {
     const onComplete = jest.fn();
     render(
       <StreamingNarration
         content="Done."
         isStreaming={false}
         onComplete={onComplete}
-        minimumDisplayTime={10}
       />
     );
-    expect(onComplete).not.toHaveBeenCalled();
-    await act(async () => {
-      jest.advanceTimersByTime(15);
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalled();
     });
-    expect(onComplete).toHaveBeenCalled();
-    jest.useRealTimers();
   });
 
   it('has data-testid', () => {

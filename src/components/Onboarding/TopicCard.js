@@ -4,7 +4,7 @@
  */
 import React, { useState } from 'react';
 import { Card, Typography } from 'antd';
-import { CheckCircleFilled } from '@ant-design/icons';
+import { CheckCircleFilled, FileTextOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -55,8 +55,21 @@ export function TopicCard({
         {showImage ? (
           <img src={imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={() => setImageError(true)} />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-tertiary)' }}>
-            Topic
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              background: 'linear-gradient(145deg, var(--color-background-container) 0%, var(--color-background-alt) 100%)',
+              color: 'var(--color-text-tertiary)',
+            }}
+          >
+            <FileTextOutlined style={{ fontSize: 32, opacity: 0.6 }} />
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Topic image</span>
           </div>
         )}
         {selected && (

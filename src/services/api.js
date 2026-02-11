@@ -1164,11 +1164,52 @@ Please provide analysis in this JSON format:
   }
 
   /**
-   * Connect to analysis narration SSE stream (Issue #261).
-   * Backend: GET /api/v1/analysis/narration/audience|topic|content with query params.
-   * @param {'audience'|'topic'|'content'} type - Which narration stream
+   * Analysis narration fallback: backend has no GET /api/v1/analysis/narration/analysis.
+   * Poll GET /api/narrative/:organizationId until ready, then deliver narrative word-by-word to match other streams.
+   */
+  async _connectAnalysisNarrationFallback(organizationId, handlers = {}) {
+    const onChunk = handlers.onChunk || (() => {});
+    const onComplete = handlers.onComplete || (() => {});
+    const onError = handlers.onError || (() => {});
+
+    const maxPolls = 60;
+    const pollIntervalMs = 2000;
+    let data;
+
+    for (let i = 0; i < maxPolls; i++) {
+      try {
+        data = await this.makeRequest(`api/narrative/${organizationId}`, { method: 'GET' });
+      } catch (err) {
+        if (handlers.onError) handlers.onError(err);
+        throw err;
+      }
+      if (data?.ready && data?.narrative) break;
+      await new Promise((r) => setTimeout(r, pollIntervalMs));
+    }
+
+    const text = data?.narrative || '';
+    if (!text) {
+      const err = new Error('Narrative not available');
+      onError(err);
+      return;
+    }
+
+    // Simulate word-by-word delivery to match audience/topic/content narration UX
+    const words = text.split(/(\s+)/);
+    for (const word of words) {
+      onChunk({ text: word });
+      if (word.trim()) await new Promise((r) => setTimeout(r, 14)); // ~30% faster than 20ms
+    }
+    onComplete({ text });
+  }
+
+  /**
+   * Connect to narration: SSE streams for audience/topic/content (GET /api/v1/analysis/narration/...),
+   * or legacy polling for analysis (GET /api/narrative/:organizationId) with simulated word-by-word delivery.
+   * See: docs/narration-stream-api-frontend-handoff.md
+   * @param {'audience'|'topic'|'content'|'analysis'} type - Which narration; only audience/topic/content have SSE; analysis uses legacy narrative endpoint
    * @param {{ organizationId: string, selectedAudience?: string, selectedTopic?: string }} params - organizationId required; selectedAudience for topic, selectedTopic for content
-   * @param {{ onChunk: (data: { text?: string }) => void, onComplete?: (data: { text?: string }) => void, onError?: (err: Error) => void }} handlers
+   * @param {{ onChunk: (data: { text?: string }) => void, onComplete?: (data: { text?: string }) => void, onError?: (err: Error) => void, onBusinessProfile?: (data: object) => void }} handlers
    * @returns {Promise<void>} Resolves when stream ends; rejects on HTTP error, timeout, or handler throws
    */
   async connectNarrationStream(type, params, handlers = {}) {
@@ -1178,6 +1219,12 @@ Please provide analysis in this JSON format:
       if (handlers.onError) handlers.onError(err);
       throw err;
     }
+
+    // Analysis has no SSE endpoint; use legacy GET /api/narrative/:organizationId and simulate streaming
+    if (type === 'analysis') {
+      return this._connectAnalysisNarrationFallback(organizationId, handlers);
+    }
+
     const base = `${this.baseURL}/api/v1/analysis/narration/${type}`;
     const search = new URLSearchParams({ organizationId });
     if (type === 'topic' && selectedAudience != null) search.set('selectedAudience', typeof selectedAudience === 'string' ? selectedAudience : (selectedAudience?.title ?? selectedAudience?.targetSegment ?? selectedAudience?.name ?? ''));
@@ -1211,8 +1258,10 @@ Please provide analysis in this JSON format:
     }
     if (!response.ok) {
       clearTimeout(timeoutId);
-      // 404 = backend has not implemented this narration endpoint yet (see ISSUE_261_BACKEND_HANDOFF)
+      // 404 = backend has not implemented this narration endpoint yet; still call onComplete so funnel can proceed
       if (response.status === 404) {
+        const onComplete = handlers.onComplete || (() => {});
+        onComplete({ text: '' });
         return;
       }
       let errMsg = `Narration stream ${response.status}`;
@@ -3160,10 +3209,24 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Confirm analysis (and optionally persist edits). Step 2 of onboarding handoff.
+   * @param {string} organizationId - Required (from analysis-result or complete).
+   * @param {Object} body - analysisConfirmed, analysisEdited?, editedFields?, businessName?, targetAudience?, contentFocus?, etc.
+   * @returns {Promise<{ success: boolean, message?: string, organizationId?: string }>}
+   */
+  async confirmAnalysis(organizationId, body) {
+    const response = await this.makeRequest('/api/v1/analysis/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ organizationId, ...body }),
+    });
+    return response;
+  }
+
+  /**
    * Get LLM-cleaned suggestion for user-edited analysis fields (Issue #261).
-   * Backend may implement POST /api/v1/analysis/cleaned-edit or similar.
+   * Backend returns { suggested: { businessName?, targetAudience?, contentFocus? } } per handoff.
    * @param {{ businessName: string, targetAudience: string, contentFocus: string }} editedFields
-   * @returns {Promise<{ suggestion: { businessName?, targetAudience?, contentFocus? } }>}
+   * @returns {Promise<{ suggested?: object, suggestion?: object }>}
    */
   async getCleanedAnalysisSuggestion(editedFields) {
     const response = await this.makeRequest('/api/v1/analysis/cleaned-edit', {
@@ -3290,12 +3353,13 @@ Please provide analysis in this JSON format:
         });
         return response;
       } else {
-        console.error('❌ Failed to get organization CTAs:', response);
-        throw new Error(response.error || 'Failed to retrieve CTAs');
+        console.warn('⚠️ Get organization CTAs returned no data:', response.error || response.message);
+        return { success: false, ctas: [], count: 0 };
       }
     } catch (error) {
-      console.error('❌ Get organization CTAs request failed:', error);
-      throw error;
+      // Fail softly so callers can continue (e.g. 304/network/CORS); avoid breaking funnel
+      console.warn('⚠️ Get organization CTAs request failed, using empty list:', error?.message || error);
+      return { success: false, ctas: [], count: 0 };
     }
   }
 

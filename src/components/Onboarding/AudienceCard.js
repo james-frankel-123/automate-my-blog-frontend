@@ -1,5 +1,5 @@
 /**
- * AudienceCard — white card with image, segment, problem, pitch. Selectable.
+ * AudienceCard — white card with image, segment, problem. Selectable.
  * Issue #261.
  */
 import React, { useState } from 'react';
@@ -104,7 +104,6 @@ export function AudienceCard({
   imageUrl,
   targetSegment,
   customerProblem,
-  pitch,
   selected,
   onClick,
   dataTestId,
@@ -150,9 +149,6 @@ export function AudienceCard({
           <Text type="secondary" style={{ fontSize: 13, display: 'block', marginBottom: 8, color: 'var(--color-text-secondary)' }}>
             {toDisplayString(customerProblem)}
           </Text>
-        )}
-        {toDisplayString(pitch) && (
-          <Text style={{ fontSize: 14, color: 'var(--color-text-primary)' }}>{toDisplayString(pitch)}</Text>
         )}
       </div>
     </Card>

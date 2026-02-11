@@ -1,15 +1,13 @@
 /**
  * StreamingNarration — first-person AI narration with smooth reveal.
  * Optional typing effect with blinking cursor to match "hold tight" style.
- * Minimum display time before unlock. Fallback on error.
- * Issue #261.
+ * Fallback on error. Issue #261.
  */
 import React, { useEffect, useRef, useState } from 'react';
-import { Typography, Skeleton } from 'antd';
+import { Typography } from 'antd';
 
 const { Paragraph } = Typography;
 
-const MIN_DISPLAY_TIME_MS = 5000;
 const NARRATION_STYLE = {
   fontSize: 18,
   lineHeight: 1.8,
@@ -30,25 +28,14 @@ export function StreamingNarration({
   isStreaming = false,
   onComplete,
   fallbackText = 'Something went wrong loading this section. Please continue.',
-  minimumDisplayTime = MIN_DISPLAY_TIME_MS,
   dataTestId = 'streaming-narration',
   enableTypingEffect = false,
 }) {
-  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [hasCalledComplete, setHasCalledComplete] = useState(false);
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const containerRef = useRef(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      console.log('🕐 [StreamingNarration] Minimum display time elapsed');
-      setMinTimeElapsed(true);
-    }, minimumDisplayTime);
-    return () => clearTimeout(t);
-  }, [minimumDisplayTime]);
-
-  // Log when isStreaming changes
   useEffect(() => {
     if (!isStreaming) {
       console.log('🕐 [StreamingNarration] Content streaming finished');
@@ -58,48 +45,21 @@ export function StreamingNarration({
   useEffect(() => {
     if (!onComplete || hasCalledComplete) return;
 
-    // If typing effect is enabled, wait for typing to complete as well
     const typingComplete = !enableTypingEffect || !isTyping;
-    const done = !isStreaming && minTimeElapsed && typingComplete;
+    const done = !isStreaming && typingComplete;
 
     if (done) {
-      console.log('🕐 [StreamingNarration] ✅ ALL CONDITIONS MET - Narration complete (streaming done, min time elapsed, typing complete) - calling onComplete callback');
+      console.log('🕐 [StreamingNarration] Narration complete — calling onComplete');
       setHasCalledComplete(true);
       onComplete();
-    } else {
-      // Log which conditions are not yet met
-      if (!done) {
-        const pending = [];
-        if (isStreaming) pending.push('streaming');
-        if (!minTimeElapsed) pending.push('min time');
-        if (!typingComplete) pending.push('typing');
-        if (pending.length > 0) {
-          console.log(`🕐 [StreamingNarration] Waiting for: ${pending.join(', ')}`);
-        }
-      }
     }
-  }, [isStreaming, minTimeElapsed, onComplete, hasCalledComplete, enableTypingEffect, isTyping]);
+  }, [isStreaming, onComplete, hasCalledComplete, enableTypingEffect, isTyping]);
 
-  // Typing effect logic
+  // When streaming finished: show full content (no re-typing, since we showed it live during stream)
   useEffect(() => {
     if (enableTypingEffect && content && !isStreaming) {
-      console.log('🕐 [StreamingNarration] Starting typing effect for narration');
-      setIsTyping(true);
-      setDisplayedText('');
-      let currentIndex = 0;
-
-      const typingInterval = setInterval(() => {
-        if (currentIndex <= content.length) {
-          setDisplayedText(content.slice(0, currentIndex));
-          currentIndex++;
-        } else {
-          console.log('🕐 [StreamingNarration] Typing effect complete');
-          clearInterval(typingInterval);
-          setIsTyping(false);
-        }
-      }, 40); // 40ms per character
-
-      return () => clearInterval(typingInterval);
+      setDisplayedText(content);
+      setIsTyping(false);
     } else if (!enableTypingEffect) {
       setDisplayedText(content);
       setIsTyping(false);
@@ -107,7 +67,10 @@ export function StreamingNarration({
   }, [content, enableTypingEffect, isStreaming]);
 
   const showFallback = !content && !isStreaming;
-  const displayContent = showFallback ? fallbackText : (enableTypingEffect ? displayedText : content);
+  // Show streamed content as it arrives; only use typing-effect displayedText when not streaming
+  const displayContent = showFallback
+    ? fallbackText
+    : (enableTypingEffect && !isStreaming ? displayedText : content);
   const showLoading = isStreaming && !content;
   const textStyle = enableTypingEffect ? TYPING_STYLE : NARRATION_STYLE;
 
@@ -124,20 +87,14 @@ export function StreamingNarration({
     >
       {showLoading ? (
         <div data-testid="narration-loading">
-          <Skeleton
-            active
-            paragraph={{ rows: 2, width: ['100%', '85%'] }}
-            title={false}
-            style={{ marginBottom: 0 }}
-          />
-          <Paragraph style={{ ...NARRATION_STYLE, color: 'var(--color-text-tertiary)', marginTop: 8, marginBottom: 0 }}>
+          <Paragraph style={{ ...NARRATION_STYLE, color: 'var(--color-text-tertiary)', marginBottom: 0 }}>
             Preparing your personalized message…
           </Paragraph>
         </div>
       ) : (
         <Paragraph style={textStyle}>
           {displayContent}
-          {enableTypingEffect && isTyping && displayedText.length < content.length && (
+          {enableTypingEffect && isStreaming && content && (
             <span
               style={{
                 display: 'inline-block',
