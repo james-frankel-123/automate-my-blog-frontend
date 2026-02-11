@@ -55,7 +55,6 @@ const AdminUsersTab = () => {
   // Load users on component mount and when filters/pagination change
   useEffect(() => {
     loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadUsers uses pagination/filters from closure
   }, [pagination.current, pagination.pageSize, filters]);
 
   const loadUsers = async () => {

@@ -17,7 +17,7 @@ const { Text } = Typography;
  */
 const ModeToggle = ({ 
   mode,
-  tabKey: _tabKey,
+  tabKey,
   workflowStep,
   showModeToggle,
   showWorkflowNavigation,
@@ -30,7 +30,7 @@ const ModeToggle = ({
   onExitToFocusMode,
   onContinueToNextStep,
   onGoToPreviousStep,
-  onSaveStepData: _onSaveStepData,
+  onSaveStepData,
   stepData = null,
   className = '',
   style = {}

@@ -21,7 +21,7 @@ const { Text } = Typography;
 const VisualContentSuggestions = ({ 
   visualSuggestions = [], 
   onGenerateVisual,
-  onPreviewVisual: _onPreviewVisual,
+  onPreviewVisual,
   style = {} 
 }) => {
   const [generating, setGenerating] = useState(null);

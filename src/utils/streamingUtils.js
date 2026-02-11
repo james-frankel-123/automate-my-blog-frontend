@@ -57,7 +57,7 @@ function looksLikeJsonKeyValue(str) {
 }
 
 /** Chunks that are only JSON structure/punctuation (backend sometimes streams wrapper JSON as content-chunk). */
-const JSON_STRUCTURE_ONLY = /^[\s[\]{}\]:,"\\\n\r`]+$/;
+const JSON_STRUCTURE_ONLY = /^[\s\[\]{}\]:,"\\\n\r`]+$/;
 /** Single tokens that are likely wrapper keys streamed as content (e.g. ctaSuggestions, seoOptimizationScore). */
 const STREAMED_JSON_KEY_TOKENS = new Set(['cta', 'seo', 'suggestions', 'optimization', 'score', 'json', 'metadescription']);
 /** Return false if chunk should not be appended (JSON structure streamed as "content" instead of body). */

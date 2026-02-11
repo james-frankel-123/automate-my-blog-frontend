@@ -1,10 +1,10 @@
 /**
- * RelatedContentPanel — compact UI to view related content (tweets, articles, videos)
- * passed into the blog post. Small thumbnails, one-line titles.
+ * RelatedContentPanel — compact UI to view and inject related content (tweets, articles, videos)
+ * into the blog post. Small thumbnails, one-line titles, clear "Add to post" actions.
  */
 import React, { useState } from 'react';
-import { Collapse, Typography } from 'antd';
-import { MessageOutlined, FileTextOutlined, PlayCircleOutlined } from '@ant-design/icons';
+import { Collapse, Button, Typography } from 'antd';
+import { MessageOutlined, FileTextOutlined, PlayCircleOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -86,8 +86,9 @@ const metaStyle = {
  * @param {Array<string|{ text?: string, content?: string }>} [props.tweets]
  * @param {Array<{ url?: string, title?: string, sourceName?: string, publishedAt?: string, urlToImage?: string }>} [props.articles]
  * @param {Array<{ videoId?: string, url?: string, title?: string, channelTitle?: string, thumbnailUrl?: string, viewCount?: number, duration?: string }>} [props.videos]
+ * @param {(type: 'TWEET'|'ARTICLE'|'VIDEO', index: number) => void} [props.onInject] - Called when user clicks "Add to post"
  */
-function RelatedContentPanel({ tweets = [], articles = [], videos = [] }) {
+function RelatedContentPanel({ tweets = [], articles = [], videos = [], onInject }) {
   const hasTweets = Array.isArray(tweets) && tweets.length > 0;
   const hasArticles = Array.isArray(articles) && articles.length > 0;
   const hasVideos = Array.isArray(videos) && videos.length > 0;
@@ -102,10 +103,19 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [] }) {
 
   if (!hasAny) return null;
 
-  const tweetLabel = (t, _i) => {
+  const handleInject = (type, index) => {
+    if (typeof onInject === 'function') onInject(type, index);
+  };
+
+  const tweetLabel = (t, i) => {
     const str = typeof t === 'string' ? t : (t?.text || t?.content || '');
     const truncated = String(str).slice(0, TRUNCATE.tweet);
     return (truncated + (String(str).length > TRUNCATE.tweet ? '…' : ''));
+  };
+
+  const injectAriaLabel = (type, index) => {
+    const label = type.charAt(0) + type.slice(1).toLowerCase();
+    return `Add ${label} ${index + 1} to post`;
   };
 
   return (
@@ -132,6 +142,11 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [] }) {
         >
           Related content
         </h3>
+        {onInject && (
+          <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--color-text-secondary)' }}>
+            Add to post inserts a placeholder; switch to Preview to see the card in your post.
+          </p>
+        )}
       </div>
       <div style={{ maxHeight: RELATED_PANEL_MAX_HEIGHT, overflowY: 'auto' }}>
       <Collapse
@@ -139,7 +154,7 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [] }) {
         onChange={(keys) => setActiveKeys(Array.isArray(keys) ? keys : [keys])}
         ghost
         style={{ background: 'transparent' }}
-        aria-label="Related tweets, articles, and videos"
+        aria-label="Tweets, articles, and videos you can add to your post"
       >
         {hasTweets && (
           <Collapse.Panel
@@ -169,6 +184,18 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [] }) {
                       {tweetLabel(t, i)}
                     </div>
                   </div>
+                  {onInject && (
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => handleInject('TWEET', i)}
+                      style={{ flexShrink: 0, height: 24, fontSize: 11 }}
+                      aria-label={injectAriaLabel('TWEET', i)}
+                    >
+                      Add to post
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -232,6 +259,18 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [] }) {
                         {a?.publishedAt ? ` · ${new Date(a.publishedAt).toLocaleDateString()}` : ''}
                       </div>
                     </div>
+                    {onInject && (
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<PlusOutlined />}
+                        onClick={() => handleInject('ARTICLE', i)}
+                        style={{ flexShrink: 0, height: 24, fontSize: 11 }}
+                        aria-label={injectAriaLabel('ARTICLE', i)}
+                      >
+                        Add to post
+                      </Button>
+                    )}
                   </div>
                 );
               })}
@@ -297,6 +336,18 @@ function RelatedContentPanel({ tweets = [], articles = [], videos = [] }) {
                         {v?.duration ? ` · ${v.duration}` : ''}
                       </div>
                     </div>
+                    {onInject && (
+                      <Button
+                        type="primary"
+                        size="small"
+                        icon={<PlusOutlined />}
+                        onClick={() => handleInject('VIDEO', i)}
+                        style={{ flexShrink: 0, height: 24, fontSize: 11 }}
+                        aria-label={injectAriaLabel('VIDEO', i)}
+                      >
+                        Add to post
+                      </Button>
+                    )}
                   </div>
                 );
               })}

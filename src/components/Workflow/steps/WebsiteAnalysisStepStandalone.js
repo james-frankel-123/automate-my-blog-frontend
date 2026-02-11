@@ -14,6 +14,7 @@ import { useSystemHint } from '../../../contexts/SystemHintContext';
 import { NarrativeAnalysisCard } from '../../Dashboard/NarrativeAnalysisCard';
 import { NarrativeAnalysisDisplay } from '../../Dashboard/NarrativeAnalysisDisplay';
 import AnalysisSectionNav from '../../Dashboard/AnalysisSectionNav';
+import ThinkingPanel from '../../shared/ThinkingPanel';
 import ChecklistProgress from '../../shared/ChecklistProgress';
 import AnalysisEmptyState from '../../EmptyStates/AnalysisEmptyState';
 
@@ -43,7 +44,7 @@ const WebsiteAnalysisStepStandalone = ({
 
   // User context
   user,
-  requireAuth: _requireAuth,
+  requireAuth,
 
   // Event handlers
   onAnalysisComplete,
@@ -53,7 +54,7 @@ const WebsiteAnalysisStepStandalone = ({
   onEditingStateChange,
 
   // Configuration
-  embedded: _embedded = false,
+  embedded = false,
   showTitle = true,
   autoAnalyze = false,
 
@@ -66,7 +67,7 @@ const WebsiteAnalysisStepStandalone = ({
   className = '',
 
   // Default helpers
-  getDefaultColors: _getDefaultColors = ComponentHelpers.getDefaultColors
+  getDefaultColors = ComponentHelpers.getDefaultColors
 }) => {
   
   // =============================================================================
@@ -292,7 +293,6 @@ const WebsiteAnalysisStepStandalone = ({
     };
     
     loadCachedAnalysis();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setters from props used inside
   }, [user, analysisCompleted, websiteUrl, loading]);
 
   // Fetch CTAs when organization ID is available in analysisResults
@@ -319,8 +319,8 @@ const WebsiteAnalysisStepStandalone = ({
     fetchCTAs();
   }, [analysisResults?.organizationId]);
 
-  // Extract domain for display (reserved for future use)
-  const _domain = websiteUrl ? 
+  // Extract domain for display
+  const domain = websiteUrl ? 
     websiteUrl.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0] : 
     '';
   
@@ -568,9 +568,9 @@ const WebsiteAnalysisStepStandalone = ({
   };
   
   /**
-   * Handle starting over (reserved for future use)
+   * Handle starting over
    */
-  const _handleStartOver = () => {
+  const handleStartOver = () => {
     setWebsiteUrl && setWebsiteUrl('');
     setAnalysisResults && setAnalysisResults(null);
     setAnalysisCompleted && setAnalysisCompleted(false);
@@ -589,9 +589,9 @@ const WebsiteAnalysisStepStandalone = ({
   };
   
   /**
-   * Handle entering edit mode (reserved for future use)
+   * Handle entering edit mode
    */
-  const _handleEditMode = () => {
+  const handleEditMode = () => {
     if (!analysisResults) {
       console.error('No analysisResults available for editing');
       return;

@@ -25,7 +25,7 @@ export function WebsiteInputSection({
   loading = false,
   scanningMessage = '',
   analysisProgress = null,
-  analysisThoughts: _analysisThoughts = [],
+  analysisThoughts = [],
   dataTestId = 'website-input-section',
 }) {
   const [streamingText, setStreamingText] = useState('');

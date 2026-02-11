@@ -7,12 +7,13 @@ import autoBlogAPI from './services/api';
 // Mock the API service
 jest.mock('./services/api');
 
-// Mock react-tweet (ESM) so App's module graph does not load the real package in Jest
-jest.mock('react-tweet', () => ({ Tweet: () => <div data-testid="react-tweet" /> }));
-jest.mock('react-tweet/theme.css', () => ({}));
-
 // Mock DashboardLayout to avoid deep component tree issues
-jest.mock('./components/Dashboard/DashboardLayout', () => ({ forceWorkflowMode = false, isMobile = false } = {}) => (
+jest.mock('./components/Dashboard/DashboardLayout', () => ({
+  workflowContent,
+  showDashboard,
+  isMobile,
+  forceWorkflowMode,
+}) => (
   <div data-testid="dashboard-layout">
     <span data-testid="workflow-mode">{forceWorkflowMode ? 'workflow' : 'normal'}</span>
     <span data-testid="mobile">{isMobile ? 'mobile' : 'desktop'}</span>

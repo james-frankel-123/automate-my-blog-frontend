@@ -1,5 +1,5 @@
 import React from 'react';
-import { colors, spacing, borderRadius, shadows, typography } from '../../DesignSystem/tokens';
+import { colors, spacing, borderRadius, shadows } from '../../DesignSystem/tokens';
 import { Button } from '../../DesignSystem';
 
 /**
@@ -22,9 +22,8 @@ const EditorLayout = ({
     backgroundColor: colors.background.body,
     borderRadius: isFullscreen ? borderRadius.lg : borderRadius.md,
     overflow: 'hidden',
-    boxShadow: isFullscreen ? shadows.elevated : shadows.md,
+    boxShadow: isFullscreen ? shadows.elevated : shadows.base,
     transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    border: `1px solid ${colors.border.light}`,
     ...(isFullscreen && {
       position: 'fixed',
       top: '5vh',
@@ -42,11 +41,10 @@ const EditorLayout = ({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: `${spacing.lg} ${spacing.xl}`,
+    padding: `${spacing.md} ${spacing.lg}`,
     backgroundColor: colors.background.elevated,
-    borderBottom: `1px solid ${colors.border.base}`,
-    flexShrink: 0,
-    minHeight: '56px'
+    borderBottom: `1px solid ${colors.border.light}`,
+    flexShrink: 0
   };
 
   const contentAreaStyles = {
@@ -59,8 +57,7 @@ const EditorLayout = ({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    overflow: 'hidden',
-    backgroundColor: colors.background.elevated
+    overflow: 'hidden'
   };
 
   const sidebarStyles = {
@@ -69,8 +66,7 @@ const EditorLayout = ({
     backgroundColor: colors.background.container,
     borderLeft: `1px solid ${colors.border.light}`,
     flexShrink: 0,
-    overflow: 'auto',
-    boxShadow: `inset 8px 0 12px -8px ${colors.border.base}`
+    overflow: 'auto'
   };
 
   // Fullscreen button
@@ -81,12 +77,8 @@ const EditorLayout = ({
         size="small"
         onClick={onToggleFullscreen}
         title={isFullscreen ? 'Exit fullscreen (ESC)' : 'Enter fullscreen'}
-        style={{
-          color: colors.text.secondary,
-          fontWeight: typography.fontWeight.medium
-        }}
       >
-        {isFullscreen ? '⤓ Exit fullscreen' : '⤢ Fullscreen'}
+        {isFullscreen ? '⤓' : '⤢'}
       </Button>
     )
   );
@@ -132,30 +124,15 @@ const EditorLayout = ({
       <div style={layoutStyles} className={className}>
       {/* Toolbar */}
       <div style={{ ...toolbarStyles, position: 'relative' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.lg, flex: 1, minWidth: 0 }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: spacing.sm,
-            paddingLeft: spacing.sm,
-            borderLeft: `3px solid ${colors.primary}`,
-            borderRadius: borderRadius.sm
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
+          <span style={{
+            fontSize: '16px',
+            fontWeight: '600',
+            color: colors.text.primary
           }}>
-            <span style={{
-              fontFamily: typography.fontFamily.display,
-              fontSize: typography.fontSize.lg,
-              fontWeight: typography.fontWeight.semibold,
-              color: colors.text.primary,
-              letterSpacing: typography.letterSpacing.tight
-            }}>
-              Content Editor
-            </span>
-          </div>
-          {toolbarContent && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md, marginLeft: spacing.md }}>
-              {toolbarContent}
-            </div>
-          )}
+            Content Editor
+          </span>
+          {toolbarContent}
         </div>
         <FullscreenButton />
 
@@ -164,13 +141,12 @@ const EditorLayout = ({
           <div style={{
             position: 'absolute',
             top: '50%',
-            right: spacing.xl,
+            right: spacing.lg,
             transform: 'translateY(-50%)',
-            fontSize: typography.fontSize.xs,
-            color: colors.text.tertiary,
-            opacity: 0.9,
-            pointerEvents: 'none',
-            fontFamily: typography.fontFamily.primary
+            fontSize: '12px',
+            color: colors.text.secondary,
+            opacity: 0.7,
+            pointerEvents: 'none'
           }}>
             Press ESC or click outside to close
           </div>
@@ -205,8 +181,6 @@ export const EditorPane = ({ children, style = {} }) => {
     flexDirection: 'column',
     overflow: 'hidden',
     backgroundColor: colors.background.elevated,
-    padding: spacing.lg,
-    minHeight: 0,
     ...style
   };
 

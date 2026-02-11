@@ -86,7 +86,7 @@ const ExportModal = ({
 
   // Format content based on selected export type
   const formatContent = () => {
-    const _selectedFormat = formatOptions.find(f => f.value === exportFormat);
+    const selectedFormat = formatOptions.find(f => f.value === exportFormat);
     let formattedContent = content;
 
     switch (exportFormat) {

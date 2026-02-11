@@ -218,7 +218,7 @@ const getAntdTheme = (isDark) => ({
 });
 
 const AppContent = () => {
-  const { user, loading, loginContext, isNewRegistration } = useAuth();
+  const { user, loading, loginContext } = useAuth();
   const { stepResults } = useWorkflowMode();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [, setActiveTab] = useState('newpost');
@@ -229,9 +229,6 @@ const AppContent = () => {
     stepResults?.home?.websiteAnalysis?.targetAudience &&
     stepResults?.home?.websiteAnalysis?.contentFocus;
   const isReturningUser = user && hasCompletedAnalysis;
-
-  // After registration from funnel: keep user in funnel so they stay in place and topic can start generating (don't switch to dashboard until funnel completes)
-  const stayInFunnelAfterRegistration = isNewRegistration && typeof window !== 'undefined' && window.location.pathname !== '/dashboard';
 
   // Store referral information on app load
   useEffect(() => {
@@ -310,11 +307,10 @@ const AppContent = () => {
 
   // Guided onboarding funnel (Issue #261): show for first-time or logged-out users.
   // Path /dashboard + logged in forces dashboard (for E2E and direct links).
-  // After registration from funnel, keep showing funnel so user stays in place and topic generation can start.
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const forceDashboard = pathname === '/dashboard' && user;
   const showFunnel =
-    pathname === '/onboarding' || (!forceDashboard && !isReturningUser) || stayInFunnelAfterRegistration;
+    pathname === '/onboarding' || (!forceDashboard && !isReturningUser);
   if (showFunnel) {
     return (
       <SystemHintProvider>

@@ -36,15 +36,13 @@ const ManualCTAInputModal = ({
   onSuccess,
   onSubmit, // Support both prop names
   onSkip,
-  existingCTAs = [],
-  minCTAs = 3
+  existingCTAs = []
 }) => {
-  const minRequired = minCTAs;
   // Normalize prop names
   const isOpen = open || visible;
   const handleClose = onClose || onCancel || (() => {});
   const handleSuccess = onSuccess || onSubmit || (() => {});
-  const [_form] = Form.useForm();
+  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
   // Initialize with existing CTAs if available, otherwise use empty defaults
@@ -57,12 +55,11 @@ const ManualCTAInputModal = ({
         placement: cta.placement || 'end-of-post'
       }));
     }
-    return Array.from({ length: minRequired }, (_, i) => ({
-      text: '',
-      href: '',
-      type: ['contact', 'demo', 'signup'][i] || 'contact',
-      placement: 'end-of-post'
-    }));
+    return [
+      { text: '', href: '', type: 'contact', placement: 'end-of-post' },
+      { text: '', href: '', type: 'demo', placement: 'end-of-post' },
+      { text: '', href: '', type: 'signup', placement: 'end-of-post' }
+    ];
   };
 
   const [ctas, setCtas] = useState(getInitialCTAs());
@@ -99,8 +96,8 @@ const ManualCTAInputModal = ({
 
   // Remove CTA
   const handleRemoveCTA = (index) => {
-    if (ctas.length <= minRequired) {
-      message.warning(`You must have at least ${minRequired} CTA${minRequired !== 1 ? 's' : ''}`);
+    if (ctas.length <= 3) {
+      message.warning('You must have at least 3 CTAs');
       return;
     }
     const newCtas = ctas.filter((_, i) => i !== index);
@@ -133,8 +130,8 @@ const ManualCTAInputModal = ({
     const errors = [];
 
     // Check minimum count
-    if (ctas.length < minRequired) {
-      errors.push(`Please provide at least ${minRequired} CTA${minRequired !== 1 ? 's' : ''} for best content generation results`);
+    if (ctas.length < 3) {
+      errors.push('Please provide at least 3 CTAs for best content generation results');
     }
 
     // Check each CTA has required fields
@@ -235,8 +232,8 @@ const ManualCTAInputModal = ({
           </Title>
           <Paragraph style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '14px' }}>
             {existingCTAs && existingCTAs.length > 0
-              ? `Edit your CTAs below. At least ${minRequired} CTA${minRequired !== 1 ? 's are' : ' is'} recommended for effective content generation.`
-              : `We couldn't find enough CTAs on your website. Please add at least ${minRequired} CTA${minRequired !== 1 ? 's' : ''} to generate effective content with working links.`
+              ? 'Edit your CTAs below. At least 3 CTAs are recommended for effective content generation.'
+              : 'We couldn\'t find enough CTAs on your website. Please add at least 3 CTAs to generate effective content with working links.'
             }
           </Paragraph>
         </Space>
@@ -266,7 +263,7 @@ const ManualCTAInputModal = ({
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <Text strong>CTA {index + 1}</Text>
-                {ctas.length > minRequired && (
+                {ctas.length > 3 && (
                   <Button
                     type="text"
                     danger
@@ -346,10 +343,10 @@ const ManualCTAInputModal = ({
           Add Another CTA
         </Button>
 
-        {ctas.length < minRequired && (
+        {ctas.length < 3 && (
           <Alert
-            message={`Add ${minRequired - ctas.length} more CTA${minRequired - ctas.length > 1 ? 's' : ''}`}
-            description={`At least ${minRequired} CTA${minRequired !== 1 ? 's are' : ' is'} recommended for effective content generation`}
+            message={`Add ${3 - ctas.length} more CTA${3 - ctas.length > 1 ? 's' : ''}`}
+            description="At least 3 CTAs are recommended for effective content generation"
             type="warning"
             showIcon
             icon={<WarningOutlined />}
@@ -371,7 +368,7 @@ const ManualCTAInputModal = ({
               type="primary"
               onClick={handleSubmit}
               loading={loading}
-              disabled={ctas.length < minRequired}
+              disabled={ctas.length < 3}
             >
               Save {ctas.length} CTA{ctas.length !== 1 ? 's' : ''}
             </Button>

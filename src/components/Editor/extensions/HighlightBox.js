@@ -21,7 +21,7 @@ const fontSizes = {
 };
 
 // React component to render the highlight box
-const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos: _getPos }) => {
+const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos }) => {
   const boxRef = React.useRef(null);                    // Ref for DOM measurement
   const [minHeight, setMinHeight] = React.useState(null); // Dynamic min-height
 
@@ -30,7 +30,7 @@ const HighlightBoxComponent = ({ node, deleteNode, updateAttributes, getPos: _ge
     content,
     citation,
     icon,
-    width: _width,
+    width,
     fontSize,
     layout,
     customBg,

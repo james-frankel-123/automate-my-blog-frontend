@@ -67,9 +67,6 @@ class AutoBlogAPI {
       ? AbortSignal.timeout(60000) 
       : undefined;
     
-    // Use caller's signal if provided (e.g. custom timeout), otherwise default timeout
-    const signal = options.signal ?? timeoutSignal;
-
     const requestOptions = {
       ...defaultOptions,
       ...options,
@@ -77,7 +74,7 @@ class AutoBlogAPI {
         ...defaultOptions.headers,  // Start with default headers (including auth)
         ...options.headers,         // Merge in custom headers (preserving auth)
       },
-      ...(signal && { signal }),
+      ...(timeoutSignal && { signal: timeoutSignal }),
     };
     
     try {
@@ -396,14 +393,9 @@ class AutoBlogAPI {
       maxTweets,
       maxVideos,
     };
-    const relatedContentTimeoutMs = 90000; // 90s for tweets + videos
-    const timeoutSignal = typeof AbortSignal.timeout === 'function'
-      ? AbortSignal.timeout(relatedContentTimeoutMs)
-      : undefined;
     const response = await this.makeRequest('/api/v1/enhanced-blog-generation/related-content', {
       method: 'POST',
       body: JSON.stringify(payload),
-      ...(timeoutSignal && { signal: timeoutSignal }),
     });
     return {
       tweets: response.tweets ?? [],
@@ -4008,8 +4000,7 @@ Please provide analysis in this JSON format:
       organizationId: payload.organizationId,
       additionalInstructions: payload.additionalInstructions || '',
       ...(payload.tweets?.length ? { tweets: payload.tweets } : {}),
-      ...(payload.options && typeof payload.options === 'object' ? { options: payload.options } : {}),
-      ...(payload.ctas?.length ? { ctas: payload.ctas } : {})
+      ...(payload.options && typeof payload.options === 'object' ? { options: payload.options } : {})
     };
     const response = await this.makeRequest('/api/v1/blog/generate-stream', {
       method: 'POST',

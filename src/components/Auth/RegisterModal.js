@@ -4,7 +4,7 @@ import { LockOutlined, MailOutlined, LinkOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 
-const RegisterModal = ({ onClose, onSwitchToLogin: _onSwitchToLogin, context = null, onSuccess = null }) => {
+const RegisterModal = ({ onClose, onSwitchToLogin, context = null, onSuccess = null }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);

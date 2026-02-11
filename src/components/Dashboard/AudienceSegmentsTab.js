@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Row, Col, Typography, Tag, message, Carousel, Collapse, Space, Spin } from 'antd';
 import { BulbOutlined, CheckOutlined, DatabaseOutlined, RocketOutlined, LeftOutlined, RightOutlined, TeamOutlined, LoadingOutlined } from '@ant-design/icons';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -55,7 +55,7 @@ function transformAudienceToStrategy(audience, index) {
   };
 }
 
-const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode: _onEnterProjectMode }) => {
+const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('audience-segments');
   const { 
@@ -95,7 +95,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
   // UI helpers from workflow components
   const responsive = ComponentHelpers.getResponsiveStyles();
   const defaultColors = ComponentHelpers.getDefaultColors();
-  ComponentHelpers.getTheme(); // theme available via design-system CSS variables
+  const theme = ComponentHelpers.getTheme();
   
   // Load persistent audience strategies when component mounts  
   useEffect(() => {
@@ -227,7 +227,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     };
     
     loadPersistentAudiences();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional deps; generatingStrategies/stepResults used inside
   }, [user, tabMode.mode, stepResults.home.websiteAnalysis?.scenarios?.length]); // Re-check when scenarios are added
 
   // Fetch pricing for strategies (Phase 2 - Dynamic Pricing) — only when logged in (backend returns 401 without token)
@@ -279,7 +278,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     };
 
     fetchStrategyPricing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; loadingPricing/strategies used inside
   }, [user, strategies.length, strategies.map(s => s.id || s.databaseId).join(',')]); // Re-fetch when user or strategies change (including ID changes)
 
   // Fetch subscribed strategies to show subscription status
@@ -313,7 +311,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     };
 
     fetchSubscribedStrategies();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; loadingSubscriptions used inside
   }, [user]); // Re-fetch when user changes
 
   // Handle successful subscription redirect from Stripe
@@ -374,7 +371,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, document.title, cleanUrl);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; loadingSubscriptions used inside
   }, [user]); // Run when user changes or on mount
 
   // Fetch bundle pricing when strategies are loaded (2+ strategies required)
@@ -447,7 +443,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
     };
 
     fetchBundlePricing();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; loadingSubscriptions/tabMode used inside
   }, [user, strategies.length]);
 
   // Load audience strategies based on OpenAI analysis when entering workflow mode or when analysis data exists
@@ -727,7 +722,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         tryStreaming();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- setHint stable; intentional deps
   }, [tabMode.mode, stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis, strategies.length, generatingStrategies, forceWorkflowMode]);
 
   // Handle strategy selection in workflow mode
@@ -1152,6 +1146,10 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                         fontSize: 'var(--font-size-sm)'
                       }}>
                         {(() => {
+                          // Extract consultation price
+                          const priceMatch = strategy.pitch.match(/\$(\d+(?:,\d{3})*)\/consultation/);
+                          const consultationPrice = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : null;
+
                           // Extract monthly revenue range
                           const step5Match = strategy.pitch.match(/Step 5:[^$]*\$([0-9,]+)-\$([0-9,]+)(?:\/month)?/);
 

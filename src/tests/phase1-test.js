@@ -451,7 +451,7 @@ testRunner.addTest('localStorage should not interfere with existing app state', 
   // Check that existing localStorage items aren't affected
   // This test assumes the app doesn't currently use these keys
   const existingAuthData = localStorage.getItem('accessToken');
-  const _existingRefreshToken = localStorage.getItem('refreshToken');
+  const existingRefreshToken = localStorage.getItem('refreshToken');
   
   // Our new data should coexist with existing data
   const newWorkflowData = localStorage.getItem('workflow_progress_anonymous');

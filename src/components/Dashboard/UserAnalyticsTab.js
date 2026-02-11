@@ -80,7 +80,6 @@ const UserAnalyticsTab = () => {
     if (isSuperAdmin) {
       loadAnalytics();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadAnalytics uses dateRange from closure
   }, [dateRange, isSuperAdmin]);
 
   // Access control - moved after hooks to comply with React Hooks rules

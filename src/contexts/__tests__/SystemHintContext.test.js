@@ -3,6 +3,7 @@
  */
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { SystemHintProvider, useSystemHint } from '../SystemHintContext';
 import SystemHint from '../../components/Dashboard/SystemHint';
 

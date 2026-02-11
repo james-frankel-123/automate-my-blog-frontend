@@ -19,7 +19,7 @@ function getArticlePlaceholderToken(index) {
  * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string, urlToImage?: string }>} [relatedArticles] - Articles by index
  * @returns {string} Content with placeholders replaced by tokens
  */
-function replaceArticlePlaceholders(content, _relatedArticles = []) {
+function replaceArticlePlaceholders(content, relatedArticles = []) {
   if (!content || typeof content !== 'string') return content || '';
   return content.replace(ARTICLE_PLACEHOLDER_REGEX, (_, indexStr) => {
     const index = parseInt(indexStr, 10);
