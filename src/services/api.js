@@ -1219,7 +1219,7 @@ Please provide analysis in this JSON format:
    * @returns {Promise<void>} Resolves when stream ends; rejects on HTTP error, timeout, or handler throws
    */
   async connectNarrationStream(type, params, handlers = {}) {
-    const { organizationId, selectedAudience, selectedTopic } = params;
+    const { organizationId, selectedAudience, selectedTopic, previousNarration } = params;
     if (!organizationId) {
       const err = new Error('organizationId is required for narration stream');
       if (handlers.onError) handlers.onError(err);
@@ -1235,6 +1235,7 @@ Please provide analysis in this JSON format:
     const search = new URLSearchParams({ organizationId });
     if (type === 'topic' && selectedAudience != null) search.set('selectedAudience', typeof selectedAudience === 'string' ? selectedAudience : (selectedAudience?.title ?? selectedAudience?.targetSegment ?? selectedAudience?.name ?? ''));
     if (type === 'content' && selectedTopic != null) search.set('selectedTopic', typeof selectedTopic === 'string' ? selectedTopic : (selectedTopic?.title ?? selectedTopic?.topic ?? selectedTopic?.name ?? ''));
+    if (previousNarration) search.set('previousNarration', previousNarration);
     const url = `${base}?${search.toString()}`;
 
     const headers = { Accept: 'text/event-stream' };

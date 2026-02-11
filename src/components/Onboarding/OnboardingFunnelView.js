@@ -456,7 +456,10 @@ function OnboardingFunnelView() {
     autoBlogAPI
       .connectNarrationStream(
         'audience',
-        { organizationId: analysis.organizationId },
+        {
+          organizationId: analysis.organizationId,
+          previousNarration: analysisNarrationContent
+        },
         {
           onChunk: (data) => {
             const text = data?.text ?? data?.chunk ?? '';
@@ -486,7 +489,7 @@ function OnboardingFunnelView() {
       });
 
     return () => clearTimeout(safetyTimeoutId);
-  }, [unlocked.audienceNarration, analysis?.organizationId, unlockAudienceOutput]);
+  }, [unlocked.audienceNarration, analysis?.organizationId, unlockAudienceOutput, analysisNarrationContent]);
 
   // Issue #261: fetch topic narration when topic section unlocks (after user selects audience)
   useEffect(() => {
@@ -520,7 +523,11 @@ function OnboardingFunnelView() {
     autoBlogAPI
       .connectNarrationStream(
         'topic',
-        { organizationId: analysis.organizationId, selectedAudience },
+        {
+          organizationId: analysis.organizationId,
+          selectedAudience,
+          previousNarration: audienceNarrationContent
+        },
         {
           onChunk: (data) => {
             const text = data?.text ?? data?.chunk ?? '';
@@ -543,7 +550,7 @@ function OnboardingFunnelView() {
         setTopicNarrationStreaming(false);
         unlockTopicOutput();
       });
-  }, [unlocked.topicNarration, analysis?.organizationId, selectedAudienceIndex, displayScenarios, unlockTopicOutput]);
+  }, [unlocked.topicNarration, analysis?.organizationId, selectedAudienceIndex, displayScenarios, unlockTopicOutput, audienceNarrationContent]);
 
   // Issue #261: fetch content narration when content section unlocks (after user selects topic)
   useEffect(() => {
