@@ -152,6 +152,9 @@ function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete 
     left: 0,
     right: 0,
     bottom: 0,
+    background: 'linear-gradient(110deg, var(--color-background-container) 25%, var(--color-background-alt) 37%, var(--color-background-container) 63%)',
+    backgroundSize: '200% 100%',
+    animation: 'hero-placeholder-shimmer 2s ease-in-out infinite',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -169,6 +172,10 @@ function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete 
   };
 
   const placeholderKeyframes = `
+    @keyframes hero-placeholder-shimmer {
+      0%, 100% { background-position: 100% 50%; }
+      50% { background-position: 0% 50%; }
+    }
     @keyframes hero-placeholder-text-pulse {
       0%, 100% { opacity: 0.85; }
       50% { opacity: 1; }
