@@ -139,9 +139,14 @@ async function clickCreatePostButton(page, options = {}) {
   }
 }
 
-async function setupLoggedIn(page) {
+async function setupLoggedIn(page, options = {}) {
+  const { skipRecentAnalysis = false } = options;
   await installOverlayRemover(page);
-  await installWorkflowMocks(page);
+  if (skipRecentAnalysis) {
+    await installWorkflowMocksWithOptions(page, { skipRecentAnalysis: true });
+  } else {
+    await installWorkflowMocks(page);
+  }
   await page.goto('/');
   await clearStorage(page);
   await injectLoggedInUser(page);
@@ -210,7 +215,7 @@ test.describe('E2E (mocked backend)', () => {
 
   test.describe('Auth (logged in)', () => {
     test.beforeEach(async ({ page }) => {
-      await setupLoggedIn(page);
+      await setupLoggedIn(page, { skipRecentAnalysis: true });
     });
 
     test('should persist login state on page refresh', async ({ page }) => {
@@ -342,7 +347,7 @@ test.describe('E2E (mocked backend)', () => {
 
   test.describe('Workflow', () => {
     test.beforeEach(async ({ page }) => {
-      await setupLoggedIn(page);
+      await setupLoggedIn(page, { skipRecentAnalysis: true });
     });
 
     test('should display workflow steps on homepage', async ({ page }) => {
@@ -932,7 +937,7 @@ test.describe('E2E (mocked backend)', () => {
 
       test('logged in with default credits: initial CTA shows "Generate post" (not Buy more posts)', async ({ page }) => {
         test.setTimeout(60000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
         await navigateToContentTopics(page);
         const initialCta = page.locator('#posts').locator('button:has-text("Generate post"), button:has-text("Buy more posts"), button:has-text("Select an audience first")').first();
         await expect(initialCta).toBeVisible({ timeout: 12000 });
@@ -982,7 +987,7 @@ test.describe('E2E (mocked backend)', () => {
 
       test('logged in with available credits: after generating topics, no CTA in #posts says Buy more posts', async ({ page }) => {
         test.setTimeout(70000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
         await navigateToContentTopics(page);
         const generateBtn = page.locator('#posts').locator('button:has-text("Generate post")').first();
         await expect(generateBtn).toBeVisible({ timeout: 8000 });
@@ -1028,7 +1033,7 @@ test.describe('E2E (mocked backend)', () => {
     test.describe('PR 104 – Job stream', () => {
       test('website analysis completes (job stream or polling) and Continue to Audience appears', async ({ page }) => {
         test.setTimeout(60000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
         await runWebsiteAnalysisToCompletion(page);
         const continueBtn = page.locator('button:has-text("Next Step"), button:has-text("Continue to Audience")').first();
         await expect(continueBtn).toBeVisible({ timeout: 5000 });
@@ -1446,7 +1451,7 @@ test.describe('E2E (mocked backend)', () => {
 
     test('posts and credits load in parallel on dashboard mount', async ({ page }) => {
       test.setTimeout(45000);
-      await setupLoggedIn(page);
+      await setupLoggedIn(page, { skipRecentAnalysis: true });
 
       await removeOverlay(page);
       const postsTab = page.locator('.ant-menu-item').filter({ hasText: /posts|blog/i }).first();
@@ -1463,7 +1468,7 @@ test.describe('E2E (mocked backend)', () => {
 
   test.describe('Dashboard', () => {
     test.beforeEach(async ({ page }) => {
-      await setupLoggedIn(page);
+      await setupLoggedIn(page, { skipRecentAnalysis: true });
     });
 
     test('should display dashboard layout', async ({ page }) => {
@@ -1571,7 +1576,7 @@ test.describe('E2E (mocked backend)', () => {
 
   test.describe('Content management', () => {
     test.beforeEach(async ({ page }) => {
-      await setupLoggedIn(page);
+      await setupLoggedIn(page, { skipRecentAnalysis: true });
     });
 
     test('should display posts list', async ({ page }) => {
@@ -1672,7 +1677,7 @@ test.describe('E2E (mocked backend)', () => {
 
   test.describe('Full workflow scenarios', () => {
     test.beforeEach(async ({ page }) => {
-      await setupLoggedIn(page);
+      await setupLoggedIn(page, { skipRecentAnalysis: true });
     });
 
     test('dashboard navigation flow: all tabs accessible', async ({ page }) => {
@@ -1739,7 +1744,7 @@ test.describe('E2E (mocked backend)', () => {
     test.describe('Topic card UI cleanup (#73)', () => {
       test('topic cards should NOT show "Edit Strategy" button', async ({ page }) => {
         test.setTimeout(90000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
 
         await removeOverlay(page);
         await page.locator('button:has-text("Create New Post")').first().click({ force: true });
@@ -1780,7 +1785,7 @@ test.describe('E2E (mocked backend)', () => {
 
       test('topic cards should NOT show "What You\'ll Get" section', async ({ page }) => {
         test.setTimeout(90000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
 
         await removeOverlay(page);
         await page.locator('button:has-text("Create New Post")').first().click({ force: true });
@@ -1821,7 +1826,7 @@ test.describe('E2E (mocked backend)', () => {
 
       test('topic cards should NOT show "Want More Content Ideas?" section', async ({ page }) => {
         test.setTimeout(90000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
 
         await removeOverlay(page);
         await page.locator('button:has-text("Create New Post")').first().click({ force: true });
@@ -1864,7 +1869,7 @@ test.describe('E2E (mocked backend)', () => {
     test.describe('Audience cards pricing removal (#78)', () => {
       test('audience cards should NOT show ROI pricing text', async ({ page }) => {
         test.setTimeout(60000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
 
         await runWebsiteAnalysisToCompletion(page);
 
@@ -1943,9 +1948,9 @@ test.describe('E2E (mocked backend)', () => {
     });
 
     test.describe('Markdown rendering in editor (#79)', () => {
-      test.skip('editor preview should render markdown as formatted HTML', async ({ page }) => {
+        test.skip('editor preview should render markdown as formatted HTML', async ({ page }) => {
         test.setTimeout(90000);
-        await setupLoggedIn(page);
+        await setupLoggedIn(page, { skipRecentAnalysis: true });
 
         await page.locator('button:has-text("Create New Post")').first().click();
         await page.waitForTimeout(800);
