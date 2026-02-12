@@ -1739,23 +1739,24 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           margin-top: 6px;
         }
 
-        /* Article card: beautiful embedded card style */
+        /* Article card: compact embedded card style */
         div :global(.markdown-article-card) {
           position: relative;
           display: flex;
           align-items: stretch;
           gap: 0;
-          margin: 18px 0;
+          margin: 12px 0;
           padding: 0;
-          border-radius: 12px;
+          max-width: 420px;
+          border-radius: 8px;
           border: 1px solid var(--color-border-base);
           background: var(--color-background-container);
           box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-          transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+          transition: box-shadow 0.2s ease, border-color 0.2s ease;
           overflow: hidden;
         }
         div :global(.markdown-article-card:hover) {
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
           border-color: var(--color-primary-200);
         }
         div :global(.markdown-article-card-thumb-wrap) {
@@ -1763,26 +1764,26 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           display: block;
           line-height: 0;
           text-decoration: none;
-          width: 220px;
-          min-height: 124px;
+          width: 120px;
+          min-height: 68px;
           background: var(--color-background-alt);
         }
         div :global(.markdown-article-card-thumb) {
-          width: 220px;
-          height: 124px;
-          max-width: 220px;
-          max-height: 124px;
-          min-width: 220px;
-          min-height: 124px;
+          width: 120px;
+          height: 68px;
+          max-width: 120px;
+          max-height: 68px;
+          min-width: 120px;
+          min-height: 68px;
           object-fit: cover;
           display: block;
           vertical-align: top;
         }
         div :global(.markdown-article-card-thumb-placeholder) {
-          width: 220px;
-          height: 124px;
-          min-width: 220px;
-          min-height: 124px;
+          width: 120px;
+          height: 68px;
+          min-width: 120px;
+          min-height: 68px;
           background: linear-gradient(135deg, var(--color-background-alt) 0%, var(--color-background-elevated) 100%);
           color: var(--color-text-tertiary);
           display: flex;
@@ -1792,19 +1793,21 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         }
         div :global(.markdown-article-card-thumb-placeholder svg) {
           flex-shrink: 0;
+          width: 20px;
+          height: 20px;
         }
         div :global(.markdown-article-card-body) {
           flex: 1;
           min-width: 0;
-          padding: 18px 20px;
+          padding: 10px 12px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 4px;
           justify-content: center;
         }
         div :global(.markdown-article-card-title) {
           font-weight: 600;
-          font-size: 16px;
+          font-size: 13px;
           line-height: 1.4;
           color: var(--color-text-primary);
           text-decoration: none;
@@ -1819,15 +1822,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           text-decoration: underline;
         }
         div :global(.markdown-article-card-meta) {
-          font-size: 12px;
+          font-size: 11px;
           color: var(--color-text-secondary);
-          line-height: 1.4;
+          line-height: 1.3;
           display: block;
-          font-weight: 500;
-          letter-spacing: 0.01em;
         }
         div :global(.markdown-article-card-desc) {
-          font-size: 13px;
+          font-size: 12px;
           color: var(--color-text-secondary);
           line-height: 1.5;
           display: -webkit-box;
