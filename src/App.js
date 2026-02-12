@@ -16,6 +16,7 @@ import { OnboardingFunnelView } from './components/Onboarding';
 import SEOHead from './components/SEOHead';
 import { useWorkflowMode } from './contexts/WorkflowModeContext';
 import { storeReferralInfo } from './utils/referralUtils';
+import { notifyTabReady } from './utils/tabReadyAlert';
 import './styles/design-system.css';
 import './styles/mobile.css';
 
@@ -248,6 +249,15 @@ const AppContent = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // When auth loading finishes and user might be on another tab, alert in icon/title
+  const prevLoadingRef = React.useRef(loading);
+  useEffect(() => {
+    if (prevLoadingRef.current && !loading) {
+      notifyTabReady();
+    }
+    prevLoadingRef.current = loading;
+  }, [loading]);
 
   // Show loading state while auth is being determined
   if (loading) {

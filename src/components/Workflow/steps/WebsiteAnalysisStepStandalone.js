@@ -18,6 +18,7 @@ import BusinessProfileSlide from '../../Analysis/BusinessProfileSlide';
 import AnalysisSectionNav from '../../Dashboard/AnalysisSectionNav';
 import ChecklistProgress from '../../shared/ChecklistProgress';
 import AnalysisEmptyState from '../../EmptyStates/AnalysisEmptyState';
+import { notifyTabReady } from '../../../utils/tabReadyAlert';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -917,6 +918,7 @@ const WebsiteAnalysisStepStandalone = ({
       setAnalysisResults({ narrative: analysisNarrative });
     }
     setAnalysisJobId(null);
+    notifyTabReady();
   };
 
   /**

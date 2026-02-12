@@ -12,6 +12,7 @@ import autoBlogAPI from '../../services/api';
 import { extractStreamChunk, extractStreamCompleteContent } from '../../utils/streamingUtils';
 import { systemVoice } from '../../copy/systemVoice';
 import StreamingText from '../shared/StreamingText';
+import { notifyTabReady } from '../../utils/tabReadyAlert';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -571,6 +572,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           // Only show success message if strategies were actually loaded (not on remounts)
           if (openAIStrategies.length > 0) {
             setHint(systemVoice.audience.audienceReady, 'success', 5000);
+            notifyTabReady();
             message.success(`Generated ${openAIStrategies.length} AI-powered audience strategies with real business intelligence`);
           }
         }, 800); // Shorter delay since we're not generating
@@ -633,6 +635,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
           sessionStorage.setItem(sessionStorageKey, 'true');
           setGeneratingStrategies(false);
           setHint(systemVoice.audience.audienceReady, 'success', 5000);
+          notifyTabReady();
 
           // Save fallback strategies to database for persistence
           try {
@@ -704,6 +707,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                 if (streamTimeoutId) clearTimeout(streamTimeoutId);
                 setGeneratingStrategies(false);
                 setHint(systemVoice.audience.audienceReady, 'success', 5000);
+                notifyTabReady();
               },
               onError: () => {
                 if (streamTimeoutId) clearTimeout(streamTimeoutId);
