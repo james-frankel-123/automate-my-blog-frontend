@@ -296,7 +296,7 @@ test.describe('E2E (mocked backend)', () => {
     test('when website analysis fails, shows informative empty state with Try again and Try a different URL (#185)', async ({ page }) => {
       test.setTimeout(35000);
       // Install mocks: job creation 404 so sync flow is used; sync analyze returns failure (Issue #185)
-      await installWorkflowMocksWithOptions(page, { analysisSyncFails: true });
+      await installWorkflowMocksWithOptions(page, { analysisSyncFails: true, skipRecentAnalysis: true });
       await page.goto('/');
       await clearStorage(page);
       await injectLoggedInUser(page);
@@ -918,7 +918,7 @@ test.describe('E2E (mocked backend)', () => {
 
       test('logged in with available credits: initial CTA shows "Generate post" (not Buy more posts)', async ({ page }) => {
         test.setTimeout(60000);
-        await installWorkflowMocksWithOptions(page, { userCredits: creditsWithPosts(5) });
+        await installWorkflowMocksWithOptions(page, { userCredits: creditsWithPosts(5), skipRecentAnalysis: true });
         await page.goto('/');
         await clearStorage(page);
         await injectLoggedInUser(page);
@@ -948,7 +948,7 @@ test.describe('E2E (mocked backend)', () => {
 
       test('logged in with isUnlimited: initial CTA shows "Generate post" (not Buy more posts)', async ({ page }) => {
         test.setTimeout(60000);
-        await installWorkflowMocksWithOptions(page, { userCredits: creditsUnlimited() });
+        await installWorkflowMocksWithOptions(page, { userCredits: creditsUnlimited(), skipRecentAnalysis: true });
         await page.goto('/');
         await clearStorage(page);
         await injectLoggedInUser(page);
@@ -967,7 +967,7 @@ test.describe('E2E (mocked backend)', () => {
 
       test('logged in with zero credits: initial CTA shows "Buy more posts" and click opens pricing modal', async ({ page }) => {
         test.setTimeout(60000);
-        await installWorkflowMocksWithOptions(page, { userCredits: creditsZero() });
+        await installWorkflowMocksWithOptions(page, { userCredits: creditsZero(), skipRecentAnalysis: true });
         await page.goto('/');
         await clearStorage(page);
         await injectLoggedInUser(page);
@@ -1289,7 +1289,7 @@ test.describe('E2E (mocked backend)', () => {
     test('website analysis shows progress bar during analysis', async ({ page }) => {
       test.setTimeout(60000);
       await installOverlayRemover(page);
-      await installWorkflowMocksWithOptions(page, { progressiveJobStatus: true });
+      await installWorkflowMocksWithOptions(page, { progressiveJobStatus: true, skipRecentAnalysis: true });
       await page.goto('/');
       await clearStorage(page);
       await injectLoggedInUser(page);
@@ -1325,7 +1325,7 @@ test.describe('E2E (mocked backend)', () => {
     test('503 on job create shows queue unavailable message', async ({ page }) => {
       test.setTimeout(90000);
       await installOverlayRemover(page);
-      await installWorkflowMocks(page);
+      await installWorkflowMocksWithOptions(page, { skipRecentAnalysis: true });
       await page.goto('/');
       await clearStorage(page);
       await injectLoggedInUser(page);
