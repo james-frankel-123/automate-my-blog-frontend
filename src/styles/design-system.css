@@ -1817,6 +1817,12 @@ html.dark-mode .ant-message .ant-message-notice-content,
   background-color: var(--color-background-elevated) !important;
 }
 
+/* Exception: hero title overlay uses semi-transparent gradient over image */
+.dark-mode .hero-image-title-overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%) !important;
+  background-color: transparent !important;
+}
+
 /* Specific light gray backgrounds - ensure visibility */
 .dark-mode [style*="background: #fafafa"],
 .dark-mode [style*="background: #f5f5f5"],

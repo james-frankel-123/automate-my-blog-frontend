@@ -16,8 +16,6 @@ const HERO_IMAGE_SENTINEL = '__HERO_IMAGE__';
 
 /** Brief minimum time (ms) for placeholder so transition isn’t jarring; image still swaps in as soon as loaded after this. */
 const HERO_PLACEHOLDER_MIN_MS = 400;
-const KEN_BURNS_MIN_DIMENSION = 1200;
-const KEN_BURNS_MIN_ASPECT_RATIO = 1.15;
 const KEN_BURNS_ANIMATION_SECONDS = 18;
 
 /**
@@ -32,7 +30,7 @@ const HERO_LOG = (msg, data) => {
   }
 };
 
-function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
+function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [effectiveSrc, setEffectiveSrc] = useState(src);
@@ -127,16 +125,13 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
 
   const showImage = imageLoaded && minTimeElapsed;
   const hasDimensions = imageMetrics.width > 0 && imageMetrics.height > 0;
-  const aspectRatio = hasDimensions ? imageMetrics.width / imageMetrics.height : null;
-  const isLandscapeish = hasDimensions ? aspectRatio >= KEN_BURNS_MIN_ASPECT_RATIO : false;
-  const isLargeEnough = hasDimensions
-    ? imageMetrics.width >= KEN_BURNS_MIN_DIMENSION || imageMetrics.height >= KEN_BURNS_MIN_DIMENSION
-    : false;
-  const shouldApplyKenBurns = isLandscapeish && isLargeEnough;
+  const shouldApplyKenBurns = hasDimensions;
   const kenBurnsActive = shouldApplyKenBurns && showImage;
 
+  const isLandscape = hasDimensions && imageMetrics.width >= imageMetrics.height;
   const wrapperStyle = {
     position: 'relative',
+    width: '100%',
     margin: `${paragraphSpacing}px 0`,
     borderRadius: 8,
     overflow: 'hidden',
@@ -144,7 +139,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     minHeight: 240,
     ...(shouldApplyKenBurns && hasDimensions
       ? {
-          aspectRatio: `${imageMetrics.width} / ${imageMetrics.height}`,
+          aspectRatio: isLandscape ? `${imageMetrics.width} / ${imageMetrics.height}` : '16 / 9',
           maxHeight: 420,
         }
       : {})
@@ -196,11 +191,14 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
         transform: none !important;
       }
     }
+    .hero-image-title-overlay {
+      background: linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%) !important;
+      background-color: transparent !important;
+    }
   `;
 
   const imageStyle = {
     width: '100%',
-    maxWidth: '100%',
     height: shouldApplyKenBurns ? '100%' : 'auto',
     borderRadius: '8px',
     margin: 0,
@@ -210,7 +208,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     left: showImage ? undefined : 0,
     transition: 'opacity 0.35s ease-in',
     pointerEvents: showImage ? undefined : 'none',
-    objectFit: shouldApplyKenBurns ? 'cover' : 'contain',
+    objectFit: 'cover',
     objectPosition: 'center',
     willChange: kenBurnsActive ? 'transform' : undefined,
     transform: kenBurnsActive ? 'scale(1.045)' : undefined,
@@ -246,8 +244,90 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
         }}
         onError={() => setImageLoaded(true)}
       />
+      {title && (
+        <div
+          className="hero-image-title-overlay"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%)',
+            padding: '32px 24px 24px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            pointerEvents: 'none',
+            zIndex: 1
+          }}
+          aria-hidden="true"
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontFamily: 'var(--font-family-display, system-ui, sans-serif)',
+              fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
+              fontWeight: 700,
+              color: '#fff',
+              textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.7), 0 0 24px rgba(0,0,0,0.5)',
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
+              maxWidth: '100%'
+            }}
+          >
+            {title}
+          </h1>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Extract the first h1 from HTML and return its text plus HTML with that h1 removed.
+ * Used to overlay the title on the hero image.
+ */
+function extractFirstH1(html) {
+  if (!html || typeof html !== 'string') return { title: null, htmlWithoutH1: html || '' };
+
+  // Sanitize and parse the HTML into a DOM so we can safely extract text content
+  let root;
+  try {
+    // RETURN_DOM gives us a Document/DocumentFragment rather than a string
+    root = DOMPurify.sanitize(html, { RETURN_DOM: true });
+  } catch (e) {
+    // Fallback to original HTML if DOMPurify in DOM mode is unavailable
+    return { title: null, htmlWithoutH1: html };
+  }
+
+  // Normalize root to an Element we can work with
+  let container;
+  if (root && root.body) {
+    // When RETURN_DOM is used on full HTML, we typically get a Document
+    container = root.body;
+  } else if (root && root.nodeType === 11) {
+    // DocumentFragment: wrap in a temporary div
+    container = root.ownerDocument
+      ? root.ownerDocument.createElement('div')
+      : document.createElement('div');
+    container.appendChild(root);
+  } else if (root && root.nodeType === 1) {
+    // Single element node
+    container = root;
+  } else {
+    return { title: null, htmlWithoutH1: html };
+  }
+
+  const h1 = container.querySelector('h1');
+  if (!h1) {
+    // No h1 found; return sanitized HTML as-is
+    return { title: null, htmlWithoutH1: container.innerHTML || '' };
+  }
+
+  const rawTitle = (h1.textContent || '').trim();
+  h1.remove();
+
+  const stripped = (container.innerHTML || '').trim();
+  return { title: rawTitle || null, htmlWithoutH1: stripped };
 }
 
 function isHeroImagePlaceholder(alt) {
@@ -810,7 +890,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const heroAltMatch = normalizedContent.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
   const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
   const useHeroSlot = htmlContent.includes(HERO_IMAGE_SENTINEL);
-  const contentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+  const rawContentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+  const { title: heroTitle, htmlWithoutH1 } = rawContentParts?.length
+    ? extractFirstH1(rawContentParts[0])
+    : { title: null, htmlWithoutH1: '' };
+  const contentParts = rawContentParts?.length
+    ? [htmlWithoutH1, ...rawContentParts.slice(1)]
+    : null;
 
   // Nth-of-type variation for markdown placeholders (each instance different color + animation stagger)
   const NTH_PLACEHOLDER_COUNT = 12;
@@ -838,6 +924,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
                 <HeroImage
                   src={heroImageUrl || heroImageFallback}
                   alt={heroImageAlt}
+                  title={heroTitle}
                   paragraphSpacing={paragraphSpacing}
                   generationComplete={generationComplete}
                 />
