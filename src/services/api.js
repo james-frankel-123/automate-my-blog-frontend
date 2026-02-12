@@ -2478,14 +2478,15 @@ Please provide analysis in this JSON format:
   }
 
   /**
-   * Headers for social-handles endpoints: when not logged in, send x-session-id for anonymous funnel.
-   * When logged in, makeRequest already adds Authorization.
+   * Headers for social-handles endpoints: same as analysis/jobs — JWT when logged in,
+   * otherwise x-session-id (getOrCreateSessionId so anonymous funnel always sends a session).
+   * Without either the backend returns 401 "Provide Authorization header or x-session-id."
    */
   _getSocialHandlesHeaders() {
     const token = localStorage.getItem('accessToken');
     if (token) return {};
-    const sessionId = sessionStorage.getItem('audience_session_id');
-    return sessionId ? { 'x-session-id': sessionId } : {};
+    const sessionId = this.getOrCreateSessionId();
+    return { 'x-session-id': sessionId };
   }
 
   /**
