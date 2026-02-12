@@ -2478,6 +2478,76 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Headers for social-handles endpoints: same as analysis/jobs — JWT when logged in,
+   * otherwise x-session-id (getOrCreateSessionId so anonymous funnel always sends a session).
+   * Without either the backend returns 401 "Provide Authorization header or x-session-id."
+   */
+  _getSocialHandlesHeaders() {
+    const token = localStorage.getItem('accessToken');
+    if (token) return {};
+    const sessionId = this.getOrCreateSessionId();
+    return { 'x-session-id': sessionId };
+  }
+
+  /**
+   * Get social handles for an organization.
+   * Auth: Bearer JWT (logged in) or x-session-id (anonymous funnel; org must be linked to session from website analysis).
+   * @param {string} organizationId - Organization UUID
+   * @returns {Promise<{ social_handles: Object }>}
+   */
+  async getSocialHandles(organizationId) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/organizations/${organizationId}/social-handles`,
+        { method: 'GET', headers: this._getSocialHandlesHeaders() }
+      );
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to get social handles');
+    }
+  }
+
+  /**
+   * Set social handles (full replace) for an organization.
+   * @param {string} organizationId - Organization UUID
+   * @param {Object} socialHandles - e.g. { twitter: ["@acme"], linkedin: ["company/acme"] }
+   * @returns {Promise<{ social_handles: Object }>}
+   */
+  async updateSocialHandles(organizationId, socialHandles) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/organizations/${organizationId}/social-handles`,
+        {
+          method: 'PATCH',
+          headers: this._getSocialHandlesHeaders(),
+          body: JSON.stringify({ social_handles: socialHandles }),
+        }
+      );
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update social handles');
+    }
+  }
+
+  /**
+   * Refresh social handles by re-scraping the organization's website.
+   * Org must have website_url set.
+   * @param {string} organizationId - Organization UUID
+   * @returns {Promise<{ social_handles: Object, message?: string }>}
+   */
+  async refreshSocialVoice(organizationId) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/organizations/${organizationId}/refresh-social-voice`,
+        { method: 'POST', headers: this._getSocialHandlesHeaders() }
+      );
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to refresh social handles');
+    }
+  }
+
+  /**
    * Billing Management
    */
   async getBillingHistory(limit = 50) {

@@ -18,36 +18,6 @@ const RegisterModal = ({ onClose, onSwitchToLogin: _onSwitchToLogin, context = n
     trackEvent('signup_started', { context });
   }, [trackEvent, context]);
 
-  useEffect(() => {
-    // Extract company data from workflow analysis stored in localStorage
-    const extractWorkflowData = () => {
-      try {
-        // Check for workflow state data
-        const workflowState = localStorage.getItem('automate-my-blog-workflow-state');
-        if (!workflowState) return;
-
-        const parsed = JSON.parse(workflowState);
-        const analysis = parsed.stepResults?.home?.websiteAnalysis;
-
-        if (analysis) {
-          const detectedInfo = {
-            websiteUrl: analysis.websiteUrl || analysis.url || '',
-            businessName: analysis.businessName || analysis.companyName || '',
-            autoDetected: true
-          };
-          if (detectedInfo.websiteUrl) {
-            form.setFieldsValue({
-              websiteUrl: detectedInfo.websiteUrl
-            });
-          }
-        }
-      } catch (error) {
-        console.error('❌ Error extracting workflow data:', error);
-      }
-    };
-
-    extractWorkflowData();
-  }, [form]);
 
   const onFinish = async (values) => {
     setLoading(true);

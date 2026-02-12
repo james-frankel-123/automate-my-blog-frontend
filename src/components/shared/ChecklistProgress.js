@@ -10,21 +10,21 @@ import { CheckOutlined, LoadingOutlined, CheckCircleOutlined } from '@ant-design
 
 const styles = {
   container: {
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--color-background-container)',
     borderRadius: '12px',
     padding: '20px 24px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+    boxShadow: 'var(--shadow-card)',
     border: '1px solid var(--color-border-base)',
   },
   containerCompleted: {
-    backgroundColor: '#f6ffed',
-    border: '1px solid #b7eb8f',
+    backgroundColor: 'var(--color-success-bg)',
+    border: '1px solid var(--color-success-border)',
   },
   completedHeader: {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    color: '#52c41a',
+    color: 'var(--color-success-dark)',
     fontWeight: 500,
     marginBottom: '16px',
     fontSize: '14px',
@@ -48,7 +48,7 @@ const styles = {
     justifyContent: 'center',
     flexShrink: 0,
     transition: 'all 0.3s ease',
-    backgroundColor: '#ffffff',
+    backgroundColor: 'var(--color-background-container)',
   },
   checkboxChecked: {
     backgroundColor: 'var(--color-success)',
@@ -62,7 +62,7 @@ const styles = {
   },
   checkIcon: {
     fontSize: '12px',
-    color: '#ffffff',
+    color: 'var(--color-text-on-primary)',
     animation: 'checkmarkSlide 0.3s ease-out',
   },
   spinnerIcon: {

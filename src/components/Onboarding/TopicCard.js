@@ -4,8 +4,8 @@
  */
 import React, { useState } from 'react';
 import { Card, Typography } from 'antd';
-import { CheckCircleFilled, FileTextOutlined } from '@ant-design/icons';
-import { getPlaceholderStyle } from '../../utils/placeholderStyles';
+import { CheckCircleFilled } from '@ant-design/icons';
+import { getPlaceholderBrandGradientStyle } from '../../utils/placeholderStyles';
 
 const { Text } = Typography;
 
@@ -42,7 +42,8 @@ export function TopicCard({
 }) {
   const [imageError, setImageError] = useState(false);
   const showImage = imageUrl && !imageError;
-  const placeholderStyle = getPlaceholderStyle(placeholderSeed);
+  const placeholderStyle = getPlaceholderBrandGradientStyle(placeholderSeed);
+  const displayNumber = placeholderSeed + 1;
   return (
     <Card
       data-testid={dataTestId}
@@ -63,16 +64,16 @@ export function TopicCard({
               width: '100%',
               height: '100%',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 8,
-              color: 'var(--color-text-tertiary)',
+              color: 'rgba(255, 255, 255, 0.95)',
+              fontSize: 'clamp(4rem, 20vw, 8rem)',
+              fontWeight: 700,
+              textShadow: '0 2px 12px rgba(0, 0, 0, 0.15)',
               ...placeholderStyle,
             }}
           >
-            <FileTextOutlined style={{ fontSize: 32, opacity: 0.6 }} />
-            <span style={{ fontSize: 13, fontWeight: 500 }}>Topic image</span>
+            {displayNumber}
           </div>
         )}
         {selected && (

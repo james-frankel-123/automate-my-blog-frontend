@@ -28,7 +28,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     requireAuth,
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
-    saveWorkflowState,
     // Session management
     sessionId,
     initializeSession
@@ -102,23 +101,6 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
     handleSessionInitialization();
   }, [user, sessionId, tabMode.mode, initializeSession]);
-
-  // Auto-save workflow state when analysis completes (proper state-based timing)
-  useEffect(() => {
-    const hasValidAnalysisData = stepResults.home.websiteAnalysis?.businessName &&
-                                stepResults.home.websiteAnalysis?.targetAudience &&
-                                stepResults.home.websiteAnalysis?.contentFocus;
-
-    // CRITICAL: Save for both logged-in AND logged-out users
-    // Logged-out users need their analysis saved so it can be restored after registration
-    if (stepResults.home.analysisCompleted && hasValidAnalysisData) {
-      // Save with a small delay to ensure all React updates are complete
-      setTimeout(() => {
-        saveWorkflowState();
-      }, 200); // Slightly longer delay for state propagation
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; contentFocus/targetAudience from stepResults
-  }, [stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis?.businessName, saveWorkflowState]);
 
   // Handle create new post action
   const handleCreateNewPost = () => {

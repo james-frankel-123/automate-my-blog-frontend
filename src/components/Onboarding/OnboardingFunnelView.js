@@ -125,7 +125,7 @@ function OnboardingFunnelView() {
     webSearchInsights,
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
-    saveWorkflowState,
+    navigateToTab: _navigateToTab,
     showAuthModal,
     setShowAuthModal,
     authContext,
@@ -187,6 +187,10 @@ function OnboardingFunnelView() {
   /** When true, article stream completed after we already timed out — ignore its onComplete/onError so step stays "Skipped". */
   const articlesTimedOutRef = useRef(false);
   const contentGenerationStartedRef = useRef(false);
+
+  // Social profiles discovered from website (shown in onboarding after analysis)
+  const [onboardingSocialHandles, setOnboardingSocialHandles] = useState({});
+  const [loadingOnboardingSocialHandles, setLoadingOnboardingSocialHandles] = useState(false);
 
   const analysis = useMemo(() => stepResults?.home?.websiteAnalysis || {}, [stepResults?.home?.websiteAnalysis]);
   const organizationCTAs = stepResults?.home?.ctas ?? [];
@@ -269,6 +273,25 @@ function OnboardingFunnelView() {
     }
   }, [loading, hasAnalysis]);
 
+  // Fetch social handles when we have an organization (after website analysis)
+  useEffect(() => {
+    const orgId = analysis?.organizationId;
+    if (!orgId || !hasAnalysis) return;
+    let cancelled = false;
+    setLoadingOnboardingSocialHandles(true);
+    autoBlogAPI.getSocialHandles(orgId)
+      .then((res) => {
+        if (!cancelled) setOnboardingSocialHandles(res.social_handles || {});
+      })
+      .catch(() => {
+        if (!cancelled) setOnboardingSocialHandles({});
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingOnboardingSocialHandles(false);
+      });
+    return () => { cancelled = true; };
+  }, [analysis?.organizationId, hasAnalysis]);
+
   // Log when analysisNarration unlocks
   useEffect(() => {
     if (unlocked.analysisNarration) {
@@ -307,8 +330,7 @@ function OnboardingFunnelView() {
 
   const handleContentNarrationComplete = useCallback(() => {
     setFunnelComplete(true);
-    saveWorkflowState?.();
-  }, [saveWorkflowState]);
+  }, []);
 
   // When analysis starts loading, scroll to "What I found" placeholders so they're visible
   const prevLoading = useRef(false);
@@ -787,8 +809,7 @@ function OnboardingFunnelView() {
     setOriginalAnalysisSnapshot(null);
     setEditedBusinessProfile(null);
     setUnlocked((u) => ({ ...u, audienceNarration: true, audienceOutput: true }));
-    saveWorkflowState?.();
-  }, [analysis, businessProfile, saveWorkflowState]);
+  }, [analysis, businessProfile]);
 
   const handleEditAnalysis = useCallback(() => {
     setOriginalAnalysisSnapshot(businessProfile);
@@ -1272,6 +1293,8 @@ function OnboardingFunnelView() {
                       profileData={editMode ? editedBusinessProfile : businessProfile}
                       editMode={editMode}
                       onUpdate={setEditedBusinessProfile}
+                      socialHandles={analysis?.organizationId ? (onboardingSocialHandles || {}) : null}
+                      socialHandlesLoading={loadingOnboardingSocialHandles}
                     />
                   </motion.div>
                 </section>
@@ -1283,9 +1306,9 @@ function OnboardingFunnelView() {
                   padding: '0 32px'
                 }}>
                   <div style={{
-                    background: '#FFFFFF',
+                    background: 'var(--color-background-container)',
                     borderRadius: '12px',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    boxShadow: 'var(--shadow-card)',
                     padding: window.innerWidth <= 768 ? '48px 28px' : '80px 64px'
                   }}>
                     <Skeleton active paragraph={{ rows: 8 }} title={{ width: '50%' }} />
