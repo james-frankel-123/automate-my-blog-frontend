@@ -9,11 +9,31 @@ import {
   DollarOutlined,
   AimOutlined,
   BookOutlined,
-  SearchOutlined
+  SearchOutlined,
+  ShareAltOutlined
 } from '@ant-design/icons';
 import './BusinessProfileSlide.css';
 
 const { Title, Text, Paragraph } = Typography;
+
+const SOCIAL_PLATFORMS = [
+  { key: 'twitter', label: 'Twitter / X' },
+  { key: 'linkedin', label: 'LinkedIn' },
+  { key: 'facebook', label: 'Facebook' },
+  { key: 'instagram', label: 'Instagram' },
+  { key: 'youtube', label: 'YouTube' },
+  { key: 'tiktok', label: 'TikTok' },
+];
+
+function socialProfileLink(platformKey, handle) {
+  if (platformKey === 'twitter') return `https://x.com/${(handle || '').replace(/^@/, '')}`;
+  if (platformKey === 'linkedin') return `https://www.linkedin.com/company/${(handle || '').replace(/^company\//, '')}`;
+  if (platformKey === 'facebook') return `https://www.facebook.com/${handle}`;
+  if (platformKey === 'instagram') return `https://www.instagram.com/${(handle || '').replace(/^@/, '')}`;
+  if (platformKey === 'youtube') return handle.startsWith('@') ? `https://www.youtube.com/${handle}` : handle.startsWith('c/') ? `https://www.youtube.com/${handle}` : `https://www.youtube.com/channel/${handle}`;
+  if (platformKey === 'tiktok') return `https://www.tiktok.com/@${(handle || '').replace(/^@/, '')}`;
+  return null;
+}
 
 const EditableField = ({ value, onChange, multiline = false, placeholder = '' }) => {
   if (multiline) {
@@ -49,7 +69,7 @@ const EditableField = ({ value, onChange, multiline = false, placeholder = '' })
   );
 };
 
-const BusinessProfileSlide = ({ profileData, editMode = false, onUpdate }) => {
+const BusinessProfileSlide = ({ profileData, editMode = false, onUpdate, socialHandles = null, socialHandlesLoading = false }) => {
   const handleFieldChange = (fieldKey, newValue) => {
     if (onUpdate) {
       onUpdate({
@@ -217,6 +237,53 @@ const BusinessProfileSlide = ({ profileData, editMode = false, onUpdate }) => {
               onFieldChange={handleFieldChange}
             />
           </Col>
+
+          {/* Social Profiles (when provided, e.g. from onboarding or settings context) */}
+          {(socialHandles != null || socialHandlesLoading) && (
+            <Col xs={24}>
+              <div className="profile-section">
+                <div className="section-header">
+                  <span className="section-icon"><ShareAltOutlined /></span>
+                  <Title level={5} className="section-title">Social Profiles</Title>
+                </div>
+                <div className="section-content">
+                  {socialHandlesLoading ? (
+                    <Text type="secondary">Loading…</Text>
+                  ) : (() => {
+                    const hasAny = Object.keys(socialHandles || {}).some((k) => Array.isArray(socialHandles[k]) && socialHandles[k].length > 0);
+                    if (!hasAny) {
+                      return (
+                        <Text type="secondary">No social links were found on your site. You can add or refresh them later in Settings → Organization.</Text>
+                      );
+                    }
+                    return (
+                      <Space wrap size={[8, 8]}>
+                        {SOCIAL_PLATFORMS.map(({ key, label }) => {
+                          const handles = socialHandles[key];
+                          if (!Array.isArray(handles) || handles.length === 0) return null;
+                          return (
+                            <span key={key} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              <Text type="secondary" style={{ fontSize: 13 }}>{label}:</Text>
+                              {handles.map((h, i) => {
+                                const href = socialProfileLink(key, h);
+                                return href ? (
+                                  <Tag key={i}>
+                                    <a href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13 }}>{h}</a>
+                                  </Tag>
+                                ) : (
+                                  <Tag key={i}>{h}</Tag>
+                                );
+                              })}
+                            </span>
+                          );
+                        })}
+                      </Space>
+                    );
+                  })()}
+                </div>
+              </div>
+            </Col>
+          )}
         </Row>
       </Card>
     </div>

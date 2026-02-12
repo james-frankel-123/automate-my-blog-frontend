@@ -188,6 +188,10 @@ function OnboardingFunnelView() {
   const articlesTimedOutRef = useRef(false);
   const contentGenerationStartedRef = useRef(false);
 
+  // Social profiles discovered from website (shown in onboarding after analysis)
+  const [onboardingSocialHandles, setOnboardingSocialHandles] = useState({});
+  const [loadingOnboardingSocialHandles, setLoadingOnboardingSocialHandles] = useState(false);
+
   const analysis = useMemo(() => stepResults?.home?.websiteAnalysis || {}, [stepResults?.home?.websiteAnalysis]);
   const organizationCTAs = stepResults?.home?.ctas ?? [];
   const hasSufficientCTAs = stepResults?.home?.hasSufficientCTAs ?? false;
@@ -268,6 +272,25 @@ function OnboardingFunnelView() {
       console.log('🕐 [OnboardingFunnelView] Analysis completed - checklist will stay visible');
     }
   }, [loading, hasAnalysis]);
+
+  // Fetch social handles when we have an organization (after website analysis)
+  useEffect(() => {
+    const orgId = analysis?.organizationId;
+    if (!orgId || !hasAnalysis) return;
+    let cancelled = false;
+    setLoadingOnboardingSocialHandles(true);
+    autoBlogAPI.getSocialHandles(orgId)
+      .then((res) => {
+        if (!cancelled) setOnboardingSocialHandles(res.social_handles || {});
+      })
+      .catch(() => {
+        if (!cancelled) setOnboardingSocialHandles({});
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingOnboardingSocialHandles(false);
+      });
+    return () => { cancelled = true; };
+  }, [analysis?.organizationId, hasAnalysis]);
 
   // Log when analysisNarration unlocks
   useEffect(() => {
@@ -1270,6 +1293,8 @@ function OnboardingFunnelView() {
                       profileData={editMode ? editedBusinessProfile : businessProfile}
                       editMode={editMode}
                       onUpdate={setEditedBusinessProfile}
+                      socialHandles={analysis?.organizationId ? (onboardingSocialHandles || {}) : null}
+                      socialHandlesLoading={loadingOnboardingSocialHandles}
                     />
                   </motion.div>
                 </section>
