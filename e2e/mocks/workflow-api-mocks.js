@@ -209,13 +209,14 @@ const MOCK_CONTENT_WITH_IMAGE_GEN = {
  *   - imageGenerationInBackground: job result includes needsImageGeneration; images API returns content with images (progressive UX)
  */
 async function installWorkflowMocksWithOptions(page, options = {}) {
-  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null, analysisJobFails = false, analysisSyncFails = false } = options;
+  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null, analysisJobFails = false, analysisSyncFails = false, skipRecentAnalysis = false } = options;
   const pollCounts = {};
 
   await installWorkflowMocksBase(page, {
     imageGenerationInBackground,
     userCredits,
     analysisSyncFails,
+    skipRecentAnalysis,
     jobsStatusHandler: (jobId) => {
       pollCounts[jobId] = (pollCounts[jobId] || 0) + 1;
       const pollNum = pollCounts[jobId];
@@ -286,7 +287,7 @@ async function installWorkflowMocks(page) {
 const E2E_TWEET_STREAM_ID = 'e2e-tweet-stream';
 
 async function installWorkflowMocksBase(page, options = {}) {
-  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false, contentWithTweetPlaceholder = false, tweetsForTopic = null, tweetStreamResponds = false } = options;
+  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false, contentWithTweetPlaceholder = false, tweetsForTopic = null, tweetStreamResponds = false, skipRecentAnalysis = false } = options;
   const creditsPayload = userCredits != null ? userCredits : DEFAULT_CREDITS;
   const patterns = [
     { path: '/api/analyze-website', method: 'POST', body: () => (analysisSyncFails ? json({ success: false, error: 'Scraping failed' }) : json(MOCK_ANALYSIS)) },
@@ -323,6 +324,11 @@ async function installWorkflowMocksBase(page, options = {}) {
   await page.route('**/*', async (route) => {
     const url = route.request().url();
     const method = route.request().method();
+
+    // When skipRecentAnalysis is true, return 404 so the URL input stays enabled (workflow tests need fresh analysis)
+    if (skipRecentAnalysis && method === 'GET' && pathMatch(url, '/api/v1/user/recent-analysis')) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
 
     if (tweetStreamResponds && method === 'POST' && url.includes('tweets/search-for-topic-stream')) {
       return route.fulfill({
