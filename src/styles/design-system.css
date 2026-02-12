@@ -847,6 +847,7 @@ body {
     --color-primary-hover: #A5B4FC;        /* Even brighter on hover */
     --color-primary-500: #818CF8;
     --color-primary-50: rgba(129, 140, 248, 0.15);   /* Dark mode primary tint */
+    --color-primary-100: rgba(129, 140, 248, 0.25);  /* CTA background, panel border - dark mode */
     --color-primary-200: rgba(167, 139, 250, 0.4);   /* Dark mode primary border */
     --color-primary-700: #A5B4FC;          /* Lighter for dark bg readability */
 
@@ -934,6 +935,7 @@ body {
 
   /* Primary scale for dark mode cards/accents */
   --color-primary-50: rgba(129, 140, 248, 0.15);
+  --color-primary-100: rgba(129, 140, 248, 0.25);  /* CTA background, panel border - dark mode */
   --color-primary-200: rgba(167, 139, 250, 0.4);
   --color-primary-700: #A5B4FC;
   --color-accent-50: rgba(251, 191, 36, 0.15);
@@ -1134,6 +1136,74 @@ body {
   background-color: var(--color-background-elevated);
   border-left-color: var(--color-primary);
   border-radius: 4px;
+}
+
+/* HTMLPreview: markdown tweet card, placeholder, related badges – dark mode */
+.dark-mode .markdown-tweet-card {
+  background: var(--color-background-elevated) !important;
+  border-color: var(--color-border-base) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+.dark-mode .markdown-tweet-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4) !important;
+  border-color: var(--color-border-dark) !important;
+}
+.dark-mode .markdown-tweet-card-avatar {
+  background: var(--color-background-alt) !important;
+  color: var(--color-text-primary) !important;
+}
+.dark-mode .markdown-tweet-card-name,
+.dark-mode .markdown-tweet-card-body,
+.dark-mode .markdown-tweet-card-xlogo {
+  color: var(--color-text-primary) !important;
+}
+.dark-mode .markdown-tweet-card-dot,
+.dark-mode .markdown-tweet-card-handle,
+.dark-mode .markdown-tweet-card-badge,
+.dark-mode .markdown-tweet-card-actions {
+  color: var(--color-text-secondary) !important;
+}
+.dark-mode .markdown-tweet-card-action-view,
+.dark-mode .markdown-tweet-card-action {
+  color: var(--color-text-secondary) !important;
+}
+.dark-mode .markdown-tweet-card-actions {
+  border-top-color: var(--color-border-base) !important;
+}
+.dark-mode .markdown-tweet-card-link {
+  color: var(--color-primary) !important;
+}
+.dark-mode .markdown-tweet-card-link:hover {
+  color: var(--color-primary-hover) !important;
+}
+.dark-mode .markdown-tweet-placeholder {
+  border-color: var(--color-border-base) !important;
+  background: var(--color-background-elevated) !important;
+  color: var(--color-text-secondary) !important;
+}
+.dark-mode .markdown-related-badge-article {
+  background: rgba(99, 102, 241, 0.2) !important;
+  color: var(--color-primary) !important;
+  border-color: rgba(129, 140, 248, 0.4) !important;
+}
+.dark-mode .markdown-related-badge-video {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: var(--color-error) !important;
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+
+/* HTMLPreview: video/article placeholders – dark mode gradient fix */
+.dark-mode .markdown-video-placeholder {
+  background: linear-gradient(135deg, var(--color-background-alt) 0%, var(--color-background-elevated) 100%) !important;
+}
+.dark-mode .markdown-article-placeholder {
+  background: linear-gradient(135deg, var(--color-background-alt) 0%, var(--color-background-elevated) 100%) !important;
+}
+.dark-mode .markdown-image-placeholder {
+  background: linear-gradient(90deg,
+    var(--color-background-alt) 0%,
+    var(--color-background-elevated) 50%,
+    var(--color-background-alt) 100%) !important;
 }
 
 .dark-mode h1,
@@ -1745,6 +1815,12 @@ html.dark-mode .ant-message .ant-message-notice-content,
 .dark-mode section[style*="background"],
 .dark-mode article[style*="background"] {
   background-color: var(--color-background-elevated) !important;
+}
+
+/* Exception: hero title overlay uses semi-transparent gradient over image */
+.dark-mode .hero-image-title-overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%) !important;
+  background-color: transparent !important;
 }
 
 /* Specific light gray backgrounds - ensure visibility */

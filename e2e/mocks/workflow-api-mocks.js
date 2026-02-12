@@ -209,13 +209,14 @@ const MOCK_CONTENT_WITH_IMAGE_GEN = {
  *   - imageGenerationInBackground: job result includes needsImageGeneration; images API returns content with images (progressive UX)
  */
 async function installWorkflowMocksWithOptions(page, options = {}) {
-  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null, analysisJobFails = false, analysisSyncFails = false } = options;
+  const { progressiveJobStatus = false, failFirstThenRetry = false, imageGenerationInBackground = false, userCredits = null, analysisJobFails = false, analysisSyncFails = false, skipRecentAnalysis = false } = options;
   const pollCounts = {};
 
   await installWorkflowMocksBase(page, {
     imageGenerationInBackground,
     userCredits,
     analysisSyncFails,
+    skipRecentAnalysis,
     jobsStatusHandler: (jobId) => {
       pollCounts[jobId] = (pollCounts[jobId] || 0) + 1;
       const pollNum = pollCounts[jobId];
@@ -286,7 +287,7 @@ async function installWorkflowMocks(page) {
 const E2E_TWEET_STREAM_ID = 'e2e-tweet-stream';
 
 async function installWorkflowMocksBase(page, options = {}) {
-  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false, contentWithTweetPlaceholder = false, tweetsForTopic = null, tweetStreamResponds = false } = options;
+  const { jobsStatusHandler, imageGenerationInBackground = false, userCredits = null, analysisSyncFails = false, contentWithTweetPlaceholder = false, tweetsForTopic = null, tweetStreamResponds = false, skipRecentAnalysis = false } = options;
   const creditsPayload = userCredits != null ? userCredits : DEFAULT_CREDITS;
   const patterns = [
     { path: '/api/analyze-website', method: 'POST', body: () => (analysisSyncFails ? json({ success: false, error: 'Scraping failed' }) : json(MOCK_ANALYSIS)) },
@@ -311,6 +312,7 @@ async function installWorkflowMocksBase(page, options = {}) {
     { path: '/api/v1/jobs/website-analysis', method: 'POST', body: () => (analysisSyncFails ? { status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) } : { status: 201, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jobId: E2E_JOB_ANALYSIS }) }) },
     { path: '/api/v1/session/create', method: 'POST', body: () => json({ session_id: 'e2e-session-id' }) },
     { path: '/api/v1/auth/me', method: 'GET', body: () => json({ success: true, user: MOCK_USER }) },
+    { path: '/api/v1/user/recent-analysis', method: 'GET', body: () => json(MOCK_ANALYSIS) },
     { path: '/api/v1/auth/refresh', method: 'POST', body: () => json({ success: true, accessToken: fakeJWT(), refreshToken: fakeJWT() }) },
     { path: '/api/v1/auth/logout', method: 'POST', body: () => json({}) },
     { path: '/api/v1/user/credits', method: 'GET', body: () => json({ data: creditsPayload }) },
@@ -322,6 +324,11 @@ async function installWorkflowMocksBase(page, options = {}) {
   await page.route('**/*', async (route) => {
     const url = route.request().url();
     const method = route.request().method();
+
+    // When skipRecentAnalysis is true, return 404 so the URL input stays enabled (workflow tests need fresh analysis)
+    if (skipRecentAnalysis && method === 'GET' && pathMatch(url, '/api/v1/user/recent-analysis')) {
+      return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
+    }
 
     if (tweetStreamResponds && method === 'POST' && url.includes('tweets/search-for-topic-stream')) {
       return route.fulfill({
@@ -436,75 +443,13 @@ async function installWorkflowMocksBase(page, options = {}) {
   });
 }
 
-/** Minimal workflow state so App shows dashboard (not onboarding funnel) for E2E. */
-function getE2ECompletedWorkflowState() {
-  return {
-    userId: MOCK_USER.id,
-    isAuthenticated: true,
-    mode: 'authenticated',
-    currentWorkflowStep: 1,
-    currentStep: 1,
-    completedWorkflowSteps: ['home'],
-    stepResults: {
-      home: {
-        websiteAnalysis: {
-          businessType: 'Technology',
-          businessName: 'Example Inc',
-          targetAudience: 'Developers and technical leads',
-          contentFocus: 'Developer tools, APIs, and best practices',
-          brandVoice: 'Professional, helpful',
-          description: 'Example Inc provides developer tools.',
-          keywords: [],
-          decisionMakers: '',
-          endUsers: '',
-          customerProblems: [],
-          searchBehavior: '',
-          customerLanguage: [],
-          contentIdeas: ['Getting started with APIs', 'Best practices for developers'],
-          connectionMessage: '',
-          businessModel: '',
-          websiteGoals: '',
-          blogStrategy: '',
-          scenarios: [],
-          brandColors: { primary: '', secondary: '', accent: '' },
-          websiteUrl: 'https://example.com'
-        },
-        webSearchInsights: { brandResearch: null, keywordResearch: null, researchQuality: 'basic' },
-        analysisCompleted: true,
-        ctas: [],
-        ctaCount: 0,
-        hasSufficientCTAs: false
-      },
-      audience: { customerStrategy: null, targetSegments: [] },
-      content: { trendingTopics: [], selectedContent: null, finalContent: '' },
-      analytics: { performance: null }
-    },
-    analysisCompleted: true,
-    strategyCompleted: false,
-    strategySelectionCompleted: false,
-    websiteUrl: 'https://example.com',
-    selectedTopic: null,
-    generatedContent: '',
-    savedAt: new Date().toISOString(),
-    version: '1.1'
-  };
-}
-
-/** Inject localStorage tokens and completed workflow state so app shows dashboard. Call before goto. */
+/** Inject localStorage tokens so app treats user as logged in. App loads analysis via getRecentAnalysis mock. Call before goto. */
 async function injectLoggedInUser(page) {
   const token = fakeJWT();
-  const workflowState = getE2ECompletedWorkflowState();
-  await page.addInitScript((t, stateJson) => {
+  await page.addInitScript((t) => {
     localStorage.setItem('accessToken', t);
     localStorage.setItem('refreshToken', t);
-    if (stateJson) {
-      try {
-        localStorage.setItem('automate-my-blog-workflow-state', stateJson);
-      } catch (e) {
-        // ignore
-      }
-    }
-  }, token, JSON.stringify(workflowState));
+  }, token);
 }
 
 module.exports = {

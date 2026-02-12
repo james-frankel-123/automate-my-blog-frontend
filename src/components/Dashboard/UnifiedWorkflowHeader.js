@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Typography } from 'antd';
 import { 
   PlusOutlined, 
@@ -53,6 +53,8 @@ const UnifiedWorkflowHeader = ({
   const [dimText, setDimText] = useState(false);
   const [_dingPosition, _setDingPosition] = useState(null);
   const [delayedInputIsEditing, setDelayedInputIsEditing] = useState(true);
+  const onSequenceCompleteRef = useRef(onSequenceComplete);
+  onSequenceCompleteRef.current = onSequenceComplete;
 
   // Trigger text transition animation when auth state changes
   useEffect(() => {
@@ -78,7 +80,7 @@ const UnifiedWorkflowHeader = ({
     setDelayedInputIsEditing(inputIsEditing);
   }, [inputIsEditing]);
 
-  // Typewriter animation effect (runs every time when enableSequentialAnimation is true)
+  // Typewriter animation effect (runs when enableSequentialAnimation is true)
   useEffect(() => {
     if (!enableSequentialAnimation) {
       return;
@@ -89,22 +91,32 @@ const UnifiedWorkflowHeader = ({
       return;
     }
 
-    // Prevent animation from starting if title is already being typed
-    if (displayedTitle.length > 0) {
-      return;
-    }
+    // Reset displayed state so we always run from scratch (avoids hang when effect
+    // re-runs after cleanup: previously we bailed if displayedTitle.length > 0,
+    // leaving the title stuck at e.g. "The" with no timeouts left)
+    setDisplayedTitle('');
+    setDisplayedSubtitlePart1('');
+    setDisplayedClicks('');
+    setDisplayedSubtitlePart2('');
+    setShowTitleCursor(true);
+    setShowSubtitleCursor(false);
+    setShowClicksHighlight(false);
+
+    const subtitlePart1 = "Automate website content to get ";
+    const clicksWord = "clicks";
+    const subtitlePart2 = " without complication";
     const fullTitle = systemVoice.header.step0Title;
-    const fullSubtitle = systemVoice.header.step0Description;
     const charDelay = 50; // 50ms per character
+    const clicksPauseDelay = 300; // 300ms pause after "clicks"
     const timeouts = [];
 
-    // 1. Type title character by character
+    // 1. Type title character by character (NO FLASH when complete)
     for (let i = 0; i <= fullTitle.length; i++) {
       const timeout = setTimeout(() => {
         setDisplayedTitle(fullTitle.slice(0, i));
 
         if (i === fullTitle.length) {
-          // Title complete - move cursor to subtitle
+          // Title complete - NO FLASH, just move cursor immediately
           setTitleComplete(true);
           setShowTitleCursor(false);
           setShowSubtitleCursor(true);
@@ -113,13 +125,41 @@ const UnifiedWorkflowHeader = ({
       timeouts.push(timeout);
     }
 
-    // 2. Type subtitle character by character
+    // 2. Type subtitle part 1 ("Automate website content to get ")
     const subtitleStartDelay = fullTitle.length * charDelay;
-    for (let i = 0; i <= fullSubtitle.length; i++) {
+    for (let i = 0; i <= subtitlePart1.length; i++) {
       const timeout = setTimeout(() => {
-        setDisplayedSubtitlePart1(fullSubtitle.slice(0, i));
+        setDisplayedSubtitlePart1(subtitlePart1.slice(0, i));
+      }, subtitleStartDelay + (i * charDelay));
+      timeouts.push(timeout);
+    }
 
-        if (i === fullSubtitle.length) {
+    // 3. Type "clicks" word
+    const clicksStartDelay = subtitleStartDelay + (subtitlePart1.length * charDelay);
+    for (let i = 0; i <= clicksWord.length; i++) {
+      const timeout = setTimeout(() => {
+        setDisplayedClicks(clicksWord.slice(0, i));
+
+        if (i === clicksWord.length) {
+          // "clicks" complete - PAUSE and ANIMATE
+          const highlightTimeout = setTimeout(() => {
+            setShowClicksHighlight(true); // Trigger highlight animation
+            const highlightEndTimeout = setTimeout(() => setShowClicksHighlight(false), 200);
+            timeouts.push(highlightEndTimeout);
+          }, clicksPauseDelay);
+          timeouts.push(highlightTimeout);
+        }
+      }, clicksStartDelay + (i * charDelay));
+      timeouts.push(timeout);
+    }
+
+    // 4. Type subtitle part 2 (" without complication") - after pause + 0.5s additional delay
+    const part2StartDelay = clicksStartDelay + (clicksWord.length * charDelay) + clicksPauseDelay + 200 + 500;
+    for (let i = 0; i <= subtitlePart2.length; i++) {
+      const timeout = setTimeout(() => {
+        setDisplayedSubtitlePart2(subtitlePart2.slice(0, i));
+
+        if (i === subtitlePart2.length) {
           // Subtitle complete - hide cursor and mark complete
           setSubtitleComplete(true);
           setShowSubtitleCursor(false);
@@ -128,20 +168,20 @@ const UnifiedWorkflowHeader = ({
           // Mark animation complete
           const completeTimeout = setTimeout(() => {
             setAnimationComplete(true);
-            onSequenceComplete?.();
+            onSequenceCompleteRef.current?.();
           }, 0);
           timeouts.push(completeTimeout);
         }
-      }, subtitleStartDelay + (i * charDelay));
+      }, part2StartDelay + (i * charDelay));
       timeouts.push(timeout);
     }
 
-    // Cleanup timeouts on unmount
+    // Cleanup timeouts on unmount or when deps change
     return () => {
       timeouts.forEach(timeout => clearTimeout(timeout));
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- animationComplete/displayedTitle intentionally excluded
-  }, [enableSequentialAnimation, onSequenceComplete]);
+    // Re-run only when enableSequentialAnimation changes; animationComplete in deps for exhaustive-deps
+  }, [enableSequentialAnimation, animationComplete]);
 
   // Skip animation handler
   const handleSkipAnimation = () => {
@@ -149,7 +189,9 @@ const UnifiedWorkflowHeader = ({
 
     // Show full text immediately
     setDisplayedTitle(systemVoice.header.step0Title);
-    setDisplayedSubtitlePart1(systemVoice.header.step0Description);
+    setDisplayedSubtitlePart1("Automate website content to get ");
+    setDisplayedClicks("clicks");
+    setDisplayedSubtitlePart2(" without complication");
     setShowTitleCursor(false);
     setShowSubtitleCursor(false);
     setTitleComplete(true);
@@ -369,7 +411,14 @@ const UnifiedWorkflowHeader = ({
                 lineHeight: 'var(--line-height-relaxed)',
                 display: 'inline'
               }}>
+                {/* Part 1: "Automate website content to get " */}
                 {displayedSubtitlePart1}
+
+                {/* Part 2: "clicks" */}
+                {displayedClicks}
+
+                {/* Part 3: " without complication" */}
+                {displayedSubtitlePart2}
               </Paragraph>
               {showSubtitleCursor && (
                 <span className="typewriter-cursor" style={{ verticalAlign: 'middle' }} />

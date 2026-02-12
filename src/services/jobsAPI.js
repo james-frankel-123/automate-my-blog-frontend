@@ -208,9 +208,10 @@ class JobsAPI {
 
   /**
    * Connect to narrative stream SSE (Issue #157, #261).
-   * Events: analysis-status-update (preferred), scraping-thought (legacy), transition, analysis-chunk, complete.
+   * Events: analysis-status-update (preferred), scraping-thought (legacy), transition, analysis-chunk (short opening),
+   * insight-card (one per card, 4–6 total), narrative-complete, complete.
    * @param {string} jobId
-   * @param {Object} [handlers] - { onAnalysisStatusUpdate?, onScrapingThought?, onTransition?, onAnalysisChunk?, onComplete?, onError? }
+   * @param {Object} [handlers] - { onAnalysisStatusUpdate?, onScrapingThought?, onTransition?, onAnalysisChunk?, onInsightCard?, onNarrativeComplete?, onComplete?, onError?, onBusinessProfile? }
    * @param {{ signal?: AbortSignal }} [options] - AbortSignal to cancel and close stream
    * @returns {Promise<{ available: boolean }>} Resolves when stream ends. available: false if endpoint unavailable (404) or aborted.
    */
@@ -265,6 +266,16 @@ class JobsAPI {
       eventSource.addEventListener('analysis-chunk', (event) => {
         const data = parseData(event);
         if (handlers.onAnalysisChunk) handlers.onAnalysisChunk(data);
+      });
+
+      eventSource.addEventListener('insight-card', (event) => {
+        const data = parseData(event);
+        if (handlers.onInsightCard) handlers.onInsightCard(data);
+      });
+
+      eventSource.addEventListener('narrative-complete', (event) => {
+        const data = parseData(event);
+        if (handlers.onNarrativeComplete) handlers.onNarrativeComplete(data);
       });
 
       eventSource.addEventListener('business-profile', (event) => {

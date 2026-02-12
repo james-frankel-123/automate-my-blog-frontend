@@ -40,6 +40,7 @@ import {
 import ThinkingPanel from '../shared/ThinkingPanel';
 import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
 import RelatedContentPanel from '../shared/RelatedContentPanel';
+import { notifyTabReady } from '../../utils/tabReadyAlert';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
@@ -1116,6 +1117,7 @@ const PostsTab = ({
               loadPosts();
               if (onQuotaUpdate) onQuotaUpdate();
               setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
+              notifyTabReady();
               message.success('Blog content generated and saved!');
             }
             contentGenerationInProgressRef.current = false;
@@ -1230,6 +1232,7 @@ const PostsTab = ({
           loadPosts();
           if (onQuotaUpdate) onQuotaUpdate();
           setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
+          notifyTabReady();
           message.success('Blog content generated and saved!');
         } else {
           // Fallback: create post via API (sync flow or when worker didn't save)
@@ -1269,6 +1272,7 @@ const PostsTab = ({
             setPosts(prevPosts => [saveResult.post, ...prevPosts]);
             if (onQuotaUpdate) onQuotaUpdate();
             setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
+            notifyTabReady();
             message.success('Blog content generated and saved!');
           } else {
             setCurrentDraft({
@@ -1285,6 +1289,7 @@ const PostsTab = ({
             setIsAutosaving(false);
             setAutosaveError(null);
             setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
+            notifyTabReady();
             message.success('Blog content generated successfully!');
           }
         }
@@ -1342,6 +1347,7 @@ const PostsTab = ({
                   if (savedPost?.id && onQuotaUpdate) onQuotaUpdate();
                   loadPosts(); // Refresh posts list
                   setHint(systemVoice.toasts.contentGenerated, 'success', 5000);
+                  notifyTabReady();
                   message.success('Blog content generated and saved!');
                 } else {
                   message.error(retryResult.error || 'Retry failed');

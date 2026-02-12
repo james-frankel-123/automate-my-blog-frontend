@@ -277,7 +277,7 @@ export const NarrativeAnalysisCard = ({ narrative, confidence: _confidence, keyI
                   bodyStyle={{ padding: '12px 16px' }}
                 >
                   <Text style={{ color: 'var(--color-primary-700)', fontSize: 14, fontWeight: 500, lineHeight: 1.5 }}>
-                    {insight}
+                    {insightToString(insight)}
                   </Text>
                 </Card>
               </Col>

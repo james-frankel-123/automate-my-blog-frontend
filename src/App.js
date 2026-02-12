@@ -8,6 +8,7 @@ import { SystemHintProvider } from './contexts/SystemHintContext';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import RebaseReminder from './components/RebaseReminder/RebaseReminder';
 import StagingPromoteBar from './components/StagingPromoteBar/StagingPromoteBar';
+import AdminLinkBar from './components/AdminLinkBar/AdminLinkBar';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
@@ -15,6 +16,7 @@ import { OnboardingFunnelView } from './components/Onboarding';
 import SEOHead from './components/SEOHead';
 import { useWorkflowMode } from './contexts/WorkflowModeContext';
 import { storeReferralInfo } from './utils/referralUtils';
+import { notifyTabReady } from './utils/tabReadyAlert';
 import './styles/design-system.css';
 import './styles/mobile.css';
 
@@ -248,6 +250,15 @@ const AppContent = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // When auth loading finishes and user might be on another tab, alert in icon/title
+  const prevLoadingRef = React.useRef(loading);
+  useEffect(() => {
+    if (prevLoadingRef.current && !loading) {
+      notifyTabReady();
+    }
+    prevLoadingRef.current = loading;
+  }, [loading]);
+
   // Show loading state while auth is being determined
   if (loading) {
     return (
@@ -309,10 +320,11 @@ const AppContent = () => {
   }
 
   // Guided onboarding funnel (Issue #261): show for first-time or logged-out users.
-  // Path /dashboard + logged in forces dashboard (for E2E and direct links).
+  // Path /dashboard or dashboard sub-routes (e.g. /settings/voice-adaptation) + logged in forces dashboard (for E2E and direct links).
   // After registration from funnel, keep showing funnel so user stays in place and topic generation can start.
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const forceDashboard = pathname === '/dashboard' && user;
+  const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/settings/');
+  const forceDashboard = isDashboardPath && user;
   const showFunnel =
     pathname === '/onboarding' || (!forceDashboard && !isReturningUser) || stayInFunnelAfterRegistration;
   if (showFunnel) {
@@ -350,6 +362,7 @@ const App = () => {
         <StagingPromoteBar />
         <ErrorBoundary>
           <AuthProvider>
+            <AdminLinkBar />
             <WorkflowModeProvider>
               <AnalyticsProvider>
                 <AppContent />

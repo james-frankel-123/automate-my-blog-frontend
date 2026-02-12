@@ -93,6 +93,7 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
   const {
     scrapingNarrative,
     analysisNarrative,
+    insightCards,
     currentMoment,
     isStreaming,
     narrativeAvailable,
@@ -126,8 +127,9 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
 
   const scrapingItems = splitScrapingIntoItems(scrapingNarrative);
   const analysisParagraphs = splitParagraphs(analysisNarrative);
+  const hasInsightCards = Array.isArray(insightCards) && insightCards.length > 0;
   const showAnalysisSection =
-    currentMoment === MOMENTS.ANALYSIS || currentMoment === MOMENTS.AUDIENCES || analysisNarrative;
+    currentMoment === MOMENTS.ANALYSIS || currentMoment === MOMENTS.AUDIENCES || analysisNarrative || hasInsightCards;
 
   // Scraping: item-style cards (paragraphs or sentences when long) + streaming card for last incomplete
   const scrapingComplete = currentMoment === MOMENTS.SCRAPING && isStreaming && scrapingItems.length > 0
@@ -264,6 +266,38 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
                 <StreamingText content="" isStreaming />
               </div>
             </Card>
+          )}
+          {/* Insight cards from narrative stream (4–6 cards; backend insight-card events) */}
+          {hasInsightCards && (
+            <>
+              {insightCards.length > 0 && (
+                <Title level={5} style={{ marginTop: 24, marginBottom: 12 }}>
+                  {systemVoice.analysis.insightCardsTitle}
+                </Title>
+              )}
+              {insightCards.map((card, idx) => (
+                <Card
+                  key={`insight-${idx}`}
+                  style={{
+                    ...analysisCardStyle,
+                    animation: 'slideInUp 0.4s ease forwards',
+                    animationDelay: `${idx * 0.08}s`,
+                  }}
+                  data-testid={`narrative-insight-card-${idx}`}
+                >
+                  <div style={analysisTextStyle}>
+                    {card.title ? (
+                      <Text strong style={{ display: 'block', marginBottom: 8 }}>
+                        {card.title}
+                      </Text>
+                    ) : null}
+                    {card.content ? (
+                      <MarkdownPreview content={card.content} style={{ margin: 0 }} />
+                    ) : null}
+                  </div>
+                </Card>
+              ))}
+            </>
           )}
         </div>
       )}

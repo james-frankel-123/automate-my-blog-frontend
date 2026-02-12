@@ -5,6 +5,7 @@ import {
   DashboardOutlined,
   FileTextOutlined,
   SettingOutlined,
+  SoundOutlined,
   UserOutlined,
   LogoutOutlined,
   EditOutlined,
@@ -24,6 +25,7 @@ import DashboardTab from './DashboardTab';
 import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
+import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
 import SandboxTab from './SandboxTab';
 import ReturningUserDashboard from './ReturningUserDashboard';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
@@ -60,7 +62,11 @@ const DashboardLayout = ({
   // When handed off from funnel (topic selected): land on Posts so generation can start
   initialActiveTab = null
 }) => {
-  const [activeTab, setActiveTab] = useState(initialActiveTab || 'dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (initialActiveTab) return initialActiveTab;
+    if (typeof window !== 'undefined' && window.location.pathname === '/settings/voice-adaptation') return 'voice-adaptation';
+    return 'dashboard';
+  });
   const {
     user: contextUser,
     logout,
@@ -306,7 +312,7 @@ const DashboardLayout = ({
   // Add intersection observer for scroll-based menu highlighting
   useEffect(() => {
     // Only set up observer if we're in the scrollable sections view (not settings/admin tabs)
-    if (!user || activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
+    if (!user || activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
       return;
     }
 
@@ -442,9 +448,12 @@ const DashboardLayout = ({
       user: user?.id 
     });
     
-    // For settings, switch to settings tab (not part of scrollable sections)
-    if (newTab === 'settings' || newTab.startsWith('admin-')) {
+    // For settings, voice adaptation, and admin tabs: switch tab (not part of scrollable sections)
+    if (newTab === 'settings' || newTab === 'voice-adaptation' || newTab.startsWith('admin-')) {
       setActiveTab(newTab);
+      if (newTab === 'voice-adaptation' && typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/settings/voice-adaptation');
+      }
       if (onActiveTabChange) {
         onActiveTabChange(newTab);
       }
@@ -669,6 +678,12 @@ const DashboardLayout = ({
       onClick: () => handleTabChange('settings'),
     },
     {
+      key: 'voice-adaptation',
+      icon: <SoundOutlined />,
+      label: 'Voice adaptation',
+      onClick: () => handleTabChange('voice-adaptation'),
+    },
+    {
       type: 'divider',
     },
     {
@@ -681,10 +696,12 @@ const DashboardLayout = ({
 
   const renderContent = () => {
     // Special tabs that don't use scrollable layout
-    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
+    if (activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
+        case 'voice-adaptation':
+          return <VoiceAdaptationTab />;
         case 'comprehensive-analysis':
           return <ComprehensiveAnalysisTab />;
         case 'admin-users':
@@ -1305,10 +1322,10 @@ const DashboardLayout = ({
           )}
 
           <div style={{
-            background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
-            borderRadius: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
+            background: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
+            borderRadius: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
             minHeight: '100%',
-            padding: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
+            padding: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
           }}>
             {renderContent()}
           </div>

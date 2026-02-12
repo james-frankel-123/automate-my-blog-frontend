@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DOMPurify from 'dompurify';
+import ReactPlayer from 'react-player';
 import { Tweet } from 'react-tweet';
 import 'react-tweet/theme.css';
 import { typography } from '../DesignSystem/tokens';
@@ -15,6 +16,7 @@ const HERO_IMAGE_SENTINEL = '__HERO_IMAGE__';
 
 /** Brief minimum time (ms) for placeholder so transition isn’t jarring; image still swaps in as soon as loaded after this. */
 const HERO_PLACEHOLDER_MIN_MS = 400;
+const KEN_BURNS_ANIMATION_SECONDS = 18;
 
 /**
  * Hero image with animated placeholder until loaded, then swaps in the image.
@@ -28,10 +30,11 @@ const HERO_LOG = (msg, data) => {
   }
 };
 
-function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false }) {
+function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [effectiveSrc, setEffectiveSrc] = useState(src);
+  const [imageMetrics, setImageMetrics] = useState({ width: 0, height: 0 });
   const imgRef = useRef(null);
 
   useEffect(() => {
@@ -47,7 +50,21 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
   useEffect(() => {
     setEffectiveSrc(src);
     setImageLoaded(false);
+    setImageMetrics({ width: 0, height: 0 });
   }, [src]);
+
+  const updateImageMetrics = useCallback((node) => {
+    if (!node) return;
+    const { naturalWidth, naturalHeight } = node;
+    if (naturalWidth > 0 && naturalHeight > 0) {
+      setImageMetrics((prev) => {
+        if (prev.width === naturalWidth && prev.height === naturalHeight) {
+          return prev;
+        }
+        return { width: naturalWidth, height: naturalHeight };
+      });
+    }
+  }, []);
 
   // Callback ref: attach load/error listeners as soon as the img mounts.
   // Handles: cached images (complete before listener attach), async load, and failed load.
@@ -61,7 +78,10 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     imgRef.current = node;
     if (!node || !effectiveSrc) return;
     const checkComplete = () => {
-      if (node.complete && node.naturalWidth > 0) setImageLoaded(true);
+      if (node.complete && node.naturalWidth > 0) {
+        setImageLoaded(true);
+        updateImageMetrics(node);
+      }
     };
     const onError = () => {
       HERO_LOG('img error', { effectiveSrc: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
@@ -76,6 +96,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
       if (node.complete && node.naturalWidth > 0) {
         HERO_LOG('img loaded', { naturalWidth: node.naturalWidth, src: effectiveSrc ? `${String(effectiveSrc).slice(0, 60)}...` : effectiveSrc });
       }
+      updateImageMetrics(node);
       checkComplete();
     };
     imgRef._onLoad = onLoadSuccess;
@@ -84,7 +105,7 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     node.addEventListener('error', onError);
     checkComplete();
     requestAnimationFrame(checkComplete);
-  }, [effectiveSrc]);
+  }, [effectiveSrc, updateImageMetrics]);
 
   // Also run checkComplete after paint (useEffect) for timing edge cases
   useEffect(() => {
@@ -92,22 +113,36 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     const img = imgRef.current;
     if (!img) return;
     const checkComplete = () => {
-      if (img.complete && img.naturalWidth > 0) setImageLoaded(true);
+      if (img.complete && img.naturalWidth > 0) {
+        setImageLoaded(true);
+        updateImageMetrics(img);
+      }
     };
     checkComplete();
     const t = setTimeout(checkComplete, 0);
     return () => clearTimeout(t);
-  }, [effectiveSrc]);
+  }, [effectiveSrc, updateImageMetrics]);
 
   const showImage = imageLoaded && minTimeElapsed;
+  const hasDimensions = imageMetrics.width > 0 && imageMetrics.height > 0;
+  const shouldApplyKenBurns = hasDimensions;
+  const kenBurnsActive = shouldApplyKenBurns && showImage;
 
+  const isLandscape = hasDimensions && imageMetrics.width >= imageMetrics.height;
   const wrapperStyle = {
     position: 'relative',
-    minHeight: 240,
+    width: '100%',
     margin: `${paragraphSpacing}px 0`,
     borderRadius: 8,
     overflow: 'hidden',
-    backgroundColor: 'var(--color-background-container)'
+    backgroundColor: 'var(--color-background-container)',
+    minHeight: 240,
+    ...(shouldApplyKenBurns && hasDimensions
+      ? {
+          aspectRatio: isLandscape ? `${imageMetrics.width} / ${imageMetrics.height}` : '16 / 9',
+          maxHeight: 420,
+        }
+      : {})
   };
 
   const heroPlaceholderStyle = getPlaceholderStyle(0);
@@ -117,6 +152,9 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
     left: 0,
     right: 0,
     bottom: 0,
+    background: 'linear-gradient(110deg, var(--color-background-container) 25%, var(--color-background-alt) 37%, var(--color-background-container) 63%)',
+    backgroundSize: '200% 100%',
+    animation: 'hero-placeholder-shimmer 2s ease-in-out infinite',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -134,11 +172,51 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
   };
 
   const placeholderKeyframes = `
+    @keyframes hero-placeholder-shimmer {
+      0%, 100% { background-position: 100% 50%; }
+      50% { background-position: 0% 50%; }
+    }
     @keyframes hero-placeholder-text-pulse {
       0%, 100% { opacity: 0.85; }
       50% { opacity: 1; }
     }
+    @keyframes hero-ken-burns {
+      0% { transform: scale(1.045) translate3d(-3%, -2%, 0); }
+      50% { transform: scale(1.12) translate3d(3%, 2%, 0); }
+      100% { transform: scale(1.045) translate3d(-2%, 3%, 0); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .hero-image-ken-burns {
+        animation: none !important;
+        transform: none !important;
+      }
+    }
+    .hero-image-title-overlay {
+      background: linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%) !important;
+      background-color: transparent !important;
+    }
   `;
+
+  const imageStyle = {
+    width: '100%',
+    height: shouldApplyKenBurns ? '100%' : 'auto',
+    borderRadius: '8px',
+    margin: 0,
+    opacity: showImage ? 1 : 0,
+    position: showImage ? 'relative' : 'absolute',
+    top: showImage ? undefined : 0,
+    left: showImage ? undefined : 0,
+    transition: 'opacity 0.35s ease-in',
+    pointerEvents: showImage ? undefined : 'none',
+    objectFit: 'cover',
+    objectPosition: 'center',
+    willChange: kenBurnsActive ? 'transform' : undefined,
+    transform: kenBurnsActive ? 'scale(1.045)' : undefined,
+    animation: kenBurnsActive
+      ? `hero-ken-burns ${KEN_BURNS_ANIMATION_SECONDS}s ease-in-out alternate infinite`
+      : undefined,
+    animationPlayState: kenBurnsActive ? 'running' : undefined
+  };
 
   return (
     <div className="hero-image-wrapper" style={wrapperStyle}>
@@ -158,25 +236,98 @@ function HeroImage({ src, alt, paragraphSpacing = 16, generationComplete = false
         src={effectiveSrc}
         alt={alt || 'Hero image'}
         loading="eager"
-        className="hero-image"
-        style={{
-          width: '100%',
-          maxWidth: '100%',
-          height: 'auto',
-          borderRadius: '8px',
-          margin: 0,
-          opacity: showImage ? 1 : 0,
-          position: showImage ? 'relative' : 'absolute',
-          top: showImage ? undefined : 0,
-          left: showImage ? undefined : 0,
-          transition: 'opacity 0.25s ease-in',
-          pointerEvents: showImage ? undefined : 'none'
+        className={`hero-image${shouldApplyKenBurns ? ' hero-image-ken-burns' : ''}`}
+        style={imageStyle}
+        onLoad={() => {
+          setImageLoaded(true);
+          if (imgRef.current) updateImageMetrics(imgRef.current);
         }}
-        onLoad={() => setImageLoaded(true)}
         onError={() => setImageLoaded(true)}
       />
+      {title && (
+        <div
+          className="hero-image-title-overlay"
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: 'linear-gradient(to top, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.03) 35%, rgba(0,0,0,0) 100%)',
+            padding: '32px 24px 24px',
+            display: 'flex',
+            alignItems: 'flex-end',
+            pointerEvents: 'none',
+            zIndex: 1
+          }}
+          aria-hidden="true"
+        >
+          <h1
+            style={{
+              margin: 0,
+              fontFamily: 'var(--font-family-display, system-ui, sans-serif)',
+              fontSize: 'clamp(1.5rem, 4vw, 2.25rem)',
+              fontWeight: 700,
+              color: '#fff',
+              textShadow: '0 1px 2px rgba(0,0,0,0.9), 0 2px 8px rgba(0,0,0,0.7), 0 0 24px rgba(0,0,0,0.5)',
+              lineHeight: 1.2,
+              letterSpacing: '-0.02em',
+              maxWidth: '100%'
+            }}
+          >
+            {title}
+          </h1>
+        </div>
+      )}
     </div>
   );
+}
+
+/**
+ * Extract the first h1 from HTML and return its text plus HTML with that h1 removed.
+ * Used to overlay the title on the hero image.
+ */
+function extractFirstH1(html) {
+  if (!html || typeof html !== 'string') return { title: null, htmlWithoutH1: html || '' };
+
+  // Sanitize and parse the HTML into a DOM so we can safely extract text content
+  let root;
+  try {
+    // RETURN_DOM gives us a Document/DocumentFragment rather than a string
+    root = DOMPurify.sanitize(html, { RETURN_DOM: true });
+  } catch (e) {
+    // Fallback to original HTML if DOMPurify in DOM mode is unavailable
+    return { title: null, htmlWithoutH1: html };
+  }
+
+  // Normalize root to an Element we can work with
+  let container;
+  if (root && root.body) {
+    // When RETURN_DOM is used on full HTML, we typically get a Document
+    container = root.body;
+  } else if (root && root.nodeType === 11) {
+    // DocumentFragment: wrap in a temporary div
+    container = root.ownerDocument
+      ? root.ownerDocument.createElement('div')
+      : document.createElement('div');
+    container.appendChild(root);
+  } else if (root && root.nodeType === 1) {
+    // Single element node
+    container = root;
+  } else {
+    return { title: null, htmlWithoutH1: html };
+  }
+
+  const h1 = container.querySelector('h1');
+  if (!h1) {
+    // No h1 found; return sanitized HTML as-is
+    return { title: null, htmlWithoutH1: container.innerHTML || '' };
+  }
+
+  const rawTitle = (h1.textContent || '').trim();
+  h1.remove();
+
+  const stripped = (container.innerHTML || '').trim();
+  return { title: rawTitle || null, htmlWithoutH1: stripped };
 }
 
 function isHeroImagePlaceholder(alt) {
@@ -315,9 +466,6 @@ const ARTICLE_PLACEHOLDER_TOKEN_REGEX = /__ARTICLE_PLACEHOLDER_(\d+)__/g;
 
 const TWEET_PLACEHOLDER_TOKEN_REGEX = /__TWEET_PLACEHOLDER_(\d+)__/g;
 
-/** Sentinel injected so we can split and render react-tweet or fallback card. */
-const TWEET_EMBED_SENTINEL_REGEX = /__TWEET_EMBED_(\d+)__/g;
-
 /**
  * Extract Twitter/X tweet ID from a status URL.
  * Supports twitter.com/.../status/ID, x.com/.../status/ID, twitter.com/i/status/ID.
@@ -429,33 +577,108 @@ function TweetEmbed({ index, relatedTweets }) {
   );
 }
 
+/** Regex to find VIDEO_EMBED or TWEET_EMBED sentinels for unified media slot parsing */
+const MEDIA_EMBED_SENTINEL_REGEX = /__(VIDEO_EMBED|TWEET_EMBED)_(\d+)__/g;
+
 /**
- * Renders HTML content, splitting on __TWEET_EMBED_n__ and rendering react-tweet (or fallback) for each slot.
+ * Renders a single video slot as a natural embed: 16:9 container, thumbnail + play button (react-player light mode), caption below.
+ * Plays inline when the user clicks; no iframe until then.
  */
-function HtmlWithTweetSlots({ html, relatedTweets }) {
+function VideoEmbed({ index, relatedVideos }) {
+  const videos = Array.isArray(relatedVideos) ? relatedVideos : [];
+  const video = videos[index];
+  const fallbackLoadingHtml = getVideoPlaceholderHtml(index, []);
+
+  if (!video || (!video.url && !video.videoId)) {
+    return (
+      <div
+        className="markdown-video-embed-wrapper markdown-video-embed-loading"
+        dangerouslySetInnerHTML={{ __html: fallbackLoadingHtml }}
+      />
+    );
+  }
+
+  const url = video.url || (video.videoId ? `https://www.youtube.com/watch?v=${video.videoId}` : '');
+  const title = (video.title && String(video.title).slice(0, 200)) || 'Video';
+  const channel = video.channelTitle ? String(video.channelTitle).slice(0, 100) : '';
+  const meta = [channel, video.viewCount != null ? `${Number(video.viewCount).toLocaleString()} views` : '', video.duration].filter(Boolean).join(' · ');
+  const thumbnailUrl = video.thumbnailUrl && /^https?:\/\//i.test(video.thumbnailUrl) ? video.thumbnailUrl : true;
+
+  return (
+    <div className="markdown-video-embed-wrapper">
+      <div className="markdown-video-embed-player-wrap">
+        <ReactPlayer
+          url={url}
+          light={thumbnailUrl}
+          width="100%"
+          height="100%"
+          className="markdown-video-embed-player"
+          playIcon={
+            <span className="markdown-video-embed-play-icon" aria-hidden="true">
+              ▶
+            </span>
+          }
+          config={{
+            youtube: {
+              playerVars: { modestbranding: 1, rel: 0 }
+            }
+          }}
+        />
+      </div>
+      {(title || meta) && (
+        <div className="markdown-video-embed-caption">
+          {title && <span className="markdown-video-embed-title">{title}</span>}
+          {meta && <span className="markdown-video-embed-meta">{meta}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Renders HTML content, splitting on __VIDEO_EMBED_n__ and __TWEET_EMBED_n__, rendering VideoEmbed or TweetEmbed for each slot.
+ */
+function HtmlWithMediaSlots({ html, relatedVideos, relatedTweets }) {
   if (!html) return null;
-  if (!html.includes('__TWEET_EMBED_')) {
+  if (!html.includes('__VIDEO_EMBED_') && !html.includes('__TWEET_EMBED_')) {
     return <div dangerouslySetInnerHTML={{ __html: html }} />;
   }
-  const parts = html.split(TWEET_EMBED_SENTINEL_REGEX);
-  const result = [];
-  for (let i = 0; i < parts.length; i++) {
-    if (i % 2 === 0) {
-      if (parts[i]) result.push(<div key={`html-${i}`} dangerouslySetInnerHTML={{ __html: parts[i] }} />);
-    } else {
-      const index = parseInt(parts[i], 10);
-      if (!Number.isNaN(index) && index >= 0) {
-        result.push(<TweetEmbed key={`tweet-${i}-${index}`} index={index} relatedTweets={relatedTweets} />);
-      }
+  const segments = [];
+  let lastIndex = 0;
+  const re = new RegExp(MEDIA_EMBED_SENTINEL_REGEX.source, 'g');
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    if (m.index > lastIndex) {
+      segments.push({ type: 'html', value: html.slice(lastIndex, m.index) });
     }
+    segments.push({
+      type: m[1] === 'VIDEO_EMBED' ? 'video' : 'tweet',
+      index: parseInt(m[2], 10)
+    });
+    lastIndex = m.index + m[0].length;
   }
-  return <>{result}</>;
+  if (lastIndex < html.length) {
+    segments.push({ type: 'html', value: html.slice(lastIndex) });
+  }
+  return (
+    <>
+      {segments.map((seg, i) => {
+        if (seg.type === 'html') {
+          return seg.value ? <div key={`seg-${i}`} dangerouslySetInnerHTML={{ __html: seg.value }} /> : null;
+        }
+        if (seg.type === 'video') {
+          return <VideoEmbed key={`video-${i}-${seg.index}`} index={seg.index} relatedVideos={relatedVideos} />;
+        }
+        return <TweetEmbed key={`tweet-${i}-${seg.index}`} index={seg.index} relatedTweets={relatedTweets} />;
+      })}
+    </>
+  );
 }
 
 /**
  * Build HTML for an article placeholder slot: animated loading box or article card.
  * @param {number} index - Placeholder index
- * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string }>} relatedArticles
+ * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string, urlToImage?: string }>} relatedArticles
  * @returns {string} Safe HTML string
  */
 function getArticlePlaceholderHtml(index, relatedArticles = []) {
@@ -470,8 +693,10 @@ function getArticlePlaceholderHtml(index, relatedArticles = []) {
     const meta = [source, article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''].filter(Boolean).join(' · ');
     const descLen = 120;
     const desc = article.description ? escapeAttr(String(article.description).slice(0, descLen)) + (String(article.description).length > descLen ? '…' : '') : '';
-    // No news image: link as reference only (title + meta + description)
-    const thumbBlock = '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true">📰</span></span>';
+    const img = article.urlToImage && /^https?:\/\//i.test(article.urlToImage) ? escapeAttr(article.urlToImage) : '';
+    const thumbBlock = img
+      ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-thumb-wrap"><img src="${img}" alt="" class="markdown-article-card-thumb" loading="lazy" /></a>`
+      : '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg></span></span>';
     return (
       '<div class="markdown-article-card">' +
       thumbBlock +
@@ -611,11 +836,14 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
       return Number.isNaN(index) || index < 0 ? '' : getArticlePlaceholderHtml(index, relatedArticles);
     });
   }
-  // Replace video placeholder tokens with loading box or video card HTML
+  // Replace video placeholder tokens: sentinel for React VideoEmbed when we have data, else loading HTML
   if (rawHtml.includes('__VIDEO_PLACEHOLDER_')) {
     rawHtml = rawHtml.replace(VIDEO_PLACEHOLDER_TOKEN_REGEX, (_, indexStr) => {
       const index = parseInt(indexStr, 10);
-      return Number.isNaN(index) || index < 0 ? '' : getVideoPlaceholderHtml(index, relatedVideos);
+      if (Number.isNaN(index) || index < 0) return '';
+      const video = Array.isArray(relatedVideos) ? relatedVideos[index] : null;
+      const hasVideo = video && (video.url || video.videoId);
+      return hasVideo ? `__VIDEO_EMBED_${index}__` : getVideoPlaceholderHtml(index, relatedVideos);
     });
   }
   // Replace tweet placeholder tokens with sentinels so we can render react-tweet or fallback per slot
@@ -630,9 +858,10 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const htmlContent = DOMPurify.sanitize(rawHtml, {
     ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
                    'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'div', 'span',
-                   'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'iframe'],
+                   'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'iframe', 'svg', 'path'],
     ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id', 'title', 'aria-hidden', 'aria-label', 'role',
-                   'allow', 'allowfullscreen', 'frameborder', 'width', 'height'],
+                   'allow', 'allowfullscreen', 'frameborder', 'width', 'height',
+                   'xmlns', 'viewbox', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'd'],
     ALLOW_DATA_ATTR: false
   });
 
@@ -653,7 +882,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     fontSize: fontSize,
     lineHeight: lineHeight,
     color: 'var(--color-text-primary)',
-    maxWidth: 'none',
+    maxWidth: '100%',
+    minWidth: 0,
+    overflowX: 'hidden',
     ...style
   };
 
@@ -661,7 +892,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const heroAltMatch = normalizedContent.match(/!?\[(IMAGE:hero_image:[^\]]*)\](?!\()/);
   const heroImageAlt = heroAltMatch ? heroAltMatch[1] : '';
   const useHeroSlot = htmlContent.includes(HERO_IMAGE_SENTINEL);
-  const contentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+  const rawContentParts = useHeroSlot ? htmlContent.split(HERO_IMAGE_SENTINEL) : null;
+  const { title: heroTitle, htmlWithoutH1 } = rawContentParts?.length
+    ? extractFirstH1(rawContentParts[0])
+    : { title: null, htmlWithoutH1: '' };
+  const contentParts = rawContentParts?.length
+    ? [htmlWithoutH1, ...rawContentParts.slice(1)]
+    : null;
 
   // Nth-of-type variation for markdown placeholders (each instance different color + animation stagger)
   const NTH_PLACEHOLDER_COUNT = 12;
@@ -684,11 +921,12 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
         <>
           {contentParts.map((part, i) => (
             <React.Fragment key={i}>
-              <HtmlWithTweetSlots html={part} relatedTweets={relatedTweets} />
+              <HtmlWithMediaSlots html={part} relatedVideos={relatedVideos} relatedTweets={relatedTweets} />
               {i < contentParts.length - 1 && (
                 <HeroImage
                   src={heroImageUrl || heroImageFallback}
                   alt={heroImageAlt}
+                  title={heroTitle}
                   paragraphSpacing={paragraphSpacing}
                   generationComplete={generationComplete}
                 />
@@ -788,7 +1026,7 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           }
         }}
       >
-        <HtmlWithTweetSlots html={htmlContent} relatedTweets={relatedTweets} />
+        <HtmlWithMediaSlots html={htmlContent} relatedVideos={relatedVideos} relatedTweets={relatedTweets} />
       </div>
       
       <style jsx>{`
@@ -1248,7 +1486,76 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           50% { opacity: 1; transform: scale(1.08); }
         }
 
-        /* Section heading + first video card spacing */
+        /* Video embed: natural 16:9 inline embed with caption below */
+        div :global(h2 + .markdown-video-embed-wrapper) {
+          margin-top: 6px;
+        }
+        div :global(.markdown-video-embed-wrapper) {
+          margin: 18px 0;
+          width: 100%;
+        }
+        div :global(.markdown-video-embed-wrapper.markdown-video-embed-loading) {
+          margin: 14px 0;
+        }
+        div :global(.markdown-video-embed-player-wrap) {
+          position: relative;
+          aspect-ratio: 16 / 9;
+          width: 100%;
+          overflow: hidden;
+          border-radius: 10px;
+          background: var(--color-background-alt);
+          border: 1px solid var(--color-border-base);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        }
+        div :global(.markdown-video-embed-player-wrap > div) {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+        div :global(.markdown-video-embed-player) {
+          position: absolute;
+          top: 0;
+          left: 0;
+        }
+        div :global(.markdown-video-embed-play-icon) {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 68px;
+          height: 48px;
+          border-radius: 12px;
+          background: rgba(0, 0, 0, 0.75);
+          color: #fff;
+          font-size: 20px;
+          padding-left: 6px;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        div :global(.markdown-video-embed-player-wrap:hover) .markdown-video-embed-play-icon {
+          background: rgba(220, 38, 38, 0.9);
+          transform: scale(1.05);
+        }
+        div :global(.markdown-video-embed-caption) {
+          margin-top: 10px;
+          padding: 0 2px;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        div :global(.markdown-video-embed-title) {
+          font-weight: 600;
+          font-size: 15px;
+          line-height: 1.35;
+          color: var(--color-text-primary);
+        }
+        div :global(.markdown-video-embed-meta) {
+          font-size: 13px;
+          color: var(--color-text-secondary);
+          line-height: 1.4;
+        }
+
+        /* Section heading + first video card spacing (legacy card fallback) */
         div :global(h2 + .markdown-video-card) {
           margin-top: 6px;
         }
@@ -1434,17 +1741,20 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           margin-top: 6px;
         }
 
-        /* Article card: clear separation, larger thumb, aligned with video cards */
+        /* Article card: compact embedded card style */
         div :global(.markdown-article-card) {
           position: relative;
           display: flex;
           align-items: stretch;
-          gap: 14px;
-          margin: 14px 0;
+          gap: 0;
+          margin: 12px 0;
           padding: 0;
-          border-radius: 10px;
+          width: fit-content;
+          max-width: min(420px, 100%);
+          border-radius: 8px;
           border: 1px solid var(--color-border-base);
           background: var(--color-background-container);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
           transition: box-shadow 0.2s ease, border-color 0.2s ease;
           overflow: hidden;
         }
@@ -1457,41 +1767,51 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           display: block;
           line-height: 0;
           text-decoration: none;
-          width: 160px;
-          min-height: 90px;
+          width: 120px;
+          min-height: 68px;
+          background: var(--color-background-alt);
         }
         div :global(.markdown-article-card-thumb) {
-          width: 160px;
-          height: 90px;
-          max-width: 160px;
-          max-height: 90px;
+          width: 120px;
+          height: 68px;
+          max-width: 120px;
+          max-height: 68px;
+          min-width: 120px;
+          min-height: 68px;
           object-fit: cover;
           display: block;
           vertical-align: top;
         }
         div :global(.markdown-article-card-thumb-placeholder) {
-          width: 160px;
-          height: 90px;
-          background: var(--color-background-alt);
+          width: 120px;
+          height: 68px;
+          min-width: 120px;
+          min-height: 68px;
+          background: linear-gradient(135deg, var(--color-background-alt) 0%, var(--color-background-elevated) 100%);
           color: var(--color-text-tertiary);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 28px;
+          opacity: 0.85;
+        }
+        div :global(.markdown-article-card-thumb-placeholder svg) {
+          flex-shrink: 0;
+          width: 20px;
+          height: 20px;
         }
         div :global(.markdown-article-card-body) {
           flex: 1;
           min-width: 0;
-          padding: 12px 14px 12px 0;
+          padding: 10px 12px;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 4px;
           justify-content: center;
         }
         div :global(.markdown-article-card-title) {
           font-weight: 600;
-          font-size: 14px;
-          line-height: 1.35;
+          font-size: 13px;
+          line-height: 1.4;
           color: var(--color-text-primary);
           text-decoration: none;
           display: -webkit-box;
@@ -1505,15 +1825,15 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           text-decoration: underline;
         }
         div :global(.markdown-article-card-meta) {
-          font-size: 12px;
+          font-size: 11px;
           color: var(--color-text-secondary);
-          line-height: 1.4;
+          line-height: 1.3;
           display: block;
         }
         div :global(.markdown-article-card-desc) {
           font-size: 12px;
           color: var(--color-text-secondary);
-          line-height: 1.4;
+          line-height: 1.5;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;

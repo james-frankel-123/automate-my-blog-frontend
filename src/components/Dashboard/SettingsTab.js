@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Tabs, Typography, Tag, Button, Row, Col, Input, message, Alert, Space, QRCode, Spin, Table, Statistic } from 'antd';
-import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined } from '@ant-design/icons';
+import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
+import { SOCIAL_PLATFORMS, socialProfileLink } from '../../utils/socialProfiles';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -346,11 +347,35 @@ const OrganizationSettings = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('member');
   const [orgData, setOrgData] = useState(null);
+  const [socialHandles, setSocialHandles] = useState({});
+  const [loadingSocialHandles, setLoadingSocialHandles] = useState(false);
+  const [refreshingSocial, setRefreshingSocial] = useState(false);
+  const [savingSocial, setSavingSocial] = useState(false);
+  const [editingSocial, setEditingSocial] = useState(false);
+  const [editSocialDraft, setEditSocialDraft] = useState({});
   const { user } = useAuth();
 
   useEffect(() => {
     loadOrganizationData();
   }, []);
+
+  useEffect(() => {
+    if (!user?.organizationId) return;
+    const load = async () => {
+      setLoadingSocialHandles(true);
+      try {
+        const res = await autoBlogAPI.getSocialHandles(user.organizationId);
+        setSocialHandles(res.social_handles || {});
+        setEditSocialDraft(res.social_handles || {});
+      } catch (err) {
+        console.error('Error loading social handles:', err);
+        message.error('Failed to load social profiles: ' + err.message);
+      } finally {
+        setLoadingSocialHandles(false);
+      }
+    };
+    load();
+  }, [user?.organizationId]);
 
   const loadOrganizationData = async () => {
     try {
@@ -395,6 +420,44 @@ const OrganizationSettings = () => {
       message.error('Failed to remove member: ' + error.message);
     }
   };
+
+  const handleRefreshSocial = async () => {
+    if (!user?.organizationId) return;
+    setRefreshingSocial(true);
+    try {
+      const res = await autoBlogAPI.refreshSocialVoice(user.organizationId);
+      setSocialHandles(res.social_handles || {});
+      setEditSocialDraft(res.social_handles || {});
+      message.success(res.message || 'Social profiles updated from your website.');
+    } catch (err) {
+      message.error('Failed to refresh: ' + err.message);
+    } finally {
+      setRefreshingSocial(false);
+    }
+  };
+
+  const handleSaveSocialHandles = async () => {
+    if (!user?.organizationId) return;
+    const toSave = {};
+    Object.keys(editSocialDraft).forEach((key) => {
+      const arr = Array.isArray(editSocialDraft[key]) ? editSocialDraft[key].map((s) => String(s).trim()).filter(Boolean) : [];
+      if (arr.length) toSave[key] = arr;
+    });
+    setSavingSocial(true);
+    try {
+      const res = await autoBlogAPI.updateSocialHandles(user.organizationId, toSave);
+      setSocialHandles(res.social_handles || {});
+      setEditSocialDraft(res.social_handles || {});
+      setEditingSocial(false);
+      message.success('Social profiles saved.');
+    } catch (err) {
+      message.error('Failed to save: ' + err.message);
+    } finally {
+      setSavingSocial(false);
+    }
+  };
+
+  const hasAnyHandles = (handles) => Object.keys(handles || {}).some((k) => Array.isArray(handles[k]) && handles[k].length > 0);
 
   if (loading) {
     return (
@@ -574,6 +637,111 @@ const OrganizationSettings = () => {
               Team invitations do not provide referral rewards - they're for collaboration only
             </Text>
           </Space>
+        </Card>
+      )}
+
+      {/* Social profiles (Brand social) */}
+      {user?.organizationId && (
+        <Card style={{ marginBottom: '24px', border: '2px solid var(--color-accent)' }}>
+          <Row justify="space-between" align="middle" style={{ marginBottom: '16px' }}>
+            <Col>
+              <Title level={4} style={{ margin: 0, color: 'var(--color-accent)' }}>📱 Social profiles</Title>
+            </Col>
+            <Col>
+              <Space>
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={handleRefreshSocial}
+                  loading={refreshingSocial}
+                  disabled={loadingSocialHandles}
+                >
+                  Refresh from website
+                </Button>
+                {!editingSocial ? (
+                  <Button icon={<EditOutlined />} onClick={() => { setEditSocialDraft({ ...socialHandles }); setEditingSocial(true); }}>
+                    Edit
+                  </Button>
+                ) : (
+                  <>
+                    <Button onClick={() => { setEditingSocial(false); setEditSocialDraft({ ...socialHandles }); }}>Cancel</Button>
+                    <Button type="primary" onClick={handleSaveSocialHandles} loading={savingSocial} style={{ backgroundColor: 'var(--color-success)', borderColor: 'var(--color-success)' }}>
+                      Save
+                    </Button>
+                  </>
+                )}
+              </Space>
+            </Col>
+          </Row>
+          {loadingSocialHandles ? (
+            <div style={{ padding: '24px', textAlign: 'center' }}><Spin /> Loading social profiles…</div>
+          ) : editingSocial ? (
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {SOCIAL_PLATFORMS.map(({ key, label }) => {
+                const list = Array.isArray(editSocialDraft[key]) ? [...editSocialDraft[key]] : [];
+                return (
+                  <div key={key} style={{ marginBottom: '12px' }}>
+                    <Text strong style={{ display: 'block', marginBottom: '4px' }}>{label}</Text>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      {list.map((handle, idx) => (
+                        <Input
+                          key={idx}
+                          value={handle}
+                          onChange={(e) => {
+                            const next = [...list];
+                            next[idx] = e.target.value;
+                            setEditSocialDraft({ ...editSocialDraft, [key]: next });
+                          }}
+                          placeholder={`e.g. ${key === 'twitter' ? '@username' : key === 'linkedin' ? 'company/slug' : 'handle'}`}
+                          style={{ maxWidth: 320 }}
+                          addonAfter={
+                            <Button type="text" size="small" danger onClick={() => {
+                              const next = list.filter((_, i) => i !== idx);
+                              setEditSocialDraft({ ...editSocialDraft, [key]: next.length ? next : [] });
+                            }}>Remove</Button>
+                          }
+                        />
+                      ))}
+                      <Button size="small" type="dashed" onClick={() => setEditSocialDraft({ ...editSocialDraft, [key]: [...list, ''] })}>
+                        + Add {label} handle
+                      </Button>
+                    </Space>
+                  </div>
+                );
+              })}
+            </Space>
+          ) : hasAnyHandles(socialHandles) ? (
+            <Space wrap>
+              {[...SOCIAL_PLATFORMS, ...Object.keys(socialHandles || {}).filter((k) => !SOCIAL_PLATFORMS.some((p) => p.key === k)).map((key) => ({ key, label: key }))].map(({ key, label }) => {
+                const handles = socialHandles[key];
+                if (!Array.isArray(handles) || handles.length === 0) return null;
+                return (
+                  <div key={key}>
+                    <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>{label}</Text>
+                    <Space wrap>
+                      {handles.map((h, i) => {
+                        const href = socialProfileLink(key, h);
+                        return href ? (
+                          <Tag key={i}>
+                            <a href={href} target="_blank" rel="noopener noreferrer">{h}</a>
+                          </Tag>
+                        ) : (
+                          <Tag key={i}>{h}</Tag>
+                        );
+                      })}
+                    </Space>
+                  </div>
+                );
+              })}
+            </Space>
+          ) : (
+            <Alert
+              message="No social links found on your site"
+              description="Run website analysis or click Refresh to discover social profiles from your organization website. You can also add them manually with Edit."
+              type="info"
+              showIcon
+              style={{ marginBottom: 0 }}
+            />
+          )}
         </Card>
       )}
 

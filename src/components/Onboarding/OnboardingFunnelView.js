@@ -4,10 +4,12 @@
  */
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { Typography, message, Empty, Button, Skeleton, Row, Col } from 'antd';
+import { HomeOutlined, FileTextOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
-import { analysisAPI, topicAPI } from '../../services/workflowAPI';
+import { analysisAPI, topicAPI, contentAPI } from '../../services/workflowAPI';
 import autoBlogAPI from '../../services/api';
+import { getStreamChunkContentOnly, extractStreamCompleteContent } from '../../utils/streamingUtils';
 import workflowUtils from '../../utils/workflowUtils';
 import { systemVoice } from '../../copy/systemVoice';
 import UnifiedWorkflowHeader from '../Dashboard/UnifiedWorkflowHeader';
@@ -21,8 +23,12 @@ import SignupGateCard from './SignupGateCard';
 import EditConfirmActions from './EditConfirmActions';
 import LoggedOutProgressHeader from '../Dashboard/LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
+import ThinkingPanel from '../shared/ThinkingPanel';
+import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
+import RelatedContentPanel from '../shared/RelatedContentPanel';
+import StreamingPreview from '../StreamingTestbed/StreamingPreview';
+import ManualCTAInputModal from '../Modals/ManualCTAInputModal';
 import BusinessProfileSlide from '../Analysis/BusinessProfileSlide';
-import InlineFunnelContentGeneration from './InlineFunnelContentGeneration';
 
 const { Title } = Typography;
 
@@ -117,11 +123,9 @@ function OnboardingFunnelView() {
     updateCTAData,
     updateWebSearchInsights,
     webSearchInsights,
-    setStepResults: _setStepResults,
     addStickyWorkflowStep,
     updateStickyWorkflowStep,
     navigateToTab: _navigateToTab,
-    saveWorkflowState,
     showAuthModal,
     setShowAuthModal,
     authContext,
@@ -136,7 +140,7 @@ function OnboardingFunnelView() {
   const [selectedAudienceIndex, setSelectedAudienceIndex] = useState(null);
   const [selectedTopicIndex, setSelectedTopicIndex] = useState(null);
   const [_analysisConfirmed, setAnalysisConfirmed] = useState(false);
-  const [funnelComplete, setFunnelComplete] = useState(false);
+  const [_funnelComplete, setFunnelComplete] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [_originalAnalysisSnapshot, setOriginalAnalysisSnapshot] = useState(null);
   const [fetchedTopicItems, setFetchedTopicItems] = useState([]);
@@ -166,15 +170,33 @@ function OnboardingFunnelView() {
   const reassuranceStepRef = useRef(0);
   const analysisInProgressRef = useRef(false);
 
-  const analysis = useMemo(
-    () => stepResults?.home?.websiteAnalysis || {},
-    [stepResults?.home?.websiteAnalysis]
-  );
+  // Content generation on same page (related content + blog generation)
+  const [relatedContentSteps, setRelatedContentSteps] = useState([]);
+  const [relatedTweets, setRelatedTweets] = useState([]);
+  const [relatedArticles, setRelatedArticles] = useState([]);
+  const [relatedVideos, setRelatedVideos] = useState([]);
+  const [generatingContent, setGeneratingContent] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState(null);
+  const [editingContent, setEditingContent] = useState('');
+  const [contentGenerated, setContentGenerated] = useState(false);
+  const [contentGenerationError, setContentGenerationError] = useState(null);
+  // CTA prompt when none exist before content generation (issue #339 – onboarding)
+  const [showManualCTAModal, setShowManualCTAModal] = useState(false);
+  const [startContentGenerationTrigger, setStartContentGenerationTrigger] = useState(0);
+  const ctaPromptSkippedForSessionRef = useRef(false);
+  /** When true, article stream completed after we already timed out — ignore its onComplete/onError so step stays "Skipped". */
+  const articlesTimedOutRef = useRef(false);
+  const contentGenerationStartedRef = useRef(false);
+
+  // Social profiles discovered from website (shown in onboarding after analysis)
+  const [onboardingSocialHandles, setOnboardingSocialHandles] = useState({});
+  const [loadingOnboardingSocialHandles, setLoadingOnboardingSocialHandles] = useState(false);
+
+  const analysis = useMemo(() => stepResults?.home?.websiteAnalysis || {}, [stepResults?.home?.websiteAnalysis]);
+  const organizationCTAs = stepResults?.home?.ctas ?? [];
+  const hasSufficientCTAs = stepResults?.home?.hasSufficientCTAs ?? false;
   const scenarios = useMemo(() => analysis.scenarios || [], [analysis.scenarios]);
-  const contentIdeas = useMemo(
-    () => analysis.contentIdeas || [],
-    [analysis.contentIdeas]
-  );
+  const contentIdeas = useMemo(() => analysis.contentIdeas || [], [analysis.contentIdeas]);
   const hasAnalysis = stepResults?.home?.analysisCompleted && analysis?.businessName;
 
   // When backend doesn't return audience scenarios, show at least one segment so the funnel can continue (never leave user on loading)
@@ -251,6 +273,25 @@ function OnboardingFunnelView() {
     }
   }, [loading, hasAnalysis]);
 
+  // Fetch social handles when we have an organization (after website analysis)
+  useEffect(() => {
+    const orgId = analysis?.organizationId;
+    if (!orgId || !hasAnalysis) return;
+    let cancelled = false;
+    setLoadingOnboardingSocialHandles(true);
+    autoBlogAPI.getSocialHandles(orgId)
+      .then((res) => {
+        if (!cancelled) setOnboardingSocialHandles(res.social_handles || {});
+      })
+      .catch(() => {
+        if (!cancelled) setOnboardingSocialHandles({});
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingOnboardingSocialHandles(false);
+      });
+    return () => { cancelled = true; };
+  }, [analysis?.organizationId, hasAnalysis]);
+
   // Log when analysisNarration unlocks
   useEffect(() => {
     if (unlocked.analysisNarration) {
@@ -289,8 +330,7 @@ function OnboardingFunnelView() {
 
   const handleContentNarrationComplete = useCallback(() => {
     setFunnelComplete(true);
-    saveWorkflowState?.();
-  }, [saveWorkflowState]);
+  }, []);
 
   // When analysis starts loading, scroll to "What I found" placeholders so they're visible
   const prevLoading = useRef(false);
@@ -360,6 +400,7 @@ function OnboardingFunnelView() {
       .finally(() => {
         setTopicsLoading(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- contentIdeas/displayScenarios/fetchedTopicItems/topicsLoading used inside
   }, [
     unlocked.topicOutput,
     contentIdeas.length,
@@ -775,8 +816,7 @@ function OnboardingFunnelView() {
     setOriginalAnalysisSnapshot(null);
     setEditedBusinessProfile(null);
     setUnlocked((u) => ({ ...u, audienceNarration: true, audienceOutput: true }));
-    saveWorkflowState?.();
-  }, [analysis, businessProfile, saveWorkflowState]);
+  }, [analysis, businessProfile]);
 
   const handleEditAnalysis = useCallback(() => {
     setOriginalAnalysisSnapshot(businessProfile);
@@ -851,6 +891,309 @@ function OnboardingFunnelView() {
     setUnlocked((u) => ({ ...u, contentNarration: true }));
   }, []);
 
+  const handleOnboardingManualCTAsSubmit = useCallback(
+    async (ctas) => {
+      const orgId = analysis?.organizationId;
+      if (!orgId) {
+        message.error('Organization not found');
+        return;
+      }
+      try {
+        await autoBlogAPI.addManualCTAs(orgId, ctas);
+        const updated = await autoBlogAPI.getOrganizationCTAs(orgId);
+        updateCTAData?.({ ctas: updated.ctas || [], ctaCount: updated.ctas?.length ?? 0, hasSufficientCTAs: updated.has_sufficient_ctas ?? false });
+        setShowManualCTAModal(false);
+        setStartContentGenerationTrigger((prev) => prev + 1);
+      } catch (err) {
+        console.error('Failed to add manual CTAs:', err);
+        message.error(err?.message || 'Failed to add CTAs. Please try again.');
+      }
+    },
+    [analysis?.organizationId, updateCTAData]
+  );
+
+  const handleOnboardingSkipManualCTAs = useCallback(() => {
+    ctaPromptSkippedForSessionRef.current = true;
+    message.info('Continuing without additional CTAs');
+    setShowManualCTAModal(false);
+    setStartContentGenerationTrigger((prev) => prev + 1);
+  }, []);
+
+  // Start content generation when content narration section unlocks (same flow as PostsTab)
+  useEffect(() => {
+    if (
+      !unlocked.contentNarration ||
+      contentGenerationStartedRef.current ||
+      selectedTopicIndex == null ||
+      !hasAnalysis
+    ) {
+      return;
+    }
+    const items =
+      contentIdeas.length > 0
+        ? contentIdeas.slice(0, 5).map((t, i) => ({
+            id: `funnel-topic-${i}`,
+            title: typeof t === 'string' ? t : toNarrationParamString(t?.title ?? t?.topic ?? t),
+            description: typeof t === 'object' && t?.description != null ? t.description : '',
+          }))
+        : fetchedTopicItems.map((t, i) => ({
+            id: `funnel-topic-${i}`,
+            title: toNarrationParamString(t?.title ?? t?.subheader ?? 'Topic'),
+            description: typeof t?.description === 'string' ? t.description : toNarrationParamString(t?.subheader ?? t?.description ?? ''),
+          }));
+    const topicRaw = items[selectedTopicIndex] ?? items[0];
+    if (!topicRaw?.title) return;
+
+    const topic = {
+      id: topicRaw.id ?? `funnel-topic-${selectedTopicIndex}`,
+      title: topicRaw.title,
+      description: topicRaw.description ?? '',
+      subheader: topicRaw.description ?? '',
+    };
+    const websiteAnalysisData = analysis;
+    const organizationId = analysis?.organizationId ?? null;
+    const organizationName = analysis?.businessName ?? '';
+
+    const startOnboardingContentGeneration = () => {
+      contentGenerationStartedRef.current = true;
+    setGeneratingContent(true);
+    setContentGenerationError(null);
+    setRelatedTweets([]);
+    setRelatedArticles([]);
+    setRelatedVideos([]);
+    setEditingContent('');
+
+    const onboardingCTAs = organizationCTAs || [];
+    const fetchSteps = [
+      { id: 'ctas', label: systemVoice.content?.fetchCTAs ?? 'Fetching CTAs…', status: RelatedContentStepStatus.PENDING },
+      { id: 'tweets', label: systemVoice.content?.fetchTweets ?? 'Fetching tweets…', status: RelatedContentStepStatus.PENDING },
+      { id: 'articles', label: systemVoice.content?.fetchArticles ?? 'Fetching articles…', status: RelatedContentStepStatus.PENDING },
+      { id: 'videos', label: systemVoice.content?.fetchVideos ?? 'Fetching videos…', status: RelatedContentStepStatus.PENDING },
+    ];
+    setRelatedContentSteps(fetchSteps);
+    setRelatedContentSteps((prev) =>
+      prev.map((s) => (s.id === 'ctas' ? { ...s, status: RelatedContentStepStatus.DONE, count: onboardingCTAs.length } : s))
+    );
+
+    const runTweetsAndVideos = () =>
+      autoBlogAPI
+        .fetchRelatedContent(topic, websiteAnalysisData, { maxTweets: 3, maxVideos: 5 })
+        .then(({ tweets: tweetsData, videos: videosData }) => {
+          const tweetsArr = Array.isArray(tweetsData) ? tweetsData : [];
+          const videosArr = Array.isArray(videosData) ? videosData : [];
+          setRelatedTweets(tweetsArr);
+          setRelatedVideos(videosArr);
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => {
+              if (s.id === 'tweets') return { ...s, status: RelatedContentStepStatus.DONE, count: tweetsArr.length };
+              if (s.id === 'videos') return { ...s, status: RelatedContentStepStatus.DONE, count: videosArr.length };
+              return s;
+            })
+          );
+          return [tweetsArr, videosArr];
+        })
+        .catch(() => {
+          setRelatedContentSteps((prev) =>
+            prev.map((s) =>
+              s.id === 'tweets' || s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.FAILED } : s
+            )
+          );
+          return [[], []];
+        });
+
+    const ONBOARDING_ARTICLES_TIMEOUT_MS = 10000;
+
+    const runArticleStream = () =>
+      autoBlogAPI
+        .searchNewsArticlesForTopicStream(topic, websiteAnalysisData, 5)
+        .then(({ connectionId, streamUrl }) =>
+          new Promise((resolve) => {
+            setRelatedContentSteps((prev) =>
+              prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s))
+            );
+            autoBlogAPI.connectToStream(connectionId, {
+              onComplete: (data) => {
+                if (articlesTimedOutRef.current) return;
+                const articles = data?.articles ?? data?.data?.articles ?? [];
+                const arr = Array.isArray(articles) ? articles : [];
+                setRelatedArticles(arr);
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.DONE, count: arr.length } : s))
+                );
+                resolve(arr);
+              },
+              onError: () => {
+                if (articlesTimedOutRef.current) return;
+                setRelatedContentSteps((prev) =>
+                  prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+                );
+                resolve([]);
+              },
+            }, { streamUrl });
+          })
+        )
+        .catch(() => {
+          if (articlesTimedOutRef.current) return [];
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.FAILED } : s))
+          );
+          return [];
+        });
+
+    const runArticleStreamWithTimeout = () => {
+      articlesTimedOutRef.current = false;
+      const timeoutPromise = new Promise((resolve) => {
+        setTimeout(() => {
+          articlesTimedOutRef.current = true;
+          setRelatedContentSteps((prev) =>
+            prev.map((s) => (s.id === 'articles' ? { ...s, status: RelatedContentStepStatus.SKIPPED } : s))
+          );
+          resolve([]);
+        }, ONBOARDING_ARTICLES_TIMEOUT_MS);
+      });
+      return Promise.race([runArticleStream(), timeoutPromise]);
+    };
+
+    setRelatedContentSteps((prev) =>
+      prev.map((s) =>
+        s.id === 'tweets' || s.id === 'videos' ? { ...s, status: RelatedContentStepStatus.RUNNING } : s
+      )
+    );
+
+    Promise.all([runTweetsAndVideos(), runArticleStreamWithTimeout()]).then(([tweetsVideosResult, articlesResult]) => {
+      const [tweetsArr = [], videosArr = []] = Array.isArray(tweetsVideosResult) ? tweetsVideosResult : [[], []];
+      const articlesArr = Array.isArray(articlesResult) ? articlesResult : [];
+      const hasWebsiteAnalysis = websiteAnalysisData && Object.keys(websiteAnalysisData).length > 0;
+      const shouldUseEnhancement = !!(organizationId && hasWebsiteAnalysis);
+      const enhancementOptions = {
+        useEnhancedGeneration: shouldUseEnhancement,
+        preloadedTweets: tweetsArr,
+        preloadedArticles: articlesArr,
+        preloadedVideos: videosArr,
+        ctas: onboardingCTAs,
+        organizationId,
+        organizationName,
+        comprehensiveContext: shouldUseEnhancement
+          ? { organizationId, organizationName, websiteAnalysis: websiteAnalysisData }
+          : null,
+        targetSEOScore: 95,
+        includeVisuals: shouldUseEnhancement,
+        onProgress: (status) => {
+          setGenerationProgress({
+            progress: status.progress,
+            currentStep: status.currentStep,
+            status: status.status,
+            estimatedTimeRemaining: status.estimatedTimeRemaining,
+          });
+        },
+        onBlogResult: (data) => {
+          const text = extractStreamCompleteContent(data);
+          if (text) setEditingContent(text);
+        },
+      };
+
+      contentAPI
+        .startBlogStream(topic, websiteAnalysisData, null, stepResults?.home?.webSearchInsights || {}, enhancementOptions)
+        .then(({ connectionId }) => {
+          setRelatedContentSteps([]);
+          setEditingContent('');
+          let accumulatedChunks = '';
+          return new Promise((resolve, reject) => {
+            autoBlogAPI.connectToStream(connectionId, {
+              onChunk: (data) => {
+                const chunk = getStreamChunkContentOnly(data);
+                if (chunk) {
+                  accumulatedChunks += chunk;
+                  setEditingContent((prev) => prev + chunk);
+                }
+              },
+              onComplete: (data) => {
+                const fromComplete = extractStreamCompleteContent(data);
+                const finalContent = fromComplete || accumulatedChunks;
+                if (finalContent) setEditingContent(finalContent);
+                setContentGenerated(true);
+                setGeneratingContent(false);
+                resolve({ success: true, content: finalContent });
+              },
+              onError: (errData) => {
+                reject(new Error(errData?.message || 'Stream error'));
+              },
+            });
+          });
+        })
+        .then((result) => {
+          if (result?.success && result?.content) {
+            message.success('Blog content generated!');
+            autoBlogAPI.createPost?.({
+              title: topic.title,
+              content: result.content,
+              status: 'draft',
+              topic_data: topic,
+            }).catch((err) => console.warn('Save post failed:', err?.message));
+          }
+        })
+        .catch((streamErr) => {
+          console.warn('Blog stream not available, falling back to sync generation:', streamErr?.message);
+          return contentAPI.generateContent(
+            topic,
+            websiteAnalysisData,
+            null,
+            stepResults?.home?.webSearchInsights || {},
+            enhancementOptions
+          ).then((res) => {
+            if (res?.success && res?.content) {
+              setEditingContent(res.content ?? '');
+              setContentGenerated(true);
+              message.success('Blog content generated!');
+              autoBlogAPI.createPost?.({
+                title: topic.title,
+                content: res.content,
+                status: 'draft',
+                topic_data: topic,
+              }).catch((err) => console.warn('Save post failed:', err?.message));
+            } else if (res?.error) {
+              setContentGenerationError(res.error);
+              message.error(res.error);
+            }
+            setGeneratingContent(false);
+          }).catch((err) => {
+            setContentGenerationError(err?.message ?? 'Content generation failed');
+            message.error(err?.message ?? 'Content generation failed');
+            setGeneratingContent(false);
+          });
+        });
+    });
+    };
+
+    // If no CTAs exist, prompt user to add CTAs before generating (issue #339 – onboarding)
+    // Re-fetch CTAs when starting content so we use live API result (same as PostsTab)
+    if (organizationId) {
+      autoBlogAPI
+        .getOrganizationCTAs(organizationId)
+        .then((r) => {
+          const ctas = r.ctas || [];
+          const hasSufficient = r.has_sufficient_ctas ?? false;
+          updateCTAData?.({ ctas, ctaCount: ctas.length, hasSufficientCTAs: hasSufficient });
+          if (!hasSufficient && !ctaPromptSkippedForSessionRef.current) {
+            setShowManualCTAModal(true);
+            return;
+          }
+          startOnboardingContentGeneration();
+        })
+        .catch((err) => {
+          console.error('Failed to fetch CTAs for onboarding:', err);
+          startOnboardingContentGeneration();
+        });
+      return;
+    }
+    if (!hasSufficientCTAs && !ctaPromptSkippedForSessionRef.current) {
+      setShowManualCTAModal(true);
+      return;
+    }
+    startOnboardingContentGeneration();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content section unlocks; contentIdeas intentionally not useMemo
+  }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis, hasSufficientCTAs, organizationCTAs.length, startContentGenerationTrigger]);
+
   const iconUrls = analysis.iconUrls || analysis.cardIcons || {};
   const analysisCards = [
     { heading: 'Business', content: analysis.businessName || analysis.businessType, iconFallback: 'businessType', iconUrl: iconUrls.businessType || iconUrls.business },
@@ -897,13 +1240,21 @@ function OnboardingFunnelView() {
           }}
           context={authContext}
           defaultTab={authContext === 'register' ? 'register' : 'login'}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            setAuthContext(null);
+            if (typeof window !== 'undefined') {
+              window.location.href = '/dashboard';
+            }
+          }}
         />
       )}
       <div
         style={{
           padding: '24px 16px',
-          paddingTop: user ? 24 : 88,
-          maxWidth: '80vw',
+          paddingTop: user ? 24 : 120,
+          paddingBottom: 48,
+          maxWidth: 800,
           margin: '0 auto',
         }}
         data-testid="onboarding-funnel"
@@ -956,6 +1307,8 @@ function OnboardingFunnelView() {
                       profileData={editMode ? editedBusinessProfile : businessProfile}
                       editMode={editMode}
                       onUpdate={setEditedBusinessProfile}
+                      socialHandles={analysis?.organizationId ? (onboardingSocialHandles || {}) : null}
+                      socialHandlesLoading={loadingOnboardingSocialHandles}
                     />
                   </motion.div>
                 </section>
@@ -967,9 +1320,9 @@ function OnboardingFunnelView() {
                   padding: '0 32px'
                 }}>
                   <div style={{
-                    background: '#FFFFFF',
+                    background: 'var(--color-background-container)',
                     borderRadius: '12px',
-                    boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+                    boxShadow: 'var(--shadow-card)',
                     padding: window.innerWidth <= 768 ? '48px 28px' : '80px 64px'
                   }}>
                     <Skeleton active paragraph={{ rows: 8 }} title={{ width: '50%' }} />
@@ -1258,19 +1611,99 @@ function OnboardingFunnelView() {
         </section>
       )}
 
-      {user && selectedTopicIndex != null && (fetchedTopicItems[selectedTopicIndex] || topicItems[selectedTopicIndex]) && (funnelComplete || unlocked.contentNarration) && (
-        <InlineFunnelContentGeneration
-          selectedTopic={
-            fetchedTopicItems[selectedTopicIndex]
-              ? { ...fetchedTopicItems[selectedTopicIndex], title: fetchedTopicItems[selectedTopicIndex]?.title ?? topicItems[selectedTopicIndex]?.title }
-              : { id: selectedTopicIndex, title: topicItems[selectedTopicIndex]?.title, subheader: topicItems[selectedTopicIndex]?.description, image: topicItems[selectedTopicIndex]?.imageUrl }
-          }
-          analysis={analysis}
-          organizationId={analysis?.organizationId || user?.organizationId || user?.id}
-          ctas={stepResults?.home?.ctas}
-        />
+      {/* Content generation on same page: related content search + existing content component */}
+      {unlocked.contentNarration && (
+        <section ref={(el) => (sectionRefs.current.contentGeneration = el)} style={{ marginTop: 40, marginBottom: 48 }}>
+          <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <Title level={4} style={{ margin: 0 }}>Creating your article</Title>
+              <Button
+                type="link"
+                icon={<HomeOutlined />}
+                onClick={() => { window.location.href = '/dashboard'; }}
+                style={{ paddingLeft: 0, paddingRight: 0 }}
+              >
+                Go to dashboard
+              </Button>
+            </div>
+            {generatingContent && (
+              <>
+                <ThinkingPanel
+                  isActive={generatingContent}
+                  currentStep={generationProgress?.currentStep}
+                  progress={generationProgress?.progress}
+                  thoughts={[]}
+                  estimatedTimeRemaining={generationProgress?.estimatedTimeRemaining}
+                  workingForYouLabel={systemVoice.content?.workingForYou ?? 'Working on it…'}
+                  progressPreamble={systemVoice.content?.progressPreamble ?? ''}
+                  fallbackStep={systemVoice.content?.generating ?? 'Generating…'}
+                  dataTestId="content-generation-progress"
+                />
+                {relatedContentSteps.length > 0 && (
+                  <RelatedContentStepsPanel
+                    steps={relatedContentSteps}
+                    title="Preparing related content"
+                    ctas={organizationCTAs}
+                  />
+                )}
+              </>
+            )}
+            {(relatedTweets.length > 0 || relatedArticles.length > 0 || relatedVideos.length > 0) && (
+              <div style={{ marginTop: 16, marginBottom: 16 }}>
+                <RelatedContentPanel
+                  tweets={relatedTweets}
+                  articles={relatedArticles}
+                  videos={relatedVideos}
+                />
+              </div>
+            )}
+            {contentGenerationError && (
+              <Typography.Text type="danger" style={{ display: 'block', marginTop: 16 }}>
+                {contentGenerationError}
+              </Typography.Text>
+            )}
+            {(editingContent || contentGenerated) && (
+              <div style={{ marginTop: 24 }}>
+                <StreamingPreview
+                  content={editingContent}
+                  relatedArticles={relatedArticles}
+                  relatedVideos={relatedVideos}
+                  relatedTweets={relatedTweets}
+                  style={{ marginTop: 16 }}
+                />
+                <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={<FileTextOutlined />}
+                    onClick={() => { window.location.href = '/dashboard?tab=posts'; }}
+                  >
+                    View all posts in dashboard
+                  </Button>
+                  <Button
+                    type="default"
+                    icon={<HomeOutlined />}
+                    onClick={() => { window.location.href = '/dashboard'; }}
+                  >
+                    Go to dashboard
+                  </Button>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </section>
       )}
     </div>
+    {/* Manual CTA modal when CTAs are insufficient before content generation (issue #339 – onboarding) */}
+    <ManualCTAInputModal
+      visible={showManualCTAModal}
+      onCancel={() => setShowManualCTAModal(false)}
+      onSubmit={handleOnboardingManualCTAsSubmit}
+      onSkip={handleOnboardingSkipManualCTAs}
+      existingCTAs={organizationCTAs}
+      minCTAs={1}
+      websiteName={analysis?.businessName || 'your website'}
+    />
     </>
   );
 }
