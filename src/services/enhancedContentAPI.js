@@ -48,6 +48,7 @@ export class EnhancedContentAPI {
         preloadedTweets: Array.isArray(preloadedTweets) ? preloadedTweets : [],
         preloadedArticles: Array.isArray(preloadedArticles) ? preloadedArticles : [],
         preloadedVideos: Array.isArray(preloadedVideos) ? preloadedVideos : [],
+        useVoiceProfile: true,
       },
       comprehensiveContext: comprehensivePrompt,
       strategicCTAs,
