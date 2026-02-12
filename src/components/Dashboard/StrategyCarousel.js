@@ -16,7 +16,6 @@ export default function StrategyCarousel({
   strategies = [],
   subscribedStrategies = {},
   selectedStrategyId = null,
-  onStrategySelect,
   onStrategyClick,
   loading = false
 }) {
@@ -134,7 +133,7 @@ export default function StrategyCarousel({
           WebkitOverflowScrolling: 'touch' // iOS smooth scrolling
         }}
         // Hide scrollbar for Chrome/Safari/Opera
-        onLoad={(e) => {
+        onLoad={() => {
           const style = document.createElement('style');
           style.innerHTML = `
             [ref] { -ms-overflow-style: none; scrollbar-width: none; }
