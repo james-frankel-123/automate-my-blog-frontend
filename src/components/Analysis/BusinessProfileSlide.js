@@ -12,28 +12,10 @@ import {
   SearchOutlined,
   ShareAltOutlined
 } from '@ant-design/icons';
+import { SOCIAL_PLATFORMS, socialProfileLink } from '../../utils/socialProfiles';
 import './BusinessProfileSlide.css';
 
 const { Title, Text, Paragraph } = Typography;
-
-const SOCIAL_PLATFORMS = [
-  { key: 'twitter', label: 'Twitter / X' },
-  { key: 'linkedin', label: 'LinkedIn' },
-  { key: 'facebook', label: 'Facebook' },
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'tiktok', label: 'TikTok' },
-];
-
-function socialProfileLink(platformKey, handle) {
-  if (platformKey === 'twitter') return `https://x.com/${(handle || '').replace(/^@/, '')}`;
-  if (platformKey === 'linkedin') return `https://www.linkedin.com/company/${(handle || '').replace(/^company\//, '')}`;
-  if (platformKey === 'facebook') return `https://www.facebook.com/${handle}`;
-  if (platformKey === 'instagram') return `https://www.instagram.com/${(handle || '').replace(/^@/, '')}`;
-  if (platformKey === 'youtube') return handle.startsWith('@') ? `https://www.youtube.com/${handle}` : handle.startsWith('c/') ? `https://www.youtube.com/${handle}` : `https://www.youtube.com/channel/${handle}`;
-  if (platformKey === 'tiktok') return `https://www.tiktok.com/@${(handle || '').replace(/^@/, '')}`;
-  return null;
-}
 
 const EditableField = ({ value, onChange, multiline = false, placeholder = '' }) => {
   if (multiline) {
@@ -256,9 +238,13 @@ const BusinessProfileSlide = ({ profileData, editMode = false, onUpdate, socialH
                         <Text type="secondary">No social links were found on your site. You can add or refresh them later in Settings → Organization.</Text>
                       );
                     }
+                    const platformList = [
+                      ...SOCIAL_PLATFORMS,
+                      ...Object.keys(socialHandles || {}).filter((k) => !SOCIAL_PLATFORMS.some((p) => p.key === k)).map((key) => ({ key, label: key })),
+                    ];
                     return (
                       <Space wrap size={[8, 8]}>
-                        {SOCIAL_PLATFORMS.map(({ key, label }) => {
+                        {platformList.map(({ key, label }) => {
                           const handles = socialHandles[key];
                           if (!Array.isArray(handles) || handles.length === 0) return null;
                           return (

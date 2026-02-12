@@ -2478,7 +2478,19 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Headers for social-handles endpoints: when not logged in, send x-session-id for anonymous funnel.
+   * When logged in, makeRequest already adds Authorization.
+   */
+  _getSocialHandlesHeaders() {
+    const token = localStorage.getItem('accessToken');
+    if (token) return {};
+    const sessionId = sessionStorage.getItem('audience_session_id');
+    return sessionId ? { 'x-session-id': sessionId } : {};
+  }
+
+  /**
    * Get social handles for an organization.
+   * Auth: Bearer JWT (logged in) or x-session-id (anonymous funnel; org must be linked to session from website analysis).
    * @param {string} organizationId - Organization UUID
    * @returns {Promise<{ social_handles: Object }>}
    */
@@ -2486,7 +2498,7 @@ Please provide analysis in this JSON format:
     try {
       const response = await this.makeRequest(
         `/api/v1/organizations/${organizationId}/social-handles`,
-        { method: 'GET' }
+        { method: 'GET', headers: this._getSocialHandlesHeaders() }
       );
       return response;
     } catch (error) {
@@ -2506,6 +2518,7 @@ Please provide analysis in this JSON format:
         `/api/v1/organizations/${organizationId}/social-handles`,
         {
           method: 'PATCH',
+          headers: this._getSocialHandlesHeaders(),
           body: JSON.stringify({ social_handles: socialHandles }),
         }
       );
@@ -2517,6 +2530,7 @@ Please provide analysis in this JSON format:
 
   /**
    * Refresh social handles by re-scraping the organization's website.
+   * Org must have website_url set.
    * @param {string} organizationId - Organization UUID
    * @returns {Promise<{ social_handles: Object, message?: string }>}
    */
@@ -2524,7 +2538,7 @@ Please provide analysis in this JSON format:
     try {
       const response = await this.makeRequest(
         `/api/v1/organizations/${organizationId}/refresh-social-voice`,
-        { method: 'POST' }
+        { method: 'POST', headers: this._getSocialHandlesHeaders() }
       );
       return response;
     } catch (error) {
