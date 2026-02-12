@@ -882,7 +882,9 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
     fontSize: fontSize,
     lineHeight: lineHeight,
     color: 'var(--color-text-primary)',
-    maxWidth: 'none',
+    maxWidth: '100%',
+    minWidth: 0,
+    overflowX: 'hidden',
     ...style
   };
 
@@ -1747,7 +1749,8 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           gap: 0;
           margin: 12px 0;
           padding: 0;
-          max-width: 420px;
+          width: fit-content;
+          max-width: min(420px, 100%);
           border-radius: 8px;
           border: 1px solid var(--color-border-base);
           background: var(--color-background-container);
