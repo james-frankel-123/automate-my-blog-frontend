@@ -3,6 +3,7 @@ import { Card, Tabs, Typography, Tag, Button, Row, Col, Input, message, Alert, S
 import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
+import { SOCIAL_PLATFORMS, socialProfileLink } from '../../utils/socialProfiles';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -339,15 +340,6 @@ const ProfileSettings = () => {
     </div>
   );
 };
-
-const SOCIAL_PLATFORMS = [
-  { key: 'twitter', label: 'Twitter / X' },
-  { key: 'linkedin', label: 'LinkedIn' },
-  { key: 'facebook', label: 'Facebook' },
-  { key: 'instagram', label: 'Instagram' },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'tiktok', label: 'TikTok' },
-];
 
 const OrganizationSettings = () => {
   const [loading, setLoading] = useState(true);
@@ -719,7 +711,7 @@ const OrganizationSettings = () => {
             </Space>
           ) : hasAnyHandles(socialHandles) ? (
             <Space wrap>
-              {SOCIAL_PLATFORMS.map(({ key, label }) => {
+              {[...SOCIAL_PLATFORMS, ...Object.keys(socialHandles || {}).filter((k) => !SOCIAL_PLATFORMS.some((p) => p.key === k)).map((key) => ({ key, label: key }))].map(({ key, label }) => {
                 const handles = socialHandles[key];
                 if (!Array.isArray(handles) || handles.length === 0) return null;
                 return (
@@ -727,12 +719,7 @@ const OrganizationSettings = () => {
                     <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginBottom: '4px' }}>{label}</Text>
                     <Space wrap>
                       {handles.map((h, i) => {
-                        const href = key === 'twitter' ? `https://x.com/${(h || '').replace(/^@/, '')}` :
-                          key === 'linkedin' ? `https://www.linkedin.com/company/${(h || '').replace(/^company\//, '')}` :
-                            key === 'facebook' ? `https://www.facebook.com/${h}` :
-                              key === 'instagram' ? `https://www.instagram.com/${(h || '').replace(/^@/, '')}` :
-                                key === 'youtube' ? (h.startsWith('@') ? `https://www.youtube.com/${h}` : h.startsWith('c/') ? `https://www.youtube.com/${h}` : `https://www.youtube.com/channel/${h}`) :
-                                  key === 'tiktok' ? `https://www.tiktok.com/@${(h || '').replace(/^@/, '')}` : null;
+                        const href = socialProfileLink(key, h);
                         return href ? (
                           <Tag key={i}>
                             <a href={href} target="_blank" rel="noopener noreferrer">{h}</a>
