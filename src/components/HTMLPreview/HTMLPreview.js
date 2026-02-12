@@ -281,16 +281,46 @@ function HeroImage({ src, alt, title, paragraphSpacing = 16, generationComplete 
  */
 function extractFirstH1(html) {
   if (!html || typeof html !== 'string') return { title: null, htmlWithoutH1: html || '' };
-  const m = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-  if (!m) return { title: null, htmlWithoutH1: html };
-  const rawTitle = m[1]
-    .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"');
-  const stripped = html.replace(/<h1[^>]*>[\s\S]*?<\/h1>\s*/i, '').trim();
-  return { title: rawTitle.trim() || null, htmlWithoutH1: stripped };
+
+  // Sanitize and parse the HTML into a DOM so we can safely extract text content
+  let root;
+  try {
+    // RETURN_DOM gives us a Document/DocumentFragment rather than a string
+    root = DOMPurify.sanitize(html, { RETURN_DOM: true });
+  } catch (e) {
+    // Fallback to original HTML if DOMPurify in DOM mode is unavailable
+    return { title: null, htmlWithoutH1: html };
+  }
+
+  // Normalize root to an Element we can work with
+  let container;
+  if (root && root.body) {
+    // When RETURN_DOM is used on full HTML, we typically get a Document
+    container = root.body;
+  } else if (root && root.nodeType === 11) {
+    // DocumentFragment: wrap in a temporary div
+    container = root.ownerDocument
+      ? root.ownerDocument.createElement('div')
+      : document.createElement('div');
+    container.appendChild(root);
+  } else if (root && root.nodeType === 1) {
+    // Single element node
+    container = root;
+  } else {
+    return { title: null, htmlWithoutH1: html };
+  }
+
+  const h1 = container.querySelector('h1');
+  if (!h1) {
+    // No h1 found; return sanitized HTML as-is
+    return { title: null, htmlWithoutH1: container.innerHTML || '' };
+  }
+
+  const rawTitle = (h1.textContent || '').trim();
+  h1.remove();
+
+  const stripped = (container.innerHTML || '').trim();
+  return { title: rawTitle || null, htmlWithoutH1: stripped };
 }
 
 function isHeroImagePlaceholder(alt) {
