@@ -591,7 +591,7 @@ function HtmlWithMediaSlots({ html, relatedVideos, relatedTweets }) {
 /**
  * Build HTML for an article placeholder slot: animated loading box or article card.
  * @param {number} index - Placeholder index
- * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string }>} relatedArticles
+ * @param {Array<{ url?: string, title?: string, description?: string, sourceName?: string, publishedAt?: string, urlToImage?: string }>} relatedArticles
  * @returns {string} Safe HTML string
  */
 function getArticlePlaceholderHtml(index, relatedArticles = []) {
@@ -606,8 +606,10 @@ function getArticlePlaceholderHtml(index, relatedArticles = []) {
     const meta = [source, article.publishedAt ? new Date(article.publishedAt).toLocaleDateString() : ''].filter(Boolean).join(' · ');
     const descLen = 120;
     const desc = article.description ? escapeAttr(String(article.description).slice(0, descLen)) + (String(article.description).length > descLen ? '…' : '') : '';
-    // No news image: link as reference only (title + meta + description)
-    const thumbBlock = '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true">📰</span></span>';
+    const img = article.urlToImage && /^https?:\/\//i.test(article.urlToImage) ? escapeAttr(article.urlToImage) : '';
+    const thumbBlock = img
+      ? `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="markdown-article-card-thumb-wrap"><img src="${img}" alt="" class="markdown-article-card-thumb" loading="lazy" /></a>`
+      : '<span class="markdown-article-card-thumb-wrap"><span class="markdown-article-card-thumb-placeholder" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><path d="M8 7h8"/><path d="M8 11h8"/></svg></span></span>';
     return (
       '<div class="markdown-article-card">' +
       thumbBlock +
@@ -769,9 +771,10 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
   const htmlContent = DOMPurify.sanitize(rawHtml, {
     ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
                    'a', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'hr', 'div', 'span',
-                   'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'iframe'],
+                   'img', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'iframe', 'svg', 'path'],
     ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'class', 'style', 'id', 'title', 'aria-hidden', 'aria-label', 'role',
-                   'allow', 'allowfullscreen', 'frameborder', 'width', 'height'],
+                   'allow', 'allowfullscreen', 'frameborder', 'width', 'height',
+                   'xmlns', 'viewbox', 'fill', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'd'],
     ALLOW_DATA_ATTR: false
   });
 
@@ -1642,22 +1645,23 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           margin-top: 6px;
         }
 
-        /* Article card: clear separation, larger thumb, aligned with video cards */
+        /* Article card: beautiful embedded card style */
         div :global(.markdown-article-card) {
           position: relative;
           display: flex;
           align-items: stretch;
-          gap: 14px;
-          margin: 14px 0;
+          gap: 0;
+          margin: 18px 0;
           padding: 0;
-          border-radius: 10px;
+          border-radius: 12px;
           border: 1px solid var(--color-border-base);
           background: var(--color-background-container);
-          transition: box-shadow 0.2s ease, border-color 0.2s ease;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+          transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
           overflow: hidden;
         }
         div :global(.markdown-article-card:hover) {
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
           border-color: var(--color-primary-200);
         }
         div :global(.markdown-article-card-thumb-wrap) {
@@ -1665,41 +1669,49 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           display: block;
           line-height: 0;
           text-decoration: none;
-          width: 160px;
-          min-height: 90px;
+          width: 220px;
+          min-height: 124px;
+          background: var(--color-background-alt);
         }
         div :global(.markdown-article-card-thumb) {
-          width: 160px;
-          height: 90px;
-          max-width: 160px;
-          max-height: 90px;
+          width: 220px;
+          height: 124px;
+          max-width: 220px;
+          max-height: 124px;
+          min-width: 220px;
+          min-height: 124px;
           object-fit: cover;
           display: block;
           vertical-align: top;
         }
         div :global(.markdown-article-card-thumb-placeholder) {
-          width: 160px;
-          height: 90px;
-          background: var(--color-background-alt);
+          width: 220px;
+          height: 124px;
+          min-width: 220px;
+          min-height: 124px;
+          background: linear-gradient(135deg, var(--color-background-alt) 0%, var(--color-background-elevated) 100%);
           color: var(--color-text-tertiary);
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 28px;
+          opacity: 0.85;
+        }
+        div :global(.markdown-article-card-thumb-placeholder svg) {
+          flex-shrink: 0;
         }
         div :global(.markdown-article-card-body) {
           flex: 1;
           min-width: 0;
-          padding: 12px 14px 12px 0;
+          padding: 18px 20px;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 8px;
           justify-content: center;
         }
         div :global(.markdown-article-card-title) {
           font-weight: 600;
-          font-size: 14px;
-          line-height: 1.35;
+          font-size: 16px;
+          line-height: 1.4;
           color: var(--color-text-primary);
           text-decoration: none;
           display: -webkit-box;
@@ -1717,11 +1729,13 @@ const HTMLPreview = ({ content, typographySettings = {}, style = {}, forceMarkdo
           color: var(--color-text-secondary);
           line-height: 1.4;
           display: block;
+          font-weight: 500;
+          letter-spacing: 0.01em;
         }
         div :global(.markdown-article-card-desc) {
-          font-size: 12px;
+          font-size: 13px;
           color: var(--color-text-secondary);
-          line-height: 1.4;
+          line-height: 1.5;
           display: -webkit-box;
           -webkit-line-clamp: 2;
           -webkit-box-orient: vertical;
