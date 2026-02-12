@@ -6,6 +6,10 @@
 /** Golden ratio–style spread for hue (degrees). */
 const HUE_STEP = 137.5;
 
+/** Primary brand color #6366F1 in HSL (indigo-purple). */
+const PRIMARY_HUE = 239;
+const PRIMARY_SAT = 81;
+
 /**
  * @param {number} seed - Integer seed (e.g. card index)
  * @returns {{ hue: number, durationMs: number, delayMs: number }}
@@ -37,6 +41,36 @@ export function getPlaceholderStyle(seed = 0, opts = {}) {
   return {
     background,
     backgroundSize: '200% 100%',
+    animation: `placeholder-shimmer ${durationSec}s ease-in-out ${delaySec}s infinite`,
+    animationDelay: `${delaySec}s`,
+  };
+}
+
+/**
+ * Brand-gradient placeholder style for audience/topic cards. Uses primary brand color
+ * with deterministic variations per seed so each placeholder is a slightly different
+ * gradient. Includes shimmer animation.
+ *
+ * @param {number} seed - Integer seed (e.g. card index 0, 1, 2...)
+ * @returns {{ background: string, backgroundSize: string, animation: string, animationDelay: string }}
+ */
+export function getPlaceholderBrandGradientStyle(seed = 0) {
+  const n = Math.max(0, Number(seed) || 0);
+  const hueOffset = (n * 31) % 36 - 18;
+  const satOffset = 4 + (n % 5) * 2;
+  const lightStart = 72 + (n % 4) * 3;
+  const lightEnd = 58 + (n % 4) * 3;
+  const hue1 = PRIMARY_HUE + hueOffset;
+  const hue2 = PRIMARY_HUE + hueOffset + (n % 3) * 8;
+  const sat = Math.min(90, PRIMARY_SAT - satOffset);
+  const background = `linear-gradient(135deg, hsl(${hue1}, ${sat}%, ${lightStart}%) 0%, hsl(${hue2}, ${sat}%, ${lightEnd}%) 50%, hsl(${hue1}, ${sat}%, ${lightStart}%) 100%)`;
+  const durationMs = 3200 + (n % 5) * 400;
+  const delayMs = (n % 4) * 200;
+  const durationSec = (durationMs / 1000).toFixed(2);
+  const delaySec = (delayMs / 1000).toFixed(2);
+  return {
+    background,
+    backgroundSize: '200% 200%',
     animation: `placeholder-shimmer ${durationSec}s ease-in-out ${delaySec}s infinite`,
     animationDelay: `${delaySec}s`,
   };
