@@ -1233,6 +1233,13 @@ function OnboardingFunnelView() {
           }}
           context={authContext}
           defaultTab={authContext === 'register' ? 'register' : 'login'}
+          onSuccess={() => {
+            setShowAuthModal(false);
+            setAuthContext(null);
+            if (typeof window !== 'undefined') {
+              window.location.href = '/dashboard';
+            }
+          }}
         />
       )}
       <div
