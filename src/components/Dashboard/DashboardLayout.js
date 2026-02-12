@@ -27,6 +27,7 @@ import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
 import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
 import SandboxTab from './SandboxTab';
+import ReturningUserDashboard from './ReturningUserDashboard';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
@@ -103,6 +104,10 @@ const DashboardLayout = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [visibleSections, setVisibleSections] = useState(['home']); // Start with only home visible
+
+  // ReturningUserDashboard state
+  const [hasStrategies, setHasStrategies] = useState(false);
+  const [strategiesLoading, setStrategiesLoading] = useState(true);
   
   // Dashboard visibility for workflow mode - start hidden in workflow mode  
   const [showDashboardLocal, setShowDashboardLocal] = useState(false);
@@ -137,6 +142,30 @@ const DashboardLayout = ({
 
   // Pricing modal state
   const [showPricingModal, setShowPricingModal] = useState(false);
+
+  // Check if user has strategies for ReturningUserDashboard
+  useEffect(() => {
+    async function checkStrategies() {
+      if (!user) {
+        setHasStrategies(false);
+        setStrategiesLoading(false);
+        return;
+      }
+
+      try {
+        const response = await api.getUserAudiences();
+        const strategies = response?.audiences || [];
+        setHasStrategies(strategies.length > 0);
+      } catch (error) {
+        console.error('Failed to check strategies:', error);
+        setHasStrategies(false);
+      } finally {
+        setStrategiesLoading(false);
+      }
+    }
+
+    checkStrategies();
+  }, [user]);
 
   // Fetch user quota (memoized to prevent infinite loops)
   const refreshQuota = useCallback(async () => {
@@ -692,6 +721,13 @@ const DashboardLayout = ({
         default:
           return <DashboardTab />;
       }
+    }
+
+    // Show ReturningUserDashboard for logged-in users with strategies (Issue #262)
+    // Criteria: User is logged in, has strategies, not in workflow mode
+    if (user && hasStrategies && !forceWorkflowMode && !projectMode && !strategiesLoading) {
+      console.log('🎯 Rendering ReturningUserDashboard for user with strategies');
+      return <ReturningUserDashboard />;
     }
 
     // Main scrollable layout with all sections

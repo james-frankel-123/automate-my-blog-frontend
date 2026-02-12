@@ -11,8 +11,8 @@ export const systemVoice = {
   // ─── Header & step titles (UnifiedWorkflowHeader, progressive headers) ───
   header: {
     // Step 0: Start
-    step0Title: "The new era of marketing has started.",
-    step0Description: "Automate website content to get clicks without complication",
+    step0Title: "Get your website seen",
+    step0Description: "The no effort solution for boosting your website SEO.",
     // Split into phrases for sequential animation (just title, subtitle is static)
     step0Phrases: [
       "The new era of marketing has started."
