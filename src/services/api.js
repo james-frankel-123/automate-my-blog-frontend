@@ -2478,6 +2478,61 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Get social handles for an organization.
+   * @param {string} organizationId - Organization UUID
+   * @returns {Promise<{ social_handles: Object }>}
+   */
+  async getSocialHandles(organizationId) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/organizations/${organizationId}/social-handles`,
+        { method: 'GET' }
+      );
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to get social handles');
+    }
+  }
+
+  /**
+   * Set social handles (full replace) for an organization.
+   * @param {string} organizationId - Organization UUID
+   * @param {Object} socialHandles - e.g. { twitter: ["@acme"], linkedin: ["company/acme"] }
+   * @returns {Promise<{ social_handles: Object }>}
+   */
+  async updateSocialHandles(organizationId, socialHandles) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/organizations/${organizationId}/social-handles`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ social_handles: socialHandles }),
+        }
+      );
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to update social handles');
+    }
+  }
+
+  /**
+   * Refresh social handles by re-scraping the organization's website.
+   * @param {string} organizationId - Organization UUID
+   * @returns {Promise<{ social_handles: Object, message?: string }>}
+   */
+  async refreshSocialVoice(organizationId) {
+    try {
+      const response = await this.makeRequest(
+        `/api/v1/organizations/${organizationId}/refresh-social-voice`,
+        { method: 'POST' }
+      );
+      return response;
+    } catch (error) {
+      throw new Error(error.message || 'Failed to refresh social handles');
+    }
+  }
+
+  /**
    * Billing Management
    */
   async getBillingHistory(limit = 50) {
