@@ -54,9 +54,11 @@ class AutoBlogAPI {
       authHeaders['Authorization'] = `Bearer ${token}`;
     }
     
+    // Omit Content-Type for FormData so browser sets multipart boundary
+    const isFormData = options.body instanceof FormData;
     const defaultOptions = {
       headers: {
-        'Content-Type': 'application/json',
+        ...(!isFormData && { 'Content-Type': 'application/json' }),
         ...options.headers,      // Add custom headers first
         ...authHeaders,          // Then auth headers (Authorization takes priority)
       },
@@ -1691,6 +1693,96 @@ Please provide analysis in this JSON format:
       console.error('❌ Upload status request failed:', error);
       throw error;
     }
+  }
+
+  // ─── Voice samples (voice adaptation) ─────────────────────────────────────
+  /** Allowed sourceType values for voice samples. */
+  get VOICE_SAMPLE_SOURCE_TYPES() {
+    return ['blog_post', 'whitepaper', 'email', 'newsletter', 'social_post', 'call_summary', 'other_document'];
+  }
+
+  /** Allowed file extensions for voice sample uploads. */
+  get VOICE_SAMPLE_ALLOWED_EXTENSIONS() {
+    return ['.txt', '.md', '.html', '.csv', '.pdf', '.docx', '.json', '.eml'];
+  }
+
+  /**
+   * Upload voice samples (multipart/form-data).
+   * @param {string} organizationId - UUID of the org
+   * @param {string} sourceType - one of VOICE_SAMPLE_SOURCE_TYPES
+   * @param {File[]} files - up to 10 files
+   * @param {{ title?: string, weight?: number }} options - optional title and weight (0.1–5.0)
+   * @returns {Promise<{ success: boolean, samples: Array }>}
+   */
+  async uploadVoiceSamples(organizationId, sourceType, files, options = {}) {
+    if (!organizationId || !sourceType || !files?.length) {
+      throw new Error('organizationId, sourceType, and at least one file are required');
+    }
+    if (files.length > 10) {
+      throw new Error('Maximum 10 files per request');
+    }
+    const formData = new FormData();
+    formData.append('organizationId', organizationId);
+    formData.append('sourceType', sourceType);
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+    if (options.title != null) formData.append('title', String(options.title));
+    if (options.weight != null) formData.append('weight', Number(options.weight));
+
+    const response = await this.makeRequest('api/v1/voice-samples/upload', {
+      method: 'POST',
+      body: formData
+    });
+    if (!response.success) throw new Error(response.message || response.error || 'Upload failed');
+    return response;
+  }
+
+  /**
+   * List voice samples for an organization.
+   * @param {string} organizationId
+   * @returns {Promise<{ success: boolean, samples: Array }>}
+   */
+  async listVoiceSamples(organizationId) {
+    if (!organizationId) throw new Error('organizationId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${organizationId}`, { method: 'GET' });
+    if (!response.success) throw new Error(response.message || response.error || 'Failed to list samples');
+    return response;
+  }
+
+  /**
+   * Get aggregated voice profile for an organization.
+   * @param {string} organizationId
+   * @returns {Promise<{ success: boolean, profile: object|null }>}
+   */
+  async getVoiceProfile(organizationId) {
+    if (!organizationId) throw new Error('organizationId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${organizationId}/profile`, { method: 'GET' });
+    if (!response.success) throw new Error(response.message || response.error || 'Failed to get profile');
+    return response;
+  }
+
+  /**
+   * Soft-delete a voice sample.
+   * @param {string} sampleId
+   */
+  async deleteVoiceSample(sampleId) {
+    if (!sampleId) throw new Error('sampleId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${sampleId}`, { method: 'DELETE' });
+    if (!response.success) throw new Error(response.message || response.error || 'Failed to delete sample');
+    return response;
+  }
+
+  /**
+   * Reanalyze a voice sample (queues job, sample returns to pending).
+   * @param {string} sampleId
+   * @returns {Promise<{ success: boolean, jobId?: string }>}
+   */
+  async reanalyzeVoiceSample(sampleId) {
+    if (!sampleId) throw new Error('sampleId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${sampleId}/reanalyze`, { method: 'POST' });
+    if (!response.success) throw new Error(response.message || response.error || 'Reanalyze failed');
+    return response;
   }
 
   /**
