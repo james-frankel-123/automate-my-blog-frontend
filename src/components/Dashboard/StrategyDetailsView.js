@@ -5,6 +5,127 @@ import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined, Cal
 const { Title, Paragraph, Text } = Typography;
 
 /**
+ * Parse and render markdown-formatted pitch text
+ */
+function renderPitchText(text) {
+  if (!text) return null;
+
+  // Split into lines
+  const lines = text.split('\n');
+  const elements = [];
+  let currentList = [];
+
+  lines.forEach((line, idx) => {
+    const trimmedLine = line.trim();
+
+    // Bold headers (e.g., **SUMMARY:**)
+    if (trimmedLine.match(/^\*\*[^*]+\*\*:?$/)) {
+      // Flush current list if exists
+      if (currentList.length > 0) {
+        elements.push(
+          <ul key={`list-${elements.length}`} style={{
+            margin: '8px 0',
+            padding: '0 0 0 20px',
+            listStyle: 'none'
+          }}>
+            {currentList.map((item, i) => (
+              <li key={i} style={{
+                marginBottom: '6px',
+                position: 'relative',
+                paddingLeft: '8px'
+              }}>
+                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        );
+        currentList = [];
+      }
+
+      const headerText = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '');
+      elements.push(
+        <Text key={`header-${idx}`} strong style={{
+          display: 'block',
+          fontSize: '15px',
+          color: '#262626',
+          marginTop: elements.length > 0 ? '16px' : '0',
+          marginBottom: '8px'
+        }}>
+          {headerText}
+        </Text>
+      );
+    }
+    // Bullet points (e.g., • Item text)
+    else if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+      const bulletText = trimmedLine.substring(1).trim();
+      currentList.push(bulletText);
+    }
+    // Regular paragraph text
+    else if (trimmedLine.length > 0) {
+      // Flush current list if exists
+      if (currentList.length > 0) {
+        elements.push(
+          <ul key={`list-${elements.length}`} style={{
+            margin: '8px 0',
+            padding: '0 0 0 20px',
+            listStyle: 'none'
+          }}>
+            {currentList.map((item, i) => (
+              <li key={i} style={{
+                marginBottom: '6px',
+                position: 'relative',
+                paddingLeft: '8px'
+              }}>
+                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        );
+        currentList = [];
+      }
+
+      elements.push(
+        <Text key={`p-${idx}`} style={{
+          display: 'block',
+          fontSize: '15px',
+          lineHeight: '1.8',
+          color: '#434343',
+          marginBottom: '8px'
+        }}>
+          {trimmedLine}
+        </Text>
+      );
+    }
+  });
+
+  // Flush remaining list items
+  if (currentList.length > 0) {
+    elements.push(
+      <ul key={`list-${elements.length}`} style={{
+        margin: '8px 0',
+        padding: '0 0 0 20px',
+        listStyle: 'none'
+      }}>
+        {currentList.map((item, i) => (
+          <li key={i} style={{
+            marginBottom: '6px',
+            position: 'relative',
+            paddingLeft: '8px'
+          }}>
+            <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return <div>{elements}</div>;
+}
+
+/**
  * ContentCalendarTimeline - Timeline visual for 30-day content plan
  */
 function ContentCalendarTimeline({ contentIdeas, sampleIdeas, loadingSampleIdeas, sampleIdeasError }) {
@@ -498,16 +619,14 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
               </div>
             </div>
           ) : (
-            <Paragraph style={{
-              whiteSpace: 'pre-wrap',
-              lineHeight: 1.8,
-              fontSize: '15px',
-              minHeight: '120px',
-              color: '#434343'
-            }}>
-              {pitchText || 'Generating strategy overview...'}
-              {loading && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
-            </Paragraph>
+            <div style={{ minHeight: '120px' }}>
+              {renderPitchText(pitchText)}
+              {loading && (
+                <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                  <LoadingOutlined spin style={{ color: '#1890ff' }} />
+                </div>
+              )}
+            </div>
           )}
         </Card>
 
