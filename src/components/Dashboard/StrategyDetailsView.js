@@ -126,9 +126,19 @@ function renderPitchText(text) {
 }
 
 /**
- * ContentCalendarTimeline - Timeline visual for 30-day content plan
+ * ContentCalendarTimeline - Timeline visual with embedded pricing and subscribe CTA
  */
-function ContentCalendarTimeline({ contentIdeas, sampleIdeas, loadingSampleIdeas, sampleIdeasError }) {
+function ContentCalendarTimeline({
+  contentIdeas,
+  sampleIdeas,
+  loadingSampleIdeas,
+  sampleIdeasError,
+  monthlyPrice,
+  pricingBullets,
+  pricingLoading,
+  onSubscribe,
+  subscribing
+}) {
   // If no content ideas, show timeline teaser with sample ideas
   if (!contentIdeas || contentIdeas.length === 0) {
     return (
@@ -268,6 +278,77 @@ function ContentCalendarTimeline({ contentIdeas, sampleIdeas, loadingSampleIdeas
             </div>
           </div>
         )}
+
+        {/* Pricing & Subscribe Section */}
+        <div style={{
+          borderTop: '1px solid #e8e8e8',
+          padding: '24px 20px',
+          background: '#fafbfc'
+        }}>
+          {/* Price Display */}
+          <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+            <div style={{
+              fontSize: '36px',
+              fontWeight: 'bold',
+              color: '#1890ff',
+              lineHeight: 1
+            }}>
+              ${monthlyPrice.toFixed(2)}
+            </div>
+            <Text type="secondary" style={{ fontSize: '13px' }}>/month</Text>
+          </div>
+
+          {/* Pricing Bullets */}
+          {pricingBullets && pricingBullets.length > 0 && !pricingLoading && (
+            <ul style={{
+              margin: '0 0 20px 0',
+              padding: '0 0 0 20px',
+              listStyle: 'none'
+            }}>
+              {pricingBullets.map((bullet, idx) => (
+                <li key={idx} style={{
+                  marginBottom: '8px',
+                  fontSize: '13px',
+                  lineHeight: '1.6',
+                  color: '#434343',
+                  position: 'relative'
+                }}>
+                  <span style={{
+                    position: 'absolute',
+                    left: '-20px',
+                    color: '#52c41a',
+                    fontWeight: 'bold',
+                    fontSize: '14px'
+                  }}>✓</span>
+                  {bullet}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* Subscribe Button */}
+          <Button
+            type="primary"
+            size="large"
+            icon={<RocketOutlined />}
+            onClick={onSubscribe}
+            loading={subscribing}
+            block
+            style={{
+              height: '48px',
+              fontSize: '16px',
+              fontWeight: 600
+            }}
+          >
+            {subscribing ? 'Creating Checkout...' : 'Subscribe Now'}
+          </Button>
+
+          <div style={{ marginTop: '12px', textAlign: 'center' }}>
+            <Text type="secondary" style={{ fontSize: '12px' }}>
+              Secure checkout powered by Stripe
+            </Text>
+          </div>
+        </div>
       </div>
     );
   }
@@ -297,7 +378,7 @@ function parsePricingBullets(pricingText) {
 
   // Extract cost per lead
   const costPerLeadMatch = pricingText.match(/cost per lead[:\s]+\$?([^\s,]+)/i);
-  if (costPerLeadMatch) {
+  if (costPerLeadMatch && costPerLeadMatch[1] !== 'N/A') {
     bullets.push(`Cost per lead: $${costPerLeadMatch[1]}`);
   }
 
@@ -309,24 +390,35 @@ function parsePricingBullets(pricingText) {
 
   // Extract payback time
   const paybackMatch = pricingText.match(/pays for itself in[:\s~]+(\d+)\s+weeks?/i);
-  if (paybackMatch) {
-    bullets.push(`Payback time: ~${paybackMatch[1]} weeks`);
+  if (paybackMatch && paybackMatch[1] !== '0') {
+    bullets.push(`Payback: ~${paybackMatch[1]} weeks`);
   }
 
   // Extract profit range
   const profitMatch = pricingText.match(/\$([0-9,]+)[-–]\$([0-9,]+)\s+(?:per\s+)?month(?:ly)?(?:\s+profit)?/i);
   if (profitMatch) {
-    bullets.push(`Projected profit: $${profitMatch[1]}-$${profitMatch[2]}/month`);
+    bullets.push(`Projected profit: $${profitMatch[1]}-$${profitMatch[2]}/mo`);
+  }
+
+  // Extract bullet points directly (new format)
+  const bulletMatches = pricingText.match(/^•\s+(.+)$/gm);
+  if (bulletMatches && bulletMatches.length > 0) {
+    bulletMatches.forEach(match => {
+      const cleaned = match.replace(/^•\s+/, '').trim();
+      if (cleaned.length > 0 && !cleaned.toLowerCase().includes('ai-estimated')) {
+        bullets.push(cleaned);
+      }
+    });
   }
 
   // If no bullets extracted, create generic summary
   if (bullets.length === 0) {
     bullets.push('Cost-effective content strategy');
     bullets.push('High ROI potential');
-    bullets.push('Competitive market positioning');
+    bullets.push('Competitive positioning');
   }
 
-  return bullets;
+  return bullets.slice(0, 4); // Max 4 bullets
 }
 
 /**
@@ -452,8 +544,10 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
       const token = localStorage.getItem('accessToken');
 
       if (!token) {
+        console.error('❌ No access token found for sample ideas request');
         setSampleIdeasError('Authentication required');
         setLoadingSampleIdeas(false);
+        // Don't set fallback ideas - let user see the error
         return;
       }
 
@@ -470,29 +564,39 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
         }
       );
 
+      console.log('📡 Sample ideas response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`Failed to generate sample ideas: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Sample ideas request failed:', response.status, errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('📦 Sample ideas response data:', data);
 
-      if (data.success && data.sampleIdeas) {
+      if (data.success && data.sampleIdeas && Array.isArray(data.sampleIdeas)) {
         console.log('✅ Sample ideas received:', data.sampleIdeas);
         setSampleIdeas(data.sampleIdeas);
+      } else if (data.fallback && data.sampleIdeas) {
+        console.warn('⚠️ Using fallback ideas from API');
+        setSampleIdeas(data.sampleIdeas);
+        setSampleIdeasError('Using fallback ideas');
       } else {
-        throw new Error('Invalid response from server');
+        console.error('❌ Invalid response structure:', data);
+        throw new Error('Invalid response from server - missing sampleIdeas array');
       }
 
     } catch (err) {
-      console.error('Failed to fetch sample content ideas:', err);
+      console.error('❌ Failed to fetch sample content ideas:', err);
+      console.error('Error details:', {
+        message: err.message,
+        stack: err.stack
+      });
       setSampleIdeasError(err.message);
 
-      // Set fallback generic ideas
-      setSampleIdeas([
-        'Content idea tailored to your target audience',
-        'Strategic blog post based on your keywords',
-        'SEO-optimized article for your niche'
-      ]);
+      // Show error alert instead of fallback placeholders
+      message.error(`Failed to generate preview: ${err.message}`);
     } finally {
       setLoadingSampleIdeas(false);
     }
@@ -630,105 +734,19 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
           )}
         </Card>
 
-        {/* Content Calendar - Right side (40%) */}
+        {/* Content Calendar with Pricing - Right side (40%) */}
         <div style={{ flex: '0 1 380px', minWidth: '320px' }}>
           <ContentCalendarTimeline
             contentIdeas={strategy.contentIdeas}
             sampleIdeas={sampleIdeas}
             loadingSampleIdeas={loadingSampleIdeas}
             sampleIdeasError={sampleIdeasError}
+            monthlyPrice={monthlyPrice}
+            pricingBullets={pricingBullets}
+            pricingLoading={loading && !pricingText}
+            onSubscribe={handleSubscribe}
+            subscribing={subscribing}
           />
-        </div>
-      </div>
-
-      {/* Pricing (compact bullets) */}
-      <Card
-        title={
-          <Space>
-            <DollarOutlined />
-            <span>Pricing & ROI</span>
-          </Space>
-        }
-        style={{ marginBottom: '32px' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '32px', flexWrap: 'wrap' }}>
-          {/* Price */}
-          <div>
-            <div style={{
-              fontSize: '42px',
-              fontWeight: 'bold',
-              color: '#1890ff',
-              lineHeight: 1
-            }}>
-              ${monthlyPrice.toFixed(2)}
-            </div>
-            <Text type="secondary" style={{ fontSize: '14px' }}>/month</Text>
-          </div>
-
-          {/* Bullets */}
-          <div style={{ flex: 1, minWidth: '300px' }}>
-            {loading && !pricingText ? (
-              <div style={{ color: '#999', fontStyle: 'italic' }}>
-                <LoadingOutlined spin /> Calculating ROI...
-              </div>
-            ) : (
-              <ul style={{
-                margin: 0,
-                padding: '0 0 0 20px',
-                listStyle: 'none'
-              }}>
-                {pricingBullets.map((bullet, idx) => (
-                  <li key={idx} style={{
-                    marginBottom: '10px',
-                    fontSize: '14px',
-                    lineHeight: '1.6',
-                    color: '#434343',
-                    position: 'relative'
-                  }}>
-                    <span style={{
-                      position: 'absolute',
-                      left: '-20px',
-                      color: '#52c41a',
-                      fontWeight: 'bold'
-                    }}>✓</span>
-                    {bullet}
-                  </li>
-                ))}
-                <li style={{
-                  marginTop: '12px',
-                  fontSize: '12px',
-                  color: '#8c8c8c',
-                  fontStyle: 'italic'
-                }}>
-                  * AI-estimated projections based on market research
-                </li>
-              </ul>
-            )}
-          </div>
-        </div>
-      </Card>
-
-      {/* Subscribe CTA */}
-      <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-        <Button
-          type="primary"
-          size="large"
-          icon={<RocketOutlined />}
-          onClick={handleSubscribe}
-          loading={subscribing}
-          style={{
-            height: '52px',
-            fontSize: '17px',
-            padding: '0 56px',
-            fontWeight: 600
-          }}
-        >
-          {subscribing ? 'Creating Checkout...' : 'Subscribe Now'}
-        </Button>
-        <div style={{ marginTop: '12px' }}>
-          <Text type="secondary" style={{ fontSize: '13px' }}>
-            Secure checkout powered by Stripe
-          </Text>
         </div>
       </div>
     </div>
