@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge, Tag } from 'antd';
-import { CheckCircleFilled, LockFilled, FileTextOutlined, CheckOutlined, ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons';
+import { LockFilled, FileTextOutlined, CheckOutlined, ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 
 /**
  * ContentStrategyCard - Individual strategy card in the carousel
