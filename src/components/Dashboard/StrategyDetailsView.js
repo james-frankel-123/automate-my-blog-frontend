@@ -1,8 +1,171 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Card, Spin, Alert, Typography, Divider, Space, Tag } from 'antd';
-import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Button, Card, Spin, Alert, Typography, Divider, Space, Tag, List } from 'antd';
+import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined, CalendarOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
+
+/**
+ * StrategyPitchDisplay - Parse and display structured pitch text
+ */
+function StrategyPitchDisplay({ pitchText, loading }) {
+  // Parse structured pitch text
+  const parsePitchText = (text) => {
+    if (!text) return { summary: '', insights: [] };
+
+    // Try to extract SUMMARY and KEY INSIGHTS sections
+    const summaryMatch = text.match(/\*\*SUMMARY:\*\*\s*(.+?)(?=\*\*KEY INSIGHTS:\*\*|$)/s);
+    const insightsMatch = text.match(/\*\*KEY INSIGHTS:\*\*\s*([\s\S]+?)$/);
+
+    let summary = '';
+    let insights = [];
+
+    if (summaryMatch) {
+      summary = summaryMatch[1].trim();
+    }
+
+    if (insightsMatch) {
+      // Extract bullet points (lines starting with • or -)
+      const insightsText = insightsMatch[1];
+      insights = insightsText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('•') || line.startsWith('-') || line.startsWith('*'))
+        .map(line => line.replace(/^[•\-*]\s*/, '').trim())
+        .filter(line => line.length > 0);
+    }
+
+    // Fallback: if no structured format detected, use the whole text as summary
+    if (!summary && !insights.length && text) {
+      summary = text;
+    }
+
+    return { summary, insights };
+  };
+
+  const { summary, insights } = parsePitchText(pitchText);
+
+  return (
+    <div>
+      {/* Summary */}
+      {summary && (
+        <Paragraph style={{
+          fontSize: '15px',
+          lineHeight: 1.8,
+          marginBottom: insights.length > 0 ? '16px' : '0',
+          color: '#333'
+        }}>
+          {summary}
+          {loading && !insights.length && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
+        </Paragraph>
+      )}
+
+      {/* Key Insights */}
+      {insights.length > 0 && (
+        <div>
+          <ul style={{
+            listStyle: 'none',
+            padding: 0,
+            margin: 0
+          }}>
+            {insights.map((insight, idx) => (
+              <li key={idx} style={{
+                fontSize: '14px',
+                lineHeight: 1.8,
+                marginBottom: '8px',
+                paddingLeft: '20px',
+                position: 'relative',
+                color: '#555'
+              }}>
+                <span style={{
+                  position: 'absolute',
+                  left: '0',
+                  color: '#1890ff',
+                  fontWeight: 'bold'
+                }}>•</span>
+                {insight}
+              </li>
+            ))}
+          </ul>
+          {loading && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
+        </div>
+      )}
+
+      {/* Loading fallback */}
+      {!summary && !insights.length && (
+        <Paragraph style={{
+          fontSize: '15px',
+          lineHeight: 1.8,
+          color: '#999',
+          fontStyle: 'italic'
+        }}>
+          Generating strategy overview...
+          <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />
+        </Paragraph>
+      )}
+    </div>
+  );
+}
+
+/**
+ * ContentCalendarDisplay - Display 30-day content plan grouped by weeks
+ */
+function ContentCalendarDisplay({ contentIdeas }) {
+  if (!contentIdeas || contentIdeas.length === 0) {
+    return (
+      <div style={{ textAlign: 'center', padding: '24px', color: '#999' }}>
+        <Text type="secondary">No content ideas available for this strategy.</Text>
+      </div>
+    );
+  }
+
+  // Group content ideas by weeks (7 days per week)
+  const weeks = [];
+  const ideasToShow = contentIdeas.slice(0, 30); // Show first 30 ideas (1 per day)
+
+  for (let i = 0; i < ideasToShow.length; i += 7) {
+    const weekNumber = Math.floor(i / 7) + 1;
+    const weekIdeas = ideasToShow.slice(i, i + 7);
+    weeks.push({
+      weekNumber,
+      startDay: i + 1,
+      endDay: Math.min(i + 7, ideasToShow.length),
+      ideas: weekIdeas
+    });
+  }
+
+  return (
+    <div>
+      {weeks.map((week, weekIdx) => (
+        <div key={weekIdx} style={{ marginBottom: weekIdx < weeks.length - 1 ? '24px' : '0' }}>
+          <Title level={5} style={{ marginBottom: '12px', color: '#1890ff' }}>
+            Week {week.weekNumber} (Days {week.startDay}-{week.endDay})
+          </Title>
+          <List
+            size="small"
+            dataSource={week.ideas}
+            renderItem={(idea, idx) => {
+              const dayNumber = week.startDay + idx;
+              return (
+                <List.Item style={{ padding: '8px 0', borderBottom: 'none' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+                    <Text strong style={{ minWidth: '60px', color: '#666' }}>Day {dayNumber}:</Text>
+                    <Text style={{ flex: 1, lineHeight: '1.6' }}>{idea}</Text>
+                  </div>
+                </List.Item>
+              );
+            }}
+            style={{
+              backgroundColor: '#fafafa',
+              padding: '12px 16px',
+              borderRadius: '4px',
+              border: '1px solid #f0f0f0'
+            }}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /**
  * StrategyDetailsView - Embedded view showing LLM-generated strategy pitch
@@ -176,16 +339,21 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
             </div>
           </div>
         ) : (
-          <Paragraph style={{
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.8,
-            fontSize: '15px',
-            minHeight: '80px'
-          }}>
-            {pitchText || 'Generating strategy overview...'}
-            {loading && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
-          </Paragraph>
+          <StrategyPitchDisplay pitchText={pitchText} loading={loading} />
         )}
+      </Card>
+
+      {/* 30-Day Content Calendar */}
+      <Card
+        title={
+          <Space>
+            <CalendarOutlined />
+            <span>30-Day Content Calendar</span>
+          </Space>
+        }
+        style={{ marginBottom: '24px' }}
+      >
+        <ContentCalendarDisplay contentIdeas={strategy.contentIdeas} />
       </Card>
 
       {/* Strategy Details */}

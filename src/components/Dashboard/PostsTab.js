@@ -310,7 +310,8 @@ const PostsTab = ({
   // Strategy filtering props (for ReturningUserDashboard)
   filteredByStrategyId = null,
   onClearFilter = null,
-  getStrategyName = null
+  getStrategyName = null,
+  subscribedStrategies = null
 }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('posts');
@@ -1887,6 +1888,69 @@ const PostsTab = ({
     }
   };
 
+  // Handle "Create Your First Post" button click
+  const handleCreateFirstPost = async () => {
+    // Check authentication first
+    if (!user) {
+      return requireSignUp('Create your blog post', 'Get your first post');
+    }
+
+    // Check if we have subscribed strategies
+    if (!subscribedStrategies || Object.keys(subscribedStrategies).length === 0) {
+      message.info('Please subscribe to a content strategy first to create posts');
+      return;
+    }
+
+    // Get first subscribed strategy
+    const firstStrategyId = Object.keys(subscribedStrategies)[0];
+    const strategy = subscribedStrategies[firstStrategyId];
+
+    console.log('🚀 Starting post creation for strategy:', firstStrategyId);
+
+    try {
+      // Set generating content to show the topic generation UI
+      setGeneratingContent(true);
+      setTopicsGenerationInProgress(true);
+
+      // Generate topics for this strategy
+      // Use the same logic as in the workflow topic generation
+      const websiteAnalysisData = stepResults?.home?.websiteAnalysis || {};
+
+      // Prepare strategy data for topic generation
+      const strategyData = {
+        id: firstStrategyId,
+        customerProblem: strategy.customer_problem || '',
+        targetSegment: strategy.target_segment || {},
+        contentIdeas: strategy.content_ideas || [],
+        seoKeywords: strategy.seo_keywords || []
+      };
+
+      // Call topics API
+      const topicsResponse = await topicAPI.generateTopics({
+        customerStrategy: strategyData,
+        websiteAnalysis: websiteAnalysisData,
+        count: 5
+      });
+
+      console.log('✅ Topics generated:', topicsResponse);
+
+      // Set the generated topics
+      if (topicsResponse && topicsResponse.length > 0) {
+        setAvailableTopics(topicsResponse);
+        message.success('Content topics generated! Select one to create your first post.');
+      } else {
+        message.error('No topics were generated. Please try again.');
+        setGeneratingContent(false);
+      }
+    } catch (error) {
+      console.error('Failed to generate topics:', error);
+      message.error('Failed to generate topics. Please try again.');
+      setGeneratingContent(false);
+    } finally {
+      setTopicsGenerationInProgress(false);
+    }
+  };
+
   const getPostActions = (post) => {
     const actions = [
       {
@@ -2598,18 +2662,7 @@ const PostsTab = ({
                 description="Get started by creating your first blog post. Our AI will help you generate content based on your website analysis and audience strategy."
                 action="Create Your First Post"
                 actionLabel="Create Your First Post"
-                onAction={() => {
-                  // Trigger content generation workflow
-                  if (onEnterProjectMode) {
-                    onEnterProjectMode();
-                  } else {
-                    // Fallback: scroll to content generation section
-                    const postsSection = document.getElementById('posts');
-                    if (postsSection) {
-                      postsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }
-                }}
+                onAction={handleCreateFirstPost}
                 icon={<PlusOutlined style={{ fontSize: '64px', color: 'var(--color-gray-300)' }} />}
                 tips="Start by analyzing your website, then select an audience strategy, and finally generate your first post."
               />

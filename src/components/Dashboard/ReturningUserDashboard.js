@@ -174,9 +174,25 @@ export default function ReturningUserDashboard() {
   /**
    * Handle strategy subscription (navigate to Stripe checkout)
    */
-  function handleSubscribe(strategyId) {
-    // Redirect to Stripe checkout endpoint
-    window.location.href = `/api/v1/strategies/${strategyId}/subscribe`;
+  async function handleSubscribe(strategyId) {
+    try {
+      message.loading({ content: 'Starting checkout...', key: 'subscribe' });
+
+      // Create Stripe checkout session
+      const response = await autoBlogAPI.subscribeToStrategy(strategyId, 'monthly');
+
+      if (response?.url) {
+        message.success({ content: 'Redirecting to checkout...', key: 'subscribe', duration: 1 });
+        setTimeout(() => {
+          window.location.href = response.url;
+        }, 500);
+      } else {
+        message.error({ content: 'Failed to start checkout.', key: 'subscribe' });
+      }
+    } catch (error) {
+      console.error('Failed to start checkout:', error);
+      message.error({ content: error.message || 'Failed to start checkout.', key: 'subscribe' });
+    }
   }
 
   /**
@@ -227,6 +243,7 @@ export default function ReturningUserDashboard() {
             filteredByStrategyId={selectedStrategyId}
             onClearFilter={handleClearFilter}
             getStrategyName={getStrategyName}
+            subscribedStrategies={subscribedStrategies}
             // Note: PostsTab expects other props as well (user, etc.)
             // These will be passed through from DashboardLayout
           />

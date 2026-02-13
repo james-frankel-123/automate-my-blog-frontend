@@ -1,6 +1,42 @@
 import React from 'react';
 import { Card, Badge, Tag } from 'antd';
-import { CheckCircleFilled, LockFilled, FileTextOutlined, CheckOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, LockFilled, FileTextOutlined, CheckOutlined, ClockCircleOutlined, RocketOutlined } from '@ant-design/icons';
+
+/**
+ * AudienceAvatar - Display audience image with fallback to rocket icon
+ */
+function AudienceAvatar({ imageUrl, size = 48 }) {
+  const [imageError, setImageError] = React.useState(false);
+
+  const avatarStyle = {
+    width: size,
+    height: size,
+    borderRadius: '8px',
+    objectFit: 'cover',
+    backgroundColor: '#f0f0f0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0
+  };
+
+  if (!imageUrl || imageError) {
+    return (
+      <div style={avatarStyle}>
+        <RocketOutlined style={{ fontSize: size * 0.5, color: '#1890ff' }} />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt="Audience"
+      style={avatarStyle}
+      onError={() => setImageError(true)}
+    />
+  );
+}
 
 /**
  * ContentStrategyCard - Individual strategy card in the carousel
@@ -73,40 +109,50 @@ export default function ContentStrategyCard({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Header with status badge */}
+      {/* Header with avatar and status badge */}
       <div style={{
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'flex-start',
+        gap: '12px',
         marginBottom: '8px'
       }}>
-        <div style={{ flex: 1 }}>
-          <div style={{
-            fontWeight: 'bold',
-            fontSize: '15px',
-            marginBottom: '4px',
-            color: '#333',
-            lineHeight: '1.3'
-          }}>
-            {truncate(demographics, 45)}
-          </div>
-        </div>
+        {/* Audience Avatar */}
+        <AudienceAvatar imageUrl={strategy.imageUrl} size={48} />
 
-        {isSubscribed ? (
-          <CheckCircleFilled style={{ fontSize: '20px', color: '#52c41a' }} />
-        ) : (
-          <LockFilled style={{ fontSize: '20px', color: '#999' }} />
-        )}
+        {/* Text and status icon */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          minWidth: 0
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontWeight: 'bold',
+              fontSize: '15px',
+              marginBottom: '4px',
+              color: '#333',
+              lineHeight: '1.3'
+            }}>
+              {truncate(demographics, 35)}
+            </div>
+          </div>
+
+          {isSubscribed ? (
+            <CheckCircleFilled style={{ fontSize: '20px', color: '#52c41a', marginLeft: '8px' }} />
+          ) : (
+            <LockFilled style={{ fontSize: '20px', color: '#999', marginLeft: '8px' }} />
+          )}
+        </div>
       </div>
 
       {/* Status badge */}
-      <div style={{ marginBottom: '12px' }}>
-        {isSubscribed ? (
+      {isSubscribed && (
+        <div style={{ marginBottom: '12px' }}>
           <Badge status="success" text="Active Strategy" />
-        ) : (
-          <Badge status="warning" text="Not Subscribed" />
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Content: Performance metrics OR CTA */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
