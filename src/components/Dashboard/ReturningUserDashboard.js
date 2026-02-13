@@ -116,7 +116,8 @@ export default function ReturningUserDashboard() {
       // Map subscribed strategies by ID for quick lookup
       const subscribedMap = {};
       subscriptionsList.forEach(sub => {
-        subscribedMap[sub.strategy_id] = {
+        const strategyId = sub.strategy_id || sub.strategyId;
+        subscribedMap[strategyId] = {
           ...sub,
           performanceMetrics: {
             drafts: sub.drafts_count || 0,
@@ -132,6 +133,10 @@ export default function ReturningUserDashboard() {
         total: transformedStrategies.length,
         subscribed: Object.keys(subscribedMap).length
       });
+
+      console.log('📊 Strategy IDs from audiences:', transformedStrategies.map(s => s.id));
+      console.log('📊 Subscribed strategy IDs:', Object.keys(subscribedMap));
+      console.log('📊 Subscribed map:', subscribedMap);
 
     } catch (error) {
       console.error('Failed to load strategies:', error);
