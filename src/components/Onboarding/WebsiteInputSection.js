@@ -79,8 +79,8 @@ export function WebsiteInputSection({
   return (
     <div data-testid={dataTestId} style={{ marginBottom: 32 }}>
       {headerAnimationComplete && (
-        <Form onFinish={handleSubmit} style={{ maxWidth: 600, margin: '0 auto' }}>
-          <div style={compactRowStyle}>
+        <Form className="website-input-form" onFinish={handleSubmit} style={{ maxWidth: 600, margin: '0 auto' }}>
+          <div className="website-input-row" style={compactRowStyle}>
             <Input
               value={websiteUrl}
               onChange={(e) => setWebsiteUrl?.(e.target.value)}

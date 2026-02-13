@@ -18,6 +18,7 @@ const AdminLinkBar = () => {
 
   return (
     <div
+      className="admin-link-bar"
       role="banner"
       aria-label="Admin link"
       style={{
