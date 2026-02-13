@@ -257,7 +257,7 @@ const AppContent = () => {
         pathname: window.location.pathname
       });
     }
-  }, [user, isReturningUser, hasCompletedAnalysis, isTrulyReturningUser, isNewRegistration]);
+  }, [user, isReturningUser, hasCompletedAnalysis, isTrulyReturningUser, isNewRegistration, ONBOARDING_BUFFER_MS]);
 
   // After registration from funnel: keep user in funnel so they stay in place and topic can start generating (don't switch to dashboard until funnel completes)
   const stayInFunnelAfterRegistration = isNewRegistration && typeof window !== 'undefined' && window.location.pathname !== '/dashboard';
