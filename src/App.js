@@ -225,11 +225,12 @@ const AppContent = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [, setActiveTab] = useState('newpost');
 
-  // Determine if user is returning based on first login time
-  // If first_login_at is more than 5 minutes ago, they're a returning user
+  // Determine if user is returning based on account creation time
+  // If account is more than 5 minutes old, they're a returning user (not brand new)
+  // This handles both new registrations and existing users who just logged in
   const ONBOARDING_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
-  const isReturningUser = user && user.firstLoginAt &&
-    (Date.now() - new Date(user.firstLoginAt).getTime() > ONBOARDING_BUFFER_MS);
+  const isReturningUser = user && user.createdAt &&
+    (Date.now() - new Date(user.createdAt).getTime() > ONBOARDING_BUFFER_MS);
 
   // Fallback: also check if they've completed workflow analysis (for existing sessions)
   const hasCompletedAnalysis =
