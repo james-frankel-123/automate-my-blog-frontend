@@ -110,10 +110,19 @@ function StrategyPitchDisplay({ pitchText, loading }) {
  * ContentCalendarDisplay - Display 30-day content plan grouped by weeks
  */
 function ContentCalendarDisplay({ contentIdeas }) {
+  console.log('ContentCalendarDisplay received:', {
+    contentIdeas,
+    type: typeof contentIdeas,
+    isArray: Array.isArray(contentIdeas),
+    length: contentIdeas?.length
+  });
+
   if (!contentIdeas || contentIdeas.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '24px', color: '#999' }}>
-        <Text type="secondary">No content ideas available for this strategy.</Text>
+      <div style={{ textAlign: 'center', padding: '24px' }}>
+        <Text type="secondary" style={{ fontSize: '14px' }}>
+          Content calendar will be generated when you subscribe to this strategy.
+        </Text>
       </div>
     );
   }

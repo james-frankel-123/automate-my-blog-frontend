@@ -261,6 +261,29 @@ export default function ReturningUserDashboard() {
 }
 
 /**
+ * Parse content ideas from various formats
+ */
+function parseContentIdeas(contentIdeas) {
+  if (!contentIdeas) return [];
+
+  // If already an array, return it
+  if (Array.isArray(contentIdeas)) return contentIdeas;
+
+  // If it's a string, try to parse as JSON
+  if (typeof contentIdeas === 'string') {
+    try {
+      const parsed = JSON.parse(contentIdeas);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      console.warn('Failed to parse content_ideas as JSON:', e);
+      return [];
+    }
+  }
+
+  return [];
+}
+
+/**
  * Transform audience data to strategy format
  * (Similar to AudienceSegmentsTab transformation)
  */
@@ -297,7 +320,7 @@ function transformAudienceToStrategy(audience, index) {
       competition: audience.competition_level || '',
       priority: index + 1
     },
-    contentIdeas: audience.content_ideas || [],
+    contentIdeas: parseContentIdeas(audience.content_ideas),
     seoKeywords: audience.seo_keywords || [],
     // Additional fields for pricing/metrics
     pricingMonthly: audience.pricing_monthly,
