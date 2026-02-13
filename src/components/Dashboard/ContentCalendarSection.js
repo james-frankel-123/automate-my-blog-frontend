@@ -8,6 +8,18 @@ const { Text } = Typography;
 const POLL_INTERVAL_MS = 8000;
 const GENERATING_TIMEOUT_MS = 120000;
 
+/** Normalize audience from API (supports snake_case or camelCase). */
+function getContentIdeas(audience) {
+  if (!audience) return [];
+  const raw = audience.content_ideas ?? audience.contentIdeas;
+  return Array.isArray(raw) ? raw : [];
+}
+
+function getContentCalendarGeneratedAt(audience) {
+  if (!audience) return null;
+  return audience.content_calendar_generated_at ?? audience.contentCalendarGeneratedAt ?? null;
+}
+
 /**
  * ContentCalendarSection - 30-day content calendar for a single strategy (audience).
  *
@@ -67,8 +79,8 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
     fetchAudience().then((aud) => {
       if (!aud) return;
 
-      const ideas = aud.content_ideas || [];
-      const generatedAt = aud.content_calendar_generated_at;
+      const ideas = getContentIdeas(aud);
+      const generatedAt = getContentCalendarGeneratedAt(aud);
       const isReady = ideas.length > 0 || !!generatedAt;
 
       if (isReady) return;
@@ -83,8 +95,8 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         pollTimerRef.current = window.setTimeout(async () => {
           const updated = await fetchAudience();
           if (!updated) return;
-          const nextIdeas = updated.content_ideas || [];
-          const nextGen = updated.content_calendar_generated_at;
+          const nextIdeas = getContentIdeas(updated);
+          const nextGen = getContentCalendarGeneratedAt(updated);
           if (nextIdeas.length > 0 || nextGen) {
             if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
             timeoutRef.current = null;
@@ -105,8 +117,8 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
 
   if (!strategyId) return null;
 
-  const ideas = audience?.content_ideas || [];
-  const generatedAt = audience?.content_calendar_generated_at;
+  const ideas = getContentIdeas(audience);
+  const generatedAt = getContentCalendarGeneratedAt(audience);
   const isReady = ideas.length > 0;
   const isGenerating =
     !error && ideas.length === 0 && !generatedAt && (loading || !!audience);
@@ -192,7 +204,9 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
     );
   }
 
-  const sortedIdeas = [...ideas].sort((a, b) => (a.dayNumber || 0) - (b.dayNumber || 0));
+  const sortedIdeas = [...ideas].sort(
+    (a, b) => (a.dayNumber ?? a.day_number ?? 0) - (b.dayNumber ?? b.day_number ?? 0)
+  );
 
   return (
     <Card
@@ -224,36 +238,43 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         itemLayout="vertical"
         size="small"
         dataSource={sortedIdeas}
-        renderItem={(item) => (
-          <List.Item
-            key={item.dayNumber}
-            style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}
-          >
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 }}>
-              <Tag color="blue" style={{ marginRight: 0 }}>
-                Day {item.dayNumber}
-              </Tag>
-              {item.format && (
-                <Tag color="default">{String(item.format).replace(/-/g, ' ')}</Tag>
+        renderItem={(item) => {
+          const dayNum = item.dayNumber ?? item.day_number;
+          const title = item.title;
+          const searchIntent = item.searchIntent ?? item.search_intent;
+          const format = item.format;
+          const keywords = item.keywords ?? [];
+          return (
+            <List.Item
+              key={dayNum ?? item.title}
+              style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}
+            >
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 }}>
+                <Tag color="blue" style={{ marginRight: 0 }}>
+                  Day {dayNum}
+                </Tag>
+                {format && (
+                  <Tag color="default">{String(format).replace(/-/g, ' ')}</Tag>
+                )}
+              </div>
+              <div style={{ fontWeight: 500, marginTop: 4 }}>{title || 'Untitled'}</div>
+              {searchIntent && (
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
+                  {searchIntent}
+                </Text>
               )}
-            </div>
-            <div style={{ fontWeight: 500, marginTop: 4 }}>{item.title || 'Untitled'}</div>
-            {item.searchIntent && (
-              <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 4 }}>
-                {item.searchIntent}
-              </Text>
-            )}
-            {item.keywords && item.keywords.length > 0 && (
-              <Space wrap size={4} style={{ marginTop: 6 }}>
-                {item.keywords.slice(0, 5).map((kw, i) => (
-                  <Tag key={i} style={{ fontSize: 11 }}>
-                    {kw}
-                  </Tag>
-                ))}
-              </Space>
-            )}
-          </List.Item>
-        )}
+              {keywords && keywords.length > 0 && (
+                <Space wrap size={4} style={{ marginTop: 6 }}>
+                  {keywords.slice(0, 5).map((kw, i) => (
+                    <Tag key={i} style={{ fontSize: 11 }}>
+                      {kw}
+                    </Tag>
+                  ))}
+                </Space>
+              )}
+            </List.Item>
+          );
+        }}
       />
     </Card>
   );
