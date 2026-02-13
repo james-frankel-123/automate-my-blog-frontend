@@ -5,8 +5,8 @@ import autoBlogAPI from '../../services/api';
 
 const { Text } = Typography;
 
-const POLL_INTERVAL_MS = 8000;
-const GENERATING_TIMEOUT_MS = 120000;
+const POLL_INTERVAL_MS = 7000; // Handoff: poll every 5–10s
+const GENERATING_TIMEOUT_MS = 120000; // Handoff: up to ~2 min
 
 /** Normalize audience from API (supports snake_case or camelCase). */
 function getContentIdeas(audience) {
@@ -27,7 +27,8 @@ function getContentCalendarGeneratedAt(audience) {
  * - Shows "generating" state with skeleton and polls until ready or timeout.
  * - Renders full 30-day list (day, title, format badge, keywords) when ready.
  * - Handles 401, 404, 500 and empty state.
- * @param {{ testbed?: boolean }} - When true, requests include ?testbed=1 for backend fixture data on /calendar-testbed
+ * Conforms to docs/content-calendar-frontend-handoff-pasteable.md (UI states, poll 5–10s, ~2 min timeout).
+ * @param {boolean} [testbed=false] - When true, append ?testbed=1 to requests (calendar testbed page).
  */
 export default function ContentCalendarSection({ strategyId, strategyName, onRefresh, testbed = false }) {
   const [audience, setAudience] = useState(null);
@@ -181,7 +182,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         <div style={{ textAlign: 'center', padding: '24px 0' }}>
           <Spin size="large" indicator={<LoadingOutlined spin />} />
           <div style={{ marginTop: 16, color: '#666' }}>
-            Your 30-day content calendar is being generated. This usually takes 15–30 seconds.
+            Calendar generating… This usually takes 15–30 seconds.
           </div>
           <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
         </div>
