@@ -1,8 +1,111 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Card, Spin, Alert, Typography, Divider, Space, Tag } from 'antd';
-import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined } from '@ant-design/icons';
+import { Button, Card, Spin, Alert, Typography, Divider, Space, Tag, List } from 'antd';
+import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined, CalendarOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
+
+/**
+ * ContentCalendarDisplay - Display 30-day content plan or sample teaser
+ */
+function ContentCalendarDisplay({ contentIdeas, sampleIdeas, loadingSampleIdeas, sampleIdeasError }) {
+  // If no content ideas, show teaser with sample ideas
+  if (!contentIdeas || contentIdeas.length === 0) {
+    return (
+      <div>
+        {/* Teaser header with gradient */}
+        <div style={{
+          textAlign: 'center',
+          padding: '16px 24px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          borderRadius: '8px 8px 0 0',
+          marginBottom: '16px'
+        }}>
+          <Text strong style={{ color: 'white', fontSize: '15px' }}>
+            Sample Content Ideas Preview
+          </Text>
+          <br />
+          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px' }}>
+            Subscribe to unlock 30 days of AI-generated ideas that evolve with trending topics
+          </Text>
+        </div>
+
+        {/* Loading state */}
+        {loadingSampleIdeas && (
+          <div style={{ textAlign: 'center', padding: '32px' }}>
+            <Spin indicator={<LoadingOutlined spin />} />
+            <div style={{ marginTop: '12px', color: '#999' }}>
+              Generating sample ideas...
+            </div>
+          </div>
+        )}
+
+        {/* Error state (with fallback ideas if available) */}
+        {sampleIdeasError && !sampleIdeas && (
+          <Alert
+            type="warning"
+            message="Unable to generate sample ideas"
+            description="Subscribe to see full 30-day content calendar"
+            showIcon
+            style={{ margin: '16px 0' }}
+          />
+        )}
+
+        {/* Sample ideas list */}
+        {sampleIdeas && !loadingSampleIdeas && (
+          <List
+            size="small"
+            dataSource={sampleIdeas}
+            renderItem={(idea, idx) => (
+              <List.Item style={{ padding: '12px 16px', opacity: 0.8 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
+                  <Text strong style={{ minWidth: '70px', color: '#999' }}>
+                    Sample {idx + 1}:
+                  </Text>
+                  <Text style={{ flex: 1, lineHeight: '1.6', color: '#666' }}>
+                    {idea}
+                  </Text>
+                  <Tag color="orange" style={{ marginLeft: '8px' }}>PREVIEW</Tag>
+                </div>
+              </List.Item>
+            )}
+            style={{
+              backgroundColor: '#fafafa',
+              padding: '12px',
+              borderRadius: '4px',
+              border: '1px dashed #d9d9d9'
+            }}
+          />
+        )}
+
+        {/* Subscribe CTA */}
+        <div style={{
+          textAlign: 'center',
+          padding: '24px',
+          background: '#f0f2f5',
+          marginTop: '16px',
+          borderRadius: '0 0 8px 8px'
+        }}>
+          <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
+            Subscribe to unlock 30 days of AI-generated content ideas
+          </Text>
+          <Text type="secondary" style={{ fontSize: '13px', fontStyle: 'italic' }}>
+            Content strategies evolve daily based on trending topics from X, Google, and news sources
+          </Text>
+        </div>
+      </div>
+    );
+  }
+
+  // Show full content calendar (existing 30-day view - to be implemented if needed)
+  return (
+    <div style={{ textAlign: 'center', padding: '24px' }}>
+      <Text type="secondary" style={{ fontSize: '14px' }}>
+        30-day content calendar will be displayed here after subscription.
+      </Text>
+    </div>
+  );
+}
 
 /**
  * StrategyDetailsView - Embedded view showing LLM-generated strategy pitch
@@ -20,6 +123,11 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
   const [error, setError] = useState(null);
   const eventSourceRef = useRef(null);
 
+  // Sample content ideas state
+  const [sampleIdeas, setSampleIdeas] = useState(null);
+  const [loadingSampleIdeas, setLoadingSampleIdeas] = useState(false);
+  const [sampleIdeasError, setSampleIdeasError] = useState(null);
+
   useEffect(() => {
     if (visible && strategy) {
       fetchPitch();
@@ -34,6 +142,16 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, strategy?.id]);
+
+  // Fetch sample ideas when content ideas are empty
+  useEffect(() => {
+    if (visible && strategy &&
+        (!strategy.contentIdeas || strategy.contentIdeas.length === 0) &&
+        !sampleIdeas && !loadingSampleIdeas) {
+      fetchSampleContentIdeas();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, strategy?.id, strategy?.contentIdeas]);
 
   /**
    * Fetch pitch and pricing via SSE
@@ -114,6 +232,63 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
     }
   }
 
+  /**
+   * Fetch sample content ideas for teaser display
+   */
+  async function fetchSampleContentIdeas() {
+    setLoadingSampleIdeas(true);
+    setSampleIdeasError(null);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        setSampleIdeasError('Authentication required');
+        setLoadingSampleIdeas(false);
+        return;
+      }
+
+      console.log('💡 Fetching sample content ideas for strategy:', strategy.id);
+
+      const response = await fetch(
+        `/api/v1/strategies/${strategy.id}/sample-content-ideas`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to generate sample ideas: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success && data.sampleIdeas) {
+        console.log('✅ Sample ideas received:', data.sampleIdeas);
+        setSampleIdeas(data.sampleIdeas);
+      } else {
+        throw new Error('Invalid response from server');
+      }
+
+    } catch (err) {
+      console.error('Failed to fetch sample content ideas:', err);
+      setSampleIdeasError(err.message);
+
+      // Set fallback generic ideas
+      setSampleIdeas([
+        'Content idea tailored to your target audience',
+        'Strategic blog post based on your keywords',
+        'SEO-optimized article for your niche'
+      ]);
+    } finally {
+      setLoadingSampleIdeas(false);
+    }
+  }
+
   if (!visible || !strategy) return null;
 
   // Parse target segment
@@ -186,6 +361,24 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
             {loading && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
           </Paragraph>
         )}
+      </Card>
+
+      {/* 30-Day Content Calendar (with sample teaser) */}
+      <Card
+        title={
+          <Space>
+            <CalendarOutlined />
+            <span>30-Day Content Calendar</span>
+          </Space>
+        }
+        style={{ marginBottom: '24px' }}
+      >
+        <ContentCalendarDisplay
+          contentIdeas={strategy.contentIdeas}
+          sampleIdeas={sampleIdeas}
+          loadingSampleIdeas={loadingSampleIdeas}
+          sampleIdeasError={sampleIdeasError}
+        />
       </Card>
 
       {/* Strategy Details */}
