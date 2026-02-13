@@ -225,12 +225,21 @@ const AppContent = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [, setActiveTab] = useState('newpost');
 
+  // Determine if user is returning based on first login time
+  // If first_login_at is more than 5 minutes ago, they're a returning user
+  const ONBOARDING_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+  const isReturningUser = user && user.firstLoginAt &&
+    (Date.now() - new Date(user.firstLoginAt).getTime() > ONBOARDING_BUFFER_MS);
+
+  // Fallback: also check if they've completed workflow analysis (for existing sessions)
   const hasCompletedAnalysis =
     stepResults?.home?.analysisCompleted &&
     stepResults?.home?.websiteAnalysis?.businessName &&
     stepResults?.home?.websiteAnalysis?.targetAudience &&
     stepResults?.home?.websiteAnalysis?.contentFocus;
-  const isReturningUser = user && hasCompletedAnalysis;
+
+  // Final determination: returning user if either condition is true
+  const isTrulyReturningUser = isReturningUser || (user && hasCompletedAnalysis);
 
   // After registration from funnel: keep user in funnel so they stay in place and topic can start generating (don't switch to dashboard until funnel completes)
   const stayInFunnelAfterRegistration = isNewRegistration && typeof window !== 'undefined' && window.location.pathname !== '/dashboard';
@@ -326,7 +335,7 @@ const AppContent = () => {
   const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/settings/');
   const forceDashboard = isDashboardPath && user;
   const showFunnel =
-    pathname === '/onboarding' || (!forceDashboard && !isReturningUser) || stayInFunnelAfterRegistration;
+    pathname === '/onboarding' || (!forceDashboard && !isTrulyReturningUser) || stayInFunnelAfterRegistration;
   if (showFunnel) {
     return (
       <SystemHintProvider>
