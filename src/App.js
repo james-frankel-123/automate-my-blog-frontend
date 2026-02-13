@@ -242,6 +242,23 @@ const AppContent = () => {
   // Final determination: returning user if either condition is true
   const isTrulyReturningUser = isReturningUser || (user && hasCompletedAnalysis);
 
+  // Debug logging
+  React.useEffect(() => {
+    if (user) {
+      console.log('🔍 [App.js] Returning user check:', {
+        hasUser: !!user,
+        createdAt: user.createdAt,
+        accountAge: user.createdAt ? Date.now() - new Date(user.createdAt).getTime() : 'N/A',
+        bufferMs: ONBOARDING_BUFFER_MS,
+        isReturningUser,
+        hasCompletedAnalysis,
+        isTrulyReturningUser,
+        isNewRegistration,
+        pathname: window.location.pathname
+      });
+    }
+  }, [user, isReturningUser, hasCompletedAnalysis, isTrulyReturningUser, isNewRegistration]);
+
   // After registration from funnel: keep user in funnel so they stay in place and topic can start generating (don't switch to dashboard until funnel completes)
   const stayInFunnelAfterRegistration = isNewRegistration && typeof window !== 'undefined' && window.location.pathname !== '/dashboard';
 
