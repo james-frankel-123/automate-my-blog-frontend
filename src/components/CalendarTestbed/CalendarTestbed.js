@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Card,
   Spin,
@@ -10,15 +10,18 @@ import {
   Space,
   Button,
   Input,
-  Segmented
+  Segmented,
+  Select
 } from 'antd';
 import {
   CalendarOutlined,
   LoadingOutlined,
   ReloadOutlined,
-  HomeOutlined
+  HomeOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import ContentCalendarSection from '../Dashboard/ContentCalendarSection';
+import autoBlogAPI from '../../services/api';
 
 const { Text } = Typography;
 
@@ -47,14 +50,59 @@ const MODES = [
  * - Live: enter audience ID and render ContentCalendarSection (real API).
  * - Mock modes: render the same UIs as ContentCalendarSection (generating, ready, error, empty, timeout).
  */
+function getAudienceLabel(aud) {
+  const seg = aud.target_segment;
+  const demographics =
+    (typeof seg === 'object' && seg?.demographics) ||
+    (typeof seg === 'string' && seg) ||
+    aud.customer_problem ||
+    aud.id;
+  return typeof demographics === 'string'
+    ? demographics
+    : (demographics?.demographics || aud.customer_problem || aud.id);
+}
+
 export default function CalendarTestbed() {
   const [mode, setMode] = useState('ready');
   const [liveId, setLiveId] = useState('');
   const [liveName, setLiveName] = useState('');
   const [loadLive, setLoadLive] = useState(false);
+  const [audiences, setAudiences] = useState([]);
+  const [audiencesLoading, setAudiencesLoading] = useState(false);
+  const [audiencesError, setAudiencesError] = useState(null);
+
+  const fetchAudiences = () => {
+    setAudiencesError(null);
+    setAudiencesLoading(true);
+    autoBlogAPI
+      .getUserAudiences()
+      .then((res) => {
+        setAudiences(res?.audiences || []);
+      })
+      .catch((err) => {
+        setAudiencesError(err?.message || 'Failed to load audiences');
+        setAudiences([]);
+      })
+      .finally(() => setAudiencesLoading(false));
+  };
+
+  useEffect(() => {
+    if (mode === 'live') fetchAudiences();
+  }, [mode]);
 
   const handleLoadLive = () => {
     setLoadLive(!!liveId.trim());
+  };
+
+  const handleSelectAudience = (id) => {
+    if (!id) {
+      setLiveId('');
+      setLiveName('');
+      return;
+    }
+    const aud = audiences.find((a) => a.id === id);
+    setLiveId(id);
+    setLiveName(aud ? getAudienceLabel(aud) : '');
   };
 
   return (
@@ -82,32 +130,67 @@ export default function CalendarTestbed() {
           block
         />
         {mode === 'live' && (
-          <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Input
-              placeholder="Audience / strategy ID (UUID)"
-              value={liveId}
-              onChange={(e) => setLiveId(e.target.value)}
-              style={{ width: 280 }}
-            />
-            <Input
-              placeholder="Strategy name (optional)"
-              value={liveName}
-              onChange={(e) => setLiveName(e.target.value)}
-              style={{ width: 200 }}
-            />
-            <Button type="primary" onClick={handleLoadLive}>
-              Load live
-            </Button>
-            {loadLive && (
-              <Button
-                onClick={() => {
-                  setLoadLive(false);
-                  setLiveId('');
-                }}
-              >
-                Clear
+          <div style={{ marginTop: 16 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
+              <TeamOutlined style={{ color: '#666' }} />
+              <Select
+                placeholder="Choose an audience (from your account)"
+                value={liveId || undefined}
+                onChange={handleSelectAudience}
+                onDropdownVisibleChange={(open) => open && !audiences.length && !audiencesLoading && fetchAudiences()}
+                loading={audiencesLoading}
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                style={{ minWidth: 320 }}
+                options={audiences.map((a) => ({
+                  value: a.id,
+                  label: getAudienceLabel(a) + (a.has_content_calendar ? ' · Calendar ready' : '')
+                }))}
+              />
+              <Button type="primary" onClick={handleLoadLive} disabled={!liveId.trim()}>
+                Load calendar
               </Button>
+              {loadLive && (
+                <Button
+                  onClick={() => {
+                    setLoadLive(false);
+                    setLiveId('');
+                    setLiveName('');
+                  }}
+                >
+                  Clear
+                </Button>
+              )}
+            </div>
+            {audiencesError && (
+              <Alert
+                message={audiencesError}
+                type="warning"
+                showIcon
+                style={{ marginBottom: 8 }}
+                action={
+                  <Button size="small" onClick={fetchAudiences}>
+                    Retry
+                  </Button>
+                }
+              />
             )}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>Or paste ID:</Text>
+              <Input
+                placeholder="Audience UUID (manual)"
+                value={liveId}
+                onChange={(e) => setLiveId(e.target.value)}
+                style={{ width: 280 }}
+              />
+              <Input
+                placeholder="Display name (optional)"
+                value={liveName}
+                onChange={(e) => setLiveName(e.target.value)}
+                style={{ width: 180 }}
+              />
+            </div>
           </div>
         )}
       </Card>
