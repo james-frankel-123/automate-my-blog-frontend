@@ -104,10 +104,14 @@ export default function ReturningUserDashboard() {
       // Fetch subscribed strategies
       const subscribedResponse = await autoBlogAPI.getSubscribedStrategies();
 
+      console.log('📊 Raw subscribed response:', subscribedResponse);
+
       // Handle response (could be array or object with subscriptions property)
       const subscriptionsList = Array.isArray(subscribedResponse)
         ? subscribedResponse
         : (subscribedResponse?.subscriptions || []);
+
+      console.log('📊 Subscriptions list:', subscriptionsList);
 
       // Map subscribed strategies by ID for quick lookup
       const subscribedMap = {};
