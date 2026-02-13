@@ -93,7 +93,7 @@ export default function ContentStrategyCard({
           </div>
         </div>
 
-        {isSubscribed && (
+        {isSubscribed ? (
           <Badge
             count="Active"
             style={{
@@ -107,6 +107,8 @@ export default function ContentStrategyCard({
               borderRadius: '10px'
             }}
           />
+        ) : (
+          <LockFilled style={{ fontSize: '20px', color: '#999' }} />
         )}
       </div>
 
