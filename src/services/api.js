@@ -2875,6 +2875,25 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Get unified content calendar (all subscribed strategies).
+   * Requires JWT. Returns strategies with contentIdeas (up to 30 per strategy).
+   * @param {{ startDate?: string, endDate?: string }} options - Optional date filter (reserved for future use)
+   */
+  async getContentCalendar(options = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (options.startDate) params.append('startDate', options.startDate);
+      if (options.endDate) params.append('endDate', options.endDate);
+      const queryString = params.toString();
+      const url = `/api/v1/strategies/content-calendar${queryString ? '?' + queryString : ''}`;
+      const response = await this.makeRequest(url);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get content calendar: ${error.message}`);
+    }
+  }
+
+  /**
    * Update audience strategy
    */
   async updateAudience(audienceId, updates) {

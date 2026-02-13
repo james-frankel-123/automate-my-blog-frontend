@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Badge, Tag } from 'antd';
-import { CheckCircleFilled, LockFilled, FileTextOutlined, CheckOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, LockFilled, FileTextOutlined, CheckOutlined, ClockCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 
 /**
  * ContentStrategyCard - Individual strategy card in the carousel
@@ -19,6 +19,7 @@ export default function ContentStrategyCard({
   isSubscribed = false,
   isSelected = false,
   performanceMetrics = null,
+  hasContentCalendar = false,
   onClick
 }) {
   // Parse target segment
@@ -99,12 +100,17 @@ export default function ContentStrategyCard({
         )}
       </div>
 
-      {/* Status badge */}
-      <div style={{ marginBottom: '12px' }}>
+      {/* Status badge + calendar indicator */}
+      <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {isSubscribed ? (
           <Badge status="success" text="Active Strategy" />
         ) : (
           <Badge status="warning" text="Not Subscribed" />
+        )}
+        {isSubscribed && hasContentCalendar && (
+          <Tag color="green" style={{ margin: 0 }}>
+            <CalendarOutlined /> Calendar ready
+          </Tag>
         )}
       </div>
 

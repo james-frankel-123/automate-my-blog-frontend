@@ -149,6 +149,7 @@ export default function StrategyCarousel({
             isSubscribed={!!subscribedStrategies[strategy.id]}
             isSelected={selectedStrategyId === strategy.id}
             performanceMetrics={subscribedStrategies[strategy.id]?.performanceMetrics}
+            hasContentCalendar={strategy.hasContentCalendar}
             onClick={() => onStrategyClick(strategy)}
           />
         ))}

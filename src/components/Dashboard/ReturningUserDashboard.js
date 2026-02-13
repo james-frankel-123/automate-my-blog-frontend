@@ -3,6 +3,7 @@ import { message } from 'antd';
 import StrategyCarousel from './StrategyCarousel';
 import StrategyDetailsView from './StrategyDetailsView';
 import PostsTab from './PostsTab';
+import ContentCalendarSection from './ContentCalendarSection';
 import autoBlogAPI from '../../services/api';
 
 /**
@@ -222,14 +223,23 @@ export default function ReturningUserDashboard() {
         backgroundColor: '#ffffff'
       }}>
         {viewMode === 'posts' ? (
-          <PostsTab
-            posts={posts}
-            filteredByStrategyId={selectedStrategyId}
-            onClearFilter={handleClearFilter}
-            getStrategyName={getStrategyName}
-            // Note: PostsTab expects other props as well (user, etc.)
-            // These will be passed through from DashboardLayout
-          />
+          <>
+            {selectedStrategyId && (
+              <ContentCalendarSection
+                strategyId={selectedStrategyId}
+                strategyName={getStrategyName(selectedStrategyId)}
+                onRefresh={loadStrategies}
+              />
+            )}
+            <PostsTab
+              posts={posts}
+              filteredByStrategyId={selectedStrategyId}
+              onClearFilter={handleClearFilter}
+              getStrategyName={getStrategyName}
+              // Note: PostsTab expects other props as well (user, etc.)
+              // These will be passed through from DashboardLayout
+            />
+          </>
         ) : (
           <StrategyDetailsView
             strategy={selectedStrategyForDetails}
@@ -281,6 +291,8 @@ function transformAudienceToStrategy(audience, index) {
       priority: index + 1
     },
     contentIdeas: audience.content_ideas || [],
+    hasContentCalendar: audience.has_content_calendar === true,
+    contentCalendarGeneratedAt: audience.content_calendar_generated_at || null,
     seoKeywords: audience.seo_keywords || [],
     // Additional fields for pricing/metrics
     pricingMonthly: audience.pricing_monthly,
