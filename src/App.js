@@ -12,6 +12,7 @@ import AdminLinkBar from './components/AdminLinkBar/AdminLinkBar';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
+import CalendarTestbed from './components/CalendarTestbed/CalendarTestbed';
 import { OnboardingFunnelView } from './components/Onboarding';
 import SEOHead from './components/SEOHead';
 import { useWorkflowMode } from './contexts/WorkflowModeContext';
@@ -342,6 +343,16 @@ const AppContent = () => {
       <SystemHintProvider>
         <SEOHead />
         <ComponentLibrary />
+      </SystemHintProvider>
+    );
+  }
+
+  // Calendar testbed — dev/QA for 30-day content calendar states (live API + mock UIs)
+  if (typeof window !== 'undefined' && window.location.pathname === '/calendar-testbed') {
+    return (
+      <SystemHintProvider>
+        <SEOHead />
+        <CalendarTestbed />
       </SystemHintProvider>
     );
   }
