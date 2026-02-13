@@ -94,7 +94,19 @@ export default function ContentStrategyCard({
         </div>
 
         {isSubscribed ? (
-          <CheckCircleFilled style={{ fontSize: '20px', color: '#52c41a' }} />
+          <Badge
+            count="Active"
+            style={{
+              backgroundColor: '#52c41a',
+              color: '#fff',
+              fontSize: '11px',
+              fontWeight: '600',
+              padding: '0 8px',
+              height: '20px',
+              lineHeight: '20px',
+              borderRadius: '10px'
+            }}
+          />
         ) : (
           <LockFilled style={{ fontSize: '20px', color: '#999' }} />
         )}
@@ -102,10 +114,8 @@ export default function ContentStrategyCard({
 
       {/* Status badge + calendar indicator */}
       <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        {isSubscribed ? (
+        {isSubscribed && (
           <Badge status="success" text="Active Strategy" />
-        ) : (
-          <Badge status="warning" text="Not Subscribed" />
         )}
         {isSubscribed && hasContentCalendar && (
           <Tag color="green" style={{ margin: 0 }}>
@@ -145,20 +155,11 @@ export default function ContentStrategyCard({
           </div>
         ) : (
           <div style={{
-            textAlign: 'center',
-            padding: '8px 0'
+            fontSize: '13px',
+            color: '#999',
+            fontStyle: 'italic'
           }}>
-            <Tag
-              color="blue"
-              style={{
-                cursor: 'pointer',
-                padding: '4px 12px',
-                fontSize: '13px',
-                border: 'none'
-              }}
-            >
-              View Strategy Details →
-            </Tag>
+            Click to view strategy details
           </div>
         )}
       </div>

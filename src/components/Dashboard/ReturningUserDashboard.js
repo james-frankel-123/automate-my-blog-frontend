@@ -31,6 +31,43 @@ export default function ReturningUserDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Reload strategies when user returns from Stripe checkout
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
+    const success = urlParams.get('success');
+
+    if (sessionId || success) {
+      console.log('🔄 Detected return from checkout, reloading strategies...');
+
+      // Wait a moment for webhooks to process, then reload
+      setTimeout(() => {
+        loadStrategies();
+      }, 2000);
+
+      // Clean up URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Reload strategies when user returns to the tab (visibility change)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 Tab became visible, reloading strategies...');
+        loadStrategies();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /**
    * Load all dashboard data on mount
    */
@@ -67,15 +104,20 @@ export default function ReturningUserDashboard() {
       // Fetch subscribed strategies
       const subscribedResponse = await autoBlogAPI.getSubscribedStrategies();
 
+      console.log('📊 Raw subscribed response:', subscribedResponse);
+
       // Handle response (could be array or object with subscriptions property)
       const subscriptionsList = Array.isArray(subscribedResponse)
         ? subscribedResponse
         : (subscribedResponse?.subscriptions || []);
 
+      console.log('📊 Subscriptions list:', subscriptionsList);
+
       // Map subscribed strategies by ID for quick lookup
       const subscribedMap = {};
       subscriptionsList.forEach(sub => {
-        subscribedMap[sub.strategy_id] = {
+        const strategyId = sub.strategy_id || sub.strategyId;
+        subscribedMap[strategyId] = {
           ...sub,
           performanceMetrics: {
             drafts: sub.drafts_count || 0,
@@ -91,6 +133,10 @@ export default function ReturningUserDashboard() {
         total: transformedStrategies.length,
         subscribed: Object.keys(subscribedMap).length
       });
+
+      console.log('📊 Strategy IDs from audiences:', transformedStrategies.map(s => s.id));
+      console.log('📊 Subscribed strategy IDs:', Object.keys(subscribedMap));
+      console.log('📊 Subscribed map:', subscribedMap);
 
     } catch (error) {
       console.error('Failed to load strategies:', error);

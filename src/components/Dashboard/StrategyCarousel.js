@@ -73,6 +73,16 @@ export default function StrategyCarousel({
     );
   }
 
+  // Sort strategies: subscribed first, then unsubscribed
+  const sortedStrategies = [...strategies].sort((a, b) => {
+    const aIsSubscribed = !!subscribedStrategies[a.id];
+    const bIsSubscribed = !!subscribedStrategies[b.id];
+
+    if (aIsSubscribed && !bIsSubscribed) return -1;
+    if (!aIsSubscribed && bIsSubscribed) return 1;
+    return 0;
+  });
+
   return (
     <div style={{
       position: 'relative',
@@ -142,7 +152,7 @@ export default function StrategyCarousel({
           document.head.appendChild(style);
         }}
       >
-        {strategies.map((strategy) => (
+        {sortedStrategies.map((strategy) => (
           <ContentStrategyCard
             key={strategy.id}
             strategy={strategy}
