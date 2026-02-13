@@ -1,126 +1,222 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Card, Spin, Alert, Typography, Divider, Space, Tag, List } from 'antd';
-import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Button, Card, Spin, Alert, Typography, Space, Tag, message } from 'antd';
+import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 
 const { Title, Paragraph, Text } = Typography;
 
 /**
- * ContentCalendarDisplay - Display 30-day content plan or sample teaser
+ * ContentCalendarTimeline - Timeline visual for 30-day content plan
  */
-function ContentCalendarDisplay({ contentIdeas, sampleIdeas, loadingSampleIdeas, sampleIdeasError }) {
-  // If no content ideas, show teaser with sample ideas
+function ContentCalendarTimeline({ contentIdeas, sampleIdeas, loadingSampleIdeas, sampleIdeasError }) {
+  // If no content ideas, show timeline teaser with sample ideas
   if (!contentIdeas || contentIdeas.length === 0) {
     return (
-      <div>
-        {/* Teaser header with gradient */}
+      <div style={{
+        background: '#ffffff',
+        borderRadius: '12px',
+        border: '1px solid #e8e8e8',
+        overflow: 'hidden'
+      }}>
+        {/* Timeline header */}
         <div style={{
-          textAlign: 'center',
-          padding: '16px 24px',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '16px 20px',
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          borderRadius: '8px 8px 0 0',
-          marginBottom: '16px'
+          color: 'white'
         }}>
-          <Text strong style={{ color: 'white', fontSize: '15px' }}>
-            Sample Content Ideas Preview
-          </Text>
-          <br />
-          <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px' }}>
-            Subscribe to unlock 30 days of AI-generated ideas that evolve with trending topics
-          </Text>
+          <CalendarOutlined style={{ fontSize: '22px', marginRight: '12px' }} />
+          <div style={{ flex: 1 }}>
+            <Text strong style={{ color: 'white', fontSize: '16px', display: 'block', lineHeight: '1.3' }}>
+              30-Day Content Calendar
+            </Text>
+            <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px' }}>
+              Preview • Subscribe to unlock full calendar
+            </Text>
+          </div>
         </div>
 
         {/* Loading state */}
         {loadingSampleIdeas && (
-          <div style={{ textAlign: 'center', padding: '32px' }}>
+          <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <Spin indicator={<LoadingOutlined spin />} />
-            <div style={{ marginTop: '12px', color: '#999' }}>
-              Generating sample ideas...
+            <div style={{ marginTop: '12px', color: '#999', fontSize: '14px' }}>
+              Generating preview...
             </div>
           </div>
         )}
 
-        {/* Error state (with fallback ideas if available) */}
+        {/* Error state */}
         {sampleIdeasError && !sampleIdeas && (
           <Alert
             type="warning"
-            message="Unable to generate sample ideas"
-            description="Subscribe to see full 30-day content calendar"
+            message="Unable to generate preview"
+            description="Subscribe to see full content calendar"
             showIcon
-            style={{ margin: '16px 0' }}
+            style={{ margin: '20px' }}
           />
         )}
 
-        {/* Sample ideas list */}
+        {/* Timeline visualization */}
         {sampleIdeas && !loadingSampleIdeas && (
-          <List
-            size="small"
-            dataSource={sampleIdeas}
-            renderItem={(idea, idx) => (
-              <List.Item style={{ padding: '12px 16px', opacity: 0.8 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-                  <Text strong style={{ minWidth: '70px', color: '#999' }}>
-                    Sample {idx + 1}:
-                  </Text>
-                  <Text style={{ flex: 1, lineHeight: '1.6', color: '#666' }}>
-                    {idea}
-                  </Text>
-                  <Tag color="orange" style={{ marginLeft: '8px' }}>PREVIEW</Tag>
+          <div style={{ padding: '24px 20px' }}>
+            {sampleIdeas.map((idea, idx) => (
+              <div key={idx} style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                marginBottom: idx < sampleIdeas.length - 1 ? '24px' : '0'
+              }}>
+                {/* Timeline marker */}
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  marginRight: '16px',
+                  minWidth: '50px'
+                }}>
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'white',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+                  }}>
+                    D{idx + 1}
+                  </div>
+                  {idx < sampleIdeas.length - 1 && (
+                    <div style={{
+                      width: '2px',
+                      height: '100%',
+                      minHeight: '50px',
+                      background: 'linear-gradient(180deg, #667eea 0%, rgba(102, 126, 234, 0.2) 100%)',
+                      marginTop: '6px'
+                    }} />
+                  )}
                 </div>
-              </List.Item>
-            )}
-            style={{
-              backgroundColor: '#fafafa',
-              padding: '12px',
-              borderRadius: '4px',
-              border: '1px dashed #d9d9d9'
-            }}
-          />
-        )}
 
-        {/* Subscribe CTA */}
-        <div style={{
-          textAlign: 'center',
-          padding: '24px',
-          background: '#f0f2f5',
-          marginTop: '16px',
-          borderRadius: '0 0 8px 8px'
-        }}>
-          <Text type="secondary" style={{ fontSize: '14px', display: 'block', marginBottom: '8px' }}>
-            Subscribe to unlock 30 days of AI-generated content ideas
-          </Text>
-          <Text type="secondary" style={{ fontSize: '13px', fontStyle: 'italic' }}>
-            Content strategies evolve daily based on trending topics from X, Google, and news sources
-          </Text>
-        </div>
+                {/* Content card */}
+                <div style={{
+                  flex: 1,
+                  background: '#fafbfc',
+                  padding: '14px 16px',
+                  borderRadius: '10px',
+                  border: '1px solid #e8e8e8',
+                  position: 'relative',
+                  transition: 'all 0.2s ease',
+                  cursor: 'default'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                    <ClockCircleOutlined style={{ color: '#8c8c8c', marginTop: '4px', fontSize: '15px' }} />
+                    <div style={{ flex: 1 }}>
+                      <Text style={{ fontSize: '14px', lineHeight: '1.7', color: '#434343', display: 'block' }}>
+                        {idea}
+                      </Text>
+                    </div>
+                    <Tag color="orange" style={{ fontSize: '11px', margin: 0 }}>PREVIEW</Tag>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Dots indicator for more items */}
+            <div style={{
+              textAlign: 'center',
+              marginTop: '28px',
+              padding: '20px',
+              background: 'linear-gradient(135deg, #f0f2f5 0%, #fafbfc 100%)',
+              borderRadius: '10px',
+              border: '1px dashed #d9d9d9'
+            }}>
+              <div style={{ marginBottom: '8px' }}>
+                <span style={{ fontSize: '20px', color: '#667eea', letterSpacing: '4px' }}>
+                  • • •
+                </span>
+              </div>
+              <Text strong style={{ fontSize: '14px', color: '#434343', display: 'block', marginBottom: '4px' }}>
+                + 27 more content ideas
+              </Text>
+              <Text type="secondary" style={{ fontSize: '13px' }}>
+                Unlock with subscription
+              </Text>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  // Show full content calendar (existing 30-day view - to be implemented if needed)
+  // Show full content calendar
   return (
-    <div style={{ textAlign: 'center', padding: '24px' }}>
+    <div style={{ padding: '20px', textAlign: 'center' }}>
+      <CheckCircleOutlined style={{ fontSize: '48px', color: '#52c41a', marginBottom: '16px' }} />
+      <Text strong style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
+        Full 30-Day Calendar Active
+      </Text>
       <Text type="secondary" style={{ fontSize: '14px' }}>
-        30-day content calendar will be displayed here after subscription.
+        Your complete content calendar is now available
       </Text>
     </div>
   );
 }
 
 /**
+ * Parse pricing text into bullet points
+ */
+function parsePricingBullets(pricingText) {
+  if (!pricingText) return [];
+
+  // Try to extract key metrics from pricing text
+  const bullets = [];
+
+  // Extract cost per lead
+  const costPerLeadMatch = pricingText.match(/cost per lead[:\s]+\$?([^\s,]+)/i);
+  if (costPerLeadMatch) {
+    bullets.push(`Cost per lead: $${costPerLeadMatch[1]}`);
+  }
+
+  // Extract ROI
+  const roiMatch = pricingText.match(/(\d+)x[- ]?(\d+)?x?\s+ROI/i);
+  if (roiMatch) {
+    bullets.push(`ROI: ${roiMatch[1]}x-${roiMatch[2] || roiMatch[1]}x return`);
+  }
+
+  // Extract payback time
+  const paybackMatch = pricingText.match(/pays for itself in[:\s~]+(\d+)\s+weeks?/i);
+  if (paybackMatch) {
+    bullets.push(`Payback time: ~${paybackMatch[1]} weeks`);
+  }
+
+  // Extract profit range
+  const profitMatch = pricingText.match(/\$([0-9,]+)[-–]\$([0-9,]+)\s+(?:per\s+)?month(?:ly)?(?:\s+profit)?/i);
+  if (profitMatch) {
+    bullets.push(`Projected profit: $${profitMatch[1]}-$${profitMatch[2]}/month`);
+  }
+
+  // If no bullets extracted, create generic summary
+  if (bullets.length === 0) {
+    bullets.push('Cost-effective content strategy');
+    bullets.push('High ROI potential');
+    bullets.push('Competitive market positioning');
+  }
+
+  return bullets;
+}
+
+/**
  * StrategyDetailsView - Embedded view showing LLM-generated strategy pitch
- *
- * Features:
- * - SSE streaming of pitch and pricing rationale
- * - Real-time text streaming display
- * - "Subscribe Now" CTA to Stripe checkout
- * - "Back to Posts" navigation
  */
 export default function StrategyDetailsView({ strategy, visible, onBack, onSubscribe }) {
   const [pitchText, setPitchText] = useState('');
   const [pricingText, setPricingText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [subscribing, setSubscribing] = useState(false);
   const eventSourceRef = useRef(null);
 
   // Sample content ideas state
@@ -163,7 +259,6 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
     setError(null);
 
     try {
-      // Get auth token
       const token = localStorage.getItem('accessToken');
 
       if (!token) {
@@ -172,19 +267,12 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
         return;
       }
 
-      // Build SSE URL with auth token as query param (EventSource can't send headers)
-      // In development, explicitly use backend URL (EventSource doesn't use proxy)
-      // In production, use configured API URL or relative path
       const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
-      const baseURL = isDevelopment
-        ? 'http://localhost:3001'  // Direct backend URL in dev
-        : (process.env.REACT_APP_API_URL || '');  // Configured URL in prod
-
+      const baseURL = isDevelopment ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || '');
       const sseURL = `${baseURL}/api/v1/strategies/${strategy.id}/pitch?token=${encodeURIComponent(token)}`;
 
       console.log('🔗 Opening SSE connection for strategy pitch:', strategy.id);
 
-      // Create EventSource connection
       const eventSource = new EventSource(sseURL);
       eventSourceRef.current = eventSource;
 
@@ -289,6 +377,57 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
     }
   }
 
+  /**
+   * Handle subscription - redirect to Stripe checkout
+   */
+  async function handleSubscribe() {
+    setSubscribing(true);
+
+    try {
+      const token = localStorage.getItem('accessToken');
+
+      if (!token) {
+        message.error('Please log in to subscribe');
+        setSubscribing(false);
+        return;
+      }
+
+      console.log('🔐 Creating Stripe checkout session for strategy:', strategy.id);
+
+      // Call backend to create Stripe checkout session
+      const response = await fetch(`/api/v1/strategies/${strategy.id}/subscribe`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          billingInterval: 'monthly' // Default to monthly
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create checkout session');
+      }
+
+      const data = await response.json();
+
+      if (data.url) {
+        console.log('✅ Redirecting to Stripe checkout:', data.url);
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned from server');
+      }
+
+    } catch (err) {
+      console.error('❌ Subscription error:', err);
+      message.error(err.message || 'Failed to initiate subscription');
+      setSubscribing(false);
+    }
+  }
+
   if (!visible || !strategy) return null;
 
   // Parse target segment
@@ -300,9 +439,10 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
   }
 
   const monthlyPrice = strategy.pricingMonthly || 39.99;
+  const pricingBullets = parsePricingBullets(pricingText);
 
   return (
-    <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Back button */}
       <Button
         icon={<ArrowLeftOutlined />}
@@ -333,131 +473,120 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
         />
       )}
 
-      {/* Strategy Overview (LLM-generated pitch) */}
-      <Card
-        title={
-          <Space>
-            <RocketOutlined />
-            <span>Strategy Overview</span>
-          </Space>
-        }
-        style={{ marginBottom: '24px' }}
-      >
-        {loading && !pitchText ? (
-          <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <Spin size="large" indicator={<LoadingOutlined spin />} />
-            <div style={{ marginTop: '16px', color: '#999' }}>
-              Generating personalized strategy pitch...
+      {/* Flex layout: Strategy Overview + Content Calendar */}
+      <div style={{
+        display: 'flex',
+        gap: '24px',
+        marginBottom: '24px',
+        flexWrap: 'wrap'
+      }}>
+        {/* Strategy Overview - Left side (60%) */}
+        <Card
+          title={
+            <Space>
+              <RocketOutlined />
+              <span>Strategy Overview</span>
+            </Space>
+          }
+          style={{ flex: '1 1 500px', minWidth: 0 }}
+        >
+          {loading && !pitchText ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Spin size="large" indicator={<LoadingOutlined spin />} />
+              <div style={{ marginTop: '16px', color: '#999' }}>
+                Generating personalized strategy pitch...
+              </div>
             </div>
-          </div>
-        ) : (
-          <Paragraph style={{
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.8,
-            fontSize: '15px',
-            minHeight: '80px'
-          }}>
-            {pitchText || 'Generating strategy overview...'}
-            {loading && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
-          </Paragraph>
-        )}
-      </Card>
-
-      {/* 30-Day Content Calendar (with sample teaser) */}
-      <Card
-        title={
-          <Space>
-            <CalendarOutlined />
-            <span>30-Day Content Calendar</span>
-          </Space>
-        }
-        style={{ marginBottom: '24px' }}
-      >
-        <ContentCalendarDisplay
-          contentIdeas={strategy.contentIdeas}
-          sampleIdeas={sampleIdeas}
-          loadingSampleIdeas={loadingSampleIdeas}
-          sampleIdeasError={sampleIdeasError}
-        />
-      </Card>
-
-      {/* Strategy Details */}
-      <Card
-        title="Strategy Details"
-        style={{ marginBottom: '24px' }}
-      >
-        <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-          <div>
-            <Text strong>Target Audience:</Text>
-            <br />
-            <Text>{demographics}</Text>
-          </div>
-
-          {strategy.customerLanguage && strategy.customerLanguage.length > 0 && (
-            <div>
-              <Text strong>Keywords:</Text>
-              <br />
-              <Space wrap style={{ marginTop: '8px' }}>
-                {strategy.customerLanguage.slice(0, 8).map((keyword, idx) => (
-                  <Tag key={idx} color="geekblue">{keyword}</Tag>
-                ))}
-              </Space>
-            </div>
+          ) : (
+            <Paragraph style={{
+              whiteSpace: 'pre-wrap',
+              lineHeight: 1.8,
+              fontSize: '15px',
+              minHeight: '120px',
+              color: '#434343'
+            }}>
+              {pitchText || 'Generating strategy overview...'}
+              {loading && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
+            </Paragraph>
           )}
+        </Card>
 
-          <Divider style={{ margin: '12px 0' }} />
+        {/* Content Calendar - Right side (40%) */}
+        <div style={{ flex: '0 1 380px', minWidth: '320px' }}>
+          <ContentCalendarTimeline
+            contentIdeas={strategy.contentIdeas}
+            sampleIdeas={sampleIdeas}
+            loadingSampleIdeas={loadingSampleIdeas}
+            sampleIdeasError={sampleIdeasError}
+          />
+        </div>
+      </div>
 
-          <Space size="large">
-            <div>
-              <Text strong>Competition:</Text>
-              <br />
-              <Text>{strategy.competitionLevel || strategy.businessValue?.competition || 'Medium'}</Text>
-            </div>
-
-            <div>
-              <Text strong>Search Volume:</Text>
-              <br />
-              <Text>{strategy.searchVolume || strategy.businessValue?.searchVolume || 'Moderate'}</Text>
-            </div>
-          </Space>
-        </Space>
-      </Card>
-
-      {/* Pricing (LLM-generated rationale) */}
+      {/* Pricing (compact bullets) */}
       <Card
         title={
           <Space>
             <DollarOutlined />
-            <span>Pricing</span>
+            <span>Pricing & ROI</span>
           </Space>
         }
         style={{ marginBottom: '32px' }}
       >
-        <div style={{
-          fontSize: '36px',
-          fontWeight: 'bold',
-          color: '#1890ff',
-          marginBottom: '16px'
-        }}>
-          ${monthlyPrice.toFixed(2)}<span style={{ fontSize: '18px', color: '#999' }}>/month</span>
-        </div>
-
-        {loading && !pricingText ? (
-          <div style={{ color: '#999', fontStyle: 'italic' }}>
-            <LoadingOutlined spin /> Calculating pricing rationale...
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '32px', flexWrap: 'wrap' }}>
+          {/* Price */}
+          <div>
+            <div style={{
+              fontSize: '42px',
+              fontWeight: 'bold',
+              color: '#1890ff',
+              lineHeight: 1
+            }}>
+              ${monthlyPrice.toFixed(2)}
+            </div>
+            <Text type="secondary" style={{ fontSize: '14px' }}>/month</Text>
           </div>
-        ) : (
-          <Paragraph style={{
-            whiteSpace: 'pre-wrap',
-            lineHeight: 1.8,
-            fontSize: '14px',
-            color: '#666',
-            minHeight: '60px'
-          }}>
-            {pricingText || 'Generating pricing rationale...'}
-            {loading && <LoadingOutlined spin style={{ marginLeft: '8px', color: '#1890ff' }} />}
-          </Paragraph>
-        )}
+
+          {/* Bullets */}
+          <div style={{ flex: 1, minWidth: '300px' }}>
+            {loading && !pricingText ? (
+              <div style={{ color: '#999', fontStyle: 'italic' }}>
+                <LoadingOutlined spin /> Calculating ROI...
+              </div>
+            ) : (
+              <ul style={{
+                margin: 0,
+                padding: '0 0 0 20px',
+                listStyle: 'none'
+              }}>
+                {pricingBullets.map((bullet, idx) => (
+                  <li key={idx} style={{
+                    marginBottom: '10px',
+                    fontSize: '14px',
+                    lineHeight: '1.6',
+                    color: '#434343',
+                    position: 'relative'
+                  }}>
+                    <span style={{
+                      position: 'absolute',
+                      left: '-20px',
+                      color: '#52c41a',
+                      fontWeight: 'bold'
+                    }}>✓</span>
+                    {bullet}
+                  </li>
+                ))}
+                <li style={{
+                  marginTop: '12px',
+                  fontSize: '12px',
+                  color: '#8c8c8c',
+                  fontStyle: 'italic'
+                }}>
+                  * AI-estimated projections based on market research
+                </li>
+              </ul>
+            )}
+          </div>
+        </div>
       </Card>
 
       {/* Subscribe CTA */}
@@ -466,15 +595,22 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
           type="primary"
           size="large"
           icon={<RocketOutlined />}
-          onClick={() => onSubscribe(strategy.id)}
+          onClick={handleSubscribe}
+          loading={subscribing}
           style={{
-            height: '48px',
-            fontSize: '16px',
-            padding: '0 48px'
+            height: '52px',
+            fontSize: '17px',
+            padding: '0 56px',
+            fontWeight: 600
           }}
         >
-          Subscribe Now
+          {subscribing ? 'Creating Checkout...' : 'Subscribe Now'}
         </Button>
+        <div style={{ marginTop: '12px' }}>
+          <Text type="secondary" style={{ fontSize: '13px' }}>
+            Secure checkout powered by Stripe
+          </Text>
+        </div>
       </div>
     </div>
   );
