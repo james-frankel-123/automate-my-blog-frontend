@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Card, Spin, Alert, Typography, Space, Tag, message } from 'antd';
-import { ArrowLeftOutlined, RocketOutlined, DollarOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, RocketOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
 
-const { Title, Paragraph, Text } = Typography;
+const { Title, Text } = Typography;
 
 /**
  * Parse and render markdown-formatted pitch text
@@ -424,7 +424,7 @@ function parsePricingBullets(pricingText) {
 /**
  * StrategyDetailsView - Embedded view showing LLM-generated strategy pitch
  */
-export default function StrategyDetailsView({ strategy, visible, onBack, onSubscribe }) {
+export default function StrategyDetailsView({ strategy, visible, onBack, onSubscribe: _onSubscribe }) {
   const [pitchText, setPitchText] = useState('');
   const [pricingText, setPricingText] = useState('');
   const [loading, setLoading] = useState(true);
