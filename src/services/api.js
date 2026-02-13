@@ -2842,6 +2842,9 @@ Please provide analysis in this JSON format:
       if (options.offset) {
         params.append('offset', options.offset);
       }
+      if (options.testbed) {
+        params.append('testbed', '1');
+      }
 
       const queryString = params.toString();
       const url = `/api/v1/audiences${queryString ? '?' + queryString : ''}`;
@@ -2855,9 +2858,11 @@ Please provide analysis in this JSON format:
   }
 
   /**
-   * Get specific audience with topics and keywords
+   * Get specific audience with topics and keywords.
+   * @param {string} audienceId
+   * @param {{ testbed?: boolean }} options - When true, appends ?testbed=1 for fixture data on calendar testbed page
    */
-  async getAudience(audienceId) {
+  async getAudience(audienceId, options = {}) {
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = {};
@@ -2867,7 +2872,8 @@ Please provide analysis in this JSON format:
         headers['X-Session-ID'] = sessionId;
       }
 
-      const response = await this.makeRequest(`/api/v1/audiences/${audienceId}`, { headers });
+      const query = options.testbed ? '?testbed=1' : '';
+      const response = await this.makeRequest(`/api/v1/audiences/${audienceId}${query}`, { headers });
       return response;
     } catch (error) {
       throw new Error(`Failed to get audience: ${error.message}`);
@@ -2877,13 +2883,14 @@ Please provide analysis in this JSON format:
   /**
    * Get unified content calendar (all subscribed strategies).
    * Requires JWT. Returns strategies with contentIdeas (up to 30 per strategy).
-   * @param {{ startDate?: string, endDate?: string }} options - Optional date filter (reserved for future use)
+   * @param {{ startDate?: string, endDate?: string, testbed?: boolean }} options - testbed: add ?testbed=1 for fixture data on calendar testbed
    */
   async getContentCalendar(options = {}) {
     try {
       const params = new URLSearchParams();
       if (options.startDate) params.append('startDate', options.startDate);
       if (options.endDate) params.append('endDate', options.endDate);
+      if (options.testbed) params.append('testbed', '1');
       const queryString = params.toString();
       const url = `/api/v1/strategies/content-calendar${queryString ? '?' + queryString : ''}`;
       const response = await this.makeRequest(url);

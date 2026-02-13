@@ -27,8 +27,9 @@ function getContentCalendarGeneratedAt(audience) {
  * - Shows "generating" state with skeleton and polls until ready or timeout.
  * - Renders full 30-day list (day, title, format badge, keywords) when ready.
  * - Handles 401, 404, 500 and empty state.
+ * @param {{ testbed?: boolean }} - When true, requests include ?testbed=1 for backend fixture data on /calendar-testbed
  */
-export default function ContentCalendarSection({ strategyId, strategyName, onRefresh }) {
+export default function ContentCalendarSection({ strategyId, strategyName, onRefresh, testbed = false }) {
   const [audience, setAudience] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,7 +41,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
     if (!strategyId) return;
     try {
       setError(null);
-      const response = await autoBlogAPI.getAudience(strategyId);
+      const response = await autoBlogAPI.getAudience(strategyId, { testbed });
       if (response?.audience) {
         setAudience(response.audience);
         return response.audience;
@@ -62,7 +63,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
     } finally {
       setLoading(false);
     }
-  }, [strategyId]);
+  }, [strategyId, testbed]);
 
   useEffect(() => {
     if (!strategyId) {
@@ -113,7 +114,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [strategyId, fetchAudience, onRefresh]);
+  }, [strategyId, fetchAudience, onRefresh, testbed]);
 
   if (!strategyId) return null;
 
@@ -122,6 +123,17 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
   const isReady = ideas.length > 0;
   const isGenerating =
     !error && ideas.length === 0 && !generatedAt && (loading || !!audience);
+
+  /* Testbed debug: show what the API returned so we can see why results might not appear */
+  const debugLine = testbed && (audience || error) && (
+    <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
+      {error
+        ? `API error: ${error}`
+        : audience
+          ? `API returned: content_ideas=${ideas.length}, content_calendar_generated_at=${generatedAt ? 'set' : 'null'}`
+          : null}
+    </div>
+  );
 
   if (error) {
     return (
@@ -134,6 +146,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         }
         style={{ marginBottom: 24 }}
       >
+        {debugLine}
         <Alert
           message={error}
           type="error"
@@ -164,6 +177,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         }
         style={{ marginBottom: 24 }}
       >
+        {debugLine}
         <div style={{ textAlign: 'center', padding: '24px 0' }}>
           <Spin size="large" indicator={<LoadingOutlined spin />} />
           <div style={{ marginTop: 16, color: '#666' }}>
@@ -194,6 +208,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         }
         style={{ marginBottom: 24 }}
       >
+        {debugLine}
         <Alert
           message="No calendar yet"
           description="Your calendar may still be generating or something went wrong. Refresh the page or contact support."
@@ -209,6 +224,8 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
   );
 
   return (
+    <>
+      {debugLine}
     <Card
       title={
         <Space>
@@ -277,5 +294,6 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         }}
       />
     </Card>
+    </>
   );
 }

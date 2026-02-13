@@ -75,7 +75,7 @@ export default function CalendarTestbed() {
     setAudiencesError(null);
     setAudiencesLoading(true);
     autoBlogAPI
-      .getUserAudiences()
+      .getUserAudiences({ testbed: true })
       .then((res) => {
         setAudiences(res?.audiences || []);
       })
@@ -200,6 +200,7 @@ export default function CalendarTestbed() {
         <ContentCalendarSection
           strategyId={liveId.trim()}
           strategyName={liveName.trim() || undefined}
+          testbed
         />
       )}
 
