@@ -17,7 +17,7 @@ const stripePromise = loadStripe(process.env.REACT_APP_STRIPE_PUBLIC_KEY);
  * @param {Function} props.onComplete - Optional callback when checkout completes
  * @param {Function} props.onError - Optional callback when an error occurs
  */
-export const EmbeddedCheckoutComponent = ({ clientSecret, onComplete, onError }) => {
+export const EmbeddedCheckoutComponent = ({ clientSecret, _onComplete, onError }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
