@@ -2685,6 +2685,21 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Get Stripe Checkout Session Status
+   * Used to verify payment completion after embedded checkout
+   */
+  async getSessionStatus(sessionId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/stripe/session-status?session_id=${sessionId}`, {
+        method: 'GET'
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get session status: ${error.message}`);
+    }
+  }
+
+  /**
    * Website Lead Management (Super Admin Only)
    */
   async getLeads(options = {}) {

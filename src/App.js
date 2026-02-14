@@ -18,6 +18,7 @@ import SEOHead from './components/SEOHead';
 import { useWorkflowMode } from './contexts/WorkflowModeContext';
 import { storeReferralInfo } from './utils/referralUtils';
 import { notifyTabReady } from './utils/tabReadyAlert';
+import { PaymentCompletionHandler } from './components/Checkout/PaymentCompletionHandler';
 import './styles/design-system.css';
 import './styles/mobile.css';
 
@@ -403,6 +404,7 @@ const App = () => {
             <AdminLinkBar />
             <WorkflowModeProvider>
               <AnalyticsProvider>
+                <PaymentCompletionHandler />
                 <AppContent />
               </AnalyticsProvider>
             </WorkflowModeProvider>
