@@ -152,17 +152,31 @@ export default function StrategyCarousel({
           document.head.appendChild(style);
         }}
       >
-        {sortedStrategies.map((strategy) => (
-          <ContentStrategyCard
-            key={strategy.id}
-            strategy={strategy}
-            isSubscribed={!!subscribedStrategies[strategy.id]}
-            isSelected={selectedStrategyId === strategy.id}
-            performanceMetrics={subscribedStrategies[strategy.id]?.performanceMetrics}
-            hasContentCalendar={strategy.hasContentCalendar}
-            onClick={() => onStrategyClick(strategy)}
-          />
-        ))}
+        {sortedStrategies.map((strategy) => {
+          const isSubscribed = !!subscribedStrategies[strategy.id];
+
+          // Debug first 3 strategies
+          if (sortedStrategies.indexOf(strategy) < 3) {
+            console.log(`📊 Card ${sortedStrategies.indexOf(strategy)}:`, {
+              strategyId: strategy.id,
+              isSubscribed,
+              hasInMap: strategy.id in subscribedStrategies,
+              subscribedKeys: Object.keys(subscribedStrategies)
+            });
+          }
+
+          return (
+            <ContentStrategyCard
+              key={strategy.id}
+              strategy={strategy}
+              isSubscribed={isSubscribed}
+              isSelected={selectedStrategyId === strategy.id}
+              performanceMetrics={subscribedStrategies[strategy.id]?.performanceMetrics}
+              hasContentCalendar={strategy.hasContentCalendar}
+              onClick={() => onStrategyClick(strategy)}
+            />
+          );
+        })}
       </div>
 
       {/* Right scroll button */}
