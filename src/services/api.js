@@ -2860,7 +2860,7 @@ Please provide analysis in this JSON format:
   /**
    * Get specific audience with topics and keywords.
    * @param {string} audienceId
-   * @param {{ testbed?: boolean }} options - When true, appends ?testbed=1 for fixture data on calendar testbed page
+   * @param {{ testbed?: boolean }} options - When true, append ?testbed=1 (calendar testbed page)
    */
   async getAudience(audienceId, options = {}) {
     try {
@@ -2883,7 +2883,7 @@ Please provide analysis in this JSON format:
   /**
    * Get unified content calendar (all subscribed strategies).
    * Requires JWT. Returns strategies with contentIdeas (up to 30 per strategy).
-   * @param {{ startDate?: string, endDate?: string, testbed?: boolean }} options - testbed: add ?testbed=1 for fixture data on calendar testbed
+   * @param {{ startDate?: string, endDate?: string, testbed?: boolean }} options - testbed: append ?testbed=1 for calendar testbed
    */
   async getContentCalendar(options = {}) {
     try {

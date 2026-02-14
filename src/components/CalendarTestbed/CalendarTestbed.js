@@ -191,6 +191,15 @@ export default function CalendarTestbed() {
                 style={{ width: 180 }}
               />
             </div>
+            {!audiencesLoading && audiences.length === 0 && !audiencesError && (
+              <Alert
+                message="Subscribe to a strategy to get your calendar."
+                description="No audiences yet. Complete website analysis or subscribe to a strategy to see your 30-day content calendar here."
+                type="info"
+                showIcon
+                style={{ marginTop: 16 }}
+              />
+            )}
           </div>
         )}
       </Card>
