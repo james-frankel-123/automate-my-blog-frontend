@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Card,
   Spin,
@@ -43,11 +43,27 @@ const MODES = [
   { value: 'timeout', label: 'Mock: Timeout' }
 ];
 
+/** Normalize strategy from content-calendar API (snake_case or camelCase). */
+function getStrategyId(s) {
+  return s?.strategyId ?? s?.strategy_id ?? s?.id ?? '';
+}
+function getStrategyContentIdeas(s) {
+  const raw = s?.contentIdeas ?? s?.content_ideas;
+  return Array.isArray(raw) ? raw : [];
+}
+function getStrategyLabel(s) {
+  if (!s) return '';
+  const seg = s.targetSegment ?? s.target_segment;
+  const demographics = typeof seg === 'object' ? seg?.demographics ?? seg?.psychographics : seg;
+  return s.customerProblem ?? s.customer_problem ?? (typeof demographics === 'string' ? demographics : '') ?? getStrategyId(s);
+}
+
 /**
  * Calendar testbed — dev/QA page for 30-day content calendar states.
  * Route: /calendar-testbed
  *
  * - Live: enter audience ID and render ContentCalendarSection (real API).
+ *   On load, looks up existing generated 30-day content via getContentCalendar; if found, auto-loads first strategy with content.
  * - Mock modes: render the same UIs as ContentCalendarSection (generating, ready, error, empty, timeout).
  */
 function getAudienceLabel(aud) {
@@ -70,6 +86,9 @@ export default function CalendarTestbed() {
   const [audiences, setAudiences] = useState([]);
   const [audiencesLoading, setAudiencesLoading] = useState(false);
   const [audiencesError, setAudiencesError] = useState(null);
+  const autoLoadedFromCalendarRef = useRef(false);
+  const liveIdRef = useRef('');
+  liveIdRef.current = liveId;
 
   const fetchAudiences = () => {
     setAudiencesError(null);
@@ -86,8 +105,29 @@ export default function CalendarTestbed() {
       .finally(() => setAudiencesLoading(false));
   };
 
+  // In Live mode: fetch audiences and look up existing 30-day content; auto-load first strategy with content if present
   useEffect(() => {
-    if (mode === 'live') fetchAudiences();
+    if (mode !== 'live') {
+      autoLoadedFromCalendarRef.current = false;
+      return;
+    }
+    fetchAudiences();
+
+    autoBlogAPI
+      .getContentCalendar({ testbed: true })
+      .then((res) => {
+        const list = res?.strategies ?? [];
+        const withContent = list.find((s) => getStrategyContentIdeas(s).length > 0);
+        if (!withContent || autoLoadedFromCalendarRef.current || liveIdRef.current.trim()) return;
+        const id = getStrategyId(withContent);
+        const name = getStrategyLabel(withContent);
+        if (!id) return;
+        autoLoadedFromCalendarRef.current = true;
+        setLiveId(id);
+        setLiveName(name || '');
+        setLoadLive(true);
+      })
+      .catch(() => {});
   }, [mode]);
 
   const handleLoadLive = () => {
