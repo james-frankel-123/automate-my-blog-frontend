@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button, Card, Spin, Alert, Typography, Space, Tag, message } from 'antd';
 import { ArrowLeftOutlined, RocketOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { PaymentModal } from '../Modals/PaymentModal';
 
 const { Title, Text } = Typography;
 
@@ -435,6 +436,10 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
   // Sample content ideas state
   const [sampleIdeas, setSampleIdeas] = useState(null);
   const [loadingSampleIdeas, setLoadingSampleIdeas] = useState(false);
+
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [checkoutClientSecret, setCheckoutClientSecret] = useState(null);
   const [sampleIdeasError, setSampleIdeasError] = useState(null);
 
   useEffect(() => {
@@ -638,12 +643,18 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
 
       const data = await response.json();
 
-      if (data.url) {
-        console.log('✅ Redirecting to Stripe checkout:', data.url);
-        // Redirect to Stripe checkout
+      if (data.clientSecret) {
+        console.log('✅ Opening embedded Stripe checkout');
+        // Embedded checkout mode: open modal
+        setCheckoutClientSecret(data.clientSecret);
+        setShowPaymentModal(true);
+        setSubscribing(false); // Reset subscribing state so button is clickable again after modal closes
+      } else if (data.url) {
+        console.log('✅ Redirecting to Stripe checkout (legacy):', data.url);
+        // Legacy redirect mode: redirect to Stripe
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL returned from server');
+        throw new Error('No checkout URL or client secret returned from server');
       }
 
     } catch (err) {
@@ -667,6 +678,7 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
   const pricingBullets = parsePricingBullets(pricingText);
 
   return (
+    <>
     <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
       {/* Back button */}
       <Button
@@ -750,5 +762,17 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
         </div>
       </div>
     </div>
+
+    {/* Embedded Checkout Payment Modal */}
+    <PaymentModal
+      visible={showPaymentModal}
+      clientSecret={checkoutClientSecret}
+      onClose={() => {
+        setShowPaymentModal(false);
+        setCheckoutClientSecret(null);
+      }}
+      title="Complete Your Subscription"
+    />
+    </>
   );
 }
