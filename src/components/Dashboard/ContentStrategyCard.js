@@ -36,6 +36,20 @@ export default function ContentStrategyCard({
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
+  // Debug first render
+  const [hasLogged, setHasLogged] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!hasLogged && strategy.id === 'd8c6cd76-3b70-41e4-bdc2-bf1718dfba8e') {
+      console.log('🎴 ContentStrategyCard render (Manufacturing):', {
+        strategyId: strategy.id,
+        isSubscribed,
+        hasPerformanceMetrics: !!performanceMetrics
+      });
+      setHasLogged(true);
+    }
+  }, [strategy.id, isSubscribed, performanceMetrics, hasLogged]);
+
   const cardStyle = {
     width: '300px',
     minWidth: '300px',
