@@ -12,11 +12,13 @@ import AdminLinkBar from './components/AdminLinkBar/AdminLinkBar';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
+import CalendarTestbed from './components/CalendarTestbed/CalendarTestbed';
 import { OnboardingFunnelView } from './components/Onboarding';
 import SEOHead from './components/SEOHead';
 import { useWorkflowMode } from './contexts/WorkflowModeContext';
 import { storeReferralInfo } from './utils/referralUtils';
 import { notifyTabReady } from './utils/tabReadyAlert';
+import { PaymentCompletionHandler } from './components/Checkout/PaymentCompletionHandler';
 import './styles/design-system.css';
 import './styles/mobile.css';
 
@@ -225,12 +227,39 @@ const AppContent = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [, setActiveTab] = useState('newpost');
 
+  // Determine if user is returning based on account creation time
+  // If account is more than 5 minutes old, they're a returning user (not brand new)
+  // This handles both new registrations and existing users who just logged in
+  const ONBOARDING_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+  const isReturningUser = user && user.createdAt &&
+    (Date.now() - new Date(user.createdAt).getTime() > ONBOARDING_BUFFER_MS);
+
+  // Fallback: also check if they've completed workflow analysis (for existing sessions)
   const hasCompletedAnalysis =
     stepResults?.home?.analysisCompleted &&
     stepResults?.home?.websiteAnalysis?.businessName &&
     stepResults?.home?.websiteAnalysis?.targetAudience &&
     stepResults?.home?.websiteAnalysis?.contentFocus;
-  const isReturningUser = user && hasCompletedAnalysis;
+
+  // Final determination: returning user if either condition is true
+  const isTrulyReturningUser = isReturningUser || (user && hasCompletedAnalysis);
+
+  // Debug logging
+  React.useEffect(() => {
+    if (user) {
+      console.log('🔍 [App.js] Returning user check:', {
+        hasUser: !!user,
+        createdAt: user.createdAt,
+        accountAge: user.createdAt ? Date.now() - new Date(user.createdAt).getTime() : 'N/A',
+        bufferMs: ONBOARDING_BUFFER_MS,
+        isReturningUser,
+        hasCompletedAnalysis,
+        isTrulyReturningUser,
+        isNewRegistration,
+        pathname: window.location.pathname
+      });
+    }
+  }, [user, isReturningUser, hasCompletedAnalysis, isTrulyReturningUser, isNewRegistration, ONBOARDING_BUFFER_MS]);
 
   // After registration from funnel: keep user in funnel so they stay in place and topic can start generating (don't switch to dashboard until funnel completes)
   const stayInFunnelAfterRegistration = isNewRegistration && typeof window !== 'undefined' && window.location.pathname !== '/dashboard';
@@ -319,13 +348,24 @@ const AppContent = () => {
     );
   }
 
+  // Calendar testbed — dev/QA for 30-day content calendar states (live API + mock UIs)
+  if (typeof window !== 'undefined' && window.location.pathname === '/calendar-testbed') {
+    return (
+      <SystemHintProvider>
+        <SEOHead />
+        <CalendarTestbed />
+      </SystemHintProvider>
+    );
+  }
+
   // Guided onboarding funnel (Issue #261): show for first-time or logged-out users.
-  // Path /dashboard + logged in forces dashboard (for E2E and direct links).
+  // Path /dashboard or dashboard sub-routes (e.g. /settings/voice-adaptation) + logged in forces dashboard (for E2E and direct links).
   // After registration from funnel, keep showing funnel so user stays in place and topic generation can start.
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const forceDashboard = pathname === '/dashboard' && user;
+  const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/settings/');
+  const forceDashboard = isDashboardPath && user;
   const showFunnel =
-    pathname === '/onboarding' || (!forceDashboard && !isReturningUser) || stayInFunnelAfterRegistration;
+    pathname === '/onboarding' || (!forceDashboard && !isTrulyReturningUser) || stayInFunnelAfterRegistration;
   if (showFunnel) {
     return (
       <SystemHintProvider>
@@ -364,6 +404,7 @@ const App = () => {
             <AdminLinkBar />
             <WorkflowModeProvider>
               <AnalyticsProvider>
+                <PaymentCompletionHandler />
                 <AppContent />
               </AnalyticsProvider>
             </WorkflowModeProvider>

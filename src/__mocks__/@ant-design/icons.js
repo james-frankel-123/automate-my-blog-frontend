@@ -14,6 +14,7 @@ const createIcon = (name) => {
 export const DashboardOutlined = createIcon('DashboardOutlined');
 export const FileTextOutlined = createIcon('FileTextOutlined');
 export const SettingOutlined = createIcon('SettingOutlined');
+export const SoundOutlined = createIcon('SoundOutlined');
 export const UserOutlined = createIcon('UserOutlined');
 export const LogoutOutlined = createIcon('LogoutOutlined');
 export const EditOutlined = createIcon('EditOutlined');
@@ -104,6 +105,7 @@ export default {
   DashboardOutlined,
   FileTextOutlined,
   SettingOutlined,
+  SoundOutlined,
   UserOutlined,
   LogoutOutlined,
   EditOutlined,

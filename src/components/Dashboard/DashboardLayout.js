@@ -5,6 +5,7 @@ import {
   DashboardOutlined,
   FileTextOutlined,
   SettingOutlined,
+  SoundOutlined,
   UserOutlined,
   LogoutOutlined,
   EditOutlined,
@@ -24,7 +25,9 @@ import DashboardTab from './DashboardTab';
 import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
+import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
 import SandboxTab from './SandboxTab';
+import ReturningUserDashboard from './ReturningUserDashboard';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
@@ -59,7 +62,11 @@ const DashboardLayout = ({
   // When handed off from funnel (topic selected): land on Posts so generation can start
   initialActiveTab = null
 }) => {
-  const [activeTab, setActiveTab] = useState(initialActiveTab || 'dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (initialActiveTab) return initialActiveTab;
+    if (typeof window !== 'undefined' && window.location.pathname === '/settings/voice-adaptation') return 'voice-adaptation';
+    return 'dashboard';
+  });
   const {
     user: contextUser,
     logout,
@@ -97,6 +104,10 @@ const DashboardLayout = ({
   const [currentStep, setCurrentStep] = useState(0);
   const [completedSteps, setCompletedSteps] = useState([]);
   const [visibleSections, setVisibleSections] = useState(['home']); // Start with only home visible
+
+  // ReturningUserDashboard state
+  const [hasStrategies, setHasStrategies] = useState(false);
+  const [strategiesLoading, setStrategiesLoading] = useState(true);
   
   // Dashboard visibility for workflow mode - start hidden in workflow mode  
   const [showDashboardLocal, setShowDashboardLocal] = useState(false);
@@ -131,6 +142,30 @@ const DashboardLayout = ({
 
   // Pricing modal state
   const [showPricingModal, setShowPricingModal] = useState(false);
+
+  // Check if user has strategies for ReturningUserDashboard
+  useEffect(() => {
+    async function checkStrategies() {
+      if (!user) {
+        setHasStrategies(false);
+        setStrategiesLoading(false);
+        return;
+      }
+
+      try {
+        const response = await api.getUserAudiences();
+        const strategies = response?.audiences || [];
+        setHasStrategies(strategies.length > 0);
+      } catch (error) {
+        console.error('Failed to check strategies:', error);
+        setHasStrategies(false);
+      } finally {
+        setStrategiesLoading(false);
+      }
+    }
+
+    checkStrategies();
+  }, [user]);
 
   // Fetch user quota (memoized to prevent infinite loops)
   const refreshQuota = useCallback(async () => {
@@ -277,7 +312,7 @@ const DashboardLayout = ({
   // Add intersection observer for scroll-based menu highlighting
   useEffect(() => {
     // Only set up observer if we're in the scrollable sections view (not settings/admin tabs)
-    if (!user || activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
+    if (!user || activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
       return;
     }
 
@@ -413,9 +448,12 @@ const DashboardLayout = ({
       user: user?.id 
     });
     
-    // For settings, switch to settings tab (not part of scrollable sections)
-    if (newTab === 'settings' || newTab.startsWith('admin-')) {
+    // For settings, voice adaptation, and admin tabs: switch tab (not part of scrollable sections)
+    if (newTab === 'settings' || newTab === 'voice-adaptation' || newTab.startsWith('admin-')) {
       setActiveTab(newTab);
+      if (newTab === 'voice-adaptation' && typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/settings/voice-adaptation');
+      }
       if (onActiveTabChange) {
         onActiveTabChange(newTab);
       }
@@ -640,6 +678,12 @@ const DashboardLayout = ({
       onClick: () => handleTabChange('settings'),
     },
     {
+      key: 'voice-adaptation',
+      icon: <SoundOutlined />,
+      label: 'Voice adaptation',
+      onClick: () => handleTabChange('voice-adaptation'),
+    },
+    {
       type: 'divider',
     },
     {
@@ -652,10 +696,12 @@ const DashboardLayout = ({
 
   const renderContent = () => {
     // Special tabs that don't use scrollable layout
-    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
+    if (activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
+        case 'voice-adaptation':
+          return <VoiceAdaptationTab />;
         case 'comprehensive-analysis':
           return <ComprehensiveAnalysisTab />;
         case 'admin-users':
@@ -675,6 +721,13 @@ const DashboardLayout = ({
         default:
           return <DashboardTab />;
       }
+    }
+
+    // Show ReturningUserDashboard for logged-in users with strategies (Issue #262)
+    // Criteria: User is logged in, has strategies, not in workflow mode
+    if (user && hasStrategies && !forceWorkflowMode && !projectMode && !strategiesLoading) {
+      console.log('🎯 Rendering ReturningUserDashboard for user with strategies');
+      return <ReturningUserDashboard />;
     }
 
     // Main scrollable layout with all sections
@@ -1269,10 +1322,10 @@ const DashboardLayout = ({
           )}
 
           <div style={{
-            background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
-            borderRadius: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
+            background: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
+            borderRadius: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
             minHeight: '100%',
-            padding: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
+            padding: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
           }}>
             {renderContent()}
           </div>

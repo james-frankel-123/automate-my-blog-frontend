@@ -302,7 +302,16 @@ const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
 
 // Content Discovery has been moved to SandboxTab for super-admin access
 
-const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate, onOpenPricingModal }) => {
+const PostsTab = ({
+  forceWorkflowMode = false,
+  onEnterProjectMode,
+  onQuotaUpdate,
+  onOpenPricingModal,
+  // Strategy filtering props (for ReturningUserDashboard)
+  filteredByStrategyId = null,
+  onClearFilter = null,
+  getStrategyName = null
+}) => {
   const { user } = useAuth();
   const tabMode = useTabMode('posts');
   const { 
@@ -3623,6 +3632,32 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           ) : (
             /* Posts List View */
             <Card title={<h2 className="heading-section" style={{ marginBottom: 0 }}>Blog Posts</h2>}>
+
+              {/* Strategy Filter Indicator */}
+              {filteredByStrategyId && getStrategyName && onClearFilter && (
+                <div style={{
+                  marginBottom: '16px',
+                  padding: '12px 16px',
+                  backgroundColor: '#e6f7ff',
+                  border: '1px solid #91d5ff',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <Space>
+                    <Text strong style={{ color: '#0050b3' }}>Filtered by strategy:</Text>
+                    <Tag color="blue">{getStrategyName(filteredByStrategyId)}</Tag>
+                  </Space>
+                  <Button
+                    size="small"
+                    onClick={onClearFilter}
+                    style={{ marginLeft: '8px' }}
+                  >
+                    ✕ Clear Filter
+                  </Button>
+                </div>
+              )}
 
               <Table
                 columns={columns}

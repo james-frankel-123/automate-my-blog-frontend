@@ -57,12 +57,23 @@ const StagingPromoteBar = () => {
     return () => clearInterval(id);
   }, [buildTimeSec]);
 
-  // Reserve space at bottom so content isn't hidden behind the bar
+  // Reserve space at bottom so content isn't hidden behind the bar (on mobile, account for bottom nav too)
   useEffect(() => {
     if (!isStaging || typeof document === 'undefined') return;
     const prev = document.body.style.paddingBottom;
-    document.body.style.paddingBottom = '48px';
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    document.body.style.paddingBottom = isMobile
+      ? 'calc(56px + 48px + env(safe-area-inset-bottom, 0px))'
+      : '48px';
+    const onResize = () => {
+      const mobile = window.innerWidth < 768;
+      document.body.style.paddingBottom = mobile
+        ? 'calc(56px + 48px + env(safe-area-inset-bottom, 0px))'
+        : '48px';
+    };
+    window.addEventListener('resize', onResize);
     return () => {
+      window.removeEventListener('resize', onResize);
       document.body.style.paddingBottom = prev || '';
     };
   }, [isStaging]);
@@ -137,6 +148,7 @@ const StagingPromoteBar = () => {
 
   return (
     <div
+      className="staging-promote-bar"
       role="banner"
       style={{
         position: 'fixed',

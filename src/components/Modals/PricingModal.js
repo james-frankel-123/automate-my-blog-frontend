@@ -3,6 +3,7 @@ import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider, message
 import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, GiftOutlined, CopyOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
+import { PaymentModal } from './PaymentModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -19,6 +20,8 @@ const PricingModal = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [checkoutClientSecret, setCheckoutClientSecret] = useState(null);
   const { trackPageView, trackClick, trackFunnelStep, trackEvent } = useAnalytics();
 
   // Track when pricing modal is opened
@@ -174,16 +177,30 @@ const PricingModal = ({
       // Create checkout session
       const response = await api.createCheckoutSession(priceId, plan.planType);
 
-      if (response.success && response.url) {
-        // Track successful checkout redirect
-        trackFunnelStep('checkout_redirect', {
+      if (response.success) {
+        // Track successful checkout initialization
+        trackFunnelStep('checkout_initiated', {
           planId: plan.id,
           planName: plan.name,
-          sessionId: response.sessionId
+          sessionId: response.sessionId,
+          mode: response.clientSecret ? 'embedded' : 'redirect'
         });
 
-        // Redirect to Stripe checkout
-        window.location.href = response.url;
+        if (response.clientSecret) {
+          // Embedded checkout mode: open modal
+          setCheckoutClientSecret(response.clientSecret);
+          setShowPaymentModal(true);
+        } else if (response.url) {
+          // Legacy redirect mode: redirect to Stripe
+          trackFunnelStep('checkout_redirect', {
+            planId: plan.id,
+            planName: plan.name,
+            sessionId: response.sessionId
+          });
+          window.location.href = response.url;
+        } else {
+          throw new Error('Invalid response from checkout session');
+        }
       } else {
         throw new Error('Failed to create checkout session');
       }
@@ -315,6 +332,7 @@ const PricingModal = ({
   );
 
   return (
+    <>
     <Modal
       open={open}
       onCancel={onClose}
@@ -393,6 +411,20 @@ const PricingModal = ({
         </div>
       </div>
     </Modal>
+
+    {/* Embedded Checkout Payment Modal */}
+    <PaymentModal
+      visible={showPaymentModal}
+      clientSecret={checkoutClientSecret}
+      onClose={() => {
+        setShowPaymentModal(false);
+        setCheckoutClientSecret(null);
+        setLoading(false);
+        setSelectedPlanId(null);
+      }}
+      title="Complete Your Purchase"
+    />
+  </>
   );
 };
 

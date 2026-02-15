@@ -629,6 +629,7 @@ export const contentAPI = {
         preloadedTweets: tweets,
         preloadedArticles,
         preloadedVideos,
+        useVoiceProfile: true,
       }
     });
     return { connectionId };
