@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Card, Spin, Alert, Typography, Space, Tag, message } from 'antd';
-import { ArrowLeftOutlined, RocketOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Button, Card, Spin, Alert, Typography, Space, Tag, message, Tooltip } from 'antd';
+import { ArrowLeftOutlined, RocketOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { PaymentModal } from '../Modals/PaymentModal';
 
 const { Title, Text } = Typography;
@@ -289,12 +289,39 @@ function ContentCalendarTimeline({
           {/* Price Display */}
           <div style={{ marginBottom: '16px', textAlign: 'center' }}>
             <div style={{
-              fontSize: '36px',
-              fontWeight: 'bold',
-              color: '#1890ff',
-              lineHeight: 1
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px'
             }}>
-              ${monthlyPrice.toFixed(2)}
+              <div style={{
+                fontSize: '36px',
+                fontWeight: 'bold',
+                color: '#1890ff',
+                lineHeight: 1
+              }}>
+                ${monthlyPrice.toFixed(2)}
+              </div>
+              <Tooltip
+                title={
+                  <div style={{ maxWidth: '280px' }}>
+                    <div style={{ fontWeight: 600, marginBottom: '8px' }}>
+                      Value-Based Pricing
+                    </div>
+                    <div style={{ fontSize: '12px', lineHeight: '1.5' }}>
+                      This price is based on your projected profit potential. You pay for results and ROI, not just content volume. Pricing adapts to your business size, niche complexity, and competition level.
+                    </div>
+                  </div>
+                }
+                placement="top"
+              >
+                <InfoCircleOutlined style={{
+                  fontSize: '18px',
+                  color: '#8c8c8c',
+                  cursor: 'help',
+                  marginTop: '8px'
+                }} />
+              </Tooltip>
             </div>
             <Text type="secondary" style={{ fontSize: '13px' }}>/month</Text>
           </div>
