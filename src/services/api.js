@@ -2850,8 +2850,10 @@ Please provide analysis in this JSON format:
       const url = `/api/v1/audiences${queryString ? '?' + queryString : ''}`;
 
       const response = await this.makeRequest(url, { headers });
-      console.log('📋 Loaded audiences:', response.audiences?.length || 0);
-      return response;
+      const audiences = response?.audiences ?? response?.data?.audiences;
+      const normalized = audiences !== undefined ? { ...response, audiences: Array.isArray(audiences) ? audiences : [] } : response;
+      console.log('📋 Loaded audiences:', normalized.audiences?.length ?? 0);
+      return normalized;
     } catch (error) {
       throw new Error(`Failed to get audiences: ${error.message}`);
     }
@@ -2863,6 +2865,9 @@ Please provide analysis in this JSON format:
    * @param {{ testbed?: boolean }} options - When true, append ?testbed=1 (calendar testbed page)
    */
   async getAudience(audienceId, options = {}) {
+    if (!audienceId || String(audienceId).trim() === '') {
+      throw new Error('Audience ID is required');
+    }
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = {};
@@ -2873,8 +2878,10 @@ Please provide analysis in this JSON format:
       }
 
       const query = options.testbed ? '?testbed=1' : '';
-      const response = await this.makeRequest(`/api/v1/audiences/${audienceId}${query}`, { headers });
-      return response;
+      const response = await this.makeRequest(`/api/v1/audiences/${encodeURIComponent(audienceId)}${query}`, { headers });
+      // Normalize: some backends return { audience } or { data: { audience } }
+      const audience = response?.audience ?? response?.data?.audience;
+      return audience !== undefined ? { ...response, audience } : response;
     } catch (error) {
       throw new Error(`Failed to get audience: ${error.message}`);
     }

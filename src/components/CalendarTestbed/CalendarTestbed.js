@@ -16,6 +16,7 @@ import {
 import {
   CalendarOutlined,
   LoadingOutlined,
+  PlusOutlined,
   ReloadOutlined,
   HomeOutlined,
   TeamOutlined
@@ -86,6 +87,8 @@ export default function CalendarTestbed() {
   const [audiences, setAudiences] = useState([]);
   const [audiencesLoading, setAudiencesLoading] = useState(false);
   const [audiencesError, setAudiencesError] = useState(null);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState(null);
   const autoLoadedFromCalendarRef = useRef(false);
   const liveIdRef = useRef('');
   liveIdRef.current = liveId;
@@ -143,6 +146,45 @@ export default function CalendarTestbed() {
     const aud = audiences.find((a) => a.id === id);
     setLiveId(id);
     setLiveName(aud ? getAudienceLabel(aud) : '');
+  };
+
+  const handleCreateTestAudience = () => {
+    setCreateError(null);
+    setCreateLoading(true);
+    const fixture = {
+      target_segment: {
+        demographics: 'Calendar testbed audience',
+        psychographics: 'Users testing the 30-day content calendar feature',
+        searchBehavior: 'Looking for content calendar and strategy tools'
+      },
+      customer_problem: 'Testing 30-day content calendar',
+      pitch: '',
+      image_url: null,
+      customer_language: ['content calendar', '30-day plan', 'content strategy'],
+      conversion_path: 'Testbed usage leading to calendar subscription',
+      business_value: {
+        searchVolume: 'Test',
+        conversionPotential: 'Low',
+        priority: 1,
+        competition: 'Low'
+      },
+      priority: 1
+    };
+    autoBlogAPI
+      .createAudience(fixture)
+      .then((res) => {
+        const id = res?.audience?.id;
+        const name = res?.audience?.customer_problem ?? res?.audience?.customerProblem ?? 'Test audience';
+        fetchAudiences();
+        if (id) {
+          setLiveId(id);
+          setLiveName(name);
+        }
+      })
+      .catch((err) => {
+        setCreateError(err?.message ?? 'Failed to create audience');
+      })
+      .finally(() => setCreateLoading(false));
   };
 
   return (
@@ -240,6 +282,29 @@ export default function CalendarTestbed() {
                 style={{ marginTop: 16 }}
               />
             )}
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+              <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
+                Generate audiences
+              </Text>
+              <Button
+                type="default"
+                icon={createLoading ? <LoadingOutlined spin /> : <PlusOutlined />}
+                onClick={handleCreateTestAudience}
+                disabled={createLoading}
+              >
+                {createLoading ? 'Creating…' : 'Create test audience'}
+              </Button>
+              {createError && (
+                <Alert
+                  message={createError}
+                  type="error"
+                  showIcon
+                  style={{ marginTop: 8 }}
+                  closable
+                  onClose={() => setCreateError(null)}
+                />
+              )}
+            </div>
           </div>
         )}
       </Card>
