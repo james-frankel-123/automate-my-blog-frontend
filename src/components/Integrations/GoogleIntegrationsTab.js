@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Tabs, Card, Button, Alert, Typography, Space, Divider, message, Spin, Steps } from 'antd';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Tabs, Card, Button, Alert, Typography, Divider, message, Spin, Steps } from 'antd';
 import {
   GoogleOutlined,
   LineChartOutlined,
@@ -263,6 +263,18 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
   const eventSourceRef = useRef(null);
   const previewEventSourceRef = useRef(null);
 
+  const checkConnection = useCallback(async () => {
+    try {
+      const response = await api.get(`/api/v1/google/oauth/status/${service}`);
+      setIsConnected(response.connected || false);
+    } catch (err) {
+      console.error('Failed to check connection:', err);
+      setIsConnected(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [service]);
+
   useEffect(() => {
     checkConnection();
 
@@ -274,19 +286,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
         previewEventSourceRef.current.close();
       }
     };
-  }, [service]);
-
-  const checkConnection = async () => {
-    try {
-      const response = await api.get(`/api/v1/google/oauth/status/${service}`);
-      setIsConnected(response.connected || false);
-    } catch (err) {
-      console.error('Failed to check connection:', err);
-      setIsConnected(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [service, checkConnection]);
 
   const streamPitchFromLLM = async () => {
     if (showPitch) {
