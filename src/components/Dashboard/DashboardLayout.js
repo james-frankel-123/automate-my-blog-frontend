@@ -30,6 +30,7 @@ import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
 import GoogleIntegrationsTab from '../Integrations/GoogleIntegrationsTab';
 import SandboxTab from './SandboxTab';
 import ReturningUserDashboard from './ReturningUserDashboard';
+import AudiencesCarouselView from './AudiencesCarouselView';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
@@ -736,12 +737,11 @@ const DashboardLayout = ({
       }
     }
 
-    // Show ReturningUserDashboard for logged-in users with strategies (Issue #262)
-    // Criteria: User is logged in, has strategies, not in workflow mode
-    if (user && hasStrategies && !forceWorkflowMode && !projectMode && !strategiesLoading) {
-      console.log('🎯 Rendering ReturningUserDashboard for user with strategies');
-      return <ReturningUserDashboard />;
-    }
+    // NOTE: ReturningUserDashboard full-page replacement removed
+    // Now using tab-based layout for all users:
+    // - Home tab: DashboardTab (feature tiles for logged-in, workflow for onboarding)
+    // - Audiences tab: AudiencesCarouselView (for logged-in with strategies) or AudienceSegmentsTab (for onboarding)
+    // - Posts tab: PostsTab (always)
 
     // Main scrollable layout with all sections
     return (
@@ -813,11 +813,16 @@ const DashboardLayout = ({
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            <AudienceSegmentsTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-            />
+            {/* Show carousel for logged-in users with strategies, else show onboarding */}
+            {user && hasStrategies && !forceWorkflowMode && !projectMode ? (
+              <AudiencesCarouselView />
+            ) : (
+              <AudienceSegmentsTab
+                forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
+                onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+                onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+              />
+            )}
           </section>
         )}
 

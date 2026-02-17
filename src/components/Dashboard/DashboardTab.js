@@ -157,7 +157,8 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
             }
           }));
         } catch (error) {
-          console.error('Failed to fetch voice samples:', error);
+          // Silently handle errors (e.g., table doesn't exist yet)
+          console.warn('Voice samples feature not available:', error.message);
           setIntegrations(prev => ({
             ...prev,
             voice: {
