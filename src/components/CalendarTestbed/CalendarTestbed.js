@@ -141,11 +141,13 @@ export default function CalendarTestbed() {
     if (!id) {
       setLiveId('');
       setLiveName('');
+      setLoadLive(false);
       return;
     }
     const aud = audiences.find((a) => a.id === id);
     setLiveId(id);
     setLiveName(aud ? getAudienceLabel(aud) : '');
+    setLoadLive(true);
   };
 
   const handleCreateTestAudience = () => {
@@ -179,6 +181,7 @@ export default function CalendarTestbed() {
         if (id) {
           setLiveId(id);
           setLiveName(name);
+          setLoadLive(true);
         }
       })
       .catch((err) => {
@@ -264,6 +267,7 @@ export default function CalendarTestbed() {
                 placeholder="Audience UUID (manual)"
                 value={liveId}
                 onChange={(e) => setLiveId(e.target.value)}
+                onPressEnter={() => liveId.trim() && setLoadLive(true)}
                 style={{ width: 280 }}
               />
               <Input
