@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Tabs, Card, Button, Alert, Typography, Divider, message, Spin, Steps, Carousel } from 'antd';
+import { Tabs, Card, Button, Alert, Typography, Divider, message, Spin, Steps } from 'antd';
 import {
   GoogleOutlined,
   LineChartOutlined,
@@ -15,49 +15,6 @@ import {
 import api from '../../services/api';
 
 const { Title, Paragraph, Text } = Typography;
-
-/**
- * Split preview text into carousel slides based on headers
- */
-function splitIntoSlides(text) {
-  if (!text) return [];
-
-  const slides = [];
-  const headerRegex = /\*\*[📈🎯💡][^*]+\*\*/g;
-
-  let lastIndex = 0;
-  let match;
-  let currentHeader = null;
-
-  while ((match = headerRegex.exec(text)) !== null) {
-    // If we have a previous section, save it
-    if (currentHeader) {
-      const content = text.substring(lastIndex, match.index).trim();
-      if (content) {
-        slides.push({
-          header: currentHeader,
-          content: content
-        });
-      }
-    }
-
-    currentHeader = match[0].replace(/\*\*/g, '').trim();
-    lastIndex = match.index + match[0].length;
-  }
-
-  // Add the last section
-  if (currentHeader && lastIndex < text.length) {
-    const content = text.substring(lastIndex).trim();
-    if (content) {
-      slides.push({
-        header: currentHeader,
-        content: content
-      });
-    }
-  }
-
-  return slides;
-}
 
 /**
  * Parse inline markdown (bold text)
@@ -728,84 +685,37 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
               </>
             )}
 
-            {service === 'trends' && showPreview && (() => {
-              const slides = splitIntoSlides(preview);
-
-              return (
+            {service === 'trends' && showPreview && (
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f0f7ff',
+                borderRadius: '8px',
+                border: '1px solid #d6e4ff',
+                marginBottom: '16px'
+              }}>
+                <Title level={5} style={{ marginTop: 0, color: '#1890ff', marginBottom: '16px' }}>
+                  <BulbOutlined /> Trending Topics Found for Your Business
+                </Title>
                 <div style={{
-                  padding: '20px',
-                  backgroundColor: '#f0f7ff',
-                  borderRadius: '8px',
-                  border: '1px solid #d6e4ff',
-                  marginBottom: '16px'
+                  fontSize: '15px',
+                  lineHeight: '1.8',
+                  color: '#262626',
+                  minHeight: previewStreaming ? '80px' : 'auto'
                 }}>
-                  <Title level={5} style={{ marginTop: 0, color: '#1890ff', marginBottom: '20px' }}>
-                    <BulbOutlined /> Trending Topics Found for Your Business
-                  </Title>
-
-                  {previewStreaming ? (
-                    <div style={{
-                      fontSize: '15px',
-                      lineHeight: '1.8',
-                      color: '#262626',
-                      minHeight: '80px'
-                    }}>
-                      {renderMarkdownText(preview)}
-                      <span style={{
-                        display: 'inline-block',
-                        width: '2px',
-                        height: '1em',
-                        backgroundColor: '#1890ff',
-                        marginLeft: '4px',
-                        animation: 'blink 1s step-end infinite'
-                      }} />
-                    </div>
-                  ) : slides.length > 0 ? (
-                    <Carousel
-                      autoplay={false}
-                      dotPosition="bottom"
-                      dots={{ className: 'custom-dots' }}
-                      style={{ paddingBottom: '30px' }}
-                    >
-                      {slides.map((slide, idx) => (
-                        <div key={idx}>
-                          <div style={{
-                            padding: '20px',
-                            minHeight: '250px',
-                            backgroundColor: '#fff',
-                            borderRadius: '8px'
-                          }}>
-                            <Title level={4} style={{
-                              marginTop: 0,
-                              marginBottom: '16px',
-                              color: '#1890ff',
-                              fontSize: '18px'
-                            }}>
-                              {slide.header}
-                            </Title>
-                            <div style={{
-                              fontSize: '15px',
-                              lineHeight: '1.8',
-                              color: '#262626'
-                            }}>
-                              {renderMarkdownText(slide.content)}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </Carousel>
-                  ) : (
-                    <div style={{
-                      fontSize: '15px',
-                      lineHeight: '1.8',
-                      color: '#262626'
-                    }}>
-                      {renderMarkdownText(preview)}
-                    </div>
+                  {renderMarkdownText(preview)}
+                  {previewStreaming && (
+                    <span style={{
+                      display: 'inline-block',
+                      width: '2px',
+                      height: '1em',
+                      backgroundColor: '#1890ff',
+                      marginLeft: '4px',
+                      animation: 'blink 1s step-end infinite'
+                    }} />
                   )}
                 </div>
-              );
-            })()}
+              </div>
+            )}
 
             {service === 'search_console' && (
               <>
