@@ -6,6 +6,7 @@ import {
   FileTextOutlined,
   SettingOutlined,
   SoundOutlined,
+  GoogleOutlined,
   UserOutlined,
   LogoutOutlined,
   EditOutlined,
@@ -26,6 +27,7 @@ import PostsTab from './PostsTab';
 import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
 import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
+import GoogleIntegrationsTab from '../Integrations/GoogleIntegrationsTab';
 import SandboxTab from './SandboxTab';
 import ReturningUserDashboard from './ReturningUserDashboard';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
@@ -312,7 +314,7 @@ const DashboardLayout = ({
   // Add intersection observer for scroll-based menu highlighting
   useEffect(() => {
     // Only set up observer if we're in the scrollable sections view (not settings/admin tabs)
-    if (!user || activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
+    if (!user || activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
       return;
     }
 
@@ -448,11 +450,14 @@ const DashboardLayout = ({
       user: user?.id 
     });
     
-    // For settings, voice adaptation, and admin tabs: switch tab (not part of scrollable sections)
-    if (newTab === 'settings' || newTab === 'voice-adaptation' || newTab.startsWith('admin-')) {
+    // For settings, voice adaptation, google integrations, and admin tabs: switch tab (not part of scrollable sections)
+    if (newTab === 'settings' || newTab === 'voice-adaptation' || newTab === 'google-integrations' || newTab.startsWith('admin-')) {
       setActiveTab(newTab);
       if (newTab === 'voice-adaptation' && typeof window !== 'undefined') {
         window.history.replaceState({}, '', '/settings/voice-adaptation');
+      }
+      if (newTab === 'google-integrations' && typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/settings/google-integrations');
       }
       if (onActiveTabChange) {
         onActiveTabChange(newTab);
@@ -684,6 +689,12 @@ const DashboardLayout = ({
       onClick: () => handleTabChange('voice-adaptation'),
     },
     {
+      key: 'google-integrations',
+      icon: <GoogleOutlined />,
+      label: 'Google integrations',
+      onClick: () => handleTabChange('google-integrations'),
+    },
+    {
       type: 'divider',
     },
     {
@@ -696,12 +707,14 @@ const DashboardLayout = ({
 
   const renderContent = () => {
     // Special tabs that don't use scrollable layout
-    if (activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
+    if (activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
         case 'voice-adaptation':
           return <VoiceAdaptationTab />;
+        case 'google-integrations':
+          return <GoogleIntegrationsTab />;
         case 'comprehensive-analysis':
           return <ComprehensiveAnalysisTab />;
         case 'admin-users':
@@ -1322,10 +1335,10 @@ const DashboardLayout = ({
           )}
 
           <div style={{
-            background: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
-            borderRadius: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
+            background: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
+            borderRadius: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
             minHeight: '100%',
-            padding: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
+            padding: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
           }}>
             {renderContent()}
           </div>
