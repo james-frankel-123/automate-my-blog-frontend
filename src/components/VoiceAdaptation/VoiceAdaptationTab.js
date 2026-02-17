@@ -89,6 +89,8 @@ export default function VoiceAdaptationTab() {
 
   const [samples, setSamples] = useState([]);
   const [profile, setProfile] = useState(null);
+  const [voiceProperties, setVoiceProperties] = useState([]); // display-ready sections from profile API
+  const [derivedDirectives, setDerivedDirectives] = useState([]); // rules applied during generation
   const [loadingSamples, setLoadingSamples] = useState(true);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -122,8 +124,12 @@ export default function VoiceAdaptationTab() {
     try {
       const res = await autoBlogAPI.getVoiceProfile(orgId);
       setProfile(res.profile || null);
+      setVoiceProperties(Array.isArray(res.voiceProperties) ? res.voiceProperties : []);
+      setDerivedDirectives(Array.isArray(res.derivedDirectives) ? res.derivedDirectives : []);
     } catch (err) {
       setProfile(null);
+      setVoiceProperties([]);
+      setDerivedDirectives([]);
     } finally {
       setLoadingProfile(false);
     }
@@ -475,6 +481,47 @@ export default function VoiceAdaptationTab() {
                 />
               </Col>
             </Row>
+            {voiceProperties.length > 0 && (
+              <div style={{ marginTop: 'var(--space-6)' }}>
+                <Title level={5} style={{ marginBottom: 'var(--space-3)', fontWeight: 600 }}>
+                  Voice traits
+                </Title>
+                {voiceProperties.map((section, idx) => (
+                  <div key={idx} style={{ marginBottom: 'var(--space-4)' }}>
+                    <Text strong style={{ display: 'block', marginBottom: 'var(--space-2)', fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+                      {section.section}
+                    </Text>
+                    <ul style={{ margin: 0, paddingLeft: 'var(--space-5)', listStyle: 'disc' }}>
+                      {(section.items || []).map((item, i) => {
+                        const val = item.value;
+                        const display =
+                          Array.isArray(val) ? val.join(', ') : val === null || val === undefined ? '—' : String(val);
+                        return (
+                          <li key={i} style={{ marginBottom: 'var(--space-1)' }}>
+                            <Text>{item.label}: </Text>
+                            <Text type="secondary">{display}</Text>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+            {derivedDirectives.length > 0 && (
+              <div style={{ marginTop: 'var(--space-6)' }}>
+                <Title level={5} style={{ marginBottom: 'var(--space-3)', fontWeight: 600 }}>
+                  Rules applied to generation
+                </Title>
+                <ul style={{ margin: 0, paddingLeft: 'var(--space-5)', listStyle: 'disc' }}>
+                  {derivedDirectives.map((rule, i) => (
+                    <li key={i} style={{ marginBottom: 'var(--space-2)' }}>
+                      <Text>{rule}</Text>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <Row style={{ marginTop: 'var(--space-4)' }}>
               <Col>
                 <Button type="default" icon={<DownloadOutlined />} onClick={handleExportProfile} size="middle">
