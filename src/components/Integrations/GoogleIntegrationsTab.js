@@ -97,7 +97,7 @@ function renderMarkdownText(text) {
       );
     }
     // Bullet points (e.g., • Item text or - Item text)
-    else if (trimmedLine.match(/^[•\-]\s/)) {
+    else if (trimmedLine.match(/^[•-]\s/)) {
       const bulletText = trimmedLine.substring(1).trim();
       currentList.push(bulletText);
     }
