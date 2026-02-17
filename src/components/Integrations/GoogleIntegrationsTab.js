@@ -17,6 +17,128 @@ import api from '../../services/api';
 const { Title, Paragraph, Text } = Typography;
 
 /**
+ * Parse and render markdown-formatted text
+ * Same approach as StrategyDetailsView for consistency
+ */
+function renderMarkdownText(text) {
+  if (!text) return null;
+
+  // Split into lines
+  const lines = text.split('\n');
+  const elements = [];
+  let currentList = [];
+
+  lines.forEach((line, idx) => {
+    const trimmedLine = line.trim();
+
+    // Bold headers (e.g., **SUMMARY:**)
+    if (trimmedLine.match(/^\*\*[^*]+\*\*:?$/)) {
+      // Flush current list if exists
+      if (currentList.length > 0) {
+        elements.push(
+          <ul key={`list-${elements.length}`} style={{
+            margin: '8px 0',
+            padding: '0 0 0 20px',
+            listStyle: 'none'
+          }}>
+            {currentList.map((item, i) => (
+              <li key={i} style={{
+                marginBottom: '6px',
+                position: 'relative',
+                paddingLeft: '8px'
+              }}>
+                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        );
+        currentList = [];
+      }
+
+      const headerText = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '');
+      elements.push(
+        <Text key={`header-${idx}`} strong style={{
+          display: 'block',
+          fontSize: '15px',
+          color: '#262626',
+          marginTop: elements.length > 0 ? '16px' : '0',
+          marginBottom: '8px'
+        }}>
+          {headerText}
+        </Text>
+      );
+    }
+    // Bullet points (e.g., • Item text or - Item text)
+    else if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+      const bulletText = trimmedLine.substring(1).trim();
+      currentList.push(bulletText);
+    }
+    // Regular paragraph text
+    else if (trimmedLine.length > 0) {
+      // Flush current list if exists
+      if (currentList.length > 0) {
+        elements.push(
+          <ul key={`list-${elements.length}`} style={{
+            margin: '8px 0',
+            padding: '0 0 0 20px',
+            listStyle: 'none'
+          }}>
+            {currentList.map((item, i) => (
+              <li key={i} style={{
+                marginBottom: '6px',
+                position: 'relative',
+                paddingLeft: '8px'
+              }}>
+                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                {item}
+              </li>
+            ))}
+          </ul>
+        );
+        currentList = [];
+      }
+
+      elements.push(
+        <Text key={`p-${idx}`} style={{
+          display: 'block',
+          fontSize: '15px',
+          lineHeight: '1.8',
+          color: '#434343',
+          marginBottom: '8px'
+        }}>
+          {trimmedLine}
+        </Text>
+      );
+    }
+  });
+
+  // Flush remaining list items
+  if (currentList.length > 0) {
+    elements.push(
+      <ul key={`list-${elements.length}`} style={{
+        margin: '8px 0',
+        padding: '0 0 0 20px',
+        listStyle: 'none'
+      }}>
+        {currentList.map((item, i) => (
+          <li key={i} style={{
+            marginBottom: '6px',
+            position: 'relative',
+            paddingLeft: '8px'
+          }}>
+            <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+            {item}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return <div>{elements}</div>;
+}
+
+/**
  * Setup Instructions Component
  * Shows step-by-step OAuth setup guide
  */
@@ -553,7 +675,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
                   color: '#262626',
                   minHeight: previewStreaming ? '80px' : 'auto'
                 }}>
-                  {preview}
+                  {renderMarkdownText(preview)}
                   {previewStreaming && (
                     <span style={{
                       display: 'inline-block',
