@@ -49,6 +49,12 @@ export default function AudiencesCarouselView() {
   const [selectedStrategyForDetails, setSelectedStrategyForDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  console.log('🎨 AudiencesCarouselView mounted', {
+    viewMode,
+    strategiesCount: strategies.length,
+    loading
+  });
+
   useEffect(() => {
     loadStrategies();
   }, []);

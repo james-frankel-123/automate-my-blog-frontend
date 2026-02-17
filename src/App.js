@@ -246,6 +246,15 @@ const AppContent = () => {
 
   // Debug logging
   React.useEffect(() => {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/settings/');
+    const forceDashboard = isDashboardPath && user;
+    const stayInFunnelAfterRegistration = isNewRegistration && typeof window !== 'undefined' && window.location.pathname !== '/dashboard';
+    const showFunnel =
+      pathname === '/onboarding' ||
+      (!user && !forceDashboard) ||
+      (user && stayInFunnelAfterRegistration);
+
     if (user) {
       console.log('🔍 [App.js] Returning user check:', {
         hasUser: !!user,
@@ -256,7 +265,16 @@ const AppContent = () => {
         hasCompletedAnalysis,
         isTrulyReturningUser,
         isNewRegistration,
-        pathname: window.location.pathname
+        pathname,
+        forceDashboard,
+        stayInFunnelAfterRegistration,
+        showFunnel // NEW: Log final decision
+      });
+    } else {
+      console.log('🔍 [App.js] Logged-out user check:', {
+        pathname,
+        forceDashboard,
+        showFunnel // NEW: Log for logged-out users too
       });
     }
   }, [user, isReturningUser, hasCompletedAnalysis, isTrulyReturningUser, isNewRegistration, ONBOARDING_BUFFER_MS]);
@@ -364,8 +382,16 @@ const AppContent = () => {
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/settings/');
   const forceDashboard = isDashboardPath && user;
+
+  // Show onboarding funnel ONLY for:
+  // 1. Explicit /onboarding path (manual navigation)
+  // 2. Logged-out users (unless forcing dashboard)
+  // 3. Brand-new registrations still in the funnel (before first dashboard navigation)
+  // This ensures logged-in users who navigate back to '/' always see dashboard, not funnel
   const showFunnel =
-    pathname === '/onboarding' || (!forceDashboard && !isTrulyReturningUser) || stayInFunnelAfterRegistration;
+    pathname === '/onboarding' ||
+    (!user && !forceDashboard) ||
+    (user && stayInFunnelAfterRegistration);
   if (showFunnel) {
     return (
       <SystemHintProvider>

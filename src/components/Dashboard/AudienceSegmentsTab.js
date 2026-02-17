@@ -13,6 +13,8 @@ import { extractStreamChunk, extractStreamCompleteContent } from '../../utils/st
 import { systemVoice } from '../../copy/systemVoice';
 import StreamingText from '../shared/StreamingText';
 import { notifyTabReady } from '../../utils/tabReadyAlert';
+import StrategyCarousel from './StrategyCarousel';
+import StrategyDetailsView from './StrategyDetailsView';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -91,8 +93,11 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
   // Carousel navigation ref
   const carouselRef = React.useRef(null);
-  
-  
+
+  // Focus mode state (for strategy carousel)
+  const [focusModeView, setFocusModeView] = useState('carousel'); // 'carousel' or 'details'
+  const [selectedStrategyForDetails, setSelectedStrategyForDetails] = useState(null);
+
   // UI helpers from workflow components
   const responsive = ComponentHelpers.getResponsiveStyles();
   const defaultColors = ComponentHelpers.getDefaultColors();

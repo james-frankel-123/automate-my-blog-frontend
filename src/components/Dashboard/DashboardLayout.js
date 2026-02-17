@@ -813,16 +813,34 @@ const DashboardLayout = ({
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            {/* Show carousel for logged-in users with strategies, else show onboarding */}
-            {user && hasStrategies && !forceWorkflowMode && !projectMode ? (
-              <AudiencesCarouselView />
-            ) : (
-              <AudienceSegmentsTab
-                forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-                onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-                onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-              />
-            )}
+            {/* Show carousel for logged-in users, onboarding for workflow */}
+            {(() => {
+              // Determine if we're in workflow/onboarding mode
+              const inWorkflowMode = forceWorkflowMode || (user && projectMode) || !user;
+
+              // Show carousel only for logged-in users NOT in workflow mode
+              const showCarousel = user && !inWorkflowMode;
+
+              console.log('🎯 Audiences tab decision:', {
+                user: !!user,
+                hasStrategies,
+                forceWorkflowMode,
+                projectMode,
+                strategiesLoading,
+                inWorkflowMode,
+                showCarousel
+              });
+
+              return showCarousel ? (
+                <AudiencesCarouselView />
+              ) : (
+                <AudienceSegmentsTab
+                  forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
+                  onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+                  onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+                />
+              );
+            })()}
           </section>
         )}
 
