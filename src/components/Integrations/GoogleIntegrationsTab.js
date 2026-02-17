@@ -755,13 +755,38 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
               </>
             )}
 
-            <Alert
-              message="💡 Pro Tip"
-              description={`Generate a new content calendar after 24 hours to see ${title} data in action. The AI will automatically prioritize topics based on real ${service === 'trends' ? 'trending searches' : service === 'search_console' ? 'ranking opportunities' : 'conversion data'}.`}
-              type="info"
-              showIcon
-              style={{ marginTop: '16px' }}
-            />
+            {service === 'trends' && showPreview && !previewStreaming && (
+              <Alert
+                message="🚀 Next Step: Improve Your Rankings"
+                description="Connect Google Search Console to see which keywords you already rank for and find quick wins to boost your visibility."
+                type="success"
+                showIcon
+                style={{ marginTop: '16px' }}
+                action={
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => {
+                      // Switch to Search Console tab
+                      const searchConsoleTab = document.querySelector('[data-node-key="search_console"]');
+                      if (searchConsoleTab) searchConsoleTab.click();
+                    }}
+                  >
+                    Connect Search Console
+                  </Button>
+                }
+              />
+            )}
+
+            {service !== 'trends' && (
+              <Alert
+                message="💡 Pro Tip"
+                description={`Generate a new content calendar after 24 hours to see ${title} data in action. The AI will automatically prioritize topics based on real ${service === 'search_console' ? 'ranking opportunities' : 'conversion data'}.`}
+                type="info"
+                showIcon
+                style={{ marginTop: '16px' }}
+              />
+            )}
           </Card>
         </>
       ) : (
