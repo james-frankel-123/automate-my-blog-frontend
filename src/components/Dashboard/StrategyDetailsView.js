@@ -160,7 +160,7 @@ function ContentCalendarTimeline({
           <CalendarOutlined style={{ fontSize: '22px', marginRight: '12px' }} />
           <div style={{ flex: 1 }}>
             <Text strong style={{ color: 'white', fontSize: '16px', display: 'block', lineHeight: '1.3' }}>
-              30-Day Content Calendar
+              7-Day Content Calendar
             </Text>
             <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px' }}>
               Preview • Subscribe to unlock full calendar
@@ -386,7 +386,7 @@ function ContentCalendarTimeline({
     <div style={{ padding: '20px', textAlign: 'center' }}>
       <CheckCircleOutlined style={{ fontSize: '48px', color: '#52c41a', marginBottom: '16px' }} />
       <Text strong style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
-        Full 30-Day Calendar Active
+        Full 7-Day Calendar Active
       </Text>
       <Text type="secondary" style={{ fontSize: '14px' }}>
         Your complete content calendar is now available

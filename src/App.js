@@ -348,7 +348,7 @@ const AppContent = () => {
     );
   }
 
-  // Calendar testbed — dev/QA for 30-day content calendar states (live API + mock UIs)
+  // Calendar testbed — dev/QA for 7-day content calendar states (live API + mock UIs)
   if (typeof window !== 'undefined' && window.location.pathname === '/calendar-testbed') {
     return (
       <SystemHintProvider>
