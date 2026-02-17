@@ -141,11 +141,13 @@ export default function CalendarTestbed() {
     if (!id) {
       setLiveId('');
       setLiveName('');
+      setLoadLive(false);
       return;
     }
     const aud = audiences.find((a) => a.id === id);
     setLiveId(id);
     setLiveName(aud ? getAudienceLabel(aud) : '');
+    setLoadLive(true);
   };
 
   const handleCreateTestAudience = () => {
