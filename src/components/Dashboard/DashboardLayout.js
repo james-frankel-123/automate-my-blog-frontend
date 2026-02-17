@@ -732,7 +732,7 @@ const DashboardLayout = ({
         case 'sandbox':
           return <SandboxTab />;
         default:
-          return <DashboardTab />;
+          return <DashboardTab onNavigateToTab={(tab) => setActiveTab(tab)} />;
       }
     }
 
@@ -756,12 +756,13 @@ const DashboardLayout = ({
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            <DashboardTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)} 
+            <DashboardTab
+              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
               onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
               onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
               showSaveProjectButton={showSaveProjectButton}
               isNewRegistration={isNewRegistration}
+              onNavigateToTab={(tab) => setActiveTab(tab)}
               onSaveProject={null} // Save Project button is now in the header
               projectJustSaved={projectJustSaved}
               onCreateNewPost={() => {

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Tabs, Typography, Tag, Button, Row, Col, Input, message, Alert, Space, QRCode, Spin, Table, Statistic } from 'antd';
-import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons';
+import { UserOutlined, BankOutlined, CreditCardOutlined, StarOutlined, GiftOutlined, CopyOutlined, MailOutlined, ShareAltOutlined, TeamOutlined, SendOutlined, ReloadOutlined, EditOutlined, ScanOutlined } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import autoBlogAPI from '../../services/api';
 import { SOCIAL_PLATFORMS, socialProfileLink } from '../../utils/socialProfiles';
+import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -1574,6 +1576,76 @@ const SubscriptionSettings = () => {
   );
 };
 
+const WebsiteAnalysisSettings = () => {
+  const { user } = useAuth();
+  const {
+    websiteUrl,
+    setWebsiteUrl,
+    isLoading,
+    setIsLoading,
+    stepResults,
+    updateWebsiteAnalysis,
+    updateWebSearchInsights,
+    updateAnalysisCompleted,
+    updateStickyWorkflowStep,
+  } = useWorkflowMode();
+
+  const [scanningMessage, setScanningMessage] = useState('');
+
+  const handleAnalysisComplete = (data) => {
+    // Update unified workflow state
+    updateWebsiteAnalysis({
+      ...data.analysis,
+      websiteUrl: data.websiteUrl || websiteUrl
+    });
+    updateWebSearchInsights(data.webSearchInsights || { researchQuality: 'basic' });
+    updateAnalysisCompleted(true);
+
+    // Update sticky workflow step
+    updateStickyWorkflowStep('websiteAnalysis', {
+      websiteUrl: data.websiteUrl || websiteUrl,
+      businessName: data.analysis?.businessName || '',
+      businessType: data.analysis?.businessType || '',
+      ...data.analysis
+    });
+
+    message.success('Website analysis completed successfully!');
+  };
+
+  return (
+    <div style={{ padding: '20px 0' }}>
+      <Alert
+        message="Re-analyze Your Website"
+        description="This will scan your website again and generate new audience strategies and content ideas. Use this if your website content has significantly changed since your last analysis."
+        type="info"
+        showIcon
+        style={{ marginBottom: 24 }}
+      />
+
+      <WebsiteAnalysisStepStandalone
+        websiteUrl={websiteUrl}
+        setWebsiteUrl={setWebsiteUrl}
+        analysisResults={stepResults.home.websiteAnalysis}
+        setAnalysisResults={(data) => updateWebsiteAnalysis(data)}
+        webSearchInsights={stepResults.home.webSearchInsights}
+        setWebSearchInsights={(data) => updateWebSearchInsights(data)}
+        isLoading={isLoading}
+        setIsLoading={setIsLoading}
+        scanningMessage={scanningMessage}
+        setScanningMessage={setScanningMessage}
+        analysisCompleted={stepResults.home.analysisCompleted}
+        setAnalysisCompleted={(completed) => updateAnalysisCompleted(completed)}
+        user={user}
+        onAnalysisComplete={handleAnalysisComplete}
+        updateStickyWorkflowStep={updateStickyWorkflowStep}
+        embedded={true}
+        showTitle={false}
+        autoAnalyze={false}
+      />
+    </div>
+  );
+};
+
 const SettingsTab = () => {
   const items = [
     {
@@ -1605,6 +1677,12 @@ const SettingsTab = () => {
       label: 'Billing',
       icon: <CreditCardOutlined />,
       children: <BillingSettings />,
+    },
+    {
+      key: 'advanced',
+      label: 'Advanced',
+      icon: <ScanOutlined />,
+      children: <WebsiteAnalysisSettings />,
     },
   ];
 
