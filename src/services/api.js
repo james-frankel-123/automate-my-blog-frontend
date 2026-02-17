@@ -1753,13 +1753,32 @@ Please provide analysis in this JSON format:
 
   /**
    * Get aggregated voice profile for an organization.
+   * When profile is non-null, response includes display-ready voiceProperties and derivedDirectives.
    * @param {string} organizationId
-   * @returns {Promise<{ success: boolean, profile: object|null }>}
+   * @returns {Promise<{ success: boolean, profile: object|null, voiceProperties?: Array<{ section: string, items: Array<{ key: string, label: string, value: string|number|Array|object }> }>, derivedDirectives?: string[] }>}
    */
   async getVoiceProfile(organizationId) {
     if (!organizationId) throw new Error('organizationId is required');
     const response = await this.makeRequest(`api/v1/voice-samples/${organizationId}/profile`, { method: 'GET' });
     if (!response.success) throw new Error(response.message || response.error || 'Failed to get profile');
+    return response;
+  }
+
+  /**
+   * Get enhanced blog generation context for an organization (for voice comparison and generation).
+   * Use metadata.voiceComparisonSupported to show/hide "Compare your voice vs generic" UI.
+   * @param {string} organizationId
+   * @param {{ useVoiceProfile?: boolean }} options - useVoiceProfile=false returns context without voice profile (generic); default true
+   * @returns {Promise<{ data: object, metadata?: { voiceComparisonSupported?: boolean, voiceProfileSummary?: { confidenceScore: number, sampleCount: number } } }>}
+   */
+  async getEnhancedBlogContext(organizationId, options = {}) {
+    if (!organizationId) throw new Error('organizationId is required');
+    const useVoiceProfile = options.useVoiceProfile !== false;
+    const query = useVoiceProfile ? '' : '?useVoiceProfile=false';
+    const response = await this.makeRequest(
+      `api/v1/enhanced-blog-generation/context/${organizationId}${query}`,
+      { method: 'GET' }
+    );
     return response;
   }
 
