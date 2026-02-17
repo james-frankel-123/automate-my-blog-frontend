@@ -190,45 +190,6 @@ export default function CalendarTestbed() {
       .finally(() => setCreateLoading(false));
   };
 
-  const handleCreateTestAudience = () => {
-    setCreateError(null);
-    setCreateLoading(true);
-    const fixture = {
-      target_segment: {
-        demographics: 'Calendar testbed audience',
-        psychographics: 'Users testing the 30-day content calendar feature',
-        searchBehavior: 'Looking for content calendar and strategy tools'
-      },
-      customer_problem: 'Testing 30-day content calendar',
-      pitch: '',
-      image_url: null,
-      customer_language: ['content calendar', '30-day plan', 'content strategy'],
-      conversion_path: 'Testbed usage leading to calendar subscription',
-      business_value: {
-        searchVolume: 'Test',
-        conversionPotential: 'Low',
-        priority: 1,
-        competition: 'Low'
-      },
-      priority: 1
-    };
-    autoBlogAPI
-      .createAudience(fixture)
-      .then((res) => {
-        const id = res?.audience?.id;
-        const name = res?.audience?.customer_problem ?? res?.audience?.customerProblem ?? 'Test audience';
-        fetchAudiences();
-        if (id) {
-          setLiveId(id);
-          setLiveName(name);
-        }
-      })
-      .catch((err) => {
-        setCreateError(err?.message ?? 'Failed to create audience');
-      })
-      .finally(() => setCreateLoading(false));
-  };
-
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
