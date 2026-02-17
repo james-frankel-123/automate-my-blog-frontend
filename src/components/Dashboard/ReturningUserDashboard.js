@@ -270,13 +270,11 @@ export default function ReturningUserDashboard() {
       }}>
         {viewMode === 'posts' ? (
           <>
-            {selectedStrategyId && (
-              <ContentCalendarSection
-                strategyId={selectedStrategyId}
-                strategyName={getStrategyName(selectedStrategyId)}
-                onRefresh={loadStrategies}
-              />
-            )}
+            <ContentCalendarSection
+              strategyId={selectedStrategyId}
+              strategyName={selectedStrategyId ? getStrategyName(selectedStrategyId) : null}
+              onRefresh={loadStrategies}
+            />
             <PostsTab
               posts={posts}
               filteredByStrategyId={selectedStrategyId}

@@ -402,6 +402,62 @@ const PricingModal = ({
           {plans.map(plan => renderPlanCard(plan))}
         </Row>
 
+        {/* Value-Based Pricing Explanation */}
+        <div style={{
+          marginTop: '32px',
+          padding: '24px',
+          backgroundColor: '#e6f7ff',
+          border: '1px solid #91d5ff',
+          borderRadius: '8px'
+        }}>
+          <Title level={4} style={{
+            marginTop: 0,
+            marginBottom: '12px',
+            color: '#0050b3'
+          }}>
+            💡 Why Value-Based Pricing?
+          </Title>
+          <Paragraph style={{
+            fontSize: '14px',
+            color: 'var(--color-text-primary)',
+            marginBottom: '16px'
+          }}>
+            Unlike traditional content services that charge per post, we price based on the value we deliver to your business.
+          </Paragraph>
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Aligned Incentives:</strong> We succeed when you succeed. Your cost scales with the profit potential we unlock.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Complexity-Aware:</strong> Simple niches with low competition cost less. Complex industries requiring sophisticated strategies cost more.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Business-Size Appropriate:</strong> Small businesses pay less. Larger businesses with complex needs pay more. Everyone gets great ROI.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Results-Driven:</strong> You pay for quality content that drives traffic, leads, and conversions—not just post volume.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>ROI Tracking:</strong> Connect Google Analytics to see the traffic and conversions we drive. Our system optimizes based on real performance.
+              </Text>
+            </div>
+          </Space>
+        </div>
+
         {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
           <Divider />
