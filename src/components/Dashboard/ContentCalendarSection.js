@@ -1,12 +1,34 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, Spin, Alert, List, Tag, Skeleton, Typography, Space } from 'antd';
-import { CalendarOutlined, LoadingOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Spin, Alert, List, Tag, Skeleton, Typography, Space, Progress, Button } from 'antd';
+import {
+    CalendarOutlined,
+    LoadingOutlined,
+    ReloadOutlined,
+    UserOutlined,
+    BankOutlined,
+    SearchOutlined,
+    ThunderboltOutlined,
+    SaveOutlined,
+    CheckOutlined
+  } from '@ant-design/icons';
 import autoBlogAPI from '../../services/api';
+import jobsAPI from '../../services/jobsAPI';
 
 const { Text } = Typography;
 
 const POLL_INTERVAL_MS = 7000; // Handoff: poll every 5–10s
 const GENERATING_TIMEOUT_MS = 120000; // Handoff: up to ~2 min
+/** Default number of calendar days to show (backend may return more; we show first N). */
+const DEFAULT_CALENDAR_DAYS = 7;
+
+/** Phase order and labels for content_calendar job stream (CONTENT_CALENDAR_GENERATION_PROGRESS_STREAMING.md). */
+const CALENDAR_PHASES = [
+  { key: 'audience', label: 'Audience', icon: UserOutlined },
+  { key: 'organization', label: 'Organization', icon: BankOutlined },
+  { key: 'keywords', label: 'Keywords', icon: SearchOutlined },
+  { key: 'generating', label: 'Generating', icon: ThunderboltOutlined },
+  { key: 'saving', label: 'Saving', icon: SaveOutlined }
+];
 
 /** Normalize audience from API (supports snake_case or camelCase). */
 function getContentIdeas(audience) {
@@ -20,25 +42,48 @@ function getContentCalendarGeneratedAt(audience) {
   return audience.content_calendar_generated_at ?? audience.contentCalendarGeneratedAt ?? null;
 }
 
+/** Job ID for content_calendar when backend returns it on audience (queued/running). */
+function getContentCalendarJobId(audience) {
+  if (!audience) return null;
+  const id = audience.content_calendar_job_id ?? audience.contentCalendarJobId;
+  return id && String(id).trim() ? String(id).trim() : null;
+}
+
 /**
- * ContentCalendarSection - 30-day content calendar for strategies.
+ * ContentCalendarSection - 7-day content calendar for strategies (by default).
  *
  * - When strategyId provided: Fetches single audience by ID (original behavior).
  * - When strategyId is null/undefined: Fetches all subscribed strategies and displays grouped calendars.
  * - Shows "generating" state with skeleton and polls until ready or timeout.
- * - Renders full 30-day list (day, title, format badge, keywords) when ready.
+ * - Renders calendar list (default first 7 days; backend may return more).
  * - Handles 401, 404, 500 and empty state.
- * Conforms to docs/content-calendar-frontend-handoff-pasteable.md (UI states, poll 5–10s, ~2 min timeout).
+ * Conforms to docs/content-calendar-frontend-handoff-pasteable.md and CONTENT_CALENDAR_GENERATION_PROGRESS_STREAMING.md.
+ * @param {string} [jobId] - Optional content_calendar job ID; when set, opens job stream for granular progress (progress bar + step label).
  * @param {boolean} [testbed=false] - When true, append ?testbed=1 to requests (calendar testbed page).
  */
-export default function ContentCalendarSection({ strategyId, strategyName, onRefresh, testbed = false }) {
+export default function ContentCalendarSection({ strategyId, strategyName, onRefresh, jobId, testbed = false }) {
   const [audience, setAudience] = useState(null);
   const [allStrategies, setAllStrategies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timedOut, setTimedOut] = useState(false);
+  const [jobProgress, setJobProgress] = useState(0);
+  const [jobStepLabel, setJobStepLabel] = useState('');
+  const [jobEta, setJobEta] = useState(null);
+  const [jobPhase, setJobPhase] = useState(null);
+  const [jobStrategyIndex, setJobStrategyIndex] = useState(null);
+  const [jobStrategyTotal, setJobStrategyTotal] = useState(null);
+  const [jobStreamFailed, setJobStreamFailed] = useState(null);
+  const [jobRetryable, setJobRetryable] = useState(false);
+  const [jobStreamRetryCount, setJobStreamRetryCount] = useState(0);
+  const [requestedJobId, setRequestedJobId] = useState(null);
+  const [regeneratingJobId, setRegeneratingJobId] = useState(null);
+  const requestTriggeredRef = useRef(false);
   const pollTimerRef = useRef(null);
   const timeoutRef = useRef(null);
+
+  const effectiveJobId = jobId || getContentCalendarJobId(audience) || requestedJobId;
+  const streamJobId = effectiveJobId || regeneratingJobId;
 
   const fetchAudience = useCallback(async () => {
     if (!strategyId) return;
@@ -93,18 +138,21 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
     }
   }, [testbed]);
 
+  // Reset request-trigger ref when strategy changes so we can request again for a new audience
+  useEffect(() => {
+    requestTriggeredRef.current = false;
+  }, [strategyId]);
+
   useEffect(() => {
     setLoading(true);
     setTimedOut(false);
     setError(null);
 
-    // Fetch single strategy or all strategies based on strategyId
     const fetchData = strategyId ? fetchAudience : fetchAllStrategies;
 
     fetchData().then((data) => {
       if (!data) return;
 
-      // For single strategy, check if content is ready
       if (strategyId) {
         const aud = data;
         const ideas = getContentIdeas(aud);
@@ -113,12 +161,11 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
 
         if (isReady) return;
 
-        // Start timeout: after 2 min show "taking longer than expected"
-        timeoutRef.current = window.setTimeout(() => {
-          setTimedOut(true);
-        }, GENERATING_TIMEOUT_MS);
+        const hasJobId = jobId || getContentCalendarJobId(aud) || requestedJobId;
+        if (hasJobId) return;
 
-        // Poll until ready
+        timeoutRef.current = window.setTimeout(() => setTimedOut(true), GENERATING_TIMEOUT_MS);
+
         const poll = () => {
           pollTimerRef.current = window.setTimeout(async () => {
             const updated = await fetchAudience();
@@ -136,14 +183,121 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         };
         poll();
       }
-      // For all strategies, no polling needed (they should already be generated)
     });
 
     return () => {
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [strategyId, fetchAudience, fetchAllStrategies, onRefresh]);
+  }, [strategyId, jobId, requestedJobId, fetchAudience, fetchAllStrategies, onRefresh]);
+
+  // When audience is generating and we have no jobId from props or audience, request one (backend return handoff)
+  useEffect(() => {
+    if (!strategyId || !audience) return;
+    const ideas = getContentIdeas(audience);
+    const generatedAt = getContentCalendarGeneratedAt(audience);
+    if (ideas.length > 0 || generatedAt) return;
+    if (jobId || getContentCalendarJobId(audience) || requestedJobId || requestTriggeredRef.current) return;
+
+    requestTriggeredRef.current = true;
+    autoBlogAPI
+      .requestContentCalendar(strategyId)
+      .then((res) => res?.jobId && setRequestedJobId(res.jobId))
+      .catch((err) => {
+        requestTriggeredRef.current = false;
+        const msg = err?.message || 'Failed to start calendar generation';
+        if (msg.includes('503') || msg.toLowerCase().includes('unavailable')) {
+          setError('Calendar service is temporarily unavailable. Please try again in a moment.');
+        } else if (msg.includes('404') || msg.toLowerCase().includes('not found')) {
+          setError('Audience not found.');
+        } else {
+          setError(msg);
+        }
+      });
+  }, [strategyId, jobId, audience, requestedJobId]);
+
+  // When we have a content_calendar jobId (prop, audience.content_calendar_job_id, requested, or regenerating), open stream
+  useEffect(() => {
+    if (!strategyId || !streamJobId) {
+      setJobProgress(0);
+      setJobStepLabel('');
+      setJobEta(null);
+      setJobPhase(null);
+      setJobStrategyIndex(null);
+      setJobStrategyTotal(null);
+      setJobStreamFailed(null);
+      setJobRetryable(false);
+      return;
+    }
+
+    setJobStreamFailed(null);
+    setJobRetryable(false);
+    setJobProgress(0);
+    setJobStepLabel('Connecting…');
+
+    const promise = jobsAPI.connectToJobStream(
+      streamJobId,
+      {
+        onProgress: (data) => {
+          if (data?.progress != null) setJobProgress(Number(data.progress));
+          if (data?.currentStep != null) setJobStepLabel(String(data.currentStep));
+          setJobEta(data?.estimatedTimeRemaining != null ? Number(data.estimatedTimeRemaining) : null);
+          if (data?.phase != null) setJobPhase(String(data.phase));
+          if (data?.strategyIndex != null) setJobStrategyIndex(Number(data.strategyIndex));
+          if (data?.strategyTotal != null) setJobStrategyTotal(Number(data.strategyTotal));
+        },
+        onComplete: () => {
+          setJobProgress(100);
+          setJobStepLabel('Complete');
+          setRegeneratingJobId(null);
+          fetchAudience().then(() => onRefresh?.());
+        },
+        onFailed: (data) => {
+          setJobStreamFailed(data?.error ?? 'Job failed');
+          setJobRetryable(!!data?.retryable);
+          setError(data?.error ?? 'Calendar generation failed.');
+        }
+      },
+      { streamTimeoutMs: GENERATING_TIMEOUT_MS }
+    );
+
+    promise
+      .then((result) => {
+        if (result?.status === 'succeeded') {
+          setRegeneratingJobId(null);
+          fetchAudience().then(() => onRefresh?.());
+        }
+      })
+      .catch(() => {
+        setJobStepLabel('Checking status…');
+        jobsAPI.pollJobStatus(streamJobId, {
+          onProgress: (status) => {
+            if (status?.progress != null) setJobProgress(Number(status.progress));
+            if (status?.currentStep != null) setJobStepLabel(String(status.currentStep));
+            setJobEta(status?.estimatedTimeRemaining != null ? Number(status.estimatedTimeRemaining) : null);
+            if (status?.phase != null) setJobPhase(String(status.phase));
+            if (status?.strategyIndex != null) setJobStrategyIndex(Number(status.strategyIndex));
+            if (status?.strategyTotal != null) setJobStrategyTotal(Number(status.strategyTotal));
+          },
+          pollIntervalMs: 2500,
+          maxAttempts: Math.ceil(GENERATING_TIMEOUT_MS / 2500)
+        }).then((status) => {
+          if (status?.status === 'succeeded') {
+            setRegeneratingJobId(null);
+            fetchAudience().then(() => onRefresh?.());
+          } else if (status?.status === 'failed') {
+            setJobStreamFailed(status?.error ?? 'Job failed');
+            setJobRetryable(true);
+            setError(status?.error ?? 'Calendar generation failed.');
+          }
+        }).catch(() => {
+          setJobStepLabel('');
+          setError('Calendar is taking longer than expected. Refresh the page or try again.');
+        });
+      });
+
+    return () => {};
+  }, [strategyId, streamJobId, jobStreamRetryCount, fetchAudience, onRefresh]);
 
   // Determine what to display based on mode (single strategy vs all strategies)
   const isSingleStrategyMode = !!strategyId;
@@ -155,68 +309,147 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
   const isGenerating = isSingleStrategyMode &&
     !error && ideas.length === 0 && !generatedAt && (loading || !!audience);
 
-  /* Testbed debug: show what the API returned so we can see why results might not appear */
+  /* Testbed debug: show what the API returned and why calendar may be empty */
   const debugLine = testbed && (audience || error) && (
     <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
       {error
         ? `API error: ${error}`
         : audience
-          ? `API returned: content_ideas=${ideas.length}, content_calendar_generated_at=${generatedAt ? 'set' : 'null'}`
+          ? (
+              <>
+                API returned: content_ideas={ideas.length}, content_calendar_generated_at={generatedAt ? 'set' : 'null'}.
+                {ideas.length === 0 && !generatedAt && (
+                  <> If no progress appears, the frontend will request a calendar job automatically (POST …/request-content-calendar).
+                  </>
+                )}
+              </>
+            )
           : null}
     </div>
   );
 
-  if (error) {
+  if (error || jobStreamFailed) {
+    const displayError = jobStreamFailed ?? error;
     return (
       <Card
         title={
           <Space>
             <CalendarOutlined />
-            <span>30-Day Content Calendar</span>
+            <span>7-Day Content Calendar</span>
           </Space>
         }
         style={{ marginBottom: 24 }}
       >
         {debugLine}
         <Alert
-          message={error}
+          message={displayError}
           type="error"
           showIcon
           action={
-            <ReloadOutlined
-              style={{ cursor: 'pointer' }}
-              onClick={() => {
-                setError(null);
-                setLoading(true);
-                fetchAudience();
-              }}
-            />
+            jobRetryable && streamJobId ? (
+              <Button
+                size="small"
+                onClick={() => {
+                  setError(null);
+                  setJobStreamFailed(null);
+                  setJobRetryable(false);
+                  setLoading(true);
+                  jobsAPI.retryJob(streamJobId).then(() => {
+                    setJobStreamRetryCount((c) => c + 1);
+                  }).catch(() => {
+                    setError('Retry failed. Please try again.');
+                  });
+                }}
+              >
+                Retry
+              </Button>
+            ) : (
+              <ReloadOutlined
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  setError(null);
+                  setJobStreamFailed(null);
+                  setLoading(true);
+                  fetchAudience();
+                }}
+              />
+            )
           }
         />
       </Card>
     );
   }
 
-  if (isGenerating || (loading && !isReady)) {
+  if (isGenerating || regeneratingJobId || (loading && !isReady)) {
+    const showJobProgress = (jobStepLabel && isSingleStrategyMode) || !!regeneratingJobId;
     return (
       <Card
         title={
           <Space>
             <CalendarOutlined />
-            <span>30-Day Content Calendar</span>
+            <span>7-Day Content Calendar</span>
           </Space>
         }
         style={{ marginBottom: 24 }}
       >
         {debugLine}
-        <div style={{ textAlign: 'center', padding: '24px 0' }}>
-          <Spin size="large" indicator={<LoadingOutlined spin />} />
-          <div style={{ marginTop: 16, color: '#666' }}>
-            Calendar generating… This usually takes 15–30 seconds.
-          </div>
-          <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
+        <div style={{ textAlign: showJobProgress ? 'left' : 'center', padding: '24px 0' }}>
+          {showJobProgress ? (
+            <>
+              {jobStrategyTotal != null && jobStrategyTotal > 1 && (
+                <div style={{ marginBottom: 12 }}>
+                  <Tag color="blue">
+                    Strategy {(jobStrategyIndex != null ? jobStrategyIndex + 1 : 1)} of {jobStrategyTotal}
+                  </Tag>
+                </div>
+              )}
+              {jobPhase && CALENDAR_PHASES.some(p => p.key === jobPhase) && (
+                <Space size="middle" wrap style={{ marginBottom: 12 }}>
+                  {CALENDAR_PHASES.map((p, i) => {
+                    const phaseIndex = CALENDAR_PHASES.findIndex(ph => ph.key === jobPhase);
+                    const isActive = p.key === jobPhase;
+                    const isDone = phaseIndex > i;
+                    const Icon = p.icon;
+                    return (
+                      <Space key={p.key} size={4}>
+                        <span
+                          style={{
+                            opacity: isDone ? 0.7 : isActive ? 1 : 0.45,
+                            color: isActive ? '#1890ff' : undefined,
+                            fontWeight: isActive ? 600 : 400
+                          }}
+                        >
+                          {isDone ? <CheckOutlined style={{ marginRight: 4 }} /> : <Icon style={{ marginRight: 4 }} />}
+                          {p.label}
+                        </span>
+                        {i < CALENDAR_PHASES.length - 1 && (
+                          <Text type="secondary" style={{ marginRight: 0 }}>→</Text>
+                        )}
+                      </Space>
+                    );
+                  })}
+                </Space>
+              )}
+              <Progress percent={jobProgress} status="active" strokeColor="#1890ff" />
+              <div style={{ marginTop: 12, color: '#333' }}>{jobStepLabel}</div>
+              {jobEta != null && jobEta > 0 && (
+                <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
+                  About {jobEta}s remaining
+                </Text>
+              )}
+              <Skeleton active paragraph={{ rows: 3 }} style={{ marginTop: 24 }} />
+            </>
+          ) : (
+            <>
+              <Spin size="large" indicator={<LoadingOutlined spin />} />
+              <div style={{ marginTop: 16, color: '#666' }}>
+                Calendar generating… This usually takes 15–30 seconds.
+              </div>
+              <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
+            </>
+          )}
         </div>
-        {timedOut && (
+        {timedOut && !showJobProgress && (
           <Alert
             message="Calendar is taking longer than expected. Refresh the page or contact support."
             type="warning"
@@ -234,7 +467,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         title={
           <Space>
             <CalendarOutlined />
-            <span>30-Day Content Calendar</span>
+            <span>7-Day Content Calendar</span>
           </Space>
         }
         style={{ marginBottom: 24 }}
@@ -265,7 +498,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
           title={
             <Space>
               <CalendarOutlined />
-              <span>30-Day Content Calendar — All Strategies</span>
+              <span>7-Day Content Calendar — All Strategies</span>
             </Space>
           }
           style={{ marginBottom: 24 }}
@@ -281,9 +514,9 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
             strategiesWithContent.map((strategy, idx) => {
               const strategyIdeas = getContentIdeas(strategy);
               const strategyGenAt = getContentCalendarGeneratedAt(strategy);
-              const sortedIdeas = [...strategyIdeas].sort(
-                (a, b) => (a.dayNumber ?? a.day_number ?? 0) - (b.dayNumber ?? b.day_number ?? 0)
-              );
+              const sortedIdeas = [...strategyIdeas]
+                .sort((a, b) => (a.dayNumber ?? a.day_number ?? 0) - (b.dayNumber ?? b.day_number ?? 0))
+                .slice(0, DEFAULT_CALENDAR_DAYS);
               const strategyTitle = strategy.pitch || strategy.customer_problem || `Strategy ${idx + 1}`;
 
               return (
@@ -360,10 +593,10 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
     );
   }
 
-  // Render single strategy mode (original behavior)
-  const sortedIdeas = [...ideas].sort(
-    (a, b) => (a.dayNumber ?? a.day_number ?? 0) - (b.dayNumber ?? b.day_number ?? 0)
-  );
+  // Render single strategy mode (original behavior); show first N days by default
+  const sortedIdeas = [...ideas]
+    .sort((a, b) => (a.dayNumber ?? a.day_number ?? 0) - (b.dayNumber ?? b.day_number ?? 0))
+    .slice(0, DEFAULT_CALENDAR_DAYS);
 
   return (
     <>
@@ -372,7 +605,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
       title={
         <Space>
           <CalendarOutlined />
-          <span>30-Day Content Calendar</span>
+          <span>7-Day Content Calendar</span>
           {strategyName && (
             <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}>
               — {strategyName}
@@ -381,15 +614,33 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
         </Space>
       }
       extra={
-        generatedAt ? (
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            Generated {new Date(generatedAt).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric'
-            })}
-          </Text>
-        ) : null
+        <Space>
+          {generatedAt && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              Generated {new Date(generatedAt).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </Text>
+          )}
+          {strategyId && (
+            <Button
+              size="small"
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setRegeneratingJobId(null);
+                setError(null);
+                setJobStreamFailed(null);
+                autoBlogAPI.requestContentCalendar(strategyId)
+                  .then((res) => res?.jobId && setRegeneratingJobId(res.jobId))
+                  .catch((err) => setError(err?.message || 'Failed to start regeneration.'));
+              }}
+            >
+              Regenerate calendar
+            </Button>
+          )}
+        </Space>
       }
       style={{ marginBottom: 24 }}
     >

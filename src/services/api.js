@@ -2796,15 +2796,16 @@ Please provide analysis in this JSON format:
 
   /**
    * Create audience strategy (authenticated or anonymous)
+   * When authenticated, sends Authorization: Bearer <token> so backend associates the audience with the user.
    */
   async createAudience(audienceData) {
     try {
       const sessionId = this.getOrCreateSessionId();
-      const headers = { 'Content-Type': 'application/json' };
-      
-      // Only send session ID if NOT authenticated
       const token = localStorage.getItem('accessToken');
-      if (!token) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
         headers['x-session-id'] = sessionId;
       }
 
@@ -2903,8 +2904,30 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Request content calendar generation for an audience.
+   * Backend enqueues a content_calendar job; returns existing jobId if one is already queued/running (idempotent).
+   * See docs/CONTENT_CALENDAR_BACKEND_RETURN_HANDOFF.md.
+   * @param {string} audienceId - Audience UUID
+   * @returns {Promise<{ success: boolean, jobId: string }>} 201 new job, 200 existing job
+   */
+  async requestContentCalendar(audienceId) {
+    if (!audienceId || String(audienceId).trim() === '') {
+      throw new Error('Audience ID is required');
+    }
+    const response = await this.makeRequest(
+      `/api/v1/audiences/${encodeURIComponent(audienceId)}/request-content-calendar`,
+      { method: 'POST', body: JSON.stringify({}) }
+    );
+    const jobId = response?.jobId;
+    if (!jobId) {
+      throw new Error(response?.message || response?.error || 'No jobId returned');
+    }
+    return { success: true, jobId };
+  }
+
+  /**
    * Get unified content calendar (all subscribed strategies).
-   * Requires JWT. Returns strategies with contentIdeas (up to 30 per strategy).
+   * Requires JWT. Returns strategies with contentIdeas (default first 7 days shown in UI).
    * @param {{ startDate?: string, endDate?: string, testbed?: boolean }} options - testbed: append ?testbed=1 for calendar testbed
    */
   async getContentCalendar(options = {}) {

@@ -19,15 +19,95 @@ import {
   PlusOutlined,
   ReloadOutlined,
   HomeOutlined,
-  TeamOutlined
+  TeamOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  UserOutlined
 } from '@ant-design/icons';
 import ContentCalendarSection from '../Dashboard/ContentCalendarSection';
+import AuthModal from '../Auth/AuthModal';
+import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
 
 const { Text } = Typography;
 
+/** Pick one random item from an array. */
+function pickRandom(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/** Build a randomized test audience fixture for sandbox/calendar testbed. */
+function buildRandomTestAudienceFixture() {
+  const demographics = [
+    'SMB marketing managers',
+    'Solo founders and indie hackers',
+    'Content teams at mid-market B2B companies',
+    'Calendar testbed audience',
+    'SaaS growth leads (10–50 employees)',
+    'Agency content strategists'
+  ];
+  const psychographics = [
+    'Users testing the 7-day content calendar feature',
+    'Focused on content ROI and editorial planning',
+    'Looking for repeatable content systems',
+    'Value speed and automation over manual planning',
+    'Prefer data-driven content decisions'
+  ];
+  const searchBehaviors = [
+    'Looking for content calendar and strategy tools',
+    'Search for editorial calendar software',
+    'Research content planning best practices',
+    'Compare content calendar vs spreadsheet'
+  ];
+  const problems = [
+    'Testing 7-day content calendar',
+    'Need a structured 7-day content plan',
+    'Planning blog and social content for the month',
+    'Building a content calendar for SEO and engagement',
+    'Scaling content output with a clear calendar'
+  ];
+  const languagePools = [
+    ['content calendar', '7-day plan', 'content strategy'],
+    ['editorial calendar', 'content planning', 'blog schedule'],
+    ['content marketing', 'SEO content', 'content ROI'],
+    ['content workflow', 'editorial process', 'content ops'],
+    ['content ideas', 'topic cluster', 'content pillar']
+  ];
+  const conversionPaths = [
+    'Testbed usage leading to calendar subscription',
+    'Free trial → paid content calendar',
+    'Demo request → sales call',
+    'Newsletter signup → product trial',
+    'Content audit → calendar adoption'
+  ];
+  const businessValues = [
+    { searchVolume: 'Test', conversionPotential: 'Low', priority: 1, competition: 'Low' },
+    { searchVolume: 'Medium', conversionPotential: 'Medium', priority: 2, competition: 'Medium' },
+    { searchVolume: 'High', conversionPotential: 'High', priority: 1, competition: 'High' }
+  ];
+
+  const seg = {
+    demographics: pickRandom(demographics),
+    psychographics: pickRandom(psychographics),
+    searchBehavior: pickRandom(searchBehaviors)
+  };
+  const lang = pickRandom(languagePools);
+  const bv = pickRandom(businessValues);
+
+  return {
+    target_segment: seg,
+    customer_problem: pickRandom(problems),
+    pitch: '',
+    image_url: null,
+    customer_language: lang,
+    conversion_path: pickRandom(conversionPaths),
+    business_value: bv,
+    priority: bv.priority ?? 1
+  };
+}
+
 /** Mock content ideas for "Ready" state (same shape as API content_ideas) */
-const MOCK_IDEAS = Array.from({ length: 30 }, (_, i) => ({
+const MOCK_IDEAS = Array.from({ length: 7 }, (_, i) => ({
   dayNumber: i + 1,
   title: `SEO-optimized blog post title for day ${i + 1} (50–60 chars)`,
   searchIntent: 'Why the audience searches for this topic.',
@@ -38,7 +118,7 @@ const MOCK_IDEAS = Array.from({ length: 30 }, (_, i) => ({
 const MODES = [
   { value: 'live', label: 'Live (audience ID)' },
   { value: 'generating', label: 'Mock: Generating' },
-  { value: 'ready', label: 'Mock: Ready (30 ideas)' },
+  { value: 'ready', label: 'Mock: Ready (7 ideas)' },
   { value: 'error', label: 'Mock: Error' },
   { value: 'empty', label: 'Mock: Empty' },
   { value: 'timeout', label: 'Mock: Timeout' }
@@ -60,11 +140,11 @@ function getStrategyLabel(s) {
 }
 
 /**
- * Calendar testbed — dev/QA page for 30-day content calendar states.
+ * Calendar testbed — dev/QA page for 7-day content calendar states.
  * Route: /calendar-testbed
  *
  * - Live: enter audience ID and render ContentCalendarSection (real API).
- *   On load, looks up existing generated 30-day content via getContentCalendar; if found, auto-loads first strategy with content.
+ *   On load, looks up existing generated content via getContentCalendar; if found, auto-loads first strategy with content.
  * - Mock modes: render the same UIs as ContentCalendarSection (generating, ready, error, empty, timeout).
  */
 function getAudienceLabel(aud) {
@@ -80,6 +160,8 @@ function getAudienceLabel(aud) {
 }
 
 export default function CalendarTestbed() {
+  const { user, logout } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [mode, setMode] = useState('ready');
   const [liveId, setLiveId] = useState('');
   const [liveName, setLiveName] = useState('');
@@ -108,7 +190,7 @@ export default function CalendarTestbed() {
       .finally(() => setAudiencesLoading(false));
   };
 
-  // In Live mode: fetch audiences and look up existing 30-day content; auto-load first strategy with content if present
+  // In Live mode: fetch audiences and look up existing content calendar; auto-load first strategy with content if present
   useEffect(() => {
     if (mode !== 'live') {
       autoLoadedFromCalendarRef.current = false;
@@ -153,25 +235,7 @@ export default function CalendarTestbed() {
   const handleCreateTestAudience = () => {
     setCreateError(null);
     setCreateLoading(true);
-    const fixture = {
-      target_segment: {
-        demographics: 'Calendar testbed audience',
-        psychographics: 'Users testing the 30-day content calendar feature',
-        searchBehavior: 'Looking for content calendar and strategy tools'
-      },
-      customer_problem: 'Testing 30-day content calendar',
-      pitch: '',
-      image_url: null,
-      customer_language: ['content calendar', '30-day plan', 'content strategy'],
-      conversion_path: 'Testbed usage leading to calendar subscription',
-      business_value: {
-        searchVolume: 'Test',
-        conversionPotential: 'Low',
-        priority: 1,
-        competition: 'Low'
-      },
-      priority: 1
-    };
+    const fixture = buildRandomTestAudienceFixture();
     autoBlogAPI
       .createAudience(fixture)
       .then((res) => {
@@ -202,6 +266,54 @@ export default function CalendarTestbed() {
           Back to Dashboard
         </Button>
         <Text strong style={{ fontSize: 18 }}>Content Calendar Testbed</Text>
+        <span style={{ flex: 1 }} />
+        {user ? (
+          <Space size="middle">
+            <Text type="secondary" style={{ fontSize: 13 }}>
+              <UserOutlined style={{ marginRight: 6 }} />
+              {user.email}
+            </Text>
+            <Button
+              size="small"
+              icon={<LogoutOutlined />}
+              onClick={() => logout()}
+            >
+              Sign out
+            </Button>
+          </Space>
+        ) : (
+          <Button
+            type="primary"
+            ghost
+            icon={<LoginOutlined />}
+            onClick={() => setAuthModalOpen(true)}
+          >
+            Sign in
+          </Button>
+        )}
+      </div>
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        defaultTab="login"
+        context="calendar-testbed"
+        onSuccess={() => {
+          setAuthModalOpen(false);
+          if (mode === 'live') fetchAudiences();
+        }}
+      />
+
+      <div style={{ marginBottom: 12 }}>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          API: {process.env.REACT_APP_API_URL || 'http://localhost:3001'}
+          {' — '}
+          Audiences and calendar jobs are created on this backend. Restart dev server after changing <code>.env</code>.
+        </Text>
+        {user && (
+          <Text type="secondary" style={{ display: 'block', fontSize: 11, marginTop: 4 }}>
+            Create Test audience is sent to the API above with your current session (Authorization: Bearer token).
+          </Text>
+        )}
       </div>
 
       <Card size="small" style={{ marginBottom: 24 }}>
@@ -280,7 +392,7 @@ export default function CalendarTestbed() {
             {!audiencesLoading && audiences.length === 0 && !audiencesError && (
               <Alert
                 message="Subscribe to a strategy to get your calendar."
-                description="No audiences yet. Complete website analysis or subscribe to a strategy to see your 30-day content calendar here."
+                description="No audiences yet. Complete website analysis or subscribe to a strategy to see your 7-day content calendar here."
                 type="info"
                 showIcon
                 style={{ marginTop: 16 }}
@@ -298,9 +410,17 @@ export default function CalendarTestbed() {
               >
                 {createLoading ? 'Creating…' : 'Create test audience'}
               </Button>
+              <Text type="secondary" style={{ display: 'block', marginTop: 8, fontSize: 11 }}>
+                Test audiences do not get a 7-day calendar automatically; the backend enqueues a content_calendar job only when a user subscribes (e.g. Stripe). To see a calendar here, use an audience that was subscribed via the app, or trigger calendar generation from the backend.
+              </Text>
               {createError && (
                 <Alert
                   message={createError}
+                  description={
+                    /user not found|account may not exist|environment|signed up with/i.test(createError)
+                      ? 'If your account exists on this backend: open DevTools → Network, click Create Test audience again, and check the POST request to /api/v1/audiences — ensure the Request Headers include Authorization: Bearer …. If the header is missing, try signing out and signing in again.'
+                      : null
+                  }
                   type="error"
                   showIcon
                   style={{ marginTop: 8 }}
@@ -328,7 +448,7 @@ export default function CalendarTestbed() {
           title={
             <Space>
               <CalendarOutlined />
-              <span>30-Day Content Calendar</span>
+              <span>7-Day Content Calendar</span>
             </Space>
           }
           style={{ marginBottom: 24 }}
@@ -336,7 +456,7 @@ export default function CalendarTestbed() {
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <Spin size="large" indicator={<LoadingOutlined spin />} />
             <div style={{ marginTop: 16, color: '#666' }}>
-              Your 30-day content calendar is being generated. This usually takes 15–30 seconds.
+              Your 7-day content calendar is being generated. This usually takes 15–30 seconds.
             </div>
             <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
           </div>
@@ -349,7 +469,7 @@ export default function CalendarTestbed() {
           title={
             <Space>
               <CalendarOutlined />
-              <span>30-Day Content Calendar</span>
+              <span>7-Day Content Calendar</span>
             </Space>
           }
           style={{ marginBottom: 24 }}
@@ -357,7 +477,7 @@ export default function CalendarTestbed() {
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <Spin size="large" indicator={<LoadingOutlined spin />} />
             <div style={{ marginTop: 16, color: '#666' }}>
-              Your 30-day content calendar is being generated. This usually takes 15–30 seconds.
+              Your 7-day content calendar is being generated. This usually takes 15–30 seconds.
             </div>
             <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
           </div>
@@ -376,7 +496,7 @@ export default function CalendarTestbed() {
           title={
             <Space>
               <CalendarOutlined />
-              <span>30-Day Content Calendar</span>
+              <span>7-Day Content Calendar</span>
             </Space>
           }
           style={{ marginBottom: 24 }}
@@ -401,7 +521,7 @@ export default function CalendarTestbed() {
           title={
             <Space>
               <CalendarOutlined />
-              <span>30-Day Content Calendar</span>
+              <span>7-Day Content Calendar</span>
             </Space>
           }
           style={{ marginBottom: 24 }}
@@ -415,13 +535,13 @@ export default function CalendarTestbed() {
         </Card>
       )}
 
-      {/* Mock: Ready (30 ideas list) */}
+      {/* Mock: Ready (7 ideas list) */}
       {mode === 'ready' && (
         <Card
           title={
             <Space>
               <CalendarOutlined />
-              <span>30-Day Content Calendar</span>
+              <span>7-Day Content Calendar</span>
               <Text type="secondary" style={{ fontSize: 14, fontWeight: 'normal' }}>
                 — Mock strategy name
               </Text>
