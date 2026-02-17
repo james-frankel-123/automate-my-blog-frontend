@@ -74,6 +74,22 @@ export default function AudiencesCarouselView() {
     }
   }, []);
 
+  // Add tab visibility detection for post-checkout scenarios
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 Tab became visible, reloading strategies...');
+        loadStrategies();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   /**
    * Load strategies and subscriptions
    */
@@ -83,25 +99,39 @@ export default function AudiencesCarouselView() {
       // Fetch all strategies (audiences)
       const audiencesResponse = await autoBlogAPI.getUserAudiences();
 
+      console.log('📊 Raw audiences response:', audiencesResponse);
+      console.log('📊 Audiences count:', audiencesResponse?.audiences?.length || 0);
+      console.log('📊 First 3 audience IDs:',
+        (audiencesResponse?.audiences || []).slice(0, 3).map(a => a.id)
+      );
+
       // Transform audiences to strategy format
       const transformedStrategies = (audiencesResponse?.audiences || []).map((aud, idx) =>
         transformAudienceToStrategy(aud, idx)
       );
+
+      console.log('📊 Transformed strategies count:', transformedStrategies.length);
+      console.log('📊 Transformed strategy IDs:', transformedStrategies.map(s => s.id));
 
       setStrategies(transformedStrategies);
 
       // Fetch strategy subscriptions
       const subscriptionsResponse = await autoBlogAPI.getSubscribedStrategies();
 
+      console.log('📊 Raw subscriptions response:', subscriptionsResponse);
+
       // Handle response (could be array or object with subscriptions property)
       const subscriptionsList = Array.isArray(subscriptionsResponse)
         ? subscriptionsResponse
         : (subscriptionsResponse?.subscriptions || []);
 
+      console.log('📊 Subscriptions list:', subscriptionsList);
+
       // Convert array to map for quick lookup
       const subsMap = {};
       subscriptionsList.forEach(sub => {
         const strategyId = sub.strategy_id || sub.strategyId;
+        console.log('📊 Processing subscription:', { sub, strategyId });
         subsMap[strategyId] = {
           id: sub.id,
           strategyId: strategyId,
@@ -111,6 +141,7 @@ export default function AudiencesCarouselView() {
         };
       });
 
+      console.log('📊 Final subscribed map:', subsMap);
       setSubscribedStrategies(subsMap);
     } catch (error) {
       console.error('Failed to load strategies:', error);
