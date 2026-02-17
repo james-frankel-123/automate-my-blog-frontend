@@ -17,6 +17,155 @@ import api from '../../services/api';
 const { Title, Paragraph, Text } = Typography;
 
 /**
+ * Parse inline markdown (bold text)
+ */
+function parseInlineMarkdown(text) {
+  const parts = [];
+  let lastIndex = 0;
+  const boldRegex = /\*\*([^*]+)\*\*/g;
+  let match;
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    // Add bold text
+    parts.push(<strong key={match.index}>{match[1]}</strong>);
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : text;
+}
+
+/**
+ * Parse and render markdown-formatted text
+ * Handles bold headers, bullet points, and inline bold text
+ */
+function renderMarkdownText(text) {
+  if (!text) return null;
+
+  // Split into lines
+  const lines = text.split('\n');
+  const elements = [];
+  let currentList = [];
+
+  lines.forEach((line, idx) => {
+    const trimmedLine = line.trim();
+
+    // Bold headers (e.g., **📈 TRENDING TOPICS FOUND:**)
+    if (trimmedLine.match(/^\*\*[^*]+\*\*:?\s*$/)) {
+      // Flush current list if exists
+      if (currentList.length > 0) {
+        elements.push(
+          <ul key={`list-${elements.length}`} style={{
+            margin: '8px 0',
+            padding: '0 0 0 20px',
+            listStyle: 'none'
+          }}>
+            {currentList.map((item, i) => (
+              <li key={i} style={{
+                marginBottom: '6px',
+                position: 'relative',
+                paddingLeft: '8px'
+              }}>
+                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                {parseInlineMarkdown(item)}
+              </li>
+            ))}
+          </ul>
+        );
+        currentList = [];
+      }
+
+      const headerText = trimmedLine.replace(/\*\*/g, '').replace(/:$/, '').trim();
+      elements.push(
+        <Text key={`header-${idx}`} strong style={{
+          display: 'block',
+          fontSize: '16px',
+          color: '#262626',
+          marginTop: elements.length > 0 ? '20px' : '0',
+          marginBottom: '12px'
+        }}>
+          {headerText}
+        </Text>
+      );
+    }
+    // Bullet points (e.g., • Item text or - Item text)
+    else if (trimmedLine.match(/^[•-]\s/)) {
+      const bulletText = trimmedLine.substring(1).trim();
+      currentList.push(bulletText);
+    }
+    // Regular paragraph text
+    else if (trimmedLine.length > 0) {
+      // Flush current list if exists
+      if (currentList.length > 0) {
+        elements.push(
+          <ul key={`list-${elements.length}`} style={{
+            margin: '8px 0',
+            padding: '0 0 0 20px',
+            listStyle: 'none'
+          }}>
+            {currentList.map((item, i) => (
+              <li key={i} style={{
+                marginBottom: '6px',
+                position: 'relative',
+                paddingLeft: '8px'
+              }}>
+                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                {parseInlineMarkdown(item)}
+              </li>
+            ))}
+          </ul>
+        );
+        currentList = [];
+      }
+
+      elements.push(
+        <Text key={`p-${idx}`} style={{
+          display: 'block',
+          fontSize: '15px',
+          lineHeight: '1.8',
+          color: '#434343',
+          marginBottom: '8px'
+        }}>
+          {parseInlineMarkdown(trimmedLine)}
+        </Text>
+      );
+    }
+  });
+
+  // Flush remaining list items
+  if (currentList.length > 0) {
+    elements.push(
+      <ul key={`list-${elements.length}`} style={{
+        margin: '8px 0',
+        padding: '0 0 0 20px',
+        listStyle: 'none'
+      }}>
+        {currentList.map((item, i) => (
+          <li key={i} style={{
+            marginBottom: '6px',
+            position: 'relative',
+            paddingLeft: '8px'
+          }}>
+            <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+            {parseInlineMarkdown(item)}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return <div>{elements}</div>;
+}
+
+/**
  * Setup Instructions Component
  * Shows step-by-step OAuth setup guide
  */
@@ -544,7 +693,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
                 border: '1px solid #d6e4ff',
                 marginBottom: '16px'
               }}>
-                <Title level={5} style={{ marginTop: 0, color: '#1890ff' }}>
+                <Title level={5} style={{ marginTop: 0, color: '#1890ff', marginBottom: '16px' }}>
                   <BulbOutlined /> Trending Topics Found for Your Business
                 </Title>
                 <div style={{
@@ -553,7 +702,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
                   color: '#262626',
                   minHeight: previewStreaming ? '80px' : 'auto'
                 }}>
-                  {preview}
+                  {renderMarkdownText(preview)}
                   {previewStreaming && (
                     <span style={{
                       display: 'inline-block',
@@ -606,13 +755,38 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
               </>
             )}
 
-            <Alert
-              message="💡 Pro Tip"
-              description={`Generate a new content calendar after 24 hours to see ${title} data in action. The AI will automatically prioritize topics based on real ${service === 'trends' ? 'trending searches' : service === 'search_console' ? 'ranking opportunities' : 'conversion data'}.`}
-              type="info"
-              showIcon
-              style={{ marginTop: '16px' }}
-            />
+            {service === 'trends' && showPreview && !previewStreaming && (
+              <Alert
+                message="🚀 Next Step: Improve Your Rankings"
+                description="Connect Google Search Console to see which keywords you already rank for and find quick wins to boost your visibility."
+                type="success"
+                showIcon
+                style={{ marginTop: '16px' }}
+                action={
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => {
+                      // Switch to Search Console tab
+                      const searchConsoleTab = document.querySelector('[data-node-key="search_console"]');
+                      if (searchConsoleTab) searchConsoleTab.click();
+                    }}
+                  >
+                    Connect Search Console
+                  </Button>
+                }
+              />
+            )}
+
+            {service !== 'trends' && (
+              <Alert
+                message="💡 Pro Tip"
+                description={`Generate a new content calendar after 24 hours to see ${title} data in action. The AI will automatically prioritize topics based on real ${service === 'search_console' ? 'ranking opportunities' : 'conversion data'}.`}
+                type="info"
+                showIcon
+                style={{ marginTop: '16px' }}
+              />
+            )}
           </Card>
         </>
       ) : (
