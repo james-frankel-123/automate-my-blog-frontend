@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Table, Tag, Dropdown, Space, Switch, Input, Select, Row, Col, Typography, message, Modal, Progress } from 'antd';
+import { Card, Button, Table, Tag, Dropdown, Space, Switch, Input, Select, Row, Col, Typography, message, Modal, Progress, Alert } from 'antd';
 import { 
   PlusOutlined, 
   ScheduleOutlined,
@@ -12,7 +12,8 @@ import {
   LockOutlined,
   TeamOutlined,
   TrophyOutlined,
-  CopyOutlined
+  CopyOutlined,
+  SoundOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -312,7 +313,7 @@ const PostsTab = ({
   onClearFilter = null,
   getStrategyName = null
 }) => {
-  const { user } = useAuth();
+  const { user, currentOrganization } = useAuth();
   const tabMode = useTabMode('posts');
   const { 
     requireSignUp,
@@ -391,9 +392,12 @@ const PostsTab = ({
   const [enhancedMetadata, setEnhancedMetadata] = useState(null);
   const [seoAnalysisVisible, setSeoAnalysisVisible] = useState(false);
 
-  // Organization data for enhanced generation
-  const organizationId = user?.organizationId || user?.id; // Use user ID as fallback
-  const organizationName = user?.organizationName || '';
+  // Organization data for enhanced generation (align with Voice adaptation: use currentOrganization when available)
+  const organizationId = currentOrganization?.id || user?.organizationId || user?.id;
+  const organizationName = user?.organizationName || currentOrganization?.name || '';
+
+  // Voice profile: show "Writing in your voice" when org has a usable profile (confidence >= 50)
+  const [voiceProfileSummary, setVoiceProfileSummary] = useState(null); // { confidenceScore, sampleCount } | null
 
   // CTA state management
   const [organizationCTAs, setOrganizationCTAs] = useState([]);
@@ -543,6 +547,25 @@ const PostsTab = ({
 
     fetchCTAs();
   }, [organizationId]);
+
+  // Fetch voice profile so we can show "Writing in your voice" when generating (backend uses voice by default when profile exists)
+  useEffect(() => {
+    if (!organizationId || !user) return;
+    let cancelled = false;
+    api.getVoiceProfile(organizationId)
+      .then((res) => {
+        if (cancelled || !res?.profile) return;
+        const score = res.profile.confidence_score;
+        if (typeof score === 'number' && score >= 50) {
+          setVoiceProfileSummary({
+            confidenceScore: score,
+            sampleCount: res.profile.sample_count ?? 0
+          });
+        }
+      })
+      .catch(() => { /* no profile or not owner: ignore */ });
+    return () => { cancelled = true; };
+  }, [organizationId, user]);
 
   // Fullscreen toggle handler
   const handleToggleFullscreen = useCallback(() => {
@@ -2111,7 +2134,7 @@ const PostsTab = ({
                     <div>
                       <Paragraph style={{ 
                         textAlign: 'center', 
-                        marginBottom: '30px', 
+                        marginBottom: '8px', 
                         color: 'var(--color-text-secondary)',
                         fontSize: responsive.fontSize.text
                       }}>
@@ -2120,7 +2143,53 @@ const PostsTab = ({
                           `Based on your audience analysis, here are high-impact blog post ideas:`
                         }
                       </Paragraph>
+                      {voiceProfileSummary && !generatingContent && (
+                        <Paragraph style={{ textAlign: 'center', marginBottom: 'var(--space-6)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                          <SoundOutlined style={{ marginRight: 'var(--space-1)', color: 'var(--color-primary)' }} />
+                          This post will be written in your voice ({voiceProfileSummary.confidenceScore}% confidence).
+                          {' '}
+                          <a
+                            href="/settings/voice-adaptation"
+                            style={{ color: 'var(--color-primary)', fontWeight: 500 }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              window.history.pushState({}, '', '/settings/voice-adaptation');
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'voice-adaptation' }));
+                            }}
+                          >
+                            Manage voice
+                          </a>
+                        </Paragraph>
+                      )}
+                      {!voiceProfileSummary && <div style={{ marginBottom: 'var(--space-6)' }} />}
 
+                      {generatingContent && voiceProfileSummary && (
+                        <Alert
+                          type="success"
+                          showIcon
+                          icon={<SoundOutlined />}
+                          message="Writing this post in your voice"
+                          description={
+                            <span>
+                              Your voice profile is being used for this draft
+                              {voiceProfileSummary.confidenceScore != null && ` (${voiceProfileSummary.confidenceScore}% confidence)`}.
+                              {' '}
+                              <a
+                                href="/settings/voice-adaptation"
+                                style={{ color: 'inherit', textDecoration: 'underline' }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  window.history.pushState({}, '', '/settings/voice-adaptation');
+                                  window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'voice-adaptation' }));
+                                }}
+                              >
+                                Manage voice
+                              </a>
+                            </span>
+                          }
+                          style={{ marginBottom: 'var(--space-4)' }}
+                        />
+                      )}
                       {generatingContent && (
                         <>
                           <ThinkingPanel

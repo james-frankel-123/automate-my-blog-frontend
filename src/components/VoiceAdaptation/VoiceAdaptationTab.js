@@ -31,7 +31,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
 const { Search } = Input;
 
 const POLL_INTERVAL_MS = 5000;
@@ -307,46 +307,72 @@ export default function VoiceAdaptationTab() {
 
   if (!user) {
     return (
-      <Alert
-        type="info"
-        message="Sign in required"
-        description="Voice adaptation is available only when you are logged in as the organization owner."
-      />
+      <div style={{ padding: 'var(--space-6) 0' }}>
+        <Alert
+          type="info"
+          message="Sign in required"
+          description="Voice adaptation is available only when you're logged in as the organization owner."
+          showIcon
+        />
+      </div>
     );
   }
 
   if (!orgId) {
     return (
-      <Alert
-        type="warning"
-        message="No organization"
-        description="Create or select an organization to manage voice samples."
-      />
+      <div style={{ padding: 'var(--space-6) 0' }}>
+        <Alert
+          type="warning"
+          message="No organization"
+          description="Create or select an organization in Settings to manage voice samples."
+          showIcon
+        />
+      </div>
     );
   }
 
+  const isVoiceReady = profile && (profile.confidence_score ?? 0) >= 50;
+
   return (
-    <div style={{ padding: 'var(--space-4) 0' }}>
-      <Title level={3} style={{ marginBottom: 'var(--space-4)' }}>
-        <SoundOutlined /> Voice adaptation
-      </Title>
-      <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-6)' }}>
-        Upload writing samples so we can learn your voice and generate blog content that sounds like you.
-      </Text>
+    <div style={{ padding: 'var(--space-6) 0', maxWidth: 960, margin: '0 auto' }}>
+      {/* Page header */}
+      <header style={{ marginBottom: 'var(--space-8)' }}>
+        <Title level={2} style={{ marginBottom: 'var(--space-2)', fontWeight: 600 }}>
+          Voice adaptation
+        </Title>
+        <Paragraph
+          type="secondary"
+          style={{
+            marginBottom: 0,
+            fontSize: 'var(--font-size-base)',
+            lineHeight: 1.5,
+            color: 'var(--color-text-secondary)',
+          }}
+        >
+          Upload writing samples (blog posts, emails, newsletters) so we can learn how you write. New posts will then be generated in your voice.
+        </Paragraph>
+      </header>
 
       {/* Upload */}
-      <Card title="Upload samples" style={{ marginBottom: 'var(--space-6)' }}>
-        <Row gutter={[16, 16]} align="middle">
-          <Col flex="200px">
-            <Text strong>Source type</Text>
+      <Card
+        title={<span style={{ fontWeight: 600 }}>Upload samples</span>}
+        style={{ marginBottom: 'var(--space-6)' }}
+        styles={{ body: { padding: 'var(--space-6)' } }}
+      >
+        <Row gutter={[24, 24]} align="middle">
+          <Col xs={24} sm={24} md={8} lg={6}>
+            <label className="ant-form-item-required" style={{ display: 'block', marginBottom: 'var(--space-2)', fontSize: 'var(--font-size-sm)' }}>
+              Source type
+            </label>
             <Select
               value={sourceType}
               onChange={setSourceType}
               options={SOURCE_TYPE_OPTIONS}
-              style={{ width: '100%', marginTop: 8 }}
+              style={{ width: '100%' }}
+              aria-label="Sample source type"
             />
           </Col>
-          <Col flex="auto">
+          <Col xs={24} sm={24} md={16} lg={14}>
             <Upload.Dragger
               multiple
               maxCount={MAX_FILES_PER_UPLOAD}
@@ -354,7 +380,7 @@ export default function VoiceAdaptationTab() {
               beforeUpload={(file) => {
                 const ext = getFileExtension(file.name);
                 if (!ALLOWED_EXTENSIONS.includes(ext)) {
-                  message.error(`File type ${ext} not allowed. Use: ${ALLOWED_EXTENSIONS.join(', ')}`);
+                  message.error(`File type ${ext} not allowed. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`);
                   return Upload.LIST_IGNORE;
                 }
                 setFileList((prev) => [...prev, { uid: file.uid, name: file.name, originFileObj: file }]);
@@ -362,105 +388,146 @@ export default function VoiceAdaptationTab() {
               }}
               onRemove={(file) => setFileList((prev) => prev.filter((f) => f.uid !== file.uid))}
               accept={ALLOWED_EXTENSIONS.join(',')}
+              aria-label="Upload writing sample files"
             >
               <p className="ant-upload-drag-icon">
-                <CloudUploadOutlined style={{ fontSize: 48, color: 'var(--color-primary)' }} />
+                <CloudUploadOutlined style={{ fontSize: 40, color: 'var(--color-primary)' }} />
               </p>
-              <p className="ant-upload-text">Drag files here or click to browse</p>
-              <p className="ant-upload-hint">Allowed: {ALLOWED_EXTENSIONS.join(', ')}. Max {MAX_FILES_PER_UPLOAD} files per upload.</p>
+              <p className="ant-upload-text" style={{ marginBottom: 'var(--space-1)' }}>
+                Drag files here or click to browse
+              </p>
+              <p className="ant-upload-hint" style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)' }}>
+                {ALLOWED_EXTENSIONS.join(', ')} — up to {MAX_FILES_PER_UPLOAD} files per upload
+              </p>
             </Upload.Dragger>
           </Col>
-          <Col>
+          <Col xs={24} sm={24} md={24} lg={4} style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
             <Button
               type="primary"
               icon={<UploadOutlined />}
               onClick={handleUpload}
               loading={uploading}
               disabled={!fileList.length || uploading}
+              size="large"
             >
               Upload
             </Button>
           </Col>
         </Row>
         {uploading && (
-          <div style={{ marginTop: 16 }}>
-            <Progress percent={uploadProgress} status="active" />
+          <div style={{ marginTop: 'var(--space-4)' }}>
+            <Progress percent={uploadProgress} status="active" strokeColor="var(--color-primary)" />
           </div>
         )}
       </Card>
 
       {/* Profile summary */}
-      <Card title="Voice profile" style={{ marginBottom: 'var(--space-6)' }}>
+      <Card
+        title={
+          <Space align="center">
+            <span style={{ fontWeight: 600 }}>Voice profile</span>
+            {isVoiceReady && (
+              <Tag color="success">Voice ready</Tag>
+            )}
+          </Space>
+        }
+        style={{ marginBottom: 'var(--space-6)' }}
+        styles={{ body: { padding: 'var(--space-6)' } }}
+      >
         {loadingProfile ? (
-          <Spin tip="Loading profile…" />
+          <div style={{ padding: 'var(--space-8) 0', textAlign: 'center' }}>
+            <Spin tip="Loading profile…" size="large" />
+          </div>
         ) : profile ? (
           <>
-            <Row gutter={[24, 16]}>
-              <Col>
+            <Row gutter={[32, 24]}>
+              <Col xs={12} sm={12} md={6}>
                 <Statistic
-                  title="Confidence"
+                  title={<span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>Confidence</span>}
                   value={profile.confidence_score ?? 0}
                   suffix="%"
                   valueStyle={{
-                    color:
-                      (profile.confidence_score ?? 0) >= 50
-                        ? 'var(--color-success)'
-                        : 'var(--color-warning)',
+                    fontSize: 'var(--font-size-2xl)',
+                    fontWeight: 600,
+                    color: (profile.confidence_score ?? 0) >= 50 ? 'var(--color-success)' : 'var(--color-warning)',
                   }}
                 />
               </Col>
-              <Col>
-                <Statistic title="Samples" value={profile.sample_count ?? 0} />
-              </Col>
-              <Col>
-                <Statistic title="Total words" value={profile.total_word_count ?? 0} />
-              </Col>
-              <Col>
+              <Col xs={12} sm={12} md={6}>
                 <Statistic
-                  title="Last updated"
-                  value={profile.updated_at ? formatDistanceToNow(new Date(profile.updated_at), { addSuffix: true }) : '—'}
+                  title={<span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>Samples</span>}
+                  value={profile.sample_count ?? 0}
+                  valueStyle={{ fontSize: 'var(--font-size-2xl)', fontWeight: 600 }}
                 />
               </Col>
+              <Col xs={12} sm={12} md={6}>
+                <Statistic
+                  title={<span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>Total words</span>}
+                  value={profile.total_word_count ?? 0}
+                  valueStyle={{ fontSize: 'var(--font-size-2xl)', fontWeight: 600 }}
+                />
+              </Col>
+              <Col xs={12} sm={12} md={6}>
+                <Statistic
+                  title={<span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>Last updated</span>}
+                  value={profile.updated_at ? formatDistanceToNow(new Date(profile.updated_at), { addSuffix: true }) : '—'}
+                  valueStyle={{ fontSize: 'var(--font-size-base)', fontWeight: 500 }}
+                />
+              </Col>
+            </Row>
+            <Row style={{ marginTop: 'var(--space-4)' }}>
               <Col>
-                <Button type="default" icon={<DownloadOutlined />} onClick={handleExportProfile}>
+                <Button type="default" icon={<DownloadOutlined />} onClick={handleExportProfile} size="middle">
                   Export profile (JSON)
                 </Button>
               </Col>
             </Row>
-            {(profile.confidence_score ?? 0) >= 50 && (
+            {isVoiceReady && (
               <Alert
                 type="success"
-                message="Voice ready"
-                description="Your voice profile is being used for blog generation."
+                message="Your voice is used for new posts"
+                description="When you generate a post in Posts, we use this profile so the draft sounds like you."
                 showIcon
-                style={{ marginTop: 16 }}
+                style={{ marginTop: 'var(--space-4)' }}
               />
             )}
           </>
         ) : (
-          <Text type="secondary">No profile yet. Upload and process samples to build your voice profile.</Text>
+          <div style={{ textAlign: 'center', padding: 'var(--space-6) var(--space-4)' }}>
+            <SoundOutlined style={{ fontSize: 32, color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-3)', display: 'block' }} />
+            <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-2)' }}>
+              No voice profile yet
+            </Text>
+            <Paragraph type="secondary" style={{ marginBottom: 0, fontSize: 'var(--font-size-sm)' }}>
+              Upload at least one sample above. After analysis finishes, your profile will appear here and be used for new posts.
+            </Paragraph>
+          </div>
         )}
       </Card>
 
       {/* Samples table */}
       <Card
-        title="Samples"
+        title={<span style={{ fontWeight: 600 }}>Samples</span>}
+        style={{ marginBottom: 'var(--space-6)' }}
+        styles={{ body: { padding: 'var(--space-6)' } }}
         extra={
-          <Space>
+          <Space wrap size="middle">
             <Search
-              placeholder="Search by title or filename"
+              placeholder="Search samples"
               allowClear
               onSearch={setSearchText}
               onChange={(e) => setSearchText(e.target.value)}
-              style={{ width: 200 }}
+              style={{ width: 180, minWidth: 140 }}
+              aria-label="Search samples by title or filename"
             />
             <Select
-              placeholder="Filter by source type"
+              placeholder="Source type"
               allowClear
               value={filterSourceType}
               onChange={setFilterSourceType}
               options={SOURCE_TYPE_OPTIONS}
-              style={{ width: 160 }}
+              style={{ width: 160, minWidth: 130 }}
+              aria-label="Filter by source type"
             />
           </Space>
         }
@@ -471,7 +538,7 @@ export default function VoiceAdaptationTab() {
             message="Analysis in progress"
             description="Samples are being analyzed. This list updates every few seconds."
             showIcon
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: 'var(--space-4)' }}
           />
         )}
         <Table
@@ -479,8 +546,9 @@ export default function VoiceAdaptationTab() {
           columns={columns}
           dataSource={filteredSamples}
           loading={loadingSamples}
-          pagination={{ pageSize: 10, showSizeChanger: true }}
+          pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `${total} sample${total !== 1 ? 's' : ''}` }}
           size="small"
+          locale={{ emptyText: 'No samples yet. Upload files above to get started.' }}
         />
       </Card>
 
@@ -491,12 +559,12 @@ export default function VoiceAdaptationTab() {
         onOk={handleDelete}
         onCancel={() => setDeleteModal({ visible: false, sample: null })}
         okText="Deactivate"
+        cancelText="Cancel"
         okButtonProps={{ danger: true }}
       >
-        <p>
-          Deactivate &quot;{deleteModal.sample?.title || deleteModal.sample?.file_name}&quot;? The sample will be
-          removed from your voice profile.
-        </p>
+        <Paragraph style={{ marginBottom: 0 }}>
+          Deactivate &quot;{deleteModal.sample?.title || deleteModal.sample?.file_name}&quot;? It will be removed from your voice profile and no longer used for generation.
+        </Paragraph>
       </Modal>
     </div>
   );
