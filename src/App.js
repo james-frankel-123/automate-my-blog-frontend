@@ -247,6 +247,10 @@ const AppContent = () => {
   // Debug logging
   React.useEffect(() => {
     if (user) {
+      const p = typeof window !== 'undefined' ? window.location.pathname : '';
+      const fd = (p === '/dashboard' || p.startsWith('/settings/')) && !!user;
+      const stayInFunnel = isNewRegistration && typeof window !== 'undefined' && p !== '/dashboard';
+      const sf = p === '/onboarding' || (!user && !fd) || (user && stayInFunnel);
       console.log('🔍 [App.js] Returning user check:', {
         hasUser: !!user,
         createdAt: user.createdAt,
@@ -256,8 +260,15 @@ const AppContent = () => {
         hasCompletedAnalysis,
         isTrulyReturningUser,
         isNewRegistration,
-        pathname: window.location.pathname
+        pathname: p,
+        forceDashboard: fd,
+        showFunnel: sf
       });
+    } else {
+      const p = typeof window !== 'undefined' ? window.location.pathname : '';
+      const fd = (p === '/dashboard' || p.startsWith('/settings/')) && !!user;
+      const sf = p === '/onboarding' || (!user && !fd);
+      console.log('🔍 [App.js] Logged-out user check:', { pathname: p, forceDashboard: fd, showFunnel: sf });
     }
   }, [user, isReturningUser, hasCompletedAnalysis, isTrulyReturningUser, isNewRegistration, ONBOARDING_BUFFER_MS]);
 
@@ -359,13 +370,15 @@ const AppContent = () => {
   }
 
   // Guided onboarding funnel (Issue #261): show for first-time or logged-out users.
-  // Path /dashboard or dashboard sub-routes (e.g. /settings/voice-adaptation) + logged in forces dashboard (for E2E and direct links).
-  // After registration from funnel, keep showing funnel so user stays in place and topic generation can start.
+  // Show onboarding funnel ONLY for: (1) explicit /onboarding path, (2) logged-out users (unless forcing dashboard),
+  // (3) brand-new registrations still in the funnel. Logged-in users on / always see dashboard, not funnel.
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
   const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/settings/');
   const forceDashboard = isDashboardPath && user;
   const showFunnel =
-    pathname === '/onboarding' || (!forceDashboard && !isTrulyReturningUser) || stayInFunnelAfterRegistration;
+    pathname === '/onboarding' ||
+    (!user && !forceDashboard) ||
+    (user && stayInFunnelAfterRegistration);
   if (showFunnel) {
     return (
       <SystemHintProvider>
