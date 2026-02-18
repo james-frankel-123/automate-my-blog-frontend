@@ -1,8 +1,9 @@
 import React from 'react';
 import { Button, Space } from 'antd';
-import { 
+import {
   LoginOutlined,
-  UserAddOutlined
+  UserAddOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
@@ -94,7 +95,17 @@ const LoggedOutProgressHeader = ({
           >
             💾 Save Project
           </Button>
-        ) : null}
+        ) : (
+          <Button
+            type="primary"
+            icon={<DashboardOutlined />}
+            onClick={() => { window.location.href = '/dashboard'; }}
+            style={{ borderRadius: 6, minHeight: 44 }}
+            data-testid="dashboard-button"
+          >
+            Go to Dashboard
+          </Button>
+        )}
       </div>
     </header>
   );

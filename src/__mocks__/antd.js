@@ -90,8 +90,15 @@ export const Space = ({ children, direction, size, ...props }) => (
   </div>
 );
 
+export const Tag = ({ children, color, icon, ...props }) => (
+  <span data-testid="tag" data-color={color} {...props}>
+    {icon}
+    {children}
+  </span>
+);
+
 export const Typography = {
-  Text: ({ children, type, ...props }) => <span data-testid="text" {...props}>{children}</span>,
+  Text: ({ children, type, strong, ...props }) => <span data-testid="text" {...props}>{children}</span>,
   Title: ({ children, level, ...props }) => {
     const Tag = `h${level || 1}`;
     return <Tag data-testid="title" {...props}>{children}</Tag>;
@@ -210,7 +217,7 @@ export const Skeleton = ({ active, paragraph, title, children, ...props }) => (
   </div>
 );
 
-export const Card = ({ children, title, extra, ...props }) => (
+export const Card = ({ children, title, extra, bodyStyle, ...props }) => (
   <div data-testid="card" {...props}>
     {title && <div data-testid="card-title">{title}</div>}
     {extra && <div data-testid="card-extra">{extra}</div>}
@@ -368,6 +375,7 @@ export default {
   Form,
   Alert,
   Space,
+  Tag,
   Typography,
   Modal,
   Tabs,
