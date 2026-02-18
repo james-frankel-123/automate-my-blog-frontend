@@ -31,6 +31,8 @@ export default function StreamingIntegrationCard({
         eventSourceRef.current.close();
       }
     };
+    // fetchPitch is intentionally omitted to avoid re-opening SSE on every identity change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, service]);
 
   const fetchPitch = async () => {
