@@ -122,6 +122,11 @@ const autoBlogAPI = {
     adoptedCount: 1,
   }),
   
+  // Voice samples (for dashboard feature tiles)
+  listVoiceSamples: jest.fn().mockResolvedValue({
+    samples: [],
+  }),
+
   // Posts
   getPosts: jest.fn().mockResolvedValue({
     success: true,
