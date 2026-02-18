@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { message } from 'antd';
+import { message, Card, Typography } from 'antd';
 import StrategyCarousel from './StrategyCarousel';
 import StrategyDetailsView from './StrategyDetailsView';
 import PostsTab from './PostsTab';
-import ContentCalendarSection from './ContentCalendarSection';
 import autoBlogAPI from '../../services/api';
+
+const { Title, Paragraph } = Typography;
 
 /**
  * ReturningUserDashboard - Strategy-first dashboard for returning users
@@ -25,9 +26,12 @@ export default function ReturningUserDashboard() {
   const [selectedStrategyForDetails, setSelectedStrategyForDetails] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [strategyOverview, setStrategyOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
+    loadStrategyOverview();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -83,6 +87,23 @@ export default function ReturningUserDashboard() {
       message.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
+    }
+  }
+
+  /**
+   * Load personalized strategy overview from backend
+   */
+  async function loadStrategyOverview() {
+    try {
+      setOverviewLoading(true);
+      const response = await autoBlogAPI.getStrategyOverview();
+      setStrategyOverview(response);
+      console.log('📖 Loaded personalized strategy overview:', response);
+    } catch (error) {
+      console.error('Failed to load strategy overview:', error);
+      setStrategyOverview(null);
+    } finally {
+      setOverviewLoading(false);
     }
   }
 
@@ -270,11 +291,159 @@ export default function ReturningUserDashboard() {
       }}>
         {viewMode === 'posts' ? (
           <>
-            <ContentCalendarSection
-              strategyId={selectedStrategyId}
-              strategyName={selectedStrategyId ? getStrategyName(selectedStrategyId) : null}
-              onRefresh={loadStrategies}
-            />
+            {posts.length === 0 && (
+              <Card
+                title={<h2 className="heading-section" style={{ marginBottom: 0 }}>Understanding Audience Strategies</h2>}
+                style={{ marginBottom: '24px' }}
+                loading={overviewLoading}
+              >
+                {strategyOverview?.overview?.sections ? (
+                  <div style={{ padding: '20px 0' }}>
+                    <Title level={4}>What is an Audience Strategy?</Title>
+                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                      {strategyOverview.overview.sections.whatIsStrategy}
+                    </Paragraph>
+
+                    <Title level={4} style={{ marginTop: '32px' }}>How We Use Audiences</Title>
+                    <ul style={{ fontSize: '16px', lineHeight: '1.8', paddingLeft: '24px' }}>
+                      {strategyOverview.overview.sections.howWeUse.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+
+                    <Title level={4} style={{ marginTop: '32px' }}>Outcome-Aligned Pricing</Title>
+                    {strategyOverview.overview.sections.pricing.split('\n\n').map((para, idx) => (
+                      <Paragraph key={idx} style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                        {para}
+                      </Paragraph>
+                    ))}
+
+                    {strategyOverview.overview.sections.googleIntegrations && (
+                      <>
+                        <Title level={4} style={{ marginTop: '32px' }}>
+                          {strategyOverview.overview.sections.googleIntegrations.heading}
+                        </Title>
+                        <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                          {strategyOverview.overview.sections.googleIntegrations.message}
+                        </Paragraph>
+
+                        {strategyOverview.integrationStatus && (
+                          <div style={{ marginTop: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            {!strategyOverview.integrationStatus.googleTrends?.connected && (
+                              <button
+                                type="button"
+                                style={{
+                                  padding: '8px 16px',
+                                  backgroundColor: '#1890ff',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                                onClick={() => message.info('Google Trends connection coming soon!')}
+                              >
+                                Connect Google Trends
+                              </button>
+                            )}
+                            {!strategyOverview.integrationStatus.searchConsole?.connected && (
+                              <button
+                                type="button"
+                                style={{
+                                  padding: '8px 16px',
+                                  backgroundColor: '#1890ff',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                                onClick={() => message.info('Search Console connection coming soon!')}
+                              >
+                                Connect Search Console
+                              </button>
+                            )}
+                            {!strategyOverview.integrationStatus.analytics?.connected && (
+                              <button
+                                type="button"
+                                style={{
+                                  padding: '8px 16px',
+                                  backgroundColor: '#1890ff',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  cursor: 'pointer',
+                                  fontSize: '14px'
+                                }}
+                                onClick={() => message.info('Analytics connection coming soon!')}
+                              >
+                                Connect Analytics
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    <div style={{
+                      marginTop: '32px',
+                      padding: '16px 20px',
+                      backgroundColor: '#f0f7ff',
+                      borderLeft: '4px solid #1890ff',
+                      borderRadius: '4px'
+                    }}>
+                      <Paragraph style={{ marginBottom: 0, fontSize: '16px', lineHeight: '1.6' }}>
+                        <strong>Ready to start?</strong> Select an audience strategy above to see pricing and subscribe.
+                        Your content generation will begin immediately, building a content library that drives qualified traffic to your business.
+                      </Paragraph>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ padding: '20px 0' }}>
+                    <Title level={4}>What is an Audience Strategy?</Title>
+                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                      An <strong>audience strategy</strong> represents a specific segment of your target market with unique needs, pain points, and search behaviors.
+                      Each strategy is carefully crafted to attract and convert a particular type of customer through highly-targeted content.
+                    </Paragraph>
+
+                    <Title level={4} style={{ marginTop: '32px' }}>How We Use Audiences</Title>
+                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                      When you subscribe to an audience strategy, our AI generates a continuous stream of blog posts specifically designed to:
+                    </Paragraph>
+                    <ul style={{ fontSize: '16px', lineHeight: '1.8', paddingLeft: '24px' }}>
+                      <li>Rank for keywords your target audience is searching for</li>
+                      <li>Address their specific problems and questions</li>
+                      <li>Guide them naturally toward your products or services</li>
+                      <li>Build long-term organic traffic and conversions</li>
+                    </ul>
+
+                    <Title level={4} style={{ marginTop: '32px' }}>Outcome-Aligned Pricing</Title>
+                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                      We price based on <strong>value delivered, not effort required</strong>. When you subscribe to an audience strategy,
+                      you pay a fixed monthly price for a set number of high-quality posts—regardless of how much work our system does behind the scenes.
+                    </Paragraph>
+                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                      This aligns our incentives with yours: we're invested in making our AI smarter and more efficient, so we can deliver
+                      better results while keeping your costs predictable. Whether a post takes 10 minutes or 2 hours to perfect,
+                      your price stays the same. We win by driving outcomes, not by billing hours.
+                    </Paragraph>
+
+                    <div style={{
+                      marginTop: '32px',
+                      padding: '16px 20px',
+                      backgroundColor: '#f0f7ff',
+                      borderLeft: '4px solid #1890ff',
+                      borderRadius: '4px'
+                    }}>
+                      <Paragraph style={{ marginBottom: 0, fontSize: '16px', lineHeight: '1.6' }}>
+                        <strong>Ready to start?</strong> Select an audience strategy above to see pricing and subscribe.
+                        Your content generation will begin immediately, building a content library that drives qualified traffic to your business.
+                      </Paragraph>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
             <PostsTab
               posts={posts}
               filteredByStrategyId={selectedStrategyId}

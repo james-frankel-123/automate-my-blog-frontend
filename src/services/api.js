@@ -4003,6 +4003,21 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Get personalized strategy overview with LLM-generated content
+   * Adapts messaging to business context and Google integration status
+   * Requires JWT authentication
+   */
+  async getStrategyOverview() {
+    try {
+      const response = await this.makeRequest('/api/v1/strategies/overview');
+      console.log('📖 Strategy overview loaded:', response);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get strategy overview: ${error.message}`);
+    }
+  }
+
+  /**
    * Get subscription details for a specific strategy
    * @param {string} strategyId - Strategy ID
    * @returns {Promise<object>} Subscription details (posts remaining, billing info, etc.)
