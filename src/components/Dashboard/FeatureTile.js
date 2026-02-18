@@ -3,7 +3,7 @@ import { Card, Button, Typography, Space, Spin } from 'antd';
 import { CheckCircleOutlined, LinkOutlined } from '@ant-design/icons';
 import './FeatureTile.css';
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph } = Typography;
 
 const FeatureTile = ({
   title,
