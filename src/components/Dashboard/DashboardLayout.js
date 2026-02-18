@@ -155,11 +155,16 @@ const DashboardLayout = ({
       }
 
       try {
-        const response = await api.getUserAudiences();
+        console.log('🔍 DashboardLayout: Checking strategies...', { user: !!user });
+        const response = await api.getUserAudiences({ limit: 10 });
         const strategies = response?.audiences || [];
+        console.log('✅ DashboardLayout: Strategies check result:', {
+          strategiesCount: strategies.length,
+          hasStrategies: strategies.length > 0
+        });
         setHasStrategies(strategies.length > 0);
       } catch (error) {
-        console.error('Failed to check strategies:', error);
+        console.error('❌ DashboardLayout: Failed to check strategies:', error);
         setHasStrategies(false);
       } finally {
         setStrategiesLoading(false);
@@ -167,7 +172,16 @@ const DashboardLayout = ({
     }
 
     checkStrategies();
-  }, [user]);
+  }, [user, isNewRegistration]);
+
+  // Auto-exit project mode if user has existing strategies
+  useEffect(() => {
+    if (user && projectMode && hasStrategies && !strategiesLoading) {
+      console.log('🎯 User has existing strategies, auto-exiting project mode');
+      setProjectMode(false);
+      setShowDashboardLocal(true);
+    }
+  }, [user, projectMode, hasStrategies, strategiesLoading]);
 
   // Fetch user quota (memoized to prevent infinite loops)
   const refreshQuota = useCallback(async () => {
@@ -732,17 +746,11 @@ const DashboardLayout = ({
         case 'sandbox':
           return <SandboxTab />;
         default:
-          return <DashboardTab />;
+          return <DashboardTab onNavigateToTab={(tab) => setActiveTab(tab)} />;
       }
     }
 
-    // Show ReturningUserDashboard for logged-in users with strategies (Issue #262)
-    // Criteria: User is logged in, has strategies, not in workflow mode
-    if (user && hasStrategies && !forceWorkflowMode && !projectMode && !strategiesLoading) {
-      console.log('🎯 Rendering ReturningUserDashboard for user with strategies');
-      return <ReturningUserDashboard />;
-    }
-
+    // Tab-based layout: Home, Audience, Posts sections (ReturningUserDashboard in Audience when logged in)
     // Main scrollable layout with all sections
     return (
       <div style={{ padding: 0 }}>
@@ -756,12 +764,13 @@ const DashboardLayout = ({
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            <DashboardTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)} 
+            <DashboardTab
+              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
               onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
               onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
               showSaveProjectButton={showSaveProjectButton}
               isNewRegistration={isNewRegistration}
+              onNavigateToTab={(tab) => setActiveTab(tab)}
               onSaveProject={null} // Save Project button is now in the header
               projectJustSaved={projectJustSaved}
               onCreateNewPost={() => {
@@ -803,20 +812,22 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Audience Section - Unlocked after step 1 (light motion) */}
+        {/* Audience Section - ReturningUserDashboard for logged-in users, onboarding for workflow */}
         {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
-          <section id="audience-segments" className="workflow-section-enter" style={{ 
+          <section id="audience-segments" className="workflow-section-enter" style={{
             minHeight: '100vh',
             background: 'var(--color-background-body)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            <AudienceSegmentsTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-            />
+            {user && !forceWorkflowMode ? (
+              <ReturningUserDashboard />
+            ) : (
+              <AudienceSegmentsTab
+                forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
+                onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+                onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+              />
+            )}
           </section>
         )}
 
