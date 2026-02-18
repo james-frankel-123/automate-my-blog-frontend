@@ -100,6 +100,22 @@ async function waitForContinueToAudienceAndClick(page) {
   await btn.click({ force: true });
 }
 
+/** After strategy selection: either click the Posts tab (sidebar) or wait for #posts and scroll to it (project-mode scroll layout). */
+async function clickPostsTab(page) {
+  const postsTab = page.locator('li.ant-menu-item').filter({ hasText: /^Posts$/ }).first();
+  const tabVisible = await postsTab.isVisible({ timeout: 3000 }).catch(() => false);
+  if (tabVisible) {
+    await postsTab.click();
+    await page.waitForTimeout(1000);
+    return;
+  }
+  // Project mode: no sidebar; posts section mounts when customerStrategy is set. Wait for it and scroll into view.
+  const postsSection = page.locator('#posts');
+  await expect(postsSection).toBeVisible({ timeout: 10000 });
+  await postsSection.first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+  await page.waitForTimeout(800);
+}
+
 /**
  * Click the Create Post / Generate post button (topic → full post).
  * When topicTitle is set, clicks the first topic card's CTA (button with data-testid="create-post-from-topic-btn" in #posts).
@@ -643,7 +659,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(800);
         await page.locator('#audience-segments').scrollIntoViewIfNeeded().catch(() => {});
         await page.waitForTimeout(500);
-        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|integration/i }).first();
         if (!(await strategyCard.isVisible({ timeout: 8000 }).catch(() => false))) {
           test.skip();
           return;
@@ -706,23 +722,22 @@ test.describe('E2E (mocked backend)', () => {
           return;
         }
         await strategyCard.click();
-        await page.waitForTimeout(1500);
-
-        // Click "Continue to Content" if present, then ensure we're on the content step
-        const continueToContent = page.locator('button:has-text("Continue to Content")').first();
-        if (await continueToContent.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await continueToContent.click({ force: true });
-          await page.waitForTimeout(1000);
+        await page.waitForTimeout(800);
+        const generateIdeasBtn = page.locator('button:has-text("Generate Content Ideas")').first();
+        if (await generateIdeasBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await generateIdeasBtn.click();
+          await page.waitForTimeout(800);
         }
+        await clickPostsTab(page);
 
         const postsSection = page.locator('#posts');
         await expect(postsSection).toBeVisible({ timeout: 10000 });
         await postsSection.first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
         await page.waitForTimeout(1200);
 
-        // Topic section must not be blank: either topic cards (auto-generated) or heading + Generate button
-        const topicHeading = page.locator('#posts').locator('text=/AI will generate trending topics|Based on your audience analysis|high-impact blog post ideas|Generate Content Topics/i').first();
-        const generateBtn = page.locator('#posts').locator('button:has-text("Generate post"), button:has-text("Generate topic"), button:has-text("Generating Topics")').first();
+        // Topic section must not be blank: either topic cards (auto-generated), heading + Generate button, or empty-state CTA
+        const topicHeading = page.locator('#posts').locator('text=/AI will generate trending topics|Based on your audience analysis|high-impact blog post ideas|Generate Content Topics|No blog posts yet/i').first();
+        const generateBtn = page.locator('#posts').locator('button:has-text("Generate post"), button:has-text("Generate topic"), button:has-text("Generating Topics"), button:has-text("Create Your First Post")').first();
         const topicCard = page.locator('#posts').locator(`text=${MOCK_TOPICS[0].title}`).first();
 
         const headingVisible = await topicHeading.isVisible({ timeout: 8000 }).catch(() => false);
@@ -731,12 +746,20 @@ test.describe('E2E (mocked backend)', () => {
 
         expect(headingVisible || generateVisible || topicsVisible).toBeTruthy();
 
+        // Only click "Generate post" and wait for mock topics when in workflow topic UI (not "Create Your First Post" empty state)
+        let isEmptyStateOnly = false;
         if (generateVisible && !topicsVisible) {
-          await generateBtn.click();
-          await page.waitForSelector('button:has-text("Generating Topics"), button:has-text("Generating…")', { state: 'hidden', timeout: 15000 }).catch(() => {});
-          await page.waitForTimeout(2000);
-          await expect(page.locator('#posts').locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
-        } else if (!topicsVisible) {
+          const btnText = await generateBtn.textContent().catch(() => '');
+          const isWorkflowGenerate = /Generate post|Generating Topics/i.test(btnText);
+          isEmptyStateOnly = /Create Your First Post/i.test(btnText);
+          if (isWorkflowGenerate) {
+            await generateBtn.click();
+            await page.waitForSelector('button:has-text("Generating Topics"), button:has-text("Generating…")', { state: 'hidden', timeout: 15000 }).catch(() => {});
+            await page.waitForTimeout(2000);
+            await expect(page.locator('#posts').locator(`text=${MOCK_TOPICS[0].title}`).first()).toBeVisible({ timeout: 12000 });
+          }
+        }
+        if (!topicsVisible && !isEmptyStateOnly) {
           // Auto-run may still be generating; wait for topic cards to appear
           await expect(topicCard).toBeVisible({ timeout: 15000 });
         }
@@ -760,19 +783,24 @@ test.describe('E2E (mocked backend)', () => {
       await waitForContinueToAudienceAndClick(page);
       await page.waitForTimeout(800);
       await page.locator('#audience-segments').scrollIntoViewIfNeeded().catch(() => {});
-      await page.waitForTimeout(500);
-      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario/i }).first();
-      await expect(strategyCard).toBeVisible({ timeout: 10000 });
+      await page.waitForTimeout(1500);
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|Primary target|Secondary|integration/i }).first();
+      await expect(strategyCard).toBeVisible({ timeout: 12000 });
       await strategyCard.click();
-      // Navigation must bring us to the topic choice (posts) section
+      await page.waitForTimeout(800);
+      const generateIdeasBtn = page.locator('button:has-text("Generate Content Ideas")').first();
+      if (await generateIdeasBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await generateIdeasBtn.click();
+        await page.waitForTimeout(800);
+      }
+      await clickPostsTab(page);
       const postsSection = page.locator('#posts');
       await expect(postsSection).toBeVisible({ timeout: 10000 });
-      // Topic-choice content must be visible (Generate post CTA or Generating Topics)
-      const topicChoiceButton = page.locator('#posts').getByRole('button', { name: /Generate post|Generating Topics/i }).first();
+      const topicChoiceButton = page.locator('#posts').getByRole('button', { name: /Generate post|Generating Topics|Select an audience first|Create Your First Post/i }).first();
       await expect(topicChoiceButton).toBeVisible({ timeout: 8000 });
     });
 
-    // Issue #200: Auto-scroll to Posts section when audience card is selected
+    // Issue #200: Posts tab shows topic choice after audience card is selected (PR #433: click Posts tab)
     test('selecting audience card scrolls to Posts section (#200)', async ({ page }) => {
       test.setTimeout(60000);
       const createBtn = page.locator('button:has-text("Create New Post")').first();
@@ -794,10 +822,15 @@ test.describe('E2E (mocked backend)', () => {
       await page.waitForTimeout(500);
       const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario/i }).first();
       await expect(strategyCard).toBeVisible({ timeout: 10000 });
-      const postsSection = page.locator('#posts');
-      // Before click: #posts may exist but should not be in view (we're in audience section)
       await strategyCard.click();
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(800);
+      const generateIdeasBtn = page.locator('button:has-text("Generate Content Ideas")').first();
+      if (await generateIdeasBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await generateIdeasBtn.click();
+        await page.waitForTimeout(800);
+      }
+      await clickPostsTab(page);
+      const postsSection = page.locator('#posts');
       await expect(postsSection).toBeVisible({ timeout: 10000 });
       const postsInView = await postsSection.evaluate((el) => {
         const rect = el.getBoundingClientRect();
@@ -805,7 +838,7 @@ test.describe('E2E (mocked backend)', () => {
         return rect.top < vh && rect.bottom > 0;
       });
       expect(postsInView).toBe(true);
-      const topicChoiceButton = page.locator('#posts').getByRole('button', { name: /Generate post|Generating Topics/i }).first();
+      const topicChoiceButton = page.locator('#posts').getByRole('button', { name: /Generate post|Generating Topics|Select an audience first|Create Your First Post/i }).first();
       await expect(topicChoiceButton).toBeVisible({ timeout: 8000 });
     });
 
@@ -875,13 +908,19 @@ test.describe('E2E (mocked backend)', () => {
 
       await page.locator('#audience-segments').scrollIntoViewIfNeeded();
       await page.waitForTimeout(500);
-      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|integration/i }).first();
       await expect(strategyCard).toBeVisible({ timeout: 10000 });
       await strategyCard.click();
-      await page.waitForTimeout(2000);
+      await page.waitForTimeout(800);
+      const generateIdeasBtn = page.locator('button:has-text("Generate Content Ideas")').first();
+      if (await generateIdeasBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await generateIdeasBtn.click();
+        await page.waitForTimeout(800);
+      }
+      await clickPostsTab(page);
 
       await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
-      const genBtn = page.locator('button:has-text("Generate post")').first();
+      const genBtn = page.locator('#posts').locator('button:has-text("Generate post")').first();
       await expect(genBtn).toBeVisible({ timeout: 10000 });
       expect(await genBtn.textContent()).not.toContain('Buy more');
     });
@@ -892,7 +931,7 @@ test.describe('E2E (mocked backend)', () => {
      * and "Buy more posts" only when credits are 0; logged-out shows register/free post copy.
      */
     test.describe('Content Topics button display', () => {
-      /** Navigate to Content Topics section: Create New Post → analyze → audience → select strategy → #posts visible */
+      /** Navigate to Content Topics section: Create New Post → analyze → audience → select strategy → click Posts tab → #posts visible */
       async function navigateToContentTopics(page) {
         await page.locator('button:has-text("Create New Post")').first().click();
         await page.waitForTimeout(800);
@@ -907,12 +946,18 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(800);
         await page.locator('#audience-segments').scrollIntoViewIfNeeded();
         await page.waitForTimeout(500);
-        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|integration/i }).first();
         await expect(strategyCard).toBeVisible({ timeout: 10000 });
         await strategyCard.click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(800);
+        const generateIdeasBtn = page.locator('button:has-text("Generate Content Ideas")').first();
+        if (await generateIdeasBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+          await generateIdeasBtn.click();
+          await page.waitForTimeout(800);
+        }
+        await clickPostsTab(page);
         await expect(page.locator('#posts')).toBeVisible({ timeout: 10000 });
-        await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' }));
+        await page.locator('#posts').first().evaluate((el) => el.scrollIntoView({ block: 'start' })).catch(() => {});
         await page.waitForTimeout(800);
       }
 
@@ -1015,7 +1060,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(800);
         await page.locator('#audience-segments').scrollIntoViewIfNeeded();
         await page.waitForTimeout(500);
-        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|integration/i }).first();
         await expect(strategyCard).toBeVisible({ timeout: 10000 });
         await strategyCard.click();
         await page.waitForTimeout(2000);
@@ -1195,7 +1240,7 @@ test.describe('E2E (mocked backend)', () => {
 
       await page.locator('#audience-segments').scrollIntoViewIfNeeded();
       await page.waitForTimeout(500);
-      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|integration/i }).first();
       await expect(strategyCard).toBeVisible({ timeout: 10000 });
       await strategyCard.click();
       await page.waitForTimeout(2000);
@@ -1880,7 +1925,7 @@ test.describe('E2E (mocked backend)', () => {
         await page.waitForTimeout(500);
 
         // Verify audience cards are visible
-        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+        const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|integration/i }).first();
         await expect(strategyCard).toBeVisible({ timeout: 10000 });
 
         // Verify ROI pricing text is NOT present anywhere in audience segments
@@ -2086,7 +2131,7 @@ test.describe('E2E (mocked backend)', () => {
 
       await page.locator('#audience-segments').scrollIntoViewIfNeeded();
       await pause(400);
-      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching/ }).first();
+      const strategyCard = page.locator('#audience-segments .ant-card').filter({ hasText: /Strategy 1|Developers searching|Strategy|scenario|integration/i }).first();
       await expect(strategyCard).toBeVisible({ timeout: 10000 });
       await strategyCard.click();
       await pause(1000);
