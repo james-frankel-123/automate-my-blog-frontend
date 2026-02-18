@@ -330,6 +330,17 @@ async function installWorkflowMocksBase(page, options = {}) {
       return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Not found' }) });
     }
 
+    // Strategy details: sample content ideas (POST when strategy card/view is shown)
+    if (method === 'POST' && url.includes('sample-content-ideas')) {
+      return route.fulfill(json({
+        success: true,
+        sampleIdeas: [
+          { title: 'How to Get Started with Example API', description: 'A practical guide' },
+          { title: 'Best Practices for Developer Integrations', description: 'Tips from the team' },
+        ],
+      }));
+    }
+
     if (tweetStreamResponds && method === 'POST' && url.includes('tweets/search-for-topic-stream')) {
       return route.fulfill({
         status: 200,
