@@ -282,8 +282,8 @@ export default function ReturningUserDashboard() {
         />
       </div>
 
-      {/* Content Section: 75% viewport height (id="posts" for E2E and scroll-to-section) */}
-      <div id="posts" style={{
+      {/* Content Section: 75% viewport height (id="dashboard-posts" to avoid duplicate with layout section#posts) */}
+      <div id="dashboard-posts" style={{
         height: '75vh',
         overflow: 'auto',
         padding: '24px',
