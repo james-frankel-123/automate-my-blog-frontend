@@ -461,6 +461,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                            (stepResults.home.websiteAnalysis.targetAudience ||
                             stepResults.home.websiteAnalysis.businessName !== 'None');
 
+    // Workflow mode: require analysisCompleted. Focus mode: trigger with hasAnalysisData only (no analysisCompleted).
     if (((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
         (hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode)) {
       const analysis = stepResults.home.websiteAnalysis;
