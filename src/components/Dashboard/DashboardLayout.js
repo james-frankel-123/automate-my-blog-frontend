@@ -149,6 +149,8 @@ const DashboardLayout = ({
   // Check if user has strategies for ReturningUserDashboard
   useEffect(() => {
     async function checkStrategies() {
+      console.log('🔍 DashboardLayout: Checking strategies...', { user: !!user });
+
       if (!user) {
         setHasStrategies(false);
         setStrategiesLoading(false);
@@ -156,11 +158,20 @@ const DashboardLayout = ({
       }
 
       try {
-        const response = await api.getUserAudiences();
+        const response = await api.getUserAudiences({
+          limit: 10 // Load up to 10 recent audience strategies
+        });
         const strategies = response?.audiences || [];
+
+        console.log('✅ DashboardLayout: Strategies check result:', {
+          response,
+          strategiesCount: strategies.length,
+          hasStrategies: strategies.length > 0
+        });
+
         setHasStrategies(strategies.length > 0);
       } catch (error) {
-        console.error('Failed to check strategies:', error);
+        console.error('❌ DashboardLayout: Failed to check strategies:', error);
         setHasStrategies(false);
       } finally {
         setStrategiesLoading(false);
@@ -334,6 +345,7 @@ const DashboardLayout = ({
       const allSections = [
         { id: 'home', tabKey: 'dashboard' },
         { id: 'audience-segments', tabKey: 'audience-segments' },
+        { id: 'audience-old', tabKey: 'audience-old' },
         { id: 'posts', tabKey: 'posts' }
       ];
 
@@ -481,6 +493,9 @@ const DashboardLayout = ({
       case 'dashboard':
         sectionId = 'home';
         break;
+      case 'audience-old':
+        sectionId = 'audience-old';
+        break;
       default:
         sectionId = newTab;
     }
@@ -612,6 +627,11 @@ const DashboardLayout = ({
       key: 'audience-segments',
       icon: <TeamOutlined />,
       label: 'Audience',
+    },
+    {
+      key: 'audience-old',
+      icon: <TeamOutlined />,
+      label: 'Audience old',
     },
     {
       key: 'posts',
@@ -813,18 +833,18 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Audience Section - Unlocked after step 1 (light motion) */}
+        {/* Audience Section - Show ReturningUserDashboard for logged-in users */}
         {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
-          <section id="audience-segments" className="workflow-section-enter" style={{ 
+          <section id="audience-segments" className="workflow-section-enter" style={{
             minHeight: '100vh',
             background: 'var(--color-background-body)',
             borderRadius: 'var(--radius-md)',
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            {/* Show carousel for logged-in users with strategies, onboarding for workflow/new users */}
-            {user && hasStrategies && !forceWorkflowMode && !projectMode ? (
-              <AudiencesCarouselView />
+            {/* Show ReturningUserDashboard for logged-in users, onboarding for workflow/new users */}
+            {user && !forceWorkflowMode ? (
+              <ReturningUserDashboard />
             ) : (
               <AudienceSegmentsTab
                 forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
@@ -832,6 +852,21 @@ const DashboardLayout = ({
                 onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
               />
             )}
+          </section>
+        )}
+
+        {/* Audience Old Section - Always show the old view for comparison */}
+        {user && (
+          <section id="audience-old" className="workflow-section-enter" style={{
+            minHeight: '100vh',
+            background: 'var(--color-background-body)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-6)',
+            marginBottom: 'var(--space-6)'
+          }}>
+            <AudienceSegmentsTab
+              forceWorkflowMode={false}
+            />
           </section>
         )}
 

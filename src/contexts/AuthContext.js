@@ -209,7 +209,7 @@ export const AuthProvider = ({ children }) => {
     
     // Trigger session adoption to transfer anonymous data to user account
     try {
-      const sessionId = sessionStorage.getItem('audience_session_id');
+      const sessionId = localStorage.getItem('audience_session_id');
       if (sessionId) {
         console.log('🔄 Triggering session adoption after login...');
         
@@ -224,9 +224,9 @@ export const AuthProvider = ({ children }) => {
         // Adopt website analysis session
         const analysisAdoptionResult = await autoBlogAPI.adoptAnalysisSession(sessionId);
         console.log('✅ Analysis session adoption complete:', analysisAdoptionResult);
-        
+
         // Clear session ID after successful adoption
-        sessionStorage.removeItem('audience_session_id');
+        localStorage.removeItem('audience_session_id');
       }
     } catch (error) {
       console.error('⚠️ Session adoption failed (non-critical):', error.message);
@@ -283,7 +283,7 @@ export const AuthProvider = ({ children }) => {
 
       // Trigger session adoption to transfer anonymous data to user account
       try {
-        const sessionId = sessionStorage.getItem('audience_session_id');
+        const sessionId = localStorage.getItem('audience_session_id');
         if (sessionId) {
           console.log('🔄 Triggering session adoption after registration...');
           
@@ -298,9 +298,9 @@ export const AuthProvider = ({ children }) => {
           // Adopt website analysis session
           const analysisAdoptionResult = await autoBlogAPI.adoptAnalysisSession(sessionId);
           console.log('✅ Analysis session adoption complete:', analysisAdoptionResult);
-          
+
           // Clear session ID after successful adoption
-          sessionStorage.removeItem('audience_session_id');
+          localStorage.removeItem('audience_session_id');
         }
       } catch (error) {
         console.error('⚠️ Session adoption failed (non-critical):', error.message);
