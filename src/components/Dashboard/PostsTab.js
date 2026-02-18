@@ -42,6 +42,7 @@ import ThinkingPanel from '../shared/ThinkingPanel';
 import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
 import RelatedContentPanel from '../shared/RelatedContentPanel';
 import { notifyTabReady } from '../../utils/tabReadyAlert';
+import ContentCalendarSection from './ContentCalendarSection';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
@@ -2691,7 +2692,18 @@ const PostsTab = ({
 
   return (
     <div>
-      
+
+      {/* 30-Day Content Calendar */}
+      {user && (
+        <div style={{ padding: '24px 24px 0' }}>
+          <ContentCalendarSection
+            strategyId={null}
+            strategyName={null}
+            onRefresh={loadPosts}
+          />
+        </div>
+      )}
+
       {/* Workflow Guidance - Only show when in workflow mode AND audience is selected */}
       {(tabMode.mode === 'workflow' || forceWorkflowMode) && tabMode.tabWorkflowData?.selectedCustomerStrategy && (
         <div style={{ padding: '16px 24px 0' }}>
@@ -2699,8 +2711,8 @@ const PostsTab = ({
             step={3}
             totalSteps={4}
             stepTitle="Create Your Content"
-            stepDescription={tabMode.tabWorkflowData?.selectedAudience ? 
-              `Generate content for your selected audience: ${tabMode.tabWorkflowData.selectedAudience}` : 
+            stepDescription={tabMode.tabWorkflowData?.selectedAudience ?
+              `Generate content for your selected audience: ${tabMode.tabWorkflowData.selectedAudience}` :
               'Generate content based on your strategy and audience selection.'
             }
           />
