@@ -1,8 +1,9 @@
 import React from 'react';
 import { Button, Space } from 'antd';
-import { 
+import {
   LoginOutlined,
-  UserAddOutlined
+  UserAddOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
@@ -59,6 +60,7 @@ const LoggedOutProgressHeader = ({
       {/* Right: theme toggle + auth / save buttons — touch-friendly on mobile */}
       <div className="logged-out-header-right" style={{ minWidth: 0, flex: '0 0 auto', display: 'flex', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '8px' }}>
         {!user ? (
+          // Logged-out: Show sign-in/sign-up buttons
           <Space size="small" wrap align="center">
             <ThemeToggle />
             <Button
@@ -87,6 +89,7 @@ const LoggedOutProgressHeader = ({
             </Button>
           </Space>
         ) : isNewRegistration && showSaveProjectButton ? (
+          // New registration in funnel: Show save project button
           <Button
             type="primary"
             onClick={onSaveProject}
@@ -94,7 +97,18 @@ const LoggedOutProgressHeader = ({
           >
             💾 Save Project
           </Button>
-        ) : null}
+        ) : (
+          // Logged-in user: Show "Go to Dashboard" button as safety fallback
+          <Button
+            type="primary"
+            icon={<DashboardOutlined />}
+            onClick={() => { window.location.href = '/dashboard'; }}
+            style={{ borderRadius: 6, minHeight: 44 }}
+            data-testid="dashboard-button"
+          >
+            Go to Dashboard
+          </Button>
+        )}
       </div>
     </header>
   );

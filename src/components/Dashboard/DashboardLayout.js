@@ -30,6 +30,7 @@ import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
 import GoogleIntegrationsTab from '../Integrations/GoogleIntegrationsTab';
 import SandboxTab from './SandboxTab';
 import ReturningUserDashboard from './ReturningUserDashboard';
+import AudiencesCarouselView from './AudiencesCarouselView';
 import LoggedOutProgressHeader from './LoggedOutProgressHeader';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
@@ -148,6 +149,8 @@ const DashboardLayout = ({
   // Check if user has strategies for ReturningUserDashboard
   useEffect(() => {
     async function checkStrategies() {
+      console.log('🔍 DashboardLayout: Checking strategies...', { user: !!user });
+
       if (!user) {
         setHasStrategies(false);
         setStrategiesLoading(false);
@@ -155,11 +158,20 @@ const DashboardLayout = ({
       }
 
       try {
-        const response = await api.getUserAudiences();
+        const response = await api.getUserAudiences({
+          limit: 10 // Load up to 10 recent audience strategies
+        });
         const strategies = response?.audiences || [];
+
+        console.log('✅ DashboardLayout: Strategies check result:', {
+          response,
+          strategiesCount: strategies.length,
+          hasStrategies: strategies.length > 0
+        });
+
         setHasStrategies(strategies.length > 0);
       } catch (error) {
-        console.error('Failed to check strategies:', error);
+        console.error('❌ DashboardLayout: Failed to check strategies:', error);
         setHasStrategies(false);
       } finally {
         setStrategiesLoading(false);
@@ -310,6 +322,15 @@ const DashboardLayout = ({
       }
     }
   }, [user, isNewRegistration]);
+
+  // Auto-exit project mode if user has existing strategies (they're clearly not a new user)
+  useEffect(() => {
+    if (user && projectMode && hasStrategies && !strategiesLoading) {
+      console.log('🎯 User has existing strategies, auto-exiting project mode');
+      setProjectMode(false);
+      setShowDashboardLocal(true);
+    }
+  }, [user, projectMode, hasStrategies, strategiesLoading]);
   
   // Add intersection observer for scroll-based menu highlighting
   useEffect(() => {
@@ -324,6 +345,7 @@ const DashboardLayout = ({
       const allSections = [
         { id: 'home', tabKey: 'dashboard' },
         { id: 'audience-segments', tabKey: 'audience-segments' },
+        { id: 'audience-old', tabKey: 'audience-old' },
         { id: 'posts', tabKey: 'posts' }
       ];
 
@@ -471,6 +493,9 @@ const DashboardLayout = ({
       case 'dashboard':
         sectionId = 'home';
         break;
+      case 'audience-old':
+        sectionId = 'audience-old';
+        break;
       default:
         sectionId = newTab;
     }
@@ -604,6 +629,11 @@ const DashboardLayout = ({
       label: 'Audience',
     },
     {
+      key: 'audience-old',
+      icon: <TeamOutlined />,
+      label: 'Audience old',
+    },
+    {
       key: 'posts',
       icon: <FileTextOutlined />,
       label: 'Posts',
@@ -732,16 +762,15 @@ const DashboardLayout = ({
         case 'sandbox':
           return <SandboxTab />;
         default:
-          return <DashboardTab />;
+          return <DashboardTab onNavigateToTab={(tab) => setActiveTab(tab)} />;
       }
     }
 
-    // Show ReturningUserDashboard for logged-in users with strategies (Issue #262)
-    // Criteria: User is logged in, has strategies, not in workflow mode
-    if (user && hasStrategies && !forceWorkflowMode && !projectMode && !strategiesLoading) {
-      console.log('🎯 Rendering ReturningUserDashboard for user with strategies');
-      return <ReturningUserDashboard />;
-    }
+    // NOTE: ReturningUserDashboard full-page replacement removed
+    // Now using tab-based layout for all users:
+    // - Home tab: DashboardTab (feature tiles for logged-in, workflow for onboarding)
+    // - Audiences tab: AudiencesCarouselView (for logged-in with strategies) or AudienceSegmentsTab (for onboarding)
+    // - Posts tab: PostsTab (always)
 
     // Main scrollable layout with all sections
     return (
@@ -756,12 +785,13 @@ const DashboardLayout = ({
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            <DashboardTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)} 
+            <DashboardTab
+              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
               onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
               onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
               showSaveProjectButton={showSaveProjectButton}
               isNewRegistration={isNewRegistration}
+              onNavigateToTab={(tab) => setActiveTab(tab)}
               onSaveProject={null} // Save Project button is now in the header
               projectJustSaved={projectJustSaved}
               onCreateNewPost={() => {
@@ -803,19 +833,39 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Audience Section - Unlocked after step 1 (light motion) */}
+        {/* Audience Section - Show ReturningUserDashboard for logged-in users */}
         {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
-          <section id="audience-segments" className="workflow-section-enter" style={{ 
+          <section id="audience-segments" className="workflow-section-enter" style={{
             minHeight: '100vh',
             background: 'var(--color-background-body)',
             borderRadius: 'var(--radius-md)',
             padding: 'var(--space-6)',
             marginBottom: 'var(--space-6)'
           }}>
-            <AudienceSegmentsTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+            {/* Show ReturningUserDashboard for logged-in users, onboarding for workflow/new users */}
+            {user && !forceWorkflowMode ? (
+              <ReturningUserDashboard />
+            ) : (
+              <AudienceSegmentsTab
+                forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
+                onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
+                onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+              />
+            )}
+          </section>
+        )}
+
+        {/* Audience Old Section - Always show the old view for comparison */}
+        {user && (
+          <section id="audience-old" className="workflow-section-enter" style={{
+            minHeight: '100vh',
+            background: 'var(--color-background-body)',
+            borderRadius: 'var(--radius-md)',
+            padding: 'var(--space-6)',
+            marginBottom: 'var(--space-6)'
+          }}>
+            <AudienceSegmentsTab
+              forceWorkflowMode={false}
             />
           </section>
         )}
