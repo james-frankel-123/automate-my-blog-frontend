@@ -58,7 +58,7 @@ class JobsAPI {
       headers['Authorization'] = `Bearer ${token}`;
     }
     const sessionId = sessionStorage.getItem('audience_session_id');
-    if (sessionId && !token) {
+    if (sessionId) {
       headers['x-session-id'] = sessionId;
     }
     return headers;
