@@ -311,7 +311,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
 
   /* Testbed debug: show what the API returned and why calendar may be empty */
   const debugLine = testbed && (audience || error) && (
-    <div style={{ fontSize: 11, color: '#888', marginBottom: 8 }}>
+    <div style={{ fontSize: 11, color: 'var(--color-text-tertiary)', marginBottom: 8 }}>
       {error
         ? `API error: ${error}`
         : audience
@@ -415,7 +415,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
                         <span
                           style={{
                             opacity: isDone ? 0.7 : isActive ? 1 : 0.45,
-                            color: isActive ? '#1890ff' : undefined,
+                            color: isActive ? 'var(--color-primary)' : undefined,
                             fontWeight: isActive ? 600 : 400
                           }}
                         >
@@ -430,8 +430,8 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
                   })}
                 </Space>
               )}
-              <Progress percent={jobProgress} status="active" strokeColor="#1890ff" />
-              <div style={{ marginTop: 12, color: '#333' }}>{jobStepLabel}</div>
+              <Progress percent={jobProgress} status="active" strokeColor="var(--color-primary)" />
+              <div style={{ marginTop: 12, color: 'var(--color-text-primary)' }}>{jobStepLabel}</div>
               {jobEta != null && jobEta > 0 && (
                 <Text type="secondary" style={{ fontSize: 12, display: 'block', marginTop: 6 }}>
                   About {jobEta}s remaining
@@ -442,7 +442,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
           ) : (
             <>
               <Spin size="large" indicator={<LoadingOutlined spin />} />
-              <div style={{ marginTop: 16, color: '#666' }}>
+              <div style={{ marginTop: 16, color: 'var(--color-text-secondary)' }}>
                 Calendar generating… This usually takes 15–30 seconds.
               </div>
               <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
@@ -527,9 +527,9 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
                     alignItems: 'center',
                     marginBottom: 12,
                     paddingBottom: 8,
-                    borderBottom: '2px solid #1890ff'
+                    borderBottom: '2px solid var(--color-primary)'
                   }}>
-                    <Text strong style={{ fontSize: 16, color: '#1890ff' }}>
+                    <Text strong style={{ fontSize: 16, color: 'var(--color-primary)' }}>
                       {strategyTitle}
                     </Text>
                     {strategyGenAt && (
@@ -555,7 +555,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
                       return (
                         <List.Item
                           key={dayNum ?? item.title}
-                          style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}
+                          style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border-base)' }}
                         >
                           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 }}>
                             <Tag color="blue" style={{ marginRight: 0 }}>
@@ -657,7 +657,7 @@ export default function ContentCalendarSection({ strategyId, strategyName, onRef
           return (
             <List.Item
               key={dayNum ?? item.title}
-              style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}
+              style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border-base)' }}
             >
               <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 }}>
                 <Tag color="blue" style={{ marginRight: 0 }}>

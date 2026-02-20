@@ -85,13 +85,13 @@ export default function StreamingIntegrationCard({
   return (
     <Card style={{
       height: '100%',
-      border: isConnected ? '2px solid #52c41a' : '1px solid #d9d9d9',
+      border: isConnected ? '2px solid var(--color-success)' : '1px solid var(--color-border-base)',
       display: 'flex',
       flexDirection: 'column'
     }}>
       {/* Header */}
       <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <div style={{ fontSize: '32px', color: '#1890ff' }}>
+        <div style={{ fontSize: '32px', color: 'var(--color-primary)' }}>
           {icon || <GoogleOutlined />}
         </div>
         <div>
@@ -141,7 +141,7 @@ export default function StreamingIntegrationCard({
                     display: 'inline-block',
                     width: '2px',
                     height: '1em',
-                    backgroundColor: '#1890ff',
+                    backgroundColor: 'var(--color-primary)',
                     marginLeft: '2px',
                     animation: 'blink 1s step-end infinite'
                   }} />

@@ -36,7 +36,7 @@ function renderPitchText(text) {
                 position: 'relative',
                 paddingLeft: '8px'
               }}>
-                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                <span style={{ position: 'absolute', left: '-12px', color: 'var(--color-primary)' }}>•</span>
                 {item}
               </li>
             ))}
@@ -50,7 +50,7 @@ function renderPitchText(text) {
         <Text key={`header-${idx}`} strong style={{
           display: 'block',
           fontSize: '15px',
-          color: '#262626',
+          color: 'var(--color-text-primary)',
           marginTop: elements.length > 0 ? '16px' : '0',
           marginBottom: '8px'
         }}>
@@ -79,7 +79,7 @@ function renderPitchText(text) {
                 position: 'relative',
                 paddingLeft: '8px'
               }}>
-                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                <span style={{ position: 'absolute', left: '-12px', color: 'var(--color-primary)' }}>•</span>
                 {item}
               </li>
             ))}
@@ -93,7 +93,7 @@ function renderPitchText(text) {
           display: 'block',
           fontSize: '15px',
           lineHeight: '1.8',
-          color: '#434343',
+          color: 'var(--color-text-secondary)',
           marginBottom: '8px'
         }}>
           {trimmedLine}
@@ -116,7 +116,7 @@ function renderPitchText(text) {
             position: 'relative',
             paddingLeft: '8px'
           }}>
-            <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+            <span style={{ position: 'absolute', left: '-12px', color: 'var(--color-primary)' }}>•</span>
             {item}
           </li>
         ))}
@@ -145,9 +145,9 @@ function ContentCalendarTimeline({
   if (!contentIdeas || contentIdeas.length === 0) {
     return (
       <div style={{
-        background: '#ffffff',
+        background: 'var(--color-background-container)',
         borderRadius: '12px',
-        border: '1px solid #e8e8e8',
+        border: '1px solid var(--color-border-base)',
         overflow: 'hidden'
       }}>
         {/* Timeline header */}
@@ -155,12 +155,12 @@ function ContentCalendarTimeline({
           display: 'flex',
           alignItems: 'center',
           padding: '16px 20px',
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white'
+          background: 'var(--gradient-primary)',
+          color: 'var(--color-text-on-primary)'
         }}>
           <CalendarOutlined style={{ fontSize: '22px', marginRight: '12px' }} />
           <div style={{ flex: 1 }}>
-            <Text strong style={{ color: 'white', fontSize: '16px', display: 'block', lineHeight: '1.3' }}>
+            <Text strong style={{ color: 'var(--color-text-on-primary)', fontSize: '16px', display: 'block', lineHeight: '1.3' }}>
               7-Day Content Calendar
             </Text>
             <Text style={{ color: 'rgba(255,255,255,0.9)', fontSize: '13px' }}>
@@ -173,7 +173,7 @@ function ContentCalendarTimeline({
         {loadingSampleIdeas && (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <Spin indicator={<LoadingOutlined spin />} />
-            <div style={{ marginTop: '12px', color: '#999', fontSize: '14px' }}>
+            <div style={{ marginTop: '12px', color: 'var(--color-text-tertiary)', fontSize: '14px' }}>
               Generating preview...
             </div>
           </div>
@@ -211,14 +211,14 @@ function ContentCalendarTimeline({
                     width: '36px',
                     height: '36px',
                     borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    background: 'var(--gradient-primary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'white',
+                    color: 'var(--color-text-on-primary)',
                     fontSize: '13px',
                     fontWeight: 'bold',
-                    boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
+                    boxShadow: 'var(--shadow-primary)'
                   }}>
                     D{idx + 1}
                   </div>
@@ -227,7 +227,7 @@ function ContentCalendarTimeline({
                       width: '2px',
                       height: '100%',
                       minHeight: '50px',
-                      background: 'linear-gradient(180deg, #667eea 0%, rgba(102, 126, 234, 0.2) 100%)',
+                      background: 'linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-100) 100%)',
                       marginTop: '6px'
                     }} />
                   )}
@@ -236,18 +236,18 @@ function ContentCalendarTimeline({
                 {/* Content card */}
                 <div style={{
                   flex: 1,
-                  background: '#fafbfc',
+                  background: 'var(--color-background-alt)',
                   padding: '14px 16px',
                   borderRadius: '10px',
-                  border: '1px solid #e8e8e8',
+                  border: '1px solid var(--color-border-base)',
                   position: 'relative',
                   transition: 'all 0.2s ease',
                   cursor: 'default'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-                    <ClockCircleOutlined style={{ color: '#8c8c8c', marginTop: '4px', fontSize: '15px' }} />
+                    <ClockCircleOutlined style={{ color: 'var(--color-text-tertiary)', marginTop: '4px', fontSize: '15px' }} />
                     <div style={{ flex: 1 }}>
-                      <Text style={{ fontSize: '14px', lineHeight: '1.7', color: '#434343', display: 'block' }}>
+                      <Text style={{ fontSize: '14px', lineHeight: '1.7', color: 'var(--color-text-secondary)', display: 'block' }}>
                         {idea}
                       </Text>
                     </div>
@@ -262,16 +262,16 @@ function ContentCalendarTimeline({
               textAlign: 'center',
               marginTop: '28px',
               padding: '20px',
-              background: 'linear-gradient(135deg, #f0f2f5 0%, #fafbfc 100%)',
+              background: 'linear-gradient(135deg, var(--color-background-alt) 0%, var(--color-background-container) 100%)',
               borderRadius: '10px',
-              border: '1px dashed #d9d9d9'
+              border: '1px dashed var(--color-border-base)'
             }}>
               <div style={{ marginBottom: '8px' }}>
-                <span style={{ fontSize: '20px', color: '#667eea', letterSpacing: '4px' }}>
+                <span style={{ fontSize: '20px', color: 'var(--color-primary)', letterSpacing: '4px' }}>
                   • • •
                 </span>
               </div>
-              <Text strong style={{ fontSize: '14px', color: '#434343', display: 'block', marginBottom: '4px' }}>
+              <Text strong style={{ fontSize: '14px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '4px' }}>
                 + 27 more content ideas
               </Text>
               <Text type="secondary" style={{ fontSize: '13px' }}>
@@ -283,9 +283,9 @@ function ContentCalendarTimeline({
 
         {/* Pricing & Subscribe Section */}
         <div style={{
-          borderTop: '1px solid #e8e8e8',
+          borderTop: '1px solid var(--color-border-base)',
           padding: '24px 20px',
-          background: '#fafbfc'
+          background: 'var(--color-background-alt)'
         }}>
           {/* Price Display */}
           <div style={{ marginBottom: '16px', textAlign: 'center' }}>
@@ -298,7 +298,7 @@ function ContentCalendarTimeline({
               <div style={{
                 fontSize: '36px',
                 fontWeight: 'bold',
-                color: '#1890ff',
+                color: 'var(--color-primary)',
                 lineHeight: 1
               }}>
                 ${monthlyPrice.toFixed(2)}
@@ -318,7 +318,7 @@ function ContentCalendarTimeline({
               >
                 <InfoCircleOutlined style={{
                   fontSize: '18px',
-                  color: '#8c8c8c',
+                  color: 'var(--color-text-tertiary)',
                   cursor: 'help',
                   marginTop: '8px'
                 }} />
@@ -339,13 +339,13 @@ function ContentCalendarTimeline({
                   marginBottom: '8px',
                   fontSize: '13px',
                   lineHeight: '1.6',
-                  color: '#434343',
+                  color: 'var(--color-text-secondary)',
                   position: 'relative'
                 }}>
                   <span style={{
                     position: 'absolute',
                     left: '-20px',
-                    color: '#52c41a',
+                    color: 'var(--color-success)',
                     fontWeight: 'bold',
                     fontSize: '14px'
                   }}>✓</span>
@@ -385,7 +385,7 @@ function ContentCalendarTimeline({
   // Show full content calendar
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
-      <CheckCircleOutlined style={{ fontSize: '48px', color: '#52c41a', marginBottom: '16px' }} />
+      <CheckCircleOutlined style={{ fontSize: '48px', color: 'var(--color-success)', marginBottom: '16px' }} />
       <Text strong style={{ fontSize: '16px', display: 'block', marginBottom: '8px' }}>
         Full 7-Day Calendar Active
       </Text>
@@ -763,7 +763,7 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
           {loading && !pitchText ? (
             <div style={{ textAlign: 'center', padding: '40px 0' }}>
               <Spin size="large" indicator={<LoadingOutlined spin />} />
-              <div style={{ marginTop: '16px', color: '#999' }}>
+              <div style={{ marginTop: '16px', color: 'var(--color-text-tertiary)' }}>
                 Generating personalized strategy pitch...
               </div>
             </div>
@@ -772,7 +772,7 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
               {renderPitchText(pitchText)}
               {loading && (
                 <div style={{ marginTop: '12px', textAlign: 'center' }}>
-                  <LoadingOutlined spin style={{ color: '#1890ff' }} />
+                  <LoadingOutlined spin style={{ color: 'var(--color-primary)' }} />
                 </div>
               )}
             </div>

@@ -329,7 +329,7 @@ export default function CalendarTestbed() {
         {mode === 'live' && (
           <div style={{ marginTop: 16 }}>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 8 }}>
-              <TeamOutlined style={{ color: '#666' }} />
+              <TeamOutlined style={{ color: 'var(--color-text-secondary)' }} />
               <Select
                 placeholder="Choose an audience (from your account)"
                 value={liveId || undefined}
@@ -398,7 +398,7 @@ export default function CalendarTestbed() {
                 style={{ marginTop: 16 }}
               />
             )}
-            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f0f0f0' }}>
+            <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--color-border-base)' }}>
               <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
                 Generate audiences
               </Text>
@@ -455,7 +455,7 @@ export default function CalendarTestbed() {
         >
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <Spin size="large" indicator={<LoadingOutlined spin />} />
-            <div style={{ marginTop: 16, color: '#666' }}>
+            <div style={{ marginTop: 16, color: 'var(--color-text-secondary)' }}>
               Your 7-day content calendar is being generated. This usually takes 15–30 seconds.
             </div>
             <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
@@ -476,7 +476,7 @@ export default function CalendarTestbed() {
         >
           <div style={{ textAlign: 'center', padding: '24px 0' }}>
             <Spin size="large" indicator={<LoadingOutlined spin />} />
-            <div style={{ marginTop: 16, color: '#666' }}>
+            <div style={{ marginTop: 16, color: 'var(--color-text-secondary)' }}>
               Your 7-day content calendar is being generated. This usually takes 15–30 seconds.
             </div>
             <Skeleton active paragraph={{ rows: 5 }} style={{ marginTop: 24, textAlign: 'left' }} />
@@ -565,7 +565,7 @@ export default function CalendarTestbed() {
             renderItem={(item) => (
               <List.Item
                 key={item.dayNumber}
-                style={{ padding: '12px 0', borderBottom: '1px solid #f0f0f0' }}
+                style={{ padding: '12px 0', borderBottom: '1px solid var(--color-border-base)' }}
               >
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 }}>
                   <Tag color="blue" style={{ marginRight: 0 }}>

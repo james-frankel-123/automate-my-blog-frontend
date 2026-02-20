@@ -3719,15 +3719,15 @@ const PostsTab = ({
                 <div style={{
                   marginBottom: '16px',
                   padding: '12px 16px',
-                  backgroundColor: '#e6f7ff',
-                  border: '1px solid #91d5ff',
+                  backgroundColor: 'var(--color-info-bg)',
+                  border: '1px solid var(--color-primary-200)',
                   borderRadius: '4px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between'
                 }}>
                   <Space>
-                    <Text strong style={{ color: '#0050b3' }}>Filtered by strategy:</Text>
+                    <Text strong style={{ color: 'var(--color-primary-700)' }}>Filtered by strategy:</Text>
                     <Tag color="blue">{getStrategyName(filteredByStrategyId)}</Tag>
                   </Space>
                   <Button
