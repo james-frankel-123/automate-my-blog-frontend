@@ -3,6 +3,15 @@
  * Comprehensive dynamic prompt system with multi-layered context
  */
 
+/** Get a single display string from targetSegment (string or { demographics, psychographics, searchBehavior }). */
+function targetSegmentToDisplayString(targetSegment) {
+  if (targetSegment == null) return '';
+  if (typeof targetSegment === 'string') return targetSegment.trim();
+  if (typeof targetSegment === 'object')
+    return (targetSegment.demographics ?? targetSegment.description ?? targetSegment.psychographics ?? targetSegment.searchBehavior ?? targetSegment.title ?? '').trim() || '';
+  return '';
+}
+
 /**
  * Enhanced Prompt Context Builder
  * Creates comprehensive prompts beyond basic goal/voice/template/length
@@ -58,7 +67,7 @@ export class ContentPromptEngine {
 
       // Audience Context Layer  
       audienceContext: {
-        primarySegment: (strategy && strategy.targetSegment) || analysisData.decisionMakers || 'Business professionals',
+        primarySegment: (strategy && targetSegmentToDisplayString(strategy.targetSegment)) || analysisData.decisionMakers || 'Business professionals',
         specificPainPoints: (strategy && strategy.customerProblem) || (analysisData.customerProblems && analysisData.customerProblems[0]) || 'Business challenges',
         customerLanguage: this.buildCustomerLanguage(analysisData, strategy),
         journeyStage: this.determineJourneyStage(strategy),

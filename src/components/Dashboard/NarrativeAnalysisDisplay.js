@@ -18,6 +18,15 @@ const cardStyles = {
   margin: '0 auto',
 };
 
+/** Turn targetSegment (string or { demographics, psychographics, searchBehavior }) into a single display string. */
+function targetSegmentToDisplayString(targetSegment) {
+  if (targetSegment == null) return '';
+  if (typeof targetSegment === 'string') return targetSegment.trim();
+  if (typeof targetSegment === 'object')
+    return (targetSegment.description ?? targetSegment.demographics ?? targetSegment.psychographics ?? targetSegment.searchBehavior ?? targetSegment.title ?? '').trim() || '';
+  return '';
+}
+
 /** Split text into paragraphs (double newline). Empty leading/trailing segments filtered. */
 function splitParagraphs(text) {
   if (!text || !text.trim()) return [];
@@ -317,7 +326,9 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
           <Text type="secondary" style={{ display: 'block', marginBottom: 24 }}>
             {systemVoice.analysis.audiencesIntro}
           </Text>
-          {scenarios.map((scenario, idx) => (
+          {scenarios.map((scenario, idx) => {
+            const segmentLabel = targetSegmentToDisplayString(scenario.targetSegment);
+            return (
             <Card
               key={scenario.id ?? idx}
               style={{
@@ -327,9 +338,9 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
                 animationDelay: `${idx * 0.2}s`,
               }}
             >
-              {scenario.targetSegment && (
+              {segmentLabel && (
                 <Text strong style={{ display: 'block', marginBottom: 8 }}>
-                  {scenario.targetSegment}
+                  {segmentLabel}
                 </Text>
               )}
               {scenario.customerProblem && (
@@ -343,7 +354,8 @@ export function NarrativeAnalysisDisplay({ jobId, analysisResults, renderFallbac
                 </div>
               )}
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
