@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button, Card, Spin, Alert, Typography, Space, Tag, message, Tooltip } from 'antd';
 import { ArrowLeftOutlined, RocketOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { PaymentModal } from '../Modals/PaymentModal';
+import ContentCalendarSection from './ContentCalendarSection';
 
 const { Title, Text } = Typography;
 
@@ -452,7 +453,7 @@ function parsePricingBullets(pricingText) {
 /**
  * StrategyDetailsView - Embedded view showing LLM-generated strategy pitch
  */
-export default function StrategyDetailsView({ strategy, visible, onBack, onSubscribe: _onSubscribe }) {
+export default function StrategyDetailsView({ strategy, visible, onBack, onSubscribe: _onSubscribe, onRefreshStrategy }) {
   const [pitchText, setPitchText] = useState('');
   const [pricingText, setPricingText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -775,17 +776,25 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
 
         {/* Content Calendar with Pricing - Right side (40%) */}
         <div style={{ flex: '0 1 380px', minWidth: '320px' }}>
-          <ContentCalendarTimeline
-            contentIdeas={strategy.contentIdeas}
-            sampleIdeas={sampleIdeas}
-            loadingSampleIdeas={loadingSampleIdeas}
-            sampleIdeasError={sampleIdeasError}
-            monthlyPrice={monthlyPrice}
-            pricingBullets={pricingBullets}
-            pricingLoading={loading && !pricingText}
-            onSubscribe={handleSubscribe}
-            subscribing={subscribing}
-          />
+          {(strategy.contentIdeas?.length > 0 || strategy.hasContentCalendar) ? (
+            <ContentCalendarSection
+              strategyId={strategy.id}
+              strategyName={strategy.pitch || strategy.customerProblem || 'Strategy'}
+              onRefresh={onRefreshStrategy ?? (() => {})}
+            />
+          ) : (
+            <ContentCalendarTimeline
+              contentIdeas={strategy.contentIdeas}
+              sampleIdeas={sampleIdeas}
+              loadingSampleIdeas={loadingSampleIdeas}
+              sampleIdeasError={sampleIdeasError}
+              monthlyPrice={monthlyPrice}
+              pricingBullets={pricingBullets}
+              pricingLoading={loading && !pricingText}
+              onSubscribe={handleSubscribe}
+              subscribing={subscribing}
+            />
+          )}
         </div>
       </div>
     </div>
