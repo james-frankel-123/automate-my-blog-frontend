@@ -664,12 +664,17 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
         })
       });
 
+      const text = await response.text();
+      const data = text ? (() => { try { return JSON.parse(text); } catch { return null; } })() : null;
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create checkout session');
+        const errorMessage = (data && data.error) ? data.error : (data && data.message) || `Request failed (${response.status})`;
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      if (!data) {
+        throw new Error('Empty response from server');
+      }
 
       if (data.clientSecret) {
         console.log('✅ Opening embedded Stripe checkout');
