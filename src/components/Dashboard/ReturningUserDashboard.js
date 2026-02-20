@@ -269,8 +269,8 @@ export default function ReturningUserDashboard() {
         height: '25vh',
         minHeight: '200px',
         overflow: 'hidden',
-        borderBottom: '1px solid #f0f0f0',
-        backgroundColor: '#fafafa'
+        borderBottom: '1px solid var(--color-border-base)',
+        backgroundColor: 'var(--color-background-alt)'
       }}>
         <StrategyCarousel
           strategies={strategies}
@@ -287,7 +287,7 @@ export default function ReturningUserDashboard() {
         height: '75vh',
         overflow: 'auto',
         padding: '24px',
-        backgroundColor: '#ffffff'
+        backgroundColor: 'var(--color-background-container)'
       }}>
         {viewMode === 'posts' ? (
           <>
@@ -334,8 +334,8 @@ export default function ReturningUserDashboard() {
                                 type="button"
                                 style={{
                                   padding: '8px 16px',
-                                  backgroundColor: '#1890ff',
-                                  color: 'white',
+                                  backgroundColor: 'var(--color-primary)',
+                                  color: 'var(--color-text-on-primary)',
                                   border: 'none',
                                   borderRadius: '4px',
                                   cursor: 'pointer',
@@ -351,8 +351,8 @@ export default function ReturningUserDashboard() {
                                 type="button"
                                 style={{
                                   padding: '8px 16px',
-                                  backgroundColor: '#1890ff',
-                                  color: 'white',
+                                  backgroundColor: 'var(--color-primary)',
+                                  color: 'var(--color-text-on-primary)',
                                   border: 'none',
                                   borderRadius: '4px',
                                   cursor: 'pointer',
@@ -368,8 +368,8 @@ export default function ReturningUserDashboard() {
                                 type="button"
                                 style={{
                                   padding: '8px 16px',
-                                  backgroundColor: '#1890ff',
-                                  color: 'white',
+                                  backgroundColor: 'var(--color-primary)',
+                                  color: 'var(--color-text-on-primary)',
                                   border: 'none',
                                   borderRadius: '4px',
                                   cursor: 'pointer',
@@ -388,8 +388,8 @@ export default function ReturningUserDashboard() {
                     <div style={{
                       marginTop: '32px',
                       padding: '16px 20px',
-                      backgroundColor: '#f0f7ff',
-                      borderLeft: '4px solid #1890ff',
+                      backgroundColor: 'var(--color-info-bg)',
+                      borderLeft: '4px solid var(--color-primary)',
                       borderRadius: '4px'
                     }}>
                       <Paragraph style={{ marginBottom: 0, fontSize: '16px', lineHeight: '1.6' }}>
@@ -431,8 +431,8 @@ export default function ReturningUserDashboard() {
                     <div style={{
                       marginTop: '32px',
                       padding: '16px 20px',
-                      backgroundColor: '#f0f7ff',
-                      borderLeft: '4px solid #1890ff',
+                      backgroundColor: 'var(--color-info-bg)',
+                      borderLeft: '4px solid var(--color-primary)',
                       borderRadius: '4px'
                     }}>
                       <Paragraph style={{ marginBottom: 0, fontSize: '16px', lineHeight: '1.6' }}>

@@ -15,9 +15,14 @@ const { Text, Paragraph } = Typography;
  */
 export default function RecommendationCard({ description, impact, action, result }) {
   const impactColors = {
-    high: '#ff4d4f',
-    medium: '#fa8c16',
-    low: '#1890ff'
+    high: 'var(--color-error)',
+    medium: 'var(--color-warning)',
+    low: 'var(--color-primary)'
+  };
+  const impactTagColors = {
+    high: 'error',
+    medium: 'warning',
+    low: 'processing'
   };
 
   const impactLabels = {
@@ -27,6 +32,7 @@ export default function RecommendationCard({ description, impact, action, result
   };
 
   const borderColor = impact ? impactColors[impact] : impactColors.low;
+  const tagColor = impact ? impactTagColors[impact] : impactTagColors.low;
 
   return (
     <Card
@@ -34,7 +40,7 @@ export default function RecommendationCard({ description, impact, action, result
       style={{
         marginBottom: '12px',
         borderLeft: `4px solid ${borderColor}`,
-        backgroundColor: '#fafafa'
+        backgroundColor: 'var(--color-background-alt)'
       }}
       bodyStyle={{ padding: '12px' }}
     >
@@ -42,7 +48,7 @@ export default function RecommendationCard({ description, impact, action, result
         <BulbOutlined
           style={{
             fontSize: '20px',
-            color: '#1890ff',
+            color: 'var(--color-primary)',
             marginTop: '2px',
             flexShrink: 0
           }}
@@ -55,7 +61,7 @@ export default function RecommendationCard({ description, impact, action, result
             </Text>
             {impact && (
               <Tag
-                color={impactColors[impact]}
+                color={tagColor}
                 style={{
                   fontWeight: 600,
                   fontSize: '11px',

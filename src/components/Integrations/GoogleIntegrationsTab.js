@@ -74,7 +74,7 @@ function renderMarkdownText(text) {
                 position: 'relative',
                 paddingLeft: '8px'
               }}>
-                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                <span style={{ position: 'absolute', left: '-12px', color: 'var(--color-primary)' }}>•</span>
                 {parseInlineMarkdown(item)}
               </li>
             ))}
@@ -88,7 +88,7 @@ function renderMarkdownText(text) {
         <Text key={`header-${idx}`} strong style={{
           display: 'block',
           fontSize: '16px',
-          color: '#262626',
+          color: 'var(--color-text-primary)',
           marginTop: elements.length > 0 ? '20px' : '0',
           marginBottom: '12px'
         }}>
@@ -117,7 +117,7 @@ function renderMarkdownText(text) {
                 position: 'relative',
                 paddingLeft: '8px'
               }}>
-                <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+                <span style={{ position: 'absolute', left: '-12px', color: 'var(--color-primary)' }}>•</span>
                 {parseInlineMarkdown(item)}
               </li>
             ))}
@@ -131,7 +131,7 @@ function renderMarkdownText(text) {
           display: 'block',
           fontSize: '15px',
           lineHeight: '1.8',
-          color: '#434343',
+          color: 'var(--color-text-secondary)',
           marginBottom: '8px'
         }}>
           {parseInlineMarkdown(trimmedLine)}
@@ -154,7 +154,7 @@ function renderMarkdownText(text) {
             position: 'relative',
             paddingLeft: '8px'
           }}>
-            <span style={{ position: 'absolute', left: '-12px', color: '#1890ff' }}>•</span>
+            <span style={{ position: 'absolute', left: '-12px', color: 'var(--color-primary)' }}>•</span>
             {parseInlineMarkdown(item)}
           </li>
         ))}
@@ -213,8 +213,8 @@ function SetupInstructions({ service }) {
       <Card
         style={{
           marginTop: '24px',
-          backgroundColor: '#f0f7ff',
-          border: '1px solid #d6e4ff'
+          backgroundColor: 'var(--color-info-bg)',
+          border: '1px solid var(--color-primary-200)'
         }}
       >
         <Title level={4} style={{ marginTop: 0 }}>
@@ -242,7 +242,7 @@ function SetupInstructions({ service }) {
     <Card
       style={{
         marginTop: '24px',
-        backgroundColor: '#f0f7ff',
+        backgroundColor: 'var(--color-info-bg)',
         border: '1px solid #d6e4ff'
       }}
     >
@@ -635,7 +635,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
     <div style={{ maxWidth: '900px', margin: '0 auto' }}>
       {/* Header with Icon */}
       <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <div style={{ fontSize: '64px', color: '#1890ff', marginBottom: '16px' }}>
+        <div style={{ fontSize: '64px', color: 'var(--color-primary)', marginBottom: '16px' }}>
           {icon}
         </div>
         <Title level={2} style={{ margin: 0 }}>
@@ -662,7 +662,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
           {/* What Happens Next */}
           <Card style={{ marginBottom: '32px' }}>
             <Title level={4} style={{ marginTop: 0 }}>
-              <CheckCircleOutlined style={{ color: '#52c41a', marginRight: '8px' }} />
+              <CheckCircleOutlined style={{ color: 'var(--color-success)', marginRight: '8px' }} />
               What happens now?
             </Title>
 
@@ -688,18 +688,18 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
             {service === 'trends' && showPreview && (
               <div style={{
                 padding: '20px',
-                backgroundColor: '#f0f7ff',
+                backgroundColor: 'var(--color-info-bg)',
                 borderRadius: '8px',
                 border: '1px solid #d6e4ff',
                 marginBottom: '16px'
               }}>
-                <Title level={5} style={{ marginTop: 0, color: '#1890ff', marginBottom: '16px' }}>
+                <Title level={5} style={{ marginTop: 0, color: 'var(--color-primary)', marginBottom: '16px' }}>
                   <BulbOutlined /> Trending Topics Found for Your Business
                 </Title>
                 <div style={{
                   fontSize: '15px',
                   lineHeight: '1.8',
-                  color: '#262626',
+                  color: 'var(--color-text-primary)',
                   minHeight: previewStreaming ? '80px' : 'auto'
                 }}>
                   {renderMarkdownText(preview)}
@@ -708,7 +708,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
                       display: 'inline-block',
                       width: '2px',
                       height: '1em',
-                      backgroundColor: '#1890ff',
+                      backgroundColor: 'var(--color-primary)',
                       marginLeft: '4px',
                       animation: 'blink 1s step-end infinite'
                     }} />
@@ -841,7 +841,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
               loading={pitchLoading && !streaming}
               style={{
                 fontSize: '14px',
-                color: '#1890ff',
+                color: 'var(--color-primary)',
                 marginRight: '12px'
               }}
             >
@@ -855,7 +855,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
               onClick={toggleSetupInstructions}
               style={{
                 fontSize: '14px',
-                color: '#52c41a'
+                color: 'var(--color-success)'
               }}
             >
               {showSetup ? 'Hide setup guide' : 'Help me get set up'}
@@ -868,11 +868,11 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
               style={{
                 marginTop: '32px',
                 padding: '24px',
-                backgroundColor: '#f5f5f5',
+                backgroundColor: 'var(--color-background-alt)',
                 borderRadius: '8px',
                 fontSize: '15px',
                 lineHeight: '1.8',
-                color: '#262626',
+                color: 'var(--color-text-primary)',
                 minHeight: '100px',
                 opacity: 1,
                 animation: 'fadeIn 0.3s ease-in'
@@ -884,13 +884,13 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
                   display: 'inline-block',
                   width: '2px',
                   height: '1em',
-                  backgroundColor: '#1890ff',
+                  backgroundColor: 'var(--color-primary)',
                   marginLeft: '4px',
                   animation: 'blink 1s step-end infinite'
                 }} />
               )}
               {!streaming && pitch && (
-                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #d9d9d9' }}>
+                <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--color-border-base)' }}>
                   <Text type="secondary" style={{ fontSize: '13px', fontStyle: 'italic' }}>
                     ✨ AI-generated explanation
                   </Text>

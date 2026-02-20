@@ -21,17 +21,17 @@ const FeatureTile = ({
       style={{
         height: '100%',
         minHeight: 220,
-        border: connected ? '2px solid #52c41a' : '2px solid #d9d9d9'
+        border: connected ? '2px solid var(--color-success)' : '2px solid var(--color-border-base)'
       }}
     >
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ fontSize: 32, color: '#1890ff' }}>
+          <div style={{ fontSize: 32, color: 'var(--color-primary)' }}>
             {icon}
           </div>
           {connected && (
-            <CheckCircleOutlined style={{ fontSize: 20, color: '#52c41a' }} />
+            <CheckCircleOutlined style={{ fontSize: 20, color: 'var(--color-success)' }} />
           )}
         </div>
 

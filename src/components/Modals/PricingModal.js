@@ -406,14 +406,14 @@ const PricingModal = ({
         <div style={{
           marginTop: '32px',
           padding: '24px',
-          backgroundColor: '#e6f7ff',
-          border: '1px solid #91d5ff',
+          backgroundColor: 'var(--color-info-bg)',
+          border: '1px solid var(--color-primary-200)',
           borderRadius: '8px'
         }}>
           <Title level={4} style={{
             marginTop: 0,
             marginBottom: '12px',
-            color: '#0050b3'
+            color: 'var(--color-primary-700)'
           }}>
             💡 Why Value-Based Pricing?
           </Title>
@@ -426,31 +426,31 @@ const PricingModal = ({
           </Paragraph>
           <Space direction="vertical" size="middle" style={{ width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
               <Text style={{ fontSize: '14px' }}>
                 <strong>Aligned Incentives:</strong> We succeed when you succeed. Your cost scales with the profit potential we unlock.
               </Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
               <Text style={{ fontSize: '14px' }}>
                 <strong>Complexity-Aware:</strong> Simple niches with low competition cost less. Complex industries requiring sophisticated strategies cost more.
               </Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
               <Text style={{ fontSize: '14px' }}>
                 <strong>Business-Size Appropriate:</strong> Small businesses pay less. Larger businesses with complex needs pay more. Everyone gets great ROI.
               </Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
               <Text style={{ fontSize: '14px' }}>
                 <strong>Results-Driven:</strong> You pay for quality content that drives traffic, leads, and conversions—not just post volume.
               </Text>
             </div>
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-              <CheckOutlined style={{ color: '#52c41a', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
               <Text style={{ fontSize: '14px' }}>
                 <strong>ROI Tracking:</strong> Connect Google Analytics to see the traffic and conversions we drive. Our system optimizes based on real performance.
               </Text>

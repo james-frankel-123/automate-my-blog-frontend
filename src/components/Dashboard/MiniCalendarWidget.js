@@ -45,7 +45,7 @@ const MiniCalendarWidget = ({ onDateClick, api }) => {
           </li>
         ))}
         {listData.length > 2 && (
-          <li style={{ fontSize: 10, color: '#8c8c8c' }}>
+          <li style={{ fontSize: 10, color: 'var(--color-text-tertiary)' }}>
             +{listData.length - 2} more
           </li>
         )}

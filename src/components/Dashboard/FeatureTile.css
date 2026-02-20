@@ -3,16 +3,21 @@
 }
 
 .feature-tile:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-card);
   transform: translateY(-2px);
 }
 
 .feature-tile.connected {
-  background: linear-gradient(to bottom right, #f6ffed 0%, white 100%);
+  background: linear-gradient(to bottom right, var(--color-success-bg) 0%, var(--color-background-container) 100%);
 }
 
 .feature-tile.disconnected {
-  background: linear-gradient(to bottom right, #fafafa 0%, white 100%);
+  background: linear-gradient(to bottom right, var(--color-background-alt) 0%, var(--color-background-container) 100%);
+}
+
+/* Dark mode: same tokens apply (design-system overrides --color-success-bg, --color-background-*) */
+.dark-mode .feature-tile:hover {
+  box-shadow: var(--shadow-card);
 }
 
 .feature-tile .ant-card-body {
