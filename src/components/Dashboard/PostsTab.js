@@ -2693,7 +2693,7 @@ const PostsTab = ({
   return (
     <div>
 
-      {/* 30-Day Content Calendar */}
+      {/* 7-Day Content Calendar */}
       {user && (
         <div style={{ padding: '24px 24px 0' }}>
           <ContentCalendarSection
