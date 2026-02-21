@@ -222,7 +222,7 @@ const getAntdTheme = (isDark) => ({
 });
 
 const AppContent = () => {
-  const { user, loading, loginContext, isNewRegistration } = useAuth();
+  const { user, loading, loginContext, isNewRegistration, setNavContext } = useAuth();
   const { stepResults } = useWorkflowMode();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [, setActiveTab] = useState('newpost');
@@ -289,6 +289,15 @@ const AppContent = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // When logged-in user sees dashboard, ensure loginContext is 'nav' so sidebar is visible
+  useEffect(() => {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isDashboardPath = pathname === '/' || pathname === '/dashboard' || pathname.startsWith('/settings/');
+    if (user && isDashboardPath && loginContext !== 'nav') {
+      setNavContext();
+    }
+  }, [user, loginContext, setNavContext]);
 
   // When auth loading finishes and user might be on another tab, alert in icon/title
   const prevLoadingRef = React.useRef(loading);
