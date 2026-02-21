@@ -921,7 +921,7 @@ const DashboardLayout = ({
             padding: isMobile ? 'var(--space-4) var(--space-4) calc(80px + env(safe-area-inset-bottom, 0px)) var(--space-4)' : 'var(--space-6)',
             background: 'var(--color-gray-50)',
             overflow: 'auto',
-            paddingTop: '24px',
+            paddingTop: 'var(--space-6)',
             // So ThinkingPanel sticks above mobile bottom nav when present
             '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
           }}
@@ -940,7 +940,7 @@ const DashboardLayout = ({
             flexWrap: isMobile ? 'wrap' : 'nowrap',
             alignItems: 'center',
             justifyContent: isMobile ? 'flex-end' : undefined,
-            gap: isMobile ? 8 : 12
+            gap: isMobile ? 'var(--space-2)' : 'var(--space-3)'
           }}>
             {/* Theme Toggle */}
             <div style={{

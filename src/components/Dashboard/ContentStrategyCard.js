@@ -36,39 +36,25 @@ export default function ContentStrategyCard({
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   };
 
-  // Debug first render
-  const [hasLogged, setHasLogged] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!hasLogged && strategy.id === 'd8c6cd76-3b70-41e4-bdc2-bf1718dfba8e') {
-      console.log('🎴 ContentStrategyCard render (Manufacturing):', {
-        strategyId: strategy.id,
-        isSubscribed,
-        hasPerformanceMetrics: !!performanceMetrics
-      });
-      setHasLogged(true);
-    }
-  }, [strategy.id, isSubscribed, performanceMetrics, hasLogged]);
-
   const cardStyle = {
     width: '300px',
     minWidth: '300px',
     height: '160px',
     scrollSnapAlign: 'start',
     cursor: 'pointer',
-    border: isSubscribed ? '2px solid #52c41a' : '1px solid #d9d9d9',
-    borderRadius: '8px',
-    opacity: isSelected ? 1 : 0.7,
+    border: isSubscribed ? '2px solid var(--color-success)' : '1px solid var(--color-border-base)',
+    borderRadius: 'var(--radius-md)',
+    opacity: isSelected ? 1 : 0.9,
     boxShadow: isSelected
-      ? '0 8px 24px rgba(0,0,0,0.25)'
-      : '0 2px 8px rgba(0,0,0,0.1)',
+      ? 'var(--shadow-elevated)'
+      : 'var(--shadow-sm)',
     transition: 'all 0.3s ease',
     overflow: 'hidden',
     position: 'relative'
   };
 
   const hoverStyle = {
-    boxShadow: '0 12px 32px rgba(0,0,0,0.3)',
+    boxShadow: 'var(--shadow-elevated)',
     transform: 'translateY(-2px)',
     opacity: 1
   };
@@ -79,7 +65,7 @@ export default function ContentStrategyCard({
     <Card
       style={isHovered ? { ...cardStyle, ...hoverStyle } : cardStyle}
       bodyStyle={{
-        padding: '16px',
+        padding: 'var(--space-4)',
         height: '100%',
         display: 'flex',
         flexDirection: 'column'
@@ -97,11 +83,11 @@ export default function ContentStrategyCard({
       }}>
         <div style={{ flex: 1 }}>
           <div style={{
-            fontWeight: 'bold',
-            fontSize: '15px',
-            marginBottom: '4px',
-            color: '#333',
-            lineHeight: '1.3'
+            fontWeight: 'var(--font-weight-semibold)',
+            fontSize: 'var(--font-size-base)',
+            marginBottom: 'var(--space-1)',
+            color: 'var(--color-text-primary)',
+            lineHeight: 1.3
           }}>
             {truncate(demographics, 45)}
           </div>
@@ -111,8 +97,8 @@ export default function ContentStrategyCard({
           <Badge
             count="Active"
             style={{
-              backgroundColor: '#52c41a',
-              color: '#fff',
+              backgroundColor: 'var(--color-success)',
+              color: 'var(--color-text-on-primary)',
               fontSize: '11px',
               fontWeight: '600',
               padding: '0 8px',
@@ -122,7 +108,7 @@ export default function ContentStrategyCard({
             }}
           />
         ) : (
-          <LockFilled style={{ fontSize: '20px', color: '#999' }} />
+          <LockFilled style={{ fontSize: '20px', color: 'var(--color-text-tertiary)' }} />
         )}
       </div>
 
@@ -142,35 +128,35 @@ export default function ContentStrategyCard({
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
         {isSubscribed && performanceMetrics ? (
           <div style={{
-            fontSize: '13px',
-            color: '#666',
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text-secondary)',
             lineHeight: '1.8'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckOutlined style={{ color: '#52c41a' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <CheckOutlined style={{ color: 'var(--color-success)' }} />
               <span>{performanceMetrics.published || 0} Posts Published</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FileTextOutlined style={{ color: '#1890ff' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <FileTextOutlined style={{ color: 'var(--color-primary)' }} />
               <span>{performanceMetrics.drafts || 0} Drafts In Progress</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ClockCircleOutlined style={{ color: '#faad14' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <ClockCircleOutlined style={{ color: 'var(--color-warning)' }} />
               <span>{performanceMetrics.upcoming || 0} Scheduled</span>
             </div>
           </div>
         ) : isSubscribed ? (
           <div style={{
-            fontSize: '13px',
-            color: '#999',
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text-tertiary)',
             fontStyle: 'italic'
           }}>
             No posts yet. Click to start creating content.
           </div>
         ) : (
           <div style={{
-            fontSize: '13px',
-            color: '#999',
+            fontSize: 'var(--font-size-sm)',
+            color: 'var(--color-text-tertiary)',
             fontStyle: 'italic'
           }}>
             Click to view strategy details
@@ -186,7 +172,7 @@ export default function ContentStrategyCard({
           left: 0,
           right: 0,
           height: '40%',
-          background: 'linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0) 100%)',
+          background: 'linear-gradient(180deg, rgba(0,0,0,0.04) 0%, transparent 100%)',
           pointerEvents: 'none'
         }} />
       )}

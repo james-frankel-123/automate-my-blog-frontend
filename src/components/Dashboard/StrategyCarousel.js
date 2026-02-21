@@ -65,8 +65,8 @@ export default function StrategyCarousel({
         alignItems: 'center',
         justifyContent: 'center',
         height: '100%',
-        color: '#999',
-        fontSize: '16px'
+        color: 'var(--color-text-tertiary)',
+        fontSize: 'var(--font-size-base)'
       }}>
         No strategies found. Complete website analysis to generate strategies.
       </div>
@@ -87,7 +87,7 @@ export default function StrategyCarousel({
     <div style={{
       position: 'relative',
       height: '100%',
-      padding: '16px 24px',
+      padding: 'var(--space-4) var(--space-6)',
       display: 'flex',
       alignItems: 'center'
     }}>
@@ -104,25 +104,25 @@ export default function StrategyCarousel({
             width: '40px',
             height: '40px',
             borderRadius: '50%',
-            border: '1px solid #d9d9d9',
-            backgroundColor: '#ffffff',
+            border: '1px solid var(--color-border-base)',
+            backgroundColor: 'var(--color-background-body)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            boxShadow: 'var(--shadow-md)',
             transition: 'all 0.3s'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f5f5f5';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            e.currentTarget.style.backgroundColor = 'var(--color-gray-100)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-elevated)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#ffffff';
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            e.currentTarget.style.backgroundColor = 'var(--color-background-body)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
           }}
         >
-          <LeftOutlined style={{ fontSize: '16px', color: '#333' }} />
+          <LeftOutlined style={{ fontSize: '16px', color: 'var(--color-text-primary)' }} />
         </button>
       )}
 
@@ -131,10 +131,10 @@ export default function StrategyCarousel({
         ref={carouselRef}
         style={{
           display: 'flex',
-          gap: '16px',
+          gap: 'var(--space-4)',
           overflowX: 'auto',
           scrollSnapType: 'x mandatory',
-          padding: '8px 48px',
+          padding: 'var(--space-2) var(--space-12)',
           margin: '0 auto',
           maxWidth: '100%',
           // Hide scrollbar
@@ -154,16 +154,6 @@ export default function StrategyCarousel({
       >
         {sortedStrategies.map((strategy) => {
           const isSubscribed = !!subscribedStrategies[strategy.id];
-
-          // Debug first 3 strategies
-          if (sortedStrategies.indexOf(strategy) < 3) {
-            console.log(`📊 Card ${sortedStrategies.indexOf(strategy)}:`, {
-              strategyId: strategy.id,
-              isSubscribed,
-              hasInMap: strategy.id in subscribedStrategies,
-              subscribedKeys: Object.keys(subscribedStrategies)
-            });
-          }
 
           return (
             <ContentStrategyCard
@@ -192,25 +182,25 @@ export default function StrategyCarousel({
             width: '40px',
             height: '40px',
             borderRadius: '50%',
-            border: '1px solid #d9d9d9',
-            backgroundColor: '#ffffff',
+            border: '1px solid var(--color-border-base)',
+            backgroundColor: 'var(--color-background-body)',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            boxShadow: 'var(--shadow-md)',
             transition: 'all 0.3s'
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = '#f5f5f5';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            e.currentTarget.style.backgroundColor = 'var(--color-gray-100)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-elevated)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = '#ffffff';
-            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+            e.currentTarget.style.backgroundColor = 'var(--color-background-body)';
+            e.currentTarget.style.boxShadow = 'var(--shadow-md)';
           }}
         >
-          <RightOutlined style={{ fontSize: '16px', color: '#333' }} />
+          <RightOutlined style={{ fontSize: '16px', color: 'var(--color-text-primary)' }} />
         </button>
       )}
     </div>
