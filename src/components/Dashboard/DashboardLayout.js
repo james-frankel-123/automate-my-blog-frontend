@@ -526,6 +526,13 @@ const DashboardLayout = ({
     { key: 'posts', icon: <FileTextOutlined />, label: 'Posts' },
   ];
 
+  // Settings / account items in left nav (moved from user dropdown)
+  const settingsNavItems = [
+    { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
+    { key: 'voice-adaptation', icon: <SoundOutlined />, label: 'Voice adaptation' },
+    { key: 'google-integrations', icon: <GoogleOutlined />, label: 'Google integrations' },
+  ];
+
   // Admin menu items - conditionally added based on permissions
   const adminMenuItems = [];
   
@@ -584,31 +591,13 @@ const DashboardLayout = ({
     });
   }
 
-  const menuItems = [...baseMenuItems, ...adminMenuItems];
+  const menuItems = [...baseMenuItems, ...settingsNavItems, ...adminMenuItems];
 
   const userMenuItems = [
     {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profile',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-      onClick: () => handleTabChange('settings'),
-    },
-    {
-      key: 'voice-adaptation',
-      icon: <SoundOutlined />,
-      label: 'Voice adaptation',
-      onClick: () => handleTabChange('voice-adaptation'),
-    },
-    {
-      key: 'google-integrations',
-      icon: <GoogleOutlined />,
-      label: 'Google integrations',
-      onClick: () => handleTabChange('google-integrations'),
     },
     {
       type: 'divider',
