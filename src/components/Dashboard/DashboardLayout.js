@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Menu, Button, Avatar, Dropdown, message, Spin } from 'antd';
+import { Menu, Button, Avatar, Dropdown, Drawer, message, Spin } from 'antd';
 import api from '../../services/api';
 import {
   DashboardOutlined,
@@ -18,6 +18,7 @@ import {
   CloseOutlined,
   PlusOutlined,
   BarChartOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
@@ -94,6 +95,8 @@ const DashboardLayout = ({
   
   // Restore collapsed state (needed for sidebar)
   const [collapsed, _setCollapsed] = useState(false);
+  // Mobile: hamburger drawer open state
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   
   // ReturningUserDashboard state (hasStrategies/strategiesLoading used for future logic)
   const [_hasStrategies, setHasStrategies] = useState(false);
@@ -526,6 +529,13 @@ const DashboardLayout = ({
     { key: 'posts', icon: <FileTextOutlined />, label: 'Posts' },
   ];
 
+  // Settings / account items in left nav (moved from user dropdown)
+  const settingsNavItems = [
+    { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
+    { key: 'voice-adaptation', icon: <SoundOutlined />, label: 'Voice adaptation' },
+    { key: 'google-integrations', icon: <GoogleOutlined />, label: 'Google integrations' },
+  ];
+
   // Admin menu items - conditionally added based on permissions
   const adminMenuItems = [];
   
@@ -584,31 +594,13 @@ const DashboardLayout = ({
     });
   }
 
-  const menuItems = [...baseMenuItems, ...adminMenuItems];
+  const menuItems = [...baseMenuItems, ...settingsNavItems, ...adminMenuItems];
 
   const userMenuItems = [
     {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profile',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-      onClick: () => handleTabChange('settings'),
-    },
-    {
-      key: 'voice-adaptation',
-      icon: <SoundOutlined />,
-      label: 'Voice adaptation',
-      onClick: () => handleTabChange('voice-adaptation'),
-    },
-    {
-      key: 'google-integrations',
-      icon: <GoogleOutlined />,
-      label: 'Google integrations',
-      onClick: () => handleTabChange('google-integrations'),
     },
     {
       type: 'divider',
@@ -822,86 +814,61 @@ const DashboardLayout = ({
         </div>
       )}
 
-      {/* Mobile Navigation - only shows on mobile; touch-friendly 44px targets */}
+      {/* Mobile: hamburger menu drawer (replaces bottom nav to accommodate all items) */}
       {user && isMobile && (
-        <div
-          data-mobile-bottom-nav
-          className="mobile-bottom-nav"
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: 'var(--color-background-body)',
-            borderTop: '1px solid var(--color-border-base)',
-            padding: '12px 8px max(12px, env(safe-area-inset-bottom))',
-            zIndex: 20,
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            boxShadow: 'var(--shadow-sm)',
-            minHeight: '56px'
-          }}
+        <Drawer
+          title={null}
+          placement="left"
+          open={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          width={280}
+          bodyStyle={{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }}
+          headerStyle={{ borderBottom: '1px solid var(--color-border-base)' }}
+          styles={{ body: { flex: 1, overflow: 'auto' } }}
         >
-          {menuItems.slice(0, 6).map((item) => (
-            <Button
-              key={item.key}
-              type={activeTab === item.key ? 'primary' : 'text'}
-              icon={item.icon}
-              onClick={() => handleTabChange(item.key)}
-              style={{
-                border: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 'auto',
-                padding: '10px 6px',
-                fontSize: '11px',
-                minWidth: '56px',
-                minHeight: '44px',
-                gap: 4
+          <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-base)' }}>
+            <h3 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
+              Automate My Blog
+            </h3>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <Menu
+              mode="inline"
+              selectedKeys={[activeTab]}
+              items={menuItems}
+              onClick={({ key }) => {
+                handleTabChange(key);
+                setMobileDrawerOpen(false);
               }}
-            >
-              {item.label}
-            </Button>
-          ))}
-          
-          {/* User Menu for Mobile */}
-          <Dropdown
-            menu={{ items: userMenuItems }}
-            trigger={['click']}
-            placement="topRight"
-          >
+              style={{ border: 'none', padding: 'var(--space-2) 0' }}
+            />
+          </div>
+          <div style={{
+            borderTop: '1px solid var(--color-border-base)',
+            padding: 'var(--space-4)',
+            background: 'var(--color-background-body)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <Avatar icon={<UserOutlined />} style={{ backgroundColor: 'var(--color-primary)' }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.firstName} {user?.lastName}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.email}
+                </div>
+              </div>
+            </div>
             <Button
               type="text"
-              style={{
-                border: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 'auto',
-                padding: '10px 6px',
-                fontSize: '11px',
-                minWidth: '56px',
-                minHeight: '44px'
-              }}
+              icon={<LogoutOutlined />}
+              onClick={() => { setMobileDrawerOpen(false); logout(); }}
+              style={{ width: '100%', justifyContent: 'flex-start' }}
             >
-              <Avatar 
-                icon={<UserOutlined />} 
-                style={{ 
-                  backgroundColor: 'var(--color-primary)',
-                  width: '24px',
-                  height: '24px',
-                  fontSize: '12px',
-                  marginBottom: '4px'
-                }}
-              />
-              <span style={{ fontSize: '11px' }}>Profile</span>
+              Logout
             </Button>
-          </Dropdown>
-        </div>
+          </div>
+        </Drawer>
       )}
 
 
@@ -911,12 +878,11 @@ const DashboardLayout = ({
         <div
           className={undefined}
           style={{
-            padding: isMobile ? 'var(--space-4) var(--space-4) calc(80px + env(safe-area-inset-bottom, 0px)) var(--space-4)' : 'var(--space-6)',
+            padding: isMobile ? 'var(--space-4)' : 'var(--space-6)',
             background: 'var(--color-gray-50)',
             overflow: 'auto',
             paddingTop: 'var(--space-6)',
-            // So ThinkingPanel sticks above mobile bottom nav when present
-            '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
+            '--thinking-panel-sticky-bottom': '0',
           }}
         >
           {/* Floating Action Buttons - below LoggedOutProgressHeader when it is visible (mobile + desktop) */}
@@ -932,9 +898,30 @@ const DashboardLayout = ({
             display: 'flex',
             flexWrap: isMobile ? 'wrap' : 'nowrap',
             alignItems: 'center',
-            justifyContent: isMobile ? 'flex-end' : undefined,
+            justifyContent: isMobile ? 'space-between' : undefined,
             gap: isMobile ? 'var(--space-2)' : 'var(--space-3)'
           }}>
+            {/* Mobile: hamburger to open nav drawer */}
+            {isMobile && (
+              <Button
+                type="text"
+                icon={<MenuOutlined style={{ fontSize: 20 }} />}
+                onClick={() => setMobileDrawerOpen(true)}
+                style={{
+                  background: 'var(--color-background-body)',
+                  padding: 'var(--space-2)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow-md)',
+                  border: '2px solid var(--color-border-base)',
+                  minWidth: 44,
+                  minHeight: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                aria-label="Open menu"
+              />
+            )}
             {/* Theme Toggle */}
             <div style={{
               background: 'var(--color-background-body)',
