@@ -605,23 +605,11 @@ const DashboardLayout = ({
   };
 
 
-  // Base menu items available to all users
+  // Base menu items: Home + Audience always; Posts only when standalone section exists (forceWorkflowMode)
   const baseMenuItems = [
-    {
-      key: 'dashboard',
-      icon: <DashboardOutlined />,
-      label: 'Home',
-    },
-    {
-      key: 'audience-segments',
-      icon: <TeamOutlined />,
-      label: 'Audience',
-    },
-    {
-      key: 'posts',
-      icon: <FileTextOutlined />,
-      label: 'Posts',
-    },
+    { key: 'dashboard', icon: <DashboardOutlined />, label: 'Home' },
+    { key: 'audience-segments', icon: <TeamOutlined />, label: 'Audience' },
+    ...(forceWorkflowMode ? [{ key: 'posts', icon: <FileTextOutlined />, label: 'Posts' }] : []),
   ];
 
   // Admin menu items - conditionally added based on permissions
@@ -750,106 +738,76 @@ const DashboardLayout = ({
       }
     }
 
-    // Tab-based layout: Home, Audience, Posts sections (ReturningUserDashboard in Audience when logged in)
-    // Main scrollable layout with all sections
+    // Tab-based layout (logged-in only): Home, Audience (carousel + posts), optional standalone Posts when in workflow
     return (
       <div style={{ padding: 0 }}>
-
-        {/* Home Section (formerly Dashboard) - Always visible */}
-        {(user || visibleSections.includes('home')) && (
-          <section id="home" style={{ 
-            minHeight: '100vh',
-            background: 'var(--color-background-body)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-6)',
-            marginBottom: 'var(--space-6)'
-          }}>
-            <DashboardTab
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-              showSaveProjectButton={showSaveProjectButton}
-              isNewRegistration={isNewRegistration}
-              onNavigateToTab={(tab) => setActiveTab(tab)}
-              onSaveProject={null} // Save Project button is now in the header
-              projectJustSaved={projectJustSaved}
-              onCreateNewPost={() => {
-                // Enter project mode and start workflow
-                if (user && !projectMode) {
-                  setProjectMode(true);
-                }
-                
-                // Check if website analysis is completed
-                const isAnalysisCompleted = stepResults.home?.analysisCompleted;
-                
-                setTimeout(() => {
-                  if (!isAnalysisCompleted) {
-                    // Navigate to Home section for analysis first
-                    const homeSection = document.getElementById('home');
-                    if (homeSection) {
-                      homeSection.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                      });
+        {user && (
+          <>
+            <section id="home" style={{
+              minHeight: '100vh',
+              background: 'var(--color-background-body)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-6)',
+              marginBottom: 'var(--space-6)'
+            }}>
+              <DashboardTab
+                forceWorkflowMode={forceWorkflowMode || projectMode}
+                onEnterProjectMode={!projectMode ? () => setProjectMode(true) : undefined}
+                showSaveProjectButton={showSaveProjectButton}
+                isNewRegistration={isNewRegistration}
+                onNavigateToTab={(tab) => setActiveTab(tab)}
+                onSaveProject={null}
+                projectJustSaved={projectJustSaved}
+                onCreateNewPost={() => {
+                  if (!projectMode) setProjectMode(true);
+                  const isAnalysisCompleted = stepResults.home?.analysisCompleted;
+                  setTimeout(() => {
+                    if (!isAnalysisCompleted) {
+                      document.getElementById('home')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
+                      message.success('Complete website analysis first, then select your audience');
+                    } else {
+                      document.getElementById('audience-segments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
+                      message.success('Starting guided creation project');
                     }
-                    setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
-                    message.success('Complete website analysis first, then select your audience');
-                  } else {
-                    // Navigate to audience section (normal flow)
-                    const audienceSection = document.getElementById('audience-segments');
-                    if (audienceSection) {
-                      audienceSection.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                      });
-                    }
-                    setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
-                    message.success('Starting guided creation project');
-                  }
-                }, 100);
-              }}
-            />
-          </section>
-        )}
-
-        {/* Audience Section - ReturningUserDashboard for logged-in users, onboarding for workflow.
-            Once strategies are loaded, keep section visible (hasStrategies || !strategiesLoading) so calendar doesn't disappear. */}
-        {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted || hasStrategies || !strategiesLoading))) && (
-          <section id="audience-segments" className="workflow-section-enter" style={{
-            minHeight: '100vh',
-            background: 'var(--color-background-body)',
-            marginBottom: 'var(--space-6)'
-          }}>
-            {user && !forceWorkflowMode ? (
-              <ReturningUserDashboard />
-            ) : (
-              <AudienceSegmentsTab
-                forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-                onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-                onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
+                  }, 100);
+                }}
               />
-            )}
-          </section>
-        )}
+            </section>
 
-        {/* Posts Section - Unlocked after step 2, or for new registrations from onboarding (have analysis) */}
-        {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience?.customerStrategy || (isNewRegistration && stepResults.home?.analysisCompleted)))) && (
-          <section id="posts" className="workflow-section-enter" style={{ 
-            minHeight: '100vh',
-            background: 'var(--color-background-body)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-6)',
-            marginBottom: 'var(--space-6)'
-          }}>
-            <PostsTab
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-              currentStep={!user && forceWorkflowMode ? currentStep : undefined}
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-              onQuotaUpdate={refreshQuota}
-              onOpenPricingModal={() => setShowPricingModal(true)}
-            />
-          </section>
+            <section id="audience-segments" className="workflow-section-enter" style={{
+              minHeight: '100vh',
+              background: 'var(--color-background-body)',
+              marginBottom: 'var(--space-6)'
+            }}>
+              {!forceWorkflowMode ? (
+                <ReturningUserDashboard />
+              ) : (
+                <AudienceSegmentsTab
+                  forceWorkflowMode={forceWorkflowMode || projectMode}
+                  onEnterProjectMode={!projectMode ? () => setProjectMode(true) : undefined}
+                />
+              )}
+            </section>
+
+            {forceWorkflowMode && (
+              <section id="posts" className="workflow-section-enter" style={{
+                minHeight: '100vh',
+                background: 'var(--color-background-body)',
+                borderRadius: 'var(--radius-md)',
+                padding: 'var(--space-6)',
+                marginBottom: 'var(--space-6)'
+              }}>
+                <PostsTab
+                  forceWorkflowMode={forceWorkflowMode || projectMode}
+                  onEnterProjectMode={!projectMode ? () => setProjectMode(true) : undefined}
+                  onQuotaUpdate={refreshQuota}
+                  onOpenPricingModal={() => setShowPricingModal(true)}
+                />
+              </section>
+            )}
+          </>
         )}
       </div>
     );
