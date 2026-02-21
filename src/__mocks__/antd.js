@@ -107,6 +107,17 @@ export const Typography = {
   Link: ({ children, ...props }) => <a data-testid="link" {...props}>{children}</a>,
 };
 
+export const Drawer = ({ open, onClose, children, title, placement, width, bodyStyle, headerStyle, styles, ...props }) => {
+  if (!open) return null;
+  return (
+    <div data-testid="drawer" data-placement={placement} style={{ width: width || 280 }} {...props}>
+      {title != null && <div data-testid="drawer-title">{title}</div>}
+      <button data-testid="drawer-close" onClick={onClose} type="button">Close</button>
+      <div data-testid="drawer-body" style={bodyStyle}>{children}</div>
+    </div>
+  );
+};
+
 export const Modal = ({ open, visible, children, onCancel, onOk, title, footer, ...props }) => {
   if (!open && !visible) return null;
   return (
@@ -377,6 +388,7 @@ export default {
   Space,
   Tag,
   Typography,
+  Drawer,
   Modal,
   Tabs,
   Menu,
