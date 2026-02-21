@@ -812,8 +812,9 @@ const DashboardLayout = ({
           </section>
         )}
 
-        {/* Audience Section - ReturningUserDashboard for logged-in users, onboarding for workflow */}
-        {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
+        {/* Audience Section - ReturningUserDashboard for logged-in users, onboarding for workflow.
+            Once strategies are loaded, keep section visible (hasStrategies || !strategiesLoading) so calendar doesn't disappear. */}
+        {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted || hasStrategies || !strategiesLoading))) && (
           <section id="audience-segments" className="workflow-section-enter" style={{
             minHeight: '100vh',
             background: 'var(--color-background-body)',
