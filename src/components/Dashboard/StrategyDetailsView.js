@@ -586,16 +586,18 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
 
       console.log('💡 Fetching sample content ideas for strategy:', strategy.id);
 
-      const response = await fetch(
-        `/api/v1/strategies/${strategy.id}/sample-content-ideas`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
+      const baseURL = process.env.REACT_APP_API_URL || '';
+      const url = baseURL
+        ? `${baseURL.replace(/\/+$/, '')}/api/v1/strategies/${strategy.id}/sample-content-ideas`
+        : `/api/v1/strategies/${strategy.id}/sample-content-ideas`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: '{}'
+      });
 
       console.log('📡 Sample ideas response status:', response.status);
 
