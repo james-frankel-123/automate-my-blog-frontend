@@ -693,7 +693,7 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Navigation functions
   const navigateToNextStep = useCallback(() => {
-    // Allow advancing from audience step (e.g. "Choose your SEO strategy") even when not in workflow mode (forceWorkflowMode path)
+    // Allow advancing from audience step (e.g. "Choose your SEO strategy")
     const stepIndex = isWorkflowMode
       ? currentWorkflowStep
       : WORKFLOW_STEPS.findIndex((s) => s.tab === activeTab);

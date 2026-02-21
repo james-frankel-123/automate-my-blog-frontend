@@ -397,7 +397,6 @@ const AppContent = () => {
         showDashboard={user && loginContext === 'nav'}
         isMobile={isMobile}
         onActiveTabChange={setActiveTab}
-        forceWorkflowMode={!user}
       />
     </SystemHintProvider>
   );

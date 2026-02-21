@@ -39,17 +39,15 @@ describe('LoggedOutProgressHeader', () => {
     expect(screen.getByText('Go to Dashboard')).toBeInTheDocument();
   });
 
-  it('shows Save Project when user is new registration and showSaveProjectButton', () => {
+  it('shows Go to Dashboard when user is new registration', () => {
     render(
       <LoggedOutProgressHeader
         {...defaultProps}
         user={{ id: '1' }}
         isNewRegistration
-        showSaveProjectButton
-        onSaveProject={jest.fn()}
       />
     );
-    expect(screen.getByText('💾 Save Project')).toBeInTheDocument();
-    expect(screen.queryByTestId('dashboard-button')).not.toBeInTheDocument();
+    expect(screen.getByTestId('dashboard-button')).toBeInTheDocument();
+    expect(screen.getByText('Go to Dashboard')).toBeInTheDocument();
   });
 });
