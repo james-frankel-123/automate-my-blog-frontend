@@ -266,7 +266,8 @@ export default function ReturningUserDashboard() {
       {/* Strategy Carousel */}
       <div style={{
         flexShrink: 0,
-        minHeight: '200px',
+        minHeight: '220px',
+        padding: 'var(--space-4) 0',
         borderBottom: '1px solid var(--color-border-base)',
         backgroundColor: 'var(--color-background-alt)'
       }}>
@@ -282,7 +283,8 @@ export default function ReturningUserDashboard() {
 
       {/* Content Section (id="dashboard-posts" to avoid duplicate with layout section#posts) */}
       <div id="dashboard-posts" style={{
-        padding: '24px',
+        flex: 1,
+        padding: 'var(--space-6)',
         backgroundColor: 'var(--color-background-container)'
       }}>
         {viewMode === 'posts' ? (
@@ -290,24 +292,24 @@ export default function ReturningUserDashboard() {
             {posts.length === 0 && (
               <Card
                 title={<h2 className="heading-section" style={{ marginBottom: 0 }}>Understanding Audience Strategies</h2>}
-                style={{ marginBottom: '24px' }}
+                style={{ marginBottom: 'var(--space-6)' }}
                 loading={overviewLoading}
               >
                 {strategyOverview?.overview?.sections ? (
                   <div style={{ padding: '20px 0' }}>
                     <Title level={4}>What is an Audience Strategy?</Title>
-                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                    <Paragraph style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                       {strategyOverview.overview.sections.whatIsStrategy}
                     </Paragraph>
 
-                    <Title level={4} style={{ marginTop: '32px' }}>How We Use Audiences</Title>
-                    <ul style={{ fontSize: '16px', lineHeight: '1.8', paddingLeft: '24px' }}>
+                    <Title level={4} style={{ marginTop: 'var(--space-8)' }}>How We Use Audiences</Title>
+                    <ul style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.8, paddingLeft: 'var(--space-6)' }}>
                       {strategyOverview.overview.sections.howWeUse.map((item, idx) => (
                         <li key={idx}>{item}</li>
                       ))}
                     </ul>
 
-                    <Title level={4} style={{ marginTop: '32px' }}>Outcome-Aligned Pricing</Title>
+                    <Title level={4} style={{ marginTop: 'var(--space-8)' }}>Outcome-Aligned Pricing</Title>
                     {strategyOverview.overview.sections.pricing.split('\n\n').map((para, idx) => (
                       <Paragraph key={idx} style={{ fontSize: '16px', lineHeight: '1.6' }}>
                         {para}
@@ -319,7 +321,7 @@ export default function ReturningUserDashboard() {
                         <Title level={4} style={{ marginTop: '32px' }}>
                           {strategyOverview.overview.sections.googleIntegrations.heading}
                         </Title>
-                        <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                        <Paragraph style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                           {strategyOverview.overview.sections.googleIntegrations.message}
                         </Paragraph>
 
@@ -382,13 +384,13 @@ export default function ReturningUserDashboard() {
                     )}
 
                     <div style={{
-                      marginTop: '32px',
-                      padding: '16px 20px',
+                      marginTop: 'var(--space-8)',
+                      padding: 'var(--space-4) var(--space-5)',
                       backgroundColor: 'var(--color-info-bg)',
                       borderLeft: '4px solid var(--color-primary)',
-                      borderRadius: '4px'
+                      borderRadius: 'var(--radius-base)'
                     }}>
-                      <Paragraph style={{ marginBottom: 0, fontSize: '16px', lineHeight: '1.6' }}>
+                      <Paragraph style={{ marginBottom: 0, fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                         <strong>Ready to start?</strong> Select an audience strategy above to see pricing and subscribe.
                         Your content generation will begin immediately, building a content library that drives qualified traffic to your business.
                       </Paragraph>
@@ -397,41 +399,41 @@ export default function ReturningUserDashboard() {
                 ) : (
                   <div style={{ padding: '20px 0' }}>
                     <Title level={4}>What is an Audience Strategy?</Title>
-                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                    <Paragraph style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                       An <strong>audience strategy</strong> represents a specific segment of your target market with unique needs, pain points, and search behaviors.
                       Each strategy is carefully crafted to attract and convert a particular type of customer through highly-targeted content.
                     </Paragraph>
 
-                    <Title level={4} style={{ marginTop: '32px' }}>How We Use Audiences</Title>
-                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                    <Title level={4} style={{ marginTop: 'var(--space-8)' }}>How We Use Audiences</Title>
+                    <Paragraph style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                       When you subscribe to an audience strategy, our AI generates a continuous stream of blog posts specifically designed to:
                     </Paragraph>
-                    <ul style={{ fontSize: '16px', lineHeight: '1.8', paddingLeft: '24px' }}>
+                    <ul style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.8, paddingLeft: 'var(--space-6)' }}>
                       <li>Rank for keywords your target audience is searching for</li>
                       <li>Address their specific problems and questions</li>
                       <li>Guide them naturally toward your products or services</li>
                       <li>Build long-term organic traffic and conversions</li>
                     </ul>
 
-                    <Title level={4} style={{ marginTop: '32px' }}>Outcome-Aligned Pricing</Title>
-                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                    <Title level={4} style={{ marginTop: 'var(--space-8)' }}>Outcome-Aligned Pricing</Title>
+                    <Paragraph style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                       We price based on <strong>value delivered, not effort required</strong>. When you subscribe to an audience strategy,
                       you pay a fixed monthly price for a set number of high-quality posts—regardless of how much work our system does behind the scenes.
                     </Paragraph>
-                    <Paragraph style={{ fontSize: '16px', lineHeight: '1.6' }}>
+                    <Paragraph style={{ fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                       This aligns our incentives with yours: we're invested in making our AI smarter and more efficient, so we can deliver
                       better results while keeping your costs predictable. Whether a post takes 10 minutes or 2 hours to perfect,
                       your price stays the same. We win by driving outcomes, not by billing hours.
                     </Paragraph>
 
                     <div style={{
-                      marginTop: '32px',
-                      padding: '16px 20px',
+                      marginTop: 'var(--space-8)',
+                      padding: 'var(--space-4) var(--space-5)',
                       backgroundColor: 'var(--color-info-bg)',
                       borderLeft: '4px solid var(--color-primary)',
-                      borderRadius: '4px'
+                      borderRadius: 'var(--radius-base)'
                     }}>
-                      <Paragraph style={{ marginBottom: 0, fontSize: '16px', lineHeight: '1.6' }}>
+                      <Paragraph style={{ marginBottom: 0, fontSize: 'var(--font-size-base)', lineHeight: 1.6 }}>
                         <strong>Ready to start?</strong> Select an audience strategy above to see pricing and subscribe.
                         Your content generation will begin immediately, building a content library that drives qualified traffic to your business.
                       </Paragraph>
