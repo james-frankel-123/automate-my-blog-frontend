@@ -23,7 +23,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 import DashboardTab from './DashboardTab';
-import PostsTab from './PostsTab';
 import SettingsTab from './SettingsTab';
 import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
 import GoogleIntegrationsTab from '../Integrations/GoogleIntegrationsTab';
@@ -390,7 +389,7 @@ const DashboardLayout = ({
     if (!user || !isNewRegistration || hasScrolledForNewRegistrationRef.current) return;
     hasScrolledForNewRegistrationRef.current = true;
     const scrollToContent = () => {
-      const postsSection = document.getElementById('posts');
+      const postsSection = document.getElementById('dashboard-posts');
       const audienceSection = document.getElementById('audience-segments');
       if (postsSection) {
         setActiveTab('posts');
@@ -435,10 +434,14 @@ const DashboardLayout = ({
     }
 
     // For main sections, scroll to section instead of switching tabs
+    // Posts lives inside Audience (#dashboard-posts); no standalone section#posts
     let sectionId;
     switch (newTab) {
       case 'dashboard':
         sectionId = 'home';
+        break;
+      case 'posts':
+        sectionId = 'dashboard-posts';
         break;
       default:
         sectionId = newTab;
@@ -511,7 +514,7 @@ const DashboardLayout = ({
   // When handed off from funnel with initialActiveTab, scroll to that section once mounted
   useEffect(() => {
     if (initialActiveTab && initialActiveTab !== 'dashboard') {
-      const sectionId = initialActiveTab === 'posts' ? 'posts' : initialActiveTab === 'audience-segments' ? 'audience-segments' : 'home';
+      const sectionId = initialActiveTab === 'posts' ? 'dashboard-posts' : initialActiveTab === 'audience-segments' ? 'audience-segments' : 'home';
       scrollToSectionWhenReady(sectionId);
     }
   }, [initialActiveTab]);
@@ -686,17 +689,7 @@ const DashboardLayout = ({
               background: 'var(--color-background-body)',
               marginBottom: 'var(--space-6)'
             }}>
-              <ReturningUserDashboard />
-            </section>
-
-            <section id="posts" className="workflow-section-enter" style={{
-              minHeight: '100vh',
-              background: 'var(--color-background-body)',
-              borderRadius: 'var(--radius-md)',
-              padding: 'var(--space-6)',
-              marginBottom: 'var(--space-6)'
-            }}>
-              <PostsTab
+              <ReturningUserDashboard
                 onQuotaUpdate={refreshQuota}
                 onOpenPricingModal={() => setShowPricingModal(true)}
               />
@@ -1175,7 +1168,7 @@ const DashboardLayout = ({
             setShowAuthModal(false);
             setAuthContext(null);
             setActiveTab('posts');
-            scrollToSectionWhenReady('posts');
+            scrollToSectionWhenReady('dashboard-posts');
           }}
         />
       )}

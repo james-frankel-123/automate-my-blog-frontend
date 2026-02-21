@@ -74,7 +74,7 @@ const OverviewTab = () => {
       {/* Recent Activity */}
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={12}>
-          <Card title="Recent Posts" extra={<a href="#posts">View All</a>}>
+          <Card title="Recent Posts" extra={<a href="#dashboard-posts">View All</a>}>
             <div style={{ color: 'var(--color-text-secondary)' }}>
               Your recent blog posts will appear here once you create them.
             </div>

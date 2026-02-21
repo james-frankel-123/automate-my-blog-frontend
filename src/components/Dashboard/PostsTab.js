@@ -2659,7 +2659,7 @@ const PostsTab = ({
                 action="Create Your First Post"
                 actionLabel="Create Your First Post"
                 onAction={() => {
-                  const postsSection = document.getElementById('posts');
+                  const postsSection = document.getElementById('dashboard-posts');
                   if (postsSection) {
                     postsSection.scrollIntoView({ behavior: 'smooth' });
                   }

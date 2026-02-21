@@ -127,8 +127,7 @@
 
   /* Main workflow sections: reduce padding on small screens */
   section#home,
-  section#audience-segments,
-  section#posts {
+  section#audience-segments {
     padding: var(--space-4) var(--space-3) !important;
     margin-bottom: var(--space-4) !important;
   }
