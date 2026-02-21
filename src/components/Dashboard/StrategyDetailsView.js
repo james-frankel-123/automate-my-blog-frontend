@@ -3,6 +3,7 @@ import { Button, Card, Spin, Alert, Typography, Space, Tag, message, Tooltip } f
 import { ArrowLeftOutlined, RocketOutlined, LoadingOutlined, CalendarOutlined, ClockCircleOutlined, CheckCircleOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { PaymentModal } from '../Modals/PaymentModal';
 import ContentCalendarSection from './ContentCalendarSection';
+import autoBlogAPI from '../../services/api';
 
 const { Title, Text } = Typography;
 
@@ -586,10 +587,14 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
 
       console.log('💡 Fetching sample content ideas for strategy:', strategy.id);
 
-      const baseURL = process.env.REACT_APP_API_URL || '';
-      const url = baseURL
-        ? `${baseURL.replace(/\/+$/, '')}/api/v1/strategies/${strategy.id}/sample-content-ideas`
-        : `/api/v1/strategies/${strategy.id}/sample-content-ideas`;
+      const isDevelopment = process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost';
+      const baseURL = (isDevelopment ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || '')).replace(/\/+$/, '');
+      if (!baseURL) {
+        setSampleIdeasError('API URL not configured');
+        setLoadingSampleIdeas(false);
+        return;
+      }
+      const url = `${baseURL}/api/v1/strategies/${strategy.id}/sample-content-ideas`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -654,29 +659,8 @@ export default function StrategyDetailsView({ strategy, visible, onBack, onSubsc
 
       console.log('🔐 Creating Stripe checkout session for strategy:', strategy.id);
 
-      // Call backend to create Stripe checkout session
-      const response = await fetch(`/api/v1/strategies/${strategy.id}/subscribe`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          billingInterval: 'monthly' // Default to monthly
-        })
-      });
-
-      const text = await response.text();
-      const data = text ? (() => { try { return JSON.parse(text); } catch { return null; } })() : null;
-
-      if (!response.ok) {
-        const errorMessage = (data && data.error) ? data.error : (data && data.message) || `Request failed (${response.status})`;
-        throw new Error(errorMessage);
-      }
-
-      if (!data) {
-        throw new Error('Empty response from server');
-      }
+      // Use shared API client so request goes to dynamic backend URL (REACT_APP_API_URL)
+      const data = await autoBlogAPI.subscribeToStrategy(strategy.id, 'monthly');
 
       if (data.clientSecret) {
         console.log('✅ Opening embedded Stripe checkout');

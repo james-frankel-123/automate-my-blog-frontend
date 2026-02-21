@@ -243,8 +243,13 @@ export default function ReturningUserDashboard({ onQuotaUpdate, onOpenPricingMod
    * Handle strategy subscription (navigate to Stripe checkout)
    */
   function handleSubscribe(strategyId) {
-    // Redirect to Stripe checkout endpoint
-    window.location.href = `/api/v1/strategies/${strategyId}/subscribe`;
+    const isDevelopment = window.location.hostname === 'localhost';
+    const baseURL = (isDevelopment ? 'http://localhost:3001' : (process.env.REACT_APP_API_URL || '')).replace(/\/+$/, '');
+    if (!baseURL) {
+      message.error('API URL not configured');
+      return;
+    }
+    window.location.href = `${baseURL}/api/v1/strategies/${strategyId}/subscribe`;
   }
 
   /**
