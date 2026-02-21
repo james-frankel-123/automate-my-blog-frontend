@@ -20,7 +20,7 @@ import { systemVoice } from '../../copy/systemVoice';
 const { Text, Paragraph } = Typography;
 
 
-const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false, onCreateNewPost, onNavigateToTab }) => {
+const DashboardTab = ({ onNextStep, isNewRegistration = false, onCreateNewPost, onNavigateToTab }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('dashboard');
   const {
@@ -67,7 +67,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       // Analysis state check
       
       // Load for authenticated users who don't have complete analysis data
-      if (user && !forceWorkflowMode && tabMode.mode === 'focus' && !hasValidAnalysisData) {
+      if (user && tabMode.mode === 'focus' && !hasValidAnalysisData) {
         try {
           const response = await autoBlogAPI.getRecentAnalysis();
           
@@ -101,7 +101,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
     loadCachedAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; many workflow setters used inside
-  }, [user, tabMode.mode, forceWorkflowMode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
+  }, [user, tabMode.mode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
 
   // Initialize session for anonymous users
   useEffect(() => {
@@ -122,7 +122,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   // Fetch integration statuses for feature dashboard (focus mode only)
   useEffect(() => {
     const fetchIntegrations = async () => {
-      if (!user || tabMode.mode !== 'focus' || forceWorkflowMode) {
+      if (!user || tabMode.mode !== 'focus') {
         return;
       }
       try {
@@ -158,16 +158,11 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       }
     };
     fetchIntegrations();
-  }, [user, tabMode.mode, forceWorkflowMode]);
+  }, [user, tabMode.mode]);
 
   // Handle create new post action
   const handleCreateNewPost = () => {
-    // Navigate to posts tab or trigger post creation
-    if (onEnterProjectMode) {
-      onEnterProjectMode();
-    } else {
-      tabMode.enterWorkflowMode();
-    }
+    tabMode.enterWorkflowMode();
   };
 
   // Handle analysis completion from standalone component
@@ -270,14 +265,10 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
         <UnifiedWorkflowHeader
           user={user}
           onCreateNewPost={onCreateNewPost || handleCreateNewPost}
-          forceWorkflowMode={forceWorkflowMode}
           currentStep={currentStep}
           analysisCompleted={stepResults.home.analysisCompleted}
-          showSaveProjectButton={showSaveProjectButton}
-          onSaveProject={onSaveProject}
           isNewRegistration={isNewRegistration}
           completedSteps={[]} // Will be populated based on workflow progress
-          projectJustSaved={projectJustSaved}
           enableSequentialAnimation={currentStep === 0}
           onSequenceComplete={() => setTextAnimationComplete(true)}
           inputIsEditing={inputIsEditing}
@@ -305,7 +296,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           position: 'relative'
         }}>
           {/* Website Analysis Section - Always show for authenticated users */}
-          {((tabMode.mode === 'workflow' || forceWorkflowMode) || user) && (
+          {(tabMode.mode === 'workflow' || user) && (
             <div
               key="website-analysis"
               style={{
@@ -354,7 +345,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                 />
                 
                 {/* Continue Button + anticipatory suggestion - Show after analysis completes and only in workflow mode */}
-                {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
+                {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && tabMode.mode === 'workflow' && (
                   <Card style={{ marginTop: 'var(--space-4)' }}>
                     <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
                       <Paragraph style={{ marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>
@@ -384,7 +375,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           )}
 
         {/* FOCUS MODE: Full Dashboard Features - Only show when logged in and in focus mode */}
-        {tabMode.mode === 'focus' && !forceWorkflowMode && user && (
+        {tabMode.mode === 'focus' && user && (
           <>
             {/* Dashboard Features - Feature tiles + mini calendar */}
             <div

@@ -20,11 +20,8 @@ const LoggedOutProgressHeader = ({
   setShowAuthModal,
   authContext: _authContext,
   setAuthContext,
-  // New props for registration state
   user = null,
-  isNewRegistration = false,
-  showSaveProjectButton = false,
-  onSaveProject = null
+  isNewRegistration: _isNewRegistration = false
 }) => {
   
   // Steps moved to main content area as requested
@@ -87,14 +84,6 @@ const LoggedOutProgressHeader = ({
               Sign Up Free
             </Button>
           </Space>
-        ) : isNewRegistration && showSaveProjectButton ? (
-          <Button
-            type="primary"
-            onClick={onSaveProject}
-            style={{ fontWeight: 600, borderRadius: 6, minHeight: 44 }}
-          >
-            💾 Save Project
-          </Button>
         ) : (
           <Button
             type="primary"

@@ -142,7 +142,7 @@ describe('DashboardTab', () => {
     });
 
     it('shows workflow mode by default', () => {
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
       expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();
     });
   });
@@ -158,7 +158,7 @@ describe('DashboardTab', () => {
     });
 
     it('allows website analysis for guests', () => {
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
       expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();
     });
   });
@@ -191,7 +191,7 @@ describe('DashboardTab', () => {
         contentFocus: 'Content',
       };
 
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
 
       expect(screen.getByText(/Continue to Audience/i)).toBeInTheDocument();
     });
@@ -199,7 +199,7 @@ describe('DashboardTab', () => {
     it('does not show continue button before analysis', () => {
       mockWorkflowModeValue.stepResults.home.analysisCompleted = false;
 
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
 
       expect(screen.queryByText(/Continue to Audience/i)).not.toBeInTheDocument();
     });
@@ -213,42 +213,11 @@ describe('DashboardTab', () => {
         contentFocus: 'Content',
       };
 
-      renderDashboardTab({ forceWorkflowMode: true, onNextStep });
+      renderDashboardTab({ onNextStep });
 
       fireEvent.click(screen.getByText(/Next Step: Audience Selection/i));
       
       expect(onNextStep).toHaveBeenCalled();
-    });
-  });
-
-  describe('Project Mode', () => {
-    it('respects forceWorkflowMode prop', () => {
-      renderDashboardTab({ forceWorkflowMode: true });
-      expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();
-    });
-
-    it('handles onEnterProjectMode callback', async () => {
-      const onEnterProjectMode = jest.fn();
-      mockAuthValue.user = createMockUser();
-
-      renderDashboardTab({ onEnterProjectMode });
-
-      fireEvent.click(screen.getByTestId('create-post-btn'));
-      
-      expect(onEnterProjectMode).toHaveBeenCalled();
-    });
-  });
-
-  describe('Save Project', () => {
-    it('shows save project button when showSaveProjectButton is true', () => {
-      mockAuthValue.user = createMockUser();
-      
-      renderDashboardTab({ 
-        showSaveProjectButton: true,
-        isNewRegistration: true 
-      });
-
-      expect(screen.getByTestId('workflow-header')).toBeInTheDocument();
     });
   });
 
@@ -257,7 +226,7 @@ describe('DashboardTab', () => {
       mockAuthValue.user = null;
       mockWorkflowModeValue.sessionId = null;
 
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
 
       // Should render the website analysis step
       expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();

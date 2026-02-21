@@ -20,14 +20,10 @@ const { Title, Paragraph } = Typography;
 const UnifiedWorkflowHeader = ({
   user,
   onCreateNewPost,
-  forceWorkflowMode = false,
   currentStep = 0,
   analysisCompleted = false,
-  showSaveProjectButton = false,
-  onSaveProject,
   isNewRegistration = false,
   completedSteps: _completedSteps = [],
-  projectJustSaved = false,
   enableSequentialAnimation = false,
   onSequenceComplete = null,
   inputIsEditing = true
@@ -284,44 +280,12 @@ const UnifiedWorkflowHeader = ({
       };
     }
 
-    if (forceWorkflowMode || currentStep > 0 || isNewRegistration) {
+    if (currentStep > 0 || isNewRegistration) {
       // Logged-in workflow mode or new registration: Continue workflow with step context
       return {
         title: `${user.firstName ? `${user.firstName}, ` : ''}${stepInfo.title} ${stepInfo.icon}`,
         description: stepInfo.description,
         buttonText: analysisCompleted ? systemVoice.header.continueProject : systemVoice.header.createNewPost,
-        showButton: false // Hide button in project mode (forceWorkflowMode)
-      };
-    }
-
-    // Special case: Project just saved
-    if (projectJustSaved) {
-      return {
-        title: `${systemVoice.header.projectSavedTitle} 🎉`,
-        description: (
-          <span>
-            {systemVoice.header.projectSavedDescription}{' '}
-            <Button 
-              type="link" 
-              style={{ 
-                padding: 0, 
-                fontSize: 'inherit',
-                height: 'auto',
-                color: 'var(--color-primary)',
-                fontWeight: 500
-              }}
-              onClick={() => {
-                document.getElementById('posts')?.scrollIntoView({ 
-                  behavior: 'smooth', 
-                  block: 'start' 
-                });
-              }}
-            >
-              {systemVoice.header.goToPosts}
-            </Button>
-          </span>
-        ),
-        buttonText: null,
         showButton: false
       };
     }
@@ -484,42 +448,6 @@ const UnifiedWorkflowHeader = ({
               }}
             >
               {content.buttonText}
-            </Button>
-          </div>
-        )}
-
-        {/* Save Project Button - Only shows after registration (hidden when isNewRegistration since button is now in header) */}
-        {showSaveProjectButton && !isNewRegistration && (
-          <div
-            style={{
-              textAlign: 'center',
-              marginTop: '24px',
-              padding: '20px',
-              backgroundColor: 'var(--color-success-bg)',
-              borderRadius: '8px',
-              border: '1px solid #b7eb8f'
-            }}
-          >
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: 'var(--font-size-base)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-success)', marginBottom: 'var(--space-1)' }}>
-                🎉 {systemVoice.header.newUserWelcome}
-              </div>
-              <div style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
-                {systemVoice.header.newUserSavePrompt}
-              </div>
-            </div>
-            <Button 
-              type="primary" 
-              size="large" 
-              onClick={onSaveProject}
-              style={{ 
-                backgroundColor: 'var(--color-success)', 
-                borderColor: 'var(--color-success)',
-                minWidth: '180px',
-                fontWeight: 600
-              }}
-            >
-              💾 {systemVoice.header.saveProject}
             </Button>
           </div>
         )}

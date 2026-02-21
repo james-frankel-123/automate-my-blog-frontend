@@ -305,8 +305,6 @@ const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
 // Content Discovery has been moved to SandboxTab for super-admin access
 
 const PostsTab = ({
-  forceWorkflowMode = false,
-  onEnterProjectMode,
   onQuotaUpdate,
   onOpenPricingModal,
   // Strategy filtering props (for ReturningUserDashboard)
@@ -695,15 +693,7 @@ const PostsTab = ({
     setGeneratingContent(true);
     setTopicsGenerationInProgress(true);
     try {
-      // For logged-out users in workflow mode, check if analysis is completed
-      if (forceWorkflowMode && !user) {
-        if (!stepResults?.home?.analysisCompleted) {
-          setGeneratingContent(false);
-          message.warning('Please complete website analysis first before generating content topics.');
-          setTopicsGenerationInProgress(false);
-          return;
-        }
-      } else if (!user) {
+      if (!user) {
         // For logged-out users not in workflow mode, trigger sign-up (Fixes #85: run after login)
         setGeneratingContent(false);
         setTopicsGenerationInProgress(false);
@@ -1665,7 +1655,7 @@ const PostsTab = ({
       analysisData.decisionMakers || analysisData.businessName;
     const hasStrategy = !!(selectedCustomerStrategy || tabMode.tabWorkflowData?.selectedCustomerStrategy);
 
-    if ((tabMode.mode === 'workflow' || forceWorkflowMode) &&
+    if (tabMode.mode === 'workflow' &&
         !availableTopics.length &&
         !generatingContent &&
         hasMinimumAnalysisData &&
@@ -1675,7 +1665,7 @@ const PostsTab = ({
       }, 800);
       return () => clearTimeout(t);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- forceWorkflowMode intentionally excluded
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps intentionally minimal to avoid loops
   }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent, selectedCustomerStrategy, stepResults?.home?.websiteAnalysis]);
 
   // Edit post functionality - restore post to editor
@@ -2062,12 +2052,12 @@ const PostsTab = ({
   // Component state tracking (debug logging removed to prevent infinite loops)
 
   // Show simplified interface when no posts exist AND not in workflow mode
-  if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
+  if (posts.length === 0 && !loading && tabMode.mode === 'focus') {
     return (
       <div>
         
         {/* Workflow Guidance */}
-        {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
+        {tabMode.mode === 'workflow' && (
           <div style={{ padding: '16px 24px 0' }}>
             <WorkflowGuidance
               step={3}
@@ -2082,7 +2072,7 @@ const PostsTab = ({
         )}
         
         <div style={{ padding: '24px' }}>
-          {(tabMode.mode === 'workflow' || forceWorkflowMode) ? (
+          {tabMode.mode === 'workflow' ? (
             // Workflow Mode: Content Generation & Editing Interface
             <div>
               {!contentGenerated ? (
@@ -2579,7 +2569,7 @@ const PostsTab = ({
                   
                   {/* Action Buttons - Different for workflow vs focus mode */}
                   <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
-                    {(tabMode.mode === 'workflow' || forceWorkflowMode) ? (
+                    {tabMode.mode === 'workflow' ? (
                       // Workflow Mode: Only Export button
                       <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
                         <Space>
@@ -2669,15 +2659,9 @@ const PostsTab = ({
                 action="Create Your First Post"
                 actionLabel="Create Your First Post"
                 onAction={() => {
-                  // Trigger content generation workflow
-                  if (onEnterProjectMode) {
-                    onEnterProjectMode();
-                  } else {
-                    // Fallback: scroll to content generation section
-                    const postsSection = document.getElementById('posts');
-                    if (postsSection) {
-                      postsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                  const postsSection = document.getElementById('posts');
+                  if (postsSection) {
+                    postsSection.scrollIntoView({ behavior: 'smooth' });
                   }
                 }}
                 icon={<PlusOutlined style={{ fontSize: '64px', color: 'var(--color-gray-300)' }} />}
@@ -2705,7 +2689,7 @@ const PostsTab = ({
       )}
 
       {/* Workflow Guidance - Only show when in workflow mode AND audience is selected */}
-      {(tabMode.mode === 'workflow' || forceWorkflowMode) && tabMode.tabWorkflowData?.selectedCustomerStrategy && (
+      {tabMode.mode === 'workflow' && tabMode.tabWorkflowData?.selectedCustomerStrategy && (
         <div style={{ padding: '16px 24px 0' }}>
           <WorkflowGuidance
             step={3}
@@ -2720,7 +2704,7 @@ const PostsTab = ({
       )}
       
       {/* WORKFLOW MODE CONTENT */}
-      {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
+      {tabMode.mode === 'workflow' && (
         <div style={{ padding: '24px' }}>
           {/* Preview topic cards when no audience selected */}
           {!selectedCustomerStrategy && (
@@ -3522,7 +3506,7 @@ const PostsTab = ({
       )}
 
       {/* POSTS MANAGEMENT SECTION - Only visible in focus mode */}
-      {tabMode.mode === 'focus' && !forceWorkflowMode && (
+      {tabMode.mode === 'focus' && (
         <div style={{ padding: '24px' }}>
           {/* Content Editing Interface - Show when editing an existing post */}
           {currentDraft && contentGenerated ? (
