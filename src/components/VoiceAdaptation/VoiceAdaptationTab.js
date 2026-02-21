@@ -27,6 +27,20 @@ import {
   UploadOutlined,
   SoundOutlined,
 } from '@ant-design/icons';
+import {
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  RadialBarChart,
+  RadialBar,
+} from 'recharts';
 import { useAuth } from '../../contexts/AuthContext';
 import autoBlogAPI from '../../services/api';
 import { formatDistanceToNow } from 'date-fns';
@@ -267,6 +281,37 @@ export default function VoiceAdaptationTab() {
     return list;
   }, [samples, filterSourceType, searchText]);
 
+  // Chart data: samples by source type (for pie) — use all active samples, not filtered
+  const activeSamples = useMemo(() => samples.filter((s) => s.is_active !== false), [samples]);
+  const samplesBySourceType = useMemo(() => {
+    const counts = {};
+    activeSamples.forEach((s) => {
+      const type = s.source_type || 'other';
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return Object.entries(counts).map(([key]) => ({
+      name: SOURCE_TYPE_OPTIONS.find((o) => o.value === key)?.label || key,
+      value: counts[key],
+      type: key,
+    }));
+  }, [activeSamples]);
+
+  // Chart data: quality score distribution (Low / Medium / High)
+  const qualityDistribution = useMemo(() => {
+    const low = activeSamples.filter((s) => s.quality_score != null && s.quality_score < 50).length;
+    const medium = activeSamples.filter((s) => s.quality_score != null && s.quality_score >= 50 && s.quality_score < 80).length;
+    const high = activeSamples.filter((s) => s.quality_score != null && s.quality_score >= 80).length;
+    const noScore = activeSamples.filter((s) => s.quality_score == null).length;
+    return [
+      { bucket: 'High (80+)', count: high, fill: 'var(--color-success, #52c41a)' },
+      { bucket: 'Medium (50–79)', count: medium, fill: 'var(--color-warning, #faad14)' },
+      { bucket: 'Low (0–49)', count: low, fill: 'var(--color-error, #ff4d4f)' },
+      { bucket: 'No score', count: noScore, fill: 'var(--color-text-tertiary, #bfbfbf)' },
+    ].filter((d) => d.count > 0);
+  }, [activeSamples]);
+
+  const PIE_COLORS = ['#1890ff', '#52c41a', '#faad14', '#722ed1', '#eb2f96', '#13c2c2', '#fa8c16'];
+
   const columns = [
     {
       title: 'Source type',
@@ -473,18 +518,28 @@ export default function VoiceAdaptationTab() {
           </div>
         ) : profile ? (
           <>
-            <Row gutter={[32, 24]}>
-              <Col xs={12} sm={12} md={6}>
-                <Statistic
-                  title={<span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>Confidence</span>}
-                  value={profile.confidence_score ?? 0}
-                  suffix="%"
-                  valueStyle={{
-                    fontSize: 'var(--font-size-2xl)',
-                    fontWeight: 600,
-                    color: (profile.confidence_score ?? 0) >= 50 ? 'var(--color-success)' : 'var(--color-warning)',
-                  }}
-                />
+            <Row gutter={[32, 24]} align="middle">
+              <Col xs={24} sm={24} md={6}>
+                <div style={{ height: 140, width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadialBarChart
+                      innerRadius="70%"
+                      outerRadius="100%"
+                      data={[{ name: 'Confidence', value: profile.confidence_score ?? 0, fill: (profile.confidence_score ?? 0) >= 50 ? 'var(--color-success)' : 'var(--color-warning)' }]}
+                      startAngle={180}
+                      endAngle={0}
+                    >
+                      <RadialBar background dataKey="value" cornerRadius={8} />
+                      <RechartsTooltip formatter={(value) => [`${value}%`, 'Confidence']} contentStyle={{ borderRadius: 8 }} />
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div style={{ textAlign: 'center', marginTop: -24 }}>
+                  <Text strong style={{ fontSize: 'var(--font-size-2xl)', color: (profile.confidence_score ?? 0) >= 50 ? 'var(--color-success)' : 'var(--color-warning)' }}>
+                    {profile.confidence_score ?? 0}%
+                  </Text>
+                  <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>Confidence</div>
+                </div>
               </Col>
               <Col xs={12} sm={12} md={6}>
                 <Statistic
@@ -578,6 +633,68 @@ export default function VoiceAdaptationTab() {
           </div>
         )}
       </Card>
+
+      {/* Samples overview charts */}
+      {(samplesBySourceType.length > 0 || qualityDistribution.length > 0) && (
+        <Card
+          title={<span style={{ fontWeight: 600 }}>Samples overview</span>}
+          style={{ marginBottom: 'var(--space-6)' }}
+          styles={{ body: { padding: 'var(--space-6)' } }}
+        >
+          <Row gutter={[32, 24]}>
+            {samplesBySourceType.length > 0 && (
+              <Col xs={24} md={12}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
+                  By source type
+                </Text>
+                <div style={{ height: 260 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={samplesBySourceType}
+                        dataKey="value"
+                        nameKey="name"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={90}
+                        label={({ name, value }) => `${name}: ${value}`}
+                        labelLine
+                      >
+                        {samplesBySourceType.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <RechartsTooltip formatter={(value) => [value, 'Samples']} contentStyle={{ borderRadius: 8 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </Col>
+            )}
+            {qualityDistribution.length > 0 && (
+              <Col xs={24} md={12}>
+                <Text type="secondary" style={{ display: 'block', marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
+                  Quality score distribution
+                </Text>
+                <div style={{ height: 260 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={qualityDistribution} layout="vertical" margin={{ top: 8, right: 24, left: 0, bottom: 8 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-secondary, #f0f0f0)" />
+                      <XAxis type="number" allowDecimals={false} />
+                      <YAxis type="category" dataKey="bucket" width={100} tick={{ fontSize: 12 }} />
+                      <RechartsTooltip formatter={(value) => [value, 'Samples']} contentStyle={{ borderRadius: 8 }} />
+                      <Bar dataKey="count" name="Samples" radius={[0, 4, 4, 0]} maxBarSize={32}>
+                        {qualityDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </Col>
+            )}
+          </Row>
+        </Card>
+      )}
 
       {/* Samples table */}
       <Card
