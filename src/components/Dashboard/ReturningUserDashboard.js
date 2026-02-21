@@ -259,16 +259,14 @@ export default function ReturningUserDashboard() {
 
   return (
     <div style={{
-      height: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      overflow: 'hidden'
+      minHeight: 'min-content'
     }}>
-      {/* Strategy Carousel: 25% viewport height */}
+      {/* Strategy Carousel */}
       <div style={{
-        height: '25vh',
+        flexShrink: 0,
         minHeight: '200px',
-        overflow: 'hidden',
         borderBottom: '1px solid var(--color-border-base)',
         backgroundColor: 'var(--color-background-alt)'
       }}>
@@ -282,10 +280,8 @@ export default function ReturningUserDashboard() {
         />
       </div>
 
-      {/* Content Section: 75% viewport height (id="dashboard-posts" to avoid duplicate with layout section#posts) */}
+      {/* Content Section (id="dashboard-posts" to avoid duplicate with layout section#posts) */}
       <div id="dashboard-posts" style={{
-        height: '75vh',
-        overflow: 'auto',
         padding: '24px',
         backgroundColor: 'var(--color-background-container)'
       }}>
