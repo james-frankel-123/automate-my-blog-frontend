@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   Card,
   Typography,
@@ -106,6 +106,7 @@ export default function VoiceAdaptationTab() {
     () => samples.some((s) => s.processing_status === 'pending' || s.processing_status === 'processing'),
     [samples]
   );
+  const prevPendingOrProcessing = useRef(hasPendingOrProcessing);
 
   const fetchSamples = useCallback(async () => {
     if (!orgId) return;
@@ -135,21 +136,47 @@ export default function VoiceAdaptationTab() {
     }
   }, [orgId]);
 
+  // Refetch list and profile when entering the page (mount) so we never show stale "processing" state.
   useEffect(() => {
     if (!orgId) {
       setLoadingSamples(false);
       setLoadingProfile(false);
       return;
     }
+    setLoadingSamples(true);
+    setLoadingProfile(true);
     fetchSamples();
     fetchProfile();
   }, [orgId, fetchSamples, fetchProfile]);
 
+  // Refetch when user returns to the tab/window (avoids stale data if they had the page open in background).
+  useEffect(() => {
+    if (!orgId) return;
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchSamples();
+        fetchProfile();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [orgId, fetchSamples, fetchProfile]);
+
+  // Poll samples list until no sample is pending/processing (source of truth for "analysis done").
   useEffect(() => {
     if (!hasPendingOrProcessing || !orgId) return;
     const t = setInterval(fetchSamples, POLL_INTERVAL_MS);
     return () => clearInterval(t);
   }, [hasPendingOrProcessing, orgId, fetchSamples]);
+
+  // When polling stops (all samples completed or failed), fetch profile once so UI shows updated profile.
+  useEffect(() => {
+    const wasPending = prevPendingOrProcessing.current;
+    prevPendingOrProcessing.current = hasPendingOrProcessing;
+    if (wasPending && !hasPendingOrProcessing && orgId) {
+      fetchProfile();
+    }
+  }, [hasPendingOrProcessing, orgId, fetchProfile]);
 
   const handleUpload = async () => {
     if (!orgId) {

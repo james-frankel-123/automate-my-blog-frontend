@@ -1753,6 +1753,7 @@ Please provide analysis in this JSON format:
 
   /**
    * Get aggregated voice profile for an organization.
+   * Backend returns 200 with success: true and profile: null when the org has no profile yet (no samples or none completed); do not treat that as an error.
    * When profile is non-null, response includes display-ready voiceProperties and derivedDirectives.
    * @param {string} organizationId
    * @returns {Promise<{ success: boolean, profile: object|null, voiceProperties?: Array<{ section: string, items: Array<{ key: string, label: string, value: string|number|Array|object }> }>, derivedDirectives?: string[] }>}
