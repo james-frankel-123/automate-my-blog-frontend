@@ -18,7 +18,7 @@ const { Title, Paragraph } = Typography;
  * - Click subscribed strategy → Filter posts by that strategy
  * - Click unsubscribed strategy → Show LLM-generated pitch and pricing
  */
-export default function ReturningUserDashboard() {
+export default function ReturningUserDashboard({ onQuotaUpdate, onOpenPricingModal }) {
   const [strategies, setStrategies] = useState([]);
   const [subscribedStrategies, setSubscribedStrategies] = useState({});
   const [selectedStrategyId, setSelectedStrategyId] = useState(null);
@@ -281,7 +281,7 @@ export default function ReturningUserDashboard() {
         />
       </div>
 
-      {/* Content Section (id="dashboard-posts" to avoid duplicate with layout section#posts) */}
+      {/* Content Section: posts list (id="dashboard-posts" for sidebar scroll target) */}
       <div id="dashboard-posts" style={{
         flex: 1,
         padding: 'var(--space-6)',
@@ -447,8 +447,8 @@ export default function ReturningUserDashboard() {
               filteredByStrategyId={selectedStrategyId}
               onClearFilter={handleClearFilter}
               getStrategyName={getStrategyName}
-              // Note: PostsTab expects other props as well (user, etc.)
-              // These will be passed through from DashboardLayout
+              onQuotaUpdate={onQuotaUpdate}
+              onOpenPricingModal={onOpenPricingModal}
             />
           </>
         ) : (

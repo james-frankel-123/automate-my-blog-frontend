@@ -781,7 +781,7 @@ const AudienceSegmentsTab = ({ onNextStep }) => {
         let scrolled = false;
         const tryScroll = () => {
           if (scrolled) return;
-          const postsSection = document.getElementById('posts');
+          const postsSection = document.getElementById('dashboard-posts');
           if (postsSection) {
             postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             scrolled = true;
