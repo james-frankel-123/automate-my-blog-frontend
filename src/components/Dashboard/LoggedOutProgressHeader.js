@@ -1,8 +1,9 @@
 import React from 'react';
 import { Button, Space } from 'antd';
-import { 
+import {
   LoginOutlined,
-  UserAddOutlined
+  UserAddOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 import ThemeToggle from '../ThemeToggle/ThemeToggle';
 
@@ -19,11 +20,8 @@ const LoggedOutProgressHeader = ({
   setShowAuthModal,
   authContext: _authContext,
   setAuthContext,
-  // New props for registration state
   user = null,
-  isNewRegistration = false,
-  showSaveProjectButton = false,
-  onSaveProject = null
+  isNewRegistration: _isNewRegistration = false
 }) => {
   
   // Steps moved to main content area as requested
@@ -86,15 +84,17 @@ const LoggedOutProgressHeader = ({
               Sign Up Free
             </Button>
           </Space>
-        ) : isNewRegistration && showSaveProjectButton ? (
+        ) : (
           <Button
             type="primary"
-            onClick={onSaveProject}
-            style={{ fontWeight: 600, borderRadius: 6, minHeight: 44 }}
+            icon={<DashboardOutlined />}
+            onClick={() => { window.location.href = '/dashboard'; }}
+            style={{ borderRadius: 6, minHeight: 44 }}
+            data-testid="dashboard-button"
           >
-            💾 Save Project
+            Go to Dashboard
           </Button>
-        ) : null}
+        )}
       </div>
     </header>
   );

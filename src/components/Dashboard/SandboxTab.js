@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Empty, Tag, Space, Switch, Divider, Select, Row, Col, Typography, message, Alert } from 'antd';
+import { Card, Button, Empty, Tag, Space, Switch, Divider, Select, Row, Col, Typography, message, Alert, Input, Spin, Tabs } from 'antd';
 import { 
   SearchOutlined,
   RobotOutlined,
@@ -10,7 +10,9 @@ import {
   SettingOutlined,
   CalendarOutlined,
   UnorderedListOutlined,
-  PictureOutlined
+  PictureOutlined,
+  SoundOutlined,
+  EditOutlined
 } from '@ant-design/icons';
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -19,9 +21,21 @@ import { useAuth } from '../../contexts/AuthContext';
 import { VisualContentSuggestions } from '../VisualContent';
 import ContentDiscoverySettings from './ContentDiscoverySettings';
 import api from '../../services/api';
+import { contentAPI } from '../../services/workflowAPI';
+import { getStreamChunkContentOnly, extractStreamCompleteContent } from '../../utils/streamingUtils';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 const { Title, Text } = Typography;
+
+/** Minimal website analysis so blog stream accepts the request (same shape as Posts tab). */
+const MINIMAL_WEBSITE_ANALYSIS = {
+  businessType: 'Business',
+  businessName: 'Test',
+  targetAudience: 'General Audience',
+  contentFocus: 'Content',
+  brandVoice: 'Professional',
+  decisionMakers: 'General Audience',
+};
 
 // Calendar localizer setup
 const localizer = dateFnsLocalizer({
@@ -198,6 +212,16 @@ const SandboxTab = () => {
   // Calendar state
   const [calendarViewMode, setCalendarViewMode] = useState('list'); // 'list' or 'calendar'
   const [calendarEvents, _setCalendarEvents] = useState([]);
+
+  // Blog post generation sandbox – Voice comparison
+  const [voiceContextWith, setVoiceContextWith] = useState(null);
+  const [voiceContextGeneric, setVoiceContextGeneric] = useState(null);
+  const [loadingVoiceContext, setLoadingVoiceContext] = useState(false);
+  const [voiceSandboxTopic, setVoiceSandboxTopic] = useState('How to improve email marketing ROI');
+  const [previewWithVoice, setPreviewWithVoice] = useState('');
+  const [previewGeneric, setPreviewGeneric] = useState('');
+  const [generatingPreviewWithVoice, setGeneratingPreviewWithVoice] = useState(false);
+  const [generatingPreviewGeneric, setGeneratingPreviewGeneric] = useState(false);
   
   // Check if user has access to sandbox features
   const hasAccess = isSuperAdmin;
@@ -241,6 +265,88 @@ const SandboxTab = () => {
   const handleRunDiscovery = () => {
     message.success('Discovery process started! This would integrate with multiple AI services.');
   };
+
+  // Load enhanced blog context with vs without voice profile (for comparison)
+  const handleLoadVoiceContext = async () => {
+    const orgId = user?.organizationId;
+    if (!orgId) {
+      message.warning('Sign in and select an organization to load voice context.');
+      return;
+    }
+    setLoadingVoiceContext(true);
+    setVoiceContextWith(null);
+    setVoiceContextGeneric(null);
+    try {
+      const [withVoice, generic] = await Promise.all([
+        api.getEnhancedBlogContext(orgId, { useVoiceProfile: true }),
+        api.getEnhancedBlogContext(orgId, { useVoiceProfile: false }),
+      ]);
+      setVoiceContextWith(withVoice);
+      setVoiceContextGeneric(generic);
+      message.success('Voice context loaded. Compare how your voice changes the generation context.');
+    } catch (error) {
+      console.error('Failed to load voice context:', error);
+      message.error(error?.message || 'Failed to load voice context.');
+    } finally {
+      setLoadingVoiceContext(false);
+    }
+  };
+
+  // Generate blog preview using stream (with or without voice profile)
+  const runBlogPreview = async (useVoiceProfile) => {
+    const topic = (voiceSandboxTopic || '').trim();
+    if (!topic) {
+      message.warning('Enter a topic to generate a preview.');
+      return;
+    }
+    const setGenerating = useVoiceProfile ? setGeneratingPreviewWithVoice : setGeneratingPreviewGeneric;
+    const setContent = useVoiceProfile ? setPreviewWithVoice : setPreviewGeneric;
+    setGenerating(true);
+    setContent('');
+    try {
+      const enhancementOptions = {
+        useVoiceProfile,
+        organizationId: user?.organizationId || undefined,
+        preloadedTweets: [],
+        preloadedArticles: [],
+        preloadedVideos: [],
+      };
+      const { connectionId } = await contentAPI.startBlogStream(
+        topic,
+        MINIMAL_WEBSITE_ANALYSIS,
+        null,
+        {},
+        enhancementOptions
+      );
+      let accumulated = '';
+      await new Promise((resolve, reject) => {
+        api.connectToStream(connectionId, {
+          onChunk: (data) => {
+            const chunk = getStreamChunkContentOnly(data);
+            if (chunk) {
+              accumulated += chunk;
+              setContent(accumulated);
+            }
+          },
+          onComplete: (data) => {
+            const fromComplete = extractStreamCompleteContent(data);
+            if (fromComplete) setContent(fromComplete);
+            resolve();
+          },
+          onError: (err) => reject(err || new Error('Stream error')),
+        });
+      });
+      message.success(useVoiceProfile ? 'Preview with your voice generated.' : 'Generic preview generated.');
+    } catch (error) {
+      console.error('Blog preview generation error:', error);
+      message.error(error?.message || 'Preview generation failed.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleGeneratePreviewWithVoice = () => runBlogPreview(true);
+  const handleGeneratePreviewGeneric = () => runBlogPreview(false);
 
   // Filter discoveries based on selected type
   const filteredDiscoveries = selectedDiscoveryType === 'all' 
@@ -472,9 +578,183 @@ const SandboxTab = () => {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+            )        )}
+        </div>
         )}
+
+        {/* Blog Post Generation Sandbox – Voice comparison */}
+        <Card
+          title={
+            <Space>
+              <EditOutlined style={{ color: 'var(--color-primary)' }} />
+              Blog Post Generation Sandbox
+              <Tag color="blue">VOICE</Tag>
+            </Space>
+          }
+          style={{ marginBottom: '24px' }}
+        >
+          <Alert
+            message="Voice feature"
+            description="See how the blog post will differ when generated with your Voice profile (from Voice adaptation) vs generic style. Load context to compare instructions, or generate previews side by side."
+            type="info"
+            showIcon
+            style={{ marginBottom: '24px' }}
+          />
+
+          {/* Voice context comparison */}
+          <Title level={5} style={{ marginTop: 0 }}>
+            <SoundOutlined style={{ marginRight: '8px' }} />
+            Voice context comparison
+          </Title>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+            Fetches the enhanced blog context with and without your voice profile so you can see what instructions the model receives.
+          </p>
+          <Button
+            type="primary"
+            onClick={handleLoadVoiceContext}
+            loading={loadingVoiceContext}
+            icon={<SoundOutlined />}
+            style={{ marginBottom: '16px' }}
+          >
+            Load voice vs generic context
+          </Button>
+
+          {(voiceContextWith || voiceContextGeneric) && (
+            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+              <Col xs={24} md={12}>
+                <Card size="small" title="With your voice" style={{ marginBottom: 0 }}>
+                  {voiceContextWith?.metadata?.voiceProfileSummary && (
+                    <div style={{ marginBottom: '12px' }}>
+                      <Tag color="green">Confidence: {voiceContextWith.metadata.voiceProfileSummary.confidenceScore ?? '—'}%</Tag>
+                      <Tag>Samples: {voiceContextWith.metadata.voiceProfileSummary.sampleCount ?? 0}</Tag>
+                    </div>
+                  )}
+                  {(voiceContextWith?.data?.derivedDirectives?.length > 0 || voiceContextWith?.derivedDirectives?.length > 0) ? (
+                    <ul style={{ margin: 0, paddingLeft: '18px' }}>
+                      {(voiceContextWith?.data?.derivedDirectives || voiceContextWith?.derivedDirectives || []).map((d, i) => (
+                        <li key={i} style={{ marginBottom: '4px' }}>{typeof d === 'string' ? d : JSON.stringify(d)}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <Text type="secondary">
+                      {voiceContextWith?.data || voiceContextWith ? 'Context loaded (no derived directives).' : 'No context.'}
+                    </Text>
+                  )}
+                </Card>
+              </Col>
+              <Col xs={24} md={12}>
+                <Card size="small" title="Generic (no voice)" style={{ marginBottom: 0 }}>
+                  {(voiceContextGeneric?.data?.derivedDirectives?.length > 0 || voiceContextGeneric?.derivedDirectives?.length > 0) ? (
+                    <ul style={{ margin: 0, paddingLeft: '18px' }}>
+                      {(voiceContextGeneric?.data?.derivedDirectives || voiceContextGeneric?.derivedDirectives || []).map((d, i) => (
+                        <li key={i} style={{ marginBottom: '4px' }}>{typeof d === 'string' ? d : JSON.stringify(d)}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <Text type="secondary">
+                      {voiceContextGeneric?.data || voiceContextGeneric ? 'Generic context (no voice directives).' : 'No context.'}
+                    </Text>
+                  )}
+                </Card>
+              </Col>
+            </Row>
+          )}
+
+          <Divider />
+
+          {/* Preview generation with same topic */}
+          <Title level={5} style={{ marginTop: 0 }}>
+            <PlayCircleOutlined style={{ marginRight: '8px' }} />
+            Preview generation
+          </Title>
+          <p style={{ color: 'var(--color-text-secondary)', marginBottom: '12px' }}>
+            Generate a short blog post for the same topic with your voice vs generic to compare the output.
+          </p>
+          <Input.TextArea
+            value={voiceSandboxTopic}
+            onChange={(e) => setVoiceSandboxTopic(e.target.value)}
+            placeholder="Enter a topic (e.g. How to improve email marketing ROI)"
+            rows={2}
+            style={{ marginBottom: '12px', maxWidth: '600px' }}
+          />
+          <Space wrap style={{ marginBottom: '16px' }}>
+            <Button
+              type="primary"
+              onClick={handleGeneratePreviewWithVoice}
+              loading={generatingPreviewWithVoice}
+              icon={<SoundOutlined />}
+            >
+              Generate with your voice
+            </Button>
+            <Button
+              onClick={handleGeneratePreviewGeneric}
+              loading={generatingPreviewGeneric}
+              icon={<RobotOutlined />}
+            >
+              Generate generic
+            </Button>
+          </Space>
+
+          {(previewWithVoice || previewGeneric) && (
+            <Tabs
+              defaultActiveKey={previewWithVoice ? 'voice' : 'generic'}
+              items={[
+                {
+                  key: 'voice',
+                  label: (
+                    <span>
+                      <SoundOutlined /> With your voice
+                      {generatingPreviewWithVoice && <Spin size="small" style={{ marginLeft: 8 }} />}
+                    </span>
+                  ),
+                  children: (
+                    <pre
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        maxHeight: '320px',
+                        overflow: 'auto',
+                        padding: '12px',
+                        background: 'var(--color-bg-secondary, #fafafa)',
+                        borderRadius: '8px',
+                        margin: 0,
+                        fontSize: '13px',
+                      }}
+                    >
+                      {previewWithVoice || (generatingPreviewWithVoice ? 'Generating…' : 'Generate to see preview.')}
+                    </pre>
+                  ),
+                },
+                {
+                  key: 'generic',
+                  label: (
+                    <span>
+                      <RobotOutlined /> Generic
+                      {generatingPreviewGeneric && <Spin size="small" style={{ marginLeft: 8 }} />}
+                    </span>
+                  ),
+                  children: (
+                    <pre
+                      style={{
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        maxHeight: '320px',
+                        overflow: 'auto',
+                        padding: '12px',
+                        background: 'var(--color-bg-secondary, #fafafa)',
+                        borderRadius: '8px',
+                        margin: 0,
+                        fontSize: '13px',
+                      }}
+                    >
+                      {previewGeneric || (generatingPreviewGeneric ? 'Generating…' : 'Generate to see preview.')}
+                    </pre>
+                  ),
+                },
+              ]}
+            />
+          )}
+        </Card>
 
         {/* Calendar Scheduling (Moved from Posts Tab) */}
         <Divider />

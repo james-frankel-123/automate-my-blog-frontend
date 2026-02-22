@@ -12,9 +12,8 @@ jest.mock('react-tweet', () => ({ Tweet: () => <div data-testid="react-tweet" />
 jest.mock('react-tweet/theme.css', () => ({}));
 
 // Mock DashboardLayout to avoid deep component tree issues
-jest.mock('./components/Dashboard/DashboardLayout', () => ({ forceWorkflowMode = false, isMobile = false } = {}) => (
+jest.mock('./components/Dashboard/DashboardLayout', () => ({ isMobile = false } = {}) => (
   <div data-testid="dashboard-layout">
-    <span data-testid="workflow-mode">{forceWorkflowMode ? 'workflow' : 'normal'}</span>
     <span data-testid="mobile">{isMobile ? 'mobile' : 'desktop'}</span>
     Dashboard Layout Content
   </div>

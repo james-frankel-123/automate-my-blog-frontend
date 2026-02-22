@@ -3,6 +3,7 @@ import { Modal, Button, Row, Col, Typography, Card, Tag, Space, Divider, message
 import { CheckOutlined, StarOutlined, CrownOutlined, UserAddOutlined, GiftOutlined, CopyOutlined } from '@ant-design/icons';
 import api from '../../services/api';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
+import { PaymentModal } from './PaymentModal';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -19,6 +20,8 @@ const PricingModal = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [selectedPlanId, setSelectedPlanId] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [checkoutClientSecret, setCheckoutClientSecret] = useState(null);
   const { trackPageView, trackClick, trackFunnelStep, trackEvent } = useAnalytics();
 
   // Track when pricing modal is opened
@@ -174,16 +177,30 @@ const PricingModal = ({
       // Create checkout session
       const response = await api.createCheckoutSession(priceId, plan.planType);
 
-      if (response.success && response.url) {
-        // Track successful checkout redirect
-        trackFunnelStep('checkout_redirect', {
+      if (response.success) {
+        // Track successful checkout initialization
+        trackFunnelStep('checkout_initiated', {
           planId: plan.id,
           planName: plan.name,
-          sessionId: response.sessionId
+          sessionId: response.sessionId,
+          mode: response.clientSecret ? 'embedded' : 'redirect'
         });
 
-        // Redirect to Stripe checkout
-        window.location.href = response.url;
+        if (response.clientSecret) {
+          // Embedded checkout mode: open modal
+          setCheckoutClientSecret(response.clientSecret);
+          setShowPaymentModal(true);
+        } else if (response.url) {
+          // Legacy redirect mode: redirect to Stripe
+          trackFunnelStep('checkout_redirect', {
+            planId: plan.id,
+            planName: plan.name,
+            sessionId: response.sessionId
+          });
+          window.location.href = response.url;
+        } else {
+          throw new Error('Invalid response from checkout session');
+        }
       } else {
         throw new Error('Failed to create checkout session');
       }
@@ -315,6 +332,7 @@ const PricingModal = ({
   );
 
   return (
+    <>
     <Modal
       open={open}
       onCancel={onClose}
@@ -384,6 +402,62 @@ const PricingModal = ({
           {plans.map(plan => renderPlanCard(plan))}
         </Row>
 
+        {/* Value-Based Pricing Explanation */}
+        <div style={{
+          marginTop: '32px',
+          padding: '24px',
+          backgroundColor: 'var(--color-info-bg)',
+          border: '1px solid var(--color-primary-200)',
+          borderRadius: '8px'
+        }}>
+          <Title level={4} style={{
+            marginTop: 0,
+            marginBottom: '12px',
+            color: 'var(--color-primary-700)'
+          }}>
+            💡 Why Value-Based Pricing?
+          </Title>
+          <Paragraph style={{
+            fontSize: '14px',
+            color: 'var(--color-text-primary)',
+            marginBottom: '16px'
+          }}>
+            Unlike traditional content services that charge per post, we price based on the value we deliver to your business.
+          </Paragraph>
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Aligned Incentives:</strong> We succeed when you succeed. Your cost scales with the profit potential we unlock.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Complexity-Aware:</strong> Simple niches with low competition cost less. Complex industries requiring sophisticated strategies cost more.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Business-Size Appropriate:</strong> Small businesses pay less. Larger businesses with complex needs pay more. Everyone gets great ROI.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>Results-Driven:</strong> You pay for quality content that drives traffic, leads, and conversions—not just post volume.
+              </Text>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <CheckOutlined style={{ color: 'var(--color-success)', fontSize: '14px', marginTop: '2px', flexShrink: 0 }} />
+              <Text style={{ fontSize: '14px' }}>
+                <strong>ROI Tracking:</strong> Connect Google Analytics to see the traffic and conversions we drive. Our system optimizes based on real performance.
+              </Text>
+            </div>
+          </Space>
+        </div>
+
         {/* Footer */}
         <div style={{ textAlign: 'center', marginTop: '32px' }}>
           <Divider />
@@ -393,6 +467,20 @@ const PricingModal = ({
         </div>
       </div>
     </Modal>
+
+    {/* Embedded Checkout Payment Modal */}
+    <PaymentModal
+      visible={showPaymentModal}
+      clientSecret={checkoutClientSecret}
+      onClose={() => {
+        setShowPaymentModal(false);
+        setCheckoutClientSecret(null);
+        setLoading(false);
+        setSelectedPlanId(null);
+      }}
+      title="Complete Your Purchase"
+    />
+  </>
   );
 };
 

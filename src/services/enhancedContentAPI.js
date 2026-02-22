@@ -48,6 +48,7 @@ export class EnhancedContentAPI {
         preloadedTweets: Array.isArray(preloadedTweets) ? preloadedTweets : [],
         preloadedArticles: Array.isArray(preloadedArticles) ? preloadedArticles : [],
         preloadedVideos: Array.isArray(preloadedVideos) ? preloadedVideos : [],
+        useVoiceProfile: enhancementOptions.useVoiceProfile !== false,
       },
       comprehensiveContext: comprehensivePrompt,
       strategicCTAs,
@@ -98,7 +99,9 @@ export class EnhancedContentAPI {
       strategicCTAs,
       selectedTopic,
       blogPost,
-      imageGeneration: data.imageGeneration || result.imageGeneration
+      imageGeneration: data.imageGeneration || result.imageGeneration,
+      voiceAdaptationUsed: result.voiceAdaptationUsed ?? data.voiceAdaptationUsed,
+      voiceProfileConfidence: result.voiceProfileConfidence ?? data.voiceProfileConfidence
     };
   }
 

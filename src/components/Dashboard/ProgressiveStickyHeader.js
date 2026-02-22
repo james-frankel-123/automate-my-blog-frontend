@@ -8,6 +8,15 @@ import {
 
 const { Text } = Typography;
 
+/** Get a single display string from targetSegment (string or { demographics, psychographics, searchBehavior }). */
+function targetSegmentToDisplayString(targetSegment) {
+  if (targetSegment == null) return '';
+  if (typeof targetSegment === 'string') return targetSegment.trim();
+  if (typeof targetSegment === 'object')
+    return (targetSegment.demographics ?? targetSegment.description ?? targetSegment.psychographics ?? targetSegment.searchBehavior ?? targetSegment.title ?? '').trim() || '';
+  return '';
+}
+
 /**
  * ProgressiveStickyHeader Component
  * Displays completed workflow steps as subtle sticky rows at the top
@@ -40,9 +49,9 @@ const ProgressiveStickyHeader = ({
       icon: <TeamOutlined style={{ color: 'var(--color-primary)', fontSize: '14px' }} />,
       label: 'Audience',
       getDisplayText: (data) => {
-        if (data.targetSegment) {
-          const demo = data.targetSegment.demographics || '';
-          return demo.split(' ').slice(0, 4).join(' ') + '...';
+        const segmentStr = targetSegmentToDisplayString(data.targetSegment);
+        if (segmentStr) {
+          return segmentStr.split(' ').slice(0, 4).join(' ') + (segmentStr.split(' ').length > 4 ? '...' : '');
         }
         return data.audienceName || 'Audience selected';
       }

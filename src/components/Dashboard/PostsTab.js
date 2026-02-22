@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Table, Tag, Dropdown, Space, Switch, Input, Select, Row, Col, Typography, message, Modal, Progress } from 'antd';
+import { Card, Button, Table, Tag, Dropdown, Space, Switch, Input, Select, Row, Col, Typography, message, Modal, Progress, Alert } from 'antd';
 import { 
   PlusOutlined, 
   ScheduleOutlined,
@@ -12,7 +12,8 @@ import {
   LockOutlined,
   TeamOutlined,
   TrophyOutlined,
-  CopyOutlined
+  CopyOutlined,
+  SoundOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
@@ -41,6 +42,7 @@ import ThinkingPanel from '../shared/ThinkingPanel';
 import RelatedContentStepsPanel, { STATUS as RelatedContentStepStatus } from '../shared/RelatedContentStepsPanel';
 import RelatedContentPanel from '../shared/RelatedContentPanel';
 import { notifyTabReady } from '../../utils/tabReadyAlert';
+import ContentCalendarSection from './ContentCalendarSection';
 
 // New Enhanced Components
 import EditorLayout, { EditorPane } from '../Editor/Layout/EditorLayout';
@@ -302,8 +304,15 @@ const SaveStatusIndicator = ({ isAutosaving, lastSaved, autosaveError }) => {
 
 // Content Discovery has been moved to SandboxTab for super-admin access
 
-const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate, onOpenPricingModal }) => {
-  const { user } = useAuth();
+const PostsTab = ({
+  onQuotaUpdate,
+  onOpenPricingModal,
+  // Strategy filtering props (for ReturningUserDashboard)
+  filteredByStrategyId = null,
+  onClearFilter = null,
+  getStrategyName = null
+}) => {
+  const { user, currentOrganization } = useAuth();
   const tabMode = useTabMode('posts');
   const { 
     requireSignUp,
@@ -382,9 +391,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   const [enhancedMetadata, setEnhancedMetadata] = useState(null);
   const [seoAnalysisVisible, setSeoAnalysisVisible] = useState(false);
 
-  // Organization data for enhanced generation
-  const organizationId = user?.organizationId || user?.id; // Use user ID as fallback
-  const organizationName = user?.organizationName || '';
+  // Organization data for enhanced generation (align with Voice adaptation: use currentOrganization when available)
+  const organizationId = currentOrganization?.id || user?.organizationId || user?.id;
+  const organizationName = user?.organizationName || currentOrganization?.name || '';
+
+  // Voice profile: show "Writing in your voice" when org has a usable profile (confidence >= 50)
+  const [voiceProfileSummary, setVoiceProfileSummary] = useState(null); // { confidenceScore, sampleCount } | null
 
   // CTA state management
   const [organizationCTAs, setOrganizationCTAs] = useState([]);
@@ -535,6 +547,25 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     fetchCTAs();
   }, [organizationId]);
 
+  // Fetch voice profile so we can show "Writing in your voice" when generating (backend uses voice by default when profile exists)
+  useEffect(() => {
+    if (!organizationId || !user) return;
+    let cancelled = false;
+    api.getVoiceProfile(organizationId)
+      .then((res) => {
+        if (cancelled || !res?.profile) return;
+        const score = res.profile.confidence_score;
+        if (typeof score === 'number' && score >= 50) {
+          setVoiceProfileSummary({
+            confidenceScore: score,
+            sampleCount: res.profile.sample_count ?? 0
+          });
+        }
+      })
+      .catch(() => { /* no profile or not owner: ignore */ });
+    return () => { cancelled = true; };
+  }, [organizationId, user]);
+
   // Fullscreen toggle handler
   const handleToggleFullscreen = useCallback(() => {
     setIsEditorFullscreen(prev => !prev);
@@ -662,15 +693,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
     setGeneratingContent(true);
     setTopicsGenerationInProgress(true);
     try {
-      // For logged-out users in workflow mode, check if analysis is completed
-      if (forceWorkflowMode && !user) {
-        if (!stepResults?.home?.analysisCompleted) {
-          setGeneratingContent(false);
-          message.warning('Please complete website analysis first before generating content topics.');
-          setTopicsGenerationInProgress(false);
-          return;
-        }
-      } else if (!user) {
+      if (!user) {
         // For logged-out users not in workflow mode, trigger sign-up (Fixes #85: run after login)
         setGeneratingContent(false);
         setTopicsGenerationInProgress(false);
@@ -1632,7 +1655,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       analysisData.decisionMakers || analysisData.businessName;
     const hasStrategy = !!(selectedCustomerStrategy || tabMode.tabWorkflowData?.selectedCustomerStrategy);
 
-    if ((tabMode.mode === 'workflow' || forceWorkflowMode) &&
+    if (tabMode.mode === 'workflow' &&
         !availableTopics.length &&
         !generatingContent &&
         hasMinimumAnalysisData &&
@@ -1642,7 +1665,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       }, 800);
       return () => clearTimeout(t);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- forceWorkflowMode intentionally excluded
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps intentionally minimal to avoid loops
   }, [tabMode.mode, tabMode.tabWorkflowData, availableTopics.length, generatingContent, selectedCustomerStrategy, stepResults?.home?.websiteAnalysis]);
 
   // Edit post functionality - restore post to editor
@@ -2029,12 +2052,12 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
   // Component state tracking (debug logging removed to prevent infinite loops)
 
   // Show simplified interface when no posts exist AND not in workflow mode
-  if (posts.length === 0 && !loading && tabMode.mode === 'focus' && !forceWorkflowMode) {
+  if (posts.length === 0 && !loading && tabMode.mode === 'focus') {
     return (
       <div>
         
         {/* Workflow Guidance */}
-        {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
+        {tabMode.mode === 'workflow' && (
           <div style={{ padding: '16px 24px 0' }}>
             <WorkflowGuidance
               step={3}
@@ -2049,7 +2072,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
         )}
         
         <div style={{ padding: '24px' }}>
-          {(tabMode.mode === 'workflow' || forceWorkflowMode) ? (
+          {tabMode.mode === 'workflow' ? (
             // Workflow Mode: Content Generation & Editing Interface
             <div>
               {!contentGenerated ? (
@@ -2102,7 +2125,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                     <div>
                       <Paragraph style={{ 
                         textAlign: 'center', 
-                        marginBottom: '30px', 
+                        marginBottom: '8px', 
                         color: 'var(--color-text-secondary)',
                         fontSize: responsive.fontSize.text
                       }}>
@@ -2111,7 +2134,53 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                           `Based on your audience analysis, here are high-impact blog post ideas:`
                         }
                       </Paragraph>
+                      {voiceProfileSummary && !generatingContent && (
+                        <Paragraph style={{ textAlign: 'center', marginBottom: 'var(--space-6)', color: 'var(--color-text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                          <SoundOutlined style={{ marginRight: 'var(--space-1)', color: 'var(--color-primary)' }} />
+                          This post will be written in your voice ({voiceProfileSummary.confidenceScore}% confidence).
+                          {' '}
+                          <a
+                            href="/settings/voice-adaptation"
+                            style={{ color: 'var(--color-primary)', fontWeight: 500 }}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              window.history.pushState({}, '', '/settings/voice-adaptation');
+                              window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'voice-adaptation' }));
+                            }}
+                          >
+                            Manage voice
+                          </a>
+                        </Paragraph>
+                      )}
+                      {!voiceProfileSummary && <div style={{ marginBottom: 'var(--space-6)' }} />}
 
+                      {generatingContent && voiceProfileSummary && (
+                        <Alert
+                          type="success"
+                          showIcon
+                          icon={<SoundOutlined />}
+                          message="Writing this post in your voice"
+                          description={
+                            <span>
+                              Your voice profile is being used for this draft
+                              {voiceProfileSummary.confidenceScore != null && ` (${voiceProfileSummary.confidenceScore}% confidence)`}.
+                              {' '}
+                              <a
+                                href="/settings/voice-adaptation"
+                                style={{ color: 'inherit', textDecoration: 'underline' }}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  window.history.pushState({}, '', '/settings/voice-adaptation');
+                                  window.dispatchEvent(new CustomEvent('navigateToTab', { detail: 'voice-adaptation' }));
+                                }}
+                              >
+                                Manage voice
+                              </a>
+                            </span>
+                          }
+                          style={{ marginBottom: 'var(--space-4)' }}
+                        />
+                      )}
                       {generatingContent && (
                         <>
                           <ThinkingPanel
@@ -2500,7 +2569,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                   
                   {/* Action Buttons - Different for workflow vs focus mode */}
                   <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
-                    {(tabMode.mode === 'workflow' || forceWorkflowMode) ? (
+                    {tabMode.mode === 'workflow' ? (
                       // Workflow Mode: Only Export button
                       <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
                         <Space>
@@ -2590,15 +2659,9 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
                 action="Create Your First Post"
                 actionLabel="Create Your First Post"
                 onAction={() => {
-                  // Trigger content generation workflow
-                  if (onEnterProjectMode) {
-                    onEnterProjectMode();
-                  } else {
-                    // Fallback: scroll to content generation section
-                    const postsSection = document.getElementById('posts');
-                    if (postsSection) {
-                      postsSection.scrollIntoView({ behavior: 'smooth' });
-                    }
+                  const postsSection = document.getElementById('dashboard-posts');
+                  if (postsSection) {
+                    postsSection.scrollIntoView({ behavior: 'smooth' });
                   }
                 }}
                 icon={<PlusOutlined style={{ fontSize: '64px', color: 'var(--color-gray-300)' }} />}
@@ -2613,16 +2676,27 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
 
   return (
     <div>
-      
+
+      {/* 7-Day Content Calendar */}
+      {user && (
+        <div style={{ padding: '24px 24px 0' }}>
+          <ContentCalendarSection
+            strategyId={null}
+            strategyName={null}
+            onRefresh={loadPosts}
+          />
+        </div>
+      )}
+
       {/* Workflow Guidance - Only show when in workflow mode AND audience is selected */}
-      {(tabMode.mode === 'workflow' || forceWorkflowMode) && tabMode.tabWorkflowData?.selectedCustomerStrategy && (
+      {tabMode.mode === 'workflow' && tabMode.tabWorkflowData?.selectedCustomerStrategy && (
         <div style={{ padding: '16px 24px 0' }}>
           <WorkflowGuidance
             step={3}
             totalSteps={4}
             stepTitle="Create Your Content"
-            stepDescription={tabMode.tabWorkflowData?.selectedAudience ? 
-              `Generate content for your selected audience: ${tabMode.tabWorkflowData.selectedAudience}` : 
+            stepDescription={tabMode.tabWorkflowData?.selectedAudience ?
+              `Generate content for your selected audience: ${tabMode.tabWorkflowData.selectedAudience}` :
               'Generate content based on your strategy and audience selection.'
             }
           />
@@ -2630,7 +2704,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       )}
       
       {/* WORKFLOW MODE CONTENT */}
-      {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
+      {tabMode.mode === 'workflow' && (
         <div style={{ padding: '24px' }}>
           {/* Preview topic cards when no audience selected */}
           {!selectedCustomerStrategy && (
@@ -3432,7 +3506,7 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
       )}
 
       {/* POSTS MANAGEMENT SECTION - Only visible in focus mode */}
-      {tabMode.mode === 'focus' && !forceWorkflowMode && (
+      {tabMode.mode === 'focus' && (
         <div style={{ padding: '24px' }}>
           {/* Content Editing Interface - Show when editing an existing post */}
           {currentDraft && contentGenerated ? (
@@ -3623,6 +3697,32 @@ const PostsTab = ({ forceWorkflowMode = false, onEnterProjectMode, onQuotaUpdate
           ) : (
             /* Posts List View */
             <Card title={<h2 className="heading-section" style={{ marginBottom: 0 }}>Blog Posts</h2>}>
+
+              {/* Strategy Filter Indicator */}
+              {filteredByStrategyId && getStrategyName && onClearFilter && (
+                <div style={{
+                  marginBottom: '16px',
+                  padding: '12px 16px',
+                  backgroundColor: 'var(--color-info-bg)',
+                  border: '1px solid var(--color-primary-200)',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <Space>
+                    <Text strong style={{ color: 'var(--color-primary-700)' }}>Filtered by strategy:</Text>
+                    <Tag color="blue">{getStrategyName(filteredByStrategyId)}</Tag>
+                  </Space>
+                  <Button
+                    size="small"
+                    onClick={onClearFilter}
+                    style={{ marginLeft: '8px' }}
+                  >
+                    ✕ Clear Filter
+                  </Button>
+                </div>
+              )}
 
               <Table
                 columns={columns}

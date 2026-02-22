@@ -56,7 +56,7 @@ function transformAudienceToStrategy(audience, index) {
   };
 }
 
-const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode: _onEnterProjectMode }) => {
+const AudienceSegmentsTab = ({ onNextStep }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('audience-segments');
   const { 
@@ -461,8 +461,9 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                            (stepResults.home.websiteAnalysis.targetAudience ||
                             stepResults.home.websiteAnalysis.businessName !== 'None');
 
-    if (((tabMode.mode === 'workflow' || forceWorkflowMode) && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
-        (hasAnalysisData && tabMode.mode === 'focus' && !forceWorkflowMode)) {
+    // Workflow mode: require analysisCompleted. Focus mode: trigger with hasAnalysisData only (no analysisCompleted).
+    if ((tabMode.mode === 'workflow' && stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis) ||
+        (hasAnalysisData && tabMode.mode === 'focus')) {
       const analysis = stepResults.home.websiteAnalysis;
 
       // Create unique generation key based on analysis data
@@ -732,7 +733,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- setHint stable; intentional deps
-  }, [tabMode.mode, stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis, strategies.length, generatingStrategies, forceWorkflowMode]);
+  }, [tabMode.mode, stepResults.home.analysisCompleted, stepResults.home.websiteAnalysis, strategies.length, generatingStrategies]);
 
   // Handle strategy selection in workflow mode
   const handleSelectStrategy = (strategy, index) => {
@@ -743,7 +744,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
 
     setSelectedStrategy(enhancedStrategy);
 
-    if (tabMode.mode === 'workflow' || forceWorkflowMode) {
+    if (tabMode.mode === 'workflow') {
       // Update unified workflow state
       setSelectedCustomerStrategy(enhancedStrategy);
       updateCustomerStrategy(enhancedStrategy);
@@ -780,7 +781,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         let scrolled = false;
         const tryScroll = () => {
           if (scrolled) return;
-          const postsSection = document.getElementById('posts');
+          const postsSection = document.getElementById('dashboard-posts');
           if (postsSection) {
             postsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             scrolled = true;
@@ -1380,13 +1381,12 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               }
             }, 100);
           }}
-          forceWorkflowMode={forceWorkflowMode}
           currentStep={2}
           analysisCompleted={stepResults.home.analysisCompleted}
         />
 
         {/* WORKFLOW MODE: Customer Strategy Selection Step */}
-        {(tabMode.mode === 'workflow' || forceWorkflowMode) && (
+        {tabMode.mode === 'workflow' && (
           <>
 
             {/* Strategy Selection Cards - Core workflow step */}
@@ -1612,7 +1612,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   )}
 
                   {/* Strategy Cards Grid */}
-                  {!stepResults.home.analysisCompleted && forceWorkflowMode ? (
+                  {!stepResults.home.analysisCompleted && tabMode.mode === 'workflow' ? (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                       <div style={{ fontSize: '48px', marginBottom: '16px' }}>📋</div>
                       <Title level={4} style={{ color: 'var(--color-warning)' }}>
@@ -1731,7 +1731,7 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
         )}
 
         {/* FOCUS MODE: Full Audience Management Features (Premium) */}
-        {tabMode.mode === 'focus' && !forceWorkflowMode && (
+        {tabMode.mode === 'focus' && (
           <>
 
       {/* Main Content */}
@@ -2101,8 +2101,8 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
               </Carousel>
             </div>
             
-            {/* Continue Button - show whenever strategy section is visible (workflow or forceWorkflowMode) */}
-            {selectedStrategy && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
+            {/* Continue Button - show when in workflow and strategy selected */}
+            {selectedStrategy && tabMode.mode === 'workflow' && (
               <div style={{ textAlign: 'center', marginTop: '30px' }}>
                 <Button
                   type="primary"
@@ -2110,10 +2110,6 @@ const AudienceSegmentsTab = ({ forceWorkflowMode = false, onNextStep, onEnterPro
                   onClick={() => {
                     setSelectedCustomerStrategy(selectedStrategy);
                     updateCustomerStrategy(selectedStrategy);
-
-                    if (forceWorkflowMode && tabMode.mode !== 'workflow') {
-                      tabMode.enterWorkflowMode();
-                    }
 
                     tabMode.continueToNextStep({
                       selectedCustomerStrategy: selectedStrategy,

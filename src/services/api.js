@@ -54,9 +54,11 @@ class AutoBlogAPI {
       authHeaders['Authorization'] = `Bearer ${token}`;
     }
     
+    // Omit Content-Type for FormData so browser sets multipart boundary
+    const isFormData = options.body instanceof FormData;
     const defaultOptions = {
       headers: {
-        'Content-Type': 'application/json',
+        ...(!isFormData && { 'Content-Type': 'application/json' }),
         ...options.headers,      // Add custom headers first
         ...authHeaders,          // Then auth headers (Authorization takes priority)
       },
@@ -1219,7 +1221,7 @@ Please provide analysis in this JSON format:
    * @returns {Promise<void>} Resolves when stream ends; rejects on HTTP error, timeout, or handler throws
    */
   async connectNarrationStream(type, params, handlers = {}) {
-    const { organizationId, selectedAudience, selectedTopic } = params;
+    const { organizationId, selectedAudience, selectedTopic, previousNarration } = params;
     if (!organizationId) {
       const err = new Error('organizationId is required for narration stream');
       if (handlers.onError) handlers.onError(err);
@@ -1235,6 +1237,7 @@ Please provide analysis in this JSON format:
     const search = new URLSearchParams({ organizationId });
     if (type === 'topic' && selectedAudience != null) search.set('selectedAudience', typeof selectedAudience === 'string' ? selectedAudience : (selectedAudience?.title ?? selectedAudience?.targetSegment ?? selectedAudience?.name ?? ''));
     if (type === 'content' && selectedTopic != null) search.set('selectedTopic', typeof selectedTopic === 'string' ? selectedTopic : (selectedTopic?.title ?? selectedTopic?.topic ?? selectedTopic?.name ?? ''));
+    if (previousNarration) search.set('previousNarration', previousNarration);
     const url = `${base}?${search.toString()}`;
 
     const headers = { Accept: 'text/event-stream' };
@@ -1691,6 +1694,116 @@ Please provide analysis in this JSON format:
       console.error('❌ Upload status request failed:', error);
       throw error;
     }
+  }
+
+  // ─── Voice samples (voice adaptation) ─────────────────────────────────────
+  /** Allowed sourceType values for voice samples. */
+  get VOICE_SAMPLE_SOURCE_TYPES() {
+    return ['blog_post', 'whitepaper', 'email', 'newsletter', 'social_post', 'call_summary', 'other_document'];
+  }
+
+  /** Allowed file extensions for voice sample uploads. */
+  get VOICE_SAMPLE_ALLOWED_EXTENSIONS() {
+    return ['.txt', '.md', '.html', '.csv', '.pdf', '.docx', '.json', '.eml'];
+  }
+
+  /**
+   * Upload voice samples (multipart/form-data).
+   * @param {string} organizationId - UUID of the org
+   * @param {string} sourceType - one of VOICE_SAMPLE_SOURCE_TYPES
+   * @param {File[]} files - up to 10 files
+   * @param {{ title?: string, weight?: number }} options - optional title and weight (0.1–5.0)
+   * @returns {Promise<{ success: boolean, samples: Array }>}
+   */
+  async uploadVoiceSamples(organizationId, sourceType, files, options = {}) {
+    if (!organizationId || !sourceType || !files?.length) {
+      throw new Error('organizationId, sourceType, and at least one file are required');
+    }
+    if (files.length > 10) {
+      throw new Error('Maximum 10 files per request');
+    }
+    const formData = new FormData();
+    formData.append('organizationId', organizationId);
+    formData.append('sourceType', sourceType);
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+    if (options.title != null) formData.append('title', String(options.title));
+    if (options.weight != null) formData.append('weight', Number(options.weight));
+
+    const response = await this.makeRequest('api/v1/voice-samples/upload', {
+      method: 'POST',
+      body: formData
+    });
+    if (!response.success) throw new Error(response.message || response.error || 'Upload failed');
+    return response;
+  }
+
+  /**
+   * List voice samples for an organization.
+   * @param {string} organizationId
+   * @returns {Promise<{ success: boolean, samples: Array }>}
+   */
+  async listVoiceSamples(organizationId) {
+    if (!organizationId) throw new Error('organizationId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${organizationId}`, { method: 'GET' });
+    if (!response.success) throw new Error(response.message || response.error || 'Failed to list samples');
+    return response;
+  }
+
+  /**
+   * Get aggregated voice profile for an organization.
+   * Backend returns 200 with success: true and profile: null when the org has no profile yet (no samples or none completed); do not treat that as an error.
+   * When profile is non-null, response includes display-ready voiceProperties and derivedDirectives.
+   * @param {string} organizationId
+   * @returns {Promise<{ success: boolean, profile: object|null, voiceProperties?: Array<{ section: string, items: Array<{ key: string, label: string, value: string|number|Array|object }> }>, derivedDirectives?: string[] }>}
+   */
+  async getVoiceProfile(organizationId) {
+    if (!organizationId) throw new Error('organizationId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${organizationId}/profile`, { method: 'GET' });
+    if (!response.success) throw new Error(response.message || response.error || 'Failed to get profile');
+    return response;
+  }
+
+  /**
+   * Get enhanced blog generation context for an organization (for voice comparison and generation).
+   * Use metadata.voiceComparisonSupported to show/hide "Compare your voice vs generic" UI.
+   * @param {string} organizationId
+   * @param {{ useVoiceProfile?: boolean }} options - useVoiceProfile=false returns context without voice profile (generic); default true
+   * @returns {Promise<{ data: object, metadata?: { voiceComparisonSupported?: boolean, voiceProfileSummary?: { confidenceScore: number, sampleCount: number } } }>}
+   */
+  async getEnhancedBlogContext(organizationId, options = {}) {
+    if (!organizationId) throw new Error('organizationId is required');
+    const useVoiceProfile = options.useVoiceProfile !== false;
+    const query = useVoiceProfile ? '' : '?useVoiceProfile=false';
+    const response = await this.makeRequest(
+      `api/v1/enhanced-blog-generation/context/${organizationId}${query}`,
+      { method: 'GET' }
+    );
+    return response;
+  }
+
+  /**
+   * Soft-delete a voice sample.
+   * @param {string} sampleId
+   */
+  async deleteVoiceSample(sampleId) {
+    if (!sampleId) throw new Error('sampleId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${sampleId}`, { method: 'DELETE' });
+    if (!response.success) throw new Error(response.message || response.error || 'Failed to delete sample');
+    return response;
+  }
+
+  /**
+   * Reanalyze a voice sample (queues job, sample returns to pending).
+   * @param {string} sampleId
+   * @returns {Promise<{ success: boolean, jobId?: string }>}
+   */
+  async reanalyzeVoiceSample(sampleId) {
+    if (!sampleId) throw new Error('sampleId is required');
+    const response = await this.makeRequest(`api/v1/voice-samples/${sampleId}/reanalyze`, { method: 'POST' });
+    if (!response.success) throw new Error(response.message || response.error || 'Reanalyze failed');
+    return response;
   }
 
   /**
@@ -2592,6 +2705,21 @@ Please provide analysis in this JSON format:
   }
 
   /**
+   * Get Stripe Checkout Session Status
+   * Used to verify payment completion after embedded checkout
+   */
+  async getSessionStatus(sessionId) {
+    try {
+      const response = await this.makeRequest(`/api/v1/stripe/session-status?session_id=${sessionId}`, {
+        method: 'GET'
+      });
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get session status: ${error.message}`);
+    }
+  }
+
+  /**
    * Website Lead Management (Super Admin Only)
    */
   async getLeads(options = {}) {
@@ -2677,10 +2805,10 @@ Please provide analysis in this JSON format:
    * Get or create session ID for anonymous users
    */
   getOrCreateSessionId() {
-    let sessionId = sessionStorage.getItem('audience_session_id');
+    let sessionId = localStorage.getItem('audience_session_id');
     if (!sessionId) {
       sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('audience_session_id', sessionId);
+      localStorage.setItem('audience_session_id', sessionId);
       console.log('🆔 Created new audience session:', sessionId);
     }
     return sessionId;
@@ -2688,15 +2816,16 @@ Please provide analysis in this JSON format:
 
   /**
    * Create audience strategy (authenticated or anonymous)
+   * When authenticated, sends Authorization: Bearer <token> so backend associates the audience with the user.
    */
   async createAudience(audienceData) {
     try {
       const sessionId = this.getOrCreateSessionId();
-      const headers = { 'Content-Type': 'application/json' };
-      
-      // Only send session ID if NOT authenticated
       const token = localStorage.getItem('accessToken');
-      if (!token) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
         headers['x-session-id'] = sessionId;
       }
 
@@ -2749,22 +2878,32 @@ Please provide analysis in this JSON format:
       if (options.offset) {
         params.append('offset', options.offset);
       }
+      if (options.testbed) {
+        params.append('testbed', '1');
+      }
 
       const queryString = params.toString();
       const url = `/api/v1/audiences${queryString ? '?' + queryString : ''}`;
 
       const response = await this.makeRequest(url, { headers });
-      console.log('📋 Loaded audiences:', response.audiences?.length || 0);
-      return response;
+      const audiences = response?.audiences ?? response?.data?.audiences;
+      const normalized = audiences !== undefined ? { ...response, audiences: Array.isArray(audiences) ? audiences : [] } : response;
+      console.log('📋 Loaded audiences:', normalized.audiences?.length ?? 0);
+      return normalized;
     } catch (error) {
       throw new Error(`Failed to get audiences: ${error.message}`);
     }
   }
 
   /**
-   * Get specific audience with topics and keywords
+   * Get specific audience with topics and keywords.
+   * @param {string} audienceId
+   * @param {{ testbed?: boolean }} options - When true, append ?testbed=1 (calendar testbed page)
    */
-  async getAudience(audienceId) {
+  async getAudience(audienceId, options = {}) {
+    if (!audienceId || String(audienceId).trim() === '') {
+      throw new Error('Audience ID is required');
+    }
     try {
       const sessionId = this.getOrCreateSessionId();
       const headers = {};
@@ -2774,10 +2913,55 @@ Please provide analysis in this JSON format:
         headers['X-Session-ID'] = sessionId;
       }
 
-      const response = await this.makeRequest(`/api/v1/audiences/${audienceId}`, { headers });
-      return response;
+      const query = options.testbed ? '?testbed=1' : '';
+      const response = await this.makeRequest(`/api/v1/audiences/${encodeURIComponent(audienceId)}${query}`, { headers });
+      // Normalize: some backends return { audience } or { data: { audience } }
+      const audience = response?.audience ?? response?.data?.audience;
+      return audience !== undefined ? { ...response, audience } : response;
     } catch (error) {
       throw new Error(`Failed to get audience: ${error.message}`);
+    }
+  }
+
+  /**
+   * Request content calendar generation for an audience.
+   * Backend enqueues a content_calendar job; returns existing jobId if one is already queued/running (idempotent).
+   * See docs/CONTENT_CALENDAR_BACKEND_RETURN_HANDOFF.md.
+   * @param {string} audienceId - Audience UUID
+   * @returns {Promise<{ success: boolean, jobId: string }>} 201 new job, 200 existing job
+   */
+  async requestContentCalendar(audienceId) {
+    if (!audienceId || String(audienceId).trim() === '') {
+      throw new Error('Audience ID is required');
+    }
+    const response = await this.makeRequest(
+      `/api/v1/audiences/${encodeURIComponent(audienceId)}/request-content-calendar`,
+      { method: 'POST', body: JSON.stringify({}) }
+    );
+    const jobId = response?.jobId;
+    if (!jobId) {
+      throw new Error(response?.message || response?.error || 'No jobId returned');
+    }
+    return { success: true, jobId };
+  }
+
+  /**
+   * Get unified content calendar (all subscribed strategies).
+   * Requires JWT. Returns strategies with contentIdeas (default first 7 days shown in UI).
+   * @param {{ startDate?: string, endDate?: string, testbed?: boolean }} options - testbed: append ?testbed=1 for calendar testbed
+   */
+  async getContentCalendar(options = {}) {
+    try {
+      const params = new URLSearchParams();
+      if (options.startDate) params.append('startDate', options.startDate);
+      if (options.endDate) params.append('endDate', options.endDate);
+      if (options.testbed) params.append('testbed', '1');
+      const queryString = params.toString();
+      const url = `/api/v1/strategies/content-calendar${queryString ? '?' + queryString : ''}`;
+      const response = await this.makeRequest(url);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get content calendar: ${error.message}`);
     }
   }
 
@@ -3816,6 +4000,21 @@ Please provide analysis in this JSON format:
       return response;
     } catch (error) {
       throw new Error(`Failed to get subscribed strategies: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get personalized strategy overview with LLM-generated content
+   * Adapts messaging to business context and Google integration status
+   * Requires JWT authentication
+   */
+  async getStrategyOverview() {
+    try {
+      const response = await this.makeRequest('/api/v1/strategies/overview');
+      console.log('📖 Strategy overview loaded:', response);
+      return response;
+    } catch (error) {
+      throw new Error(`Failed to get strategy overview: ${error.message}`);
     }
   }
 

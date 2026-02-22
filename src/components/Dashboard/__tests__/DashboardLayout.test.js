@@ -25,7 +25,6 @@ jest.mock('../AdminAnalyticsTab', () => () => <div data-testid="admin-analytics-
 jest.mock('../AdminContentTab', () => () => <div data-testid="admin-content-tab">Admin Content Tab</div>);
 jest.mock('../AdminSystemTab', () => () => <div data-testid="admin-system-tab">Admin System Tab</div>);
 jest.mock('../AdminLeadsTab', () => () => <div data-testid="admin-leads-tab">Admin Leads Tab</div>);
-jest.mock('../LoggedOutProgressHeader', () => () => <div data-testid="logged-out-header">Logged Out Header</div>);
 jest.mock('../../Auth/AuthModal', () => ({ open }) => open ? <div data-testid="auth-modal">Auth Modal</div> : null);
 jest.mock('../../Modals/PricingModal', () => ({ open }) => open ? <div data-testid="pricing-modal">Pricing Modal</div> : null);
 
@@ -87,19 +86,6 @@ describe('DashboardLayout', () => {
     cleanupTests();
   });
 
-  describe('Logged Out State', () => {
-    it('renders logged out progress header when not authenticated', () => {
-      renderDashboardLayout({ forceWorkflowMode: true });
-      expect(screen.getByTestId('logged-out-header')).toBeInTheDocument();
-    });
-
-    it('shows auth modal trigger for logged out users', () => {
-      renderDashboardLayout({ forceWorkflowMode: true });
-      // The workflow mode shows the logged out experience
-      expect(screen.getByTestId('dashboard-tab')).toBeInTheDocument();
-    });
-  });
-
   describe('Logged In State', () => {
     it('renders sidebar for logged in desktop users', () => {
       const mockUser = createMockUser();
@@ -126,7 +112,7 @@ describe('DashboardLayout', () => {
   });
 
   describe('Navigation Menu', () => {
-    it('shows base menu items for regular users', () => {
+    it('shows base menu items for regular users (Home, Audience, Posts)', () => {
       const mockUser = createMockUser();
       renderDashboardLayout({ isMobile: false }, mockUser);
       
@@ -155,18 +141,10 @@ describe('DashboardLayout', () => {
     });
   });
 
-  describe('Workflow Mode', () => {
-    it('respects forceWorkflowMode prop', () => {
-      renderDashboardLayout({ forceWorkflowMode: true }, null);
-      expect(screen.getByTestId('logged-out-header')).toBeInTheDocument();
-    });
-
-    it('shows project mode button when logged in', () => {
+  describe('Dashboard content', () => {
+    it('shows main dashboard content when logged in', () => {
       const mockUser = createMockUser();
       renderDashboardLayout({ isMobile: false }, mockUser);
-      
-      // Either "Create New Post" or "Exit Project Mode" should be visible
-      // depending on project mode state
       expect(screen.getByTestId('dashboard-tab')).toBeInTheDocument();
     });
   });

@@ -47,7 +47,7 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Core workflow progression
   const [currentStep, setCurrentStep] = useState(0); // 0-6 workflow steps
-  const [websiteUrl, setWebsiteUrl] = useState(''); // User's website URL
+  const [websiteUrl, setWebsiteUrl] = useState(user?.organizationWebsite || ''); // User's website URL
   const [selectedTopic, setSelectedTopic] = useState(null); // Selected topic ID
   const [generatedContent, setGeneratedContent] = useState(''); // AI-generated content
   
@@ -479,6 +479,19 @@ export const WorkflowModeProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- updateAnalysisCompleted/updateStickyWorkflowStep/updateWebsiteAnalysis from context
   }, [sessionId, user, loadUserAudiences, audiences]);
 
+  // Sync websiteUrl with user's saved organization website.
+  // Runs when user loads (async) or when refreshUser() updates organizationWebsite after a settings save.
+  // Overwrites if: (a) input is empty, OR (b) input still equals the previous org website value
+  // so a manual edit by the user is never clobbered.
+  const prevOrgWebsiteRef = useRef(user?.organizationWebsite || '');
+  useEffect(() => {
+    const orgWebsite = user?.organizationWebsite || '';
+    if (orgWebsite && (websiteUrl === '' || websiteUrl === prevOrgWebsiteRef.current)) {
+      setWebsiteUrl(orgWebsite);
+    }
+    prevOrgWebsiteRef.current = orgWebsite;
+  }, [user?.organizationWebsite]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // =============================================================================
   // AUTHENTICATION GATES & PERMISSION CHECKS
   // =============================================================================
@@ -693,7 +706,7 @@ export const WorkflowModeProvider = ({ children }) => {
   
   // Navigation functions
   const navigateToNextStep = useCallback(() => {
-    // Allow advancing from audience step (e.g. "Choose your SEO strategy") even when not in workflow mode (forceWorkflowMode path)
+    // Allow advancing from audience step (e.g. "Choose your SEO strategy")
     const stepIndex = isWorkflowMode
       ? currentWorkflowStep
       : WORKFLOW_STEPS.findIndex((s) => s.tab === activeTab);

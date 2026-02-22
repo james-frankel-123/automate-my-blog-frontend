@@ -1,0 +1,27 @@
+.feature-tile {
+  transition: all 0.3s ease;
+}
+
+.feature-tile:hover {
+  box-shadow: var(--shadow-card);
+  transform: translateY(-2px);
+}
+
+.feature-tile.connected {
+  background: linear-gradient(to bottom right, var(--color-success-bg) 0%, var(--color-background-container) 100%);
+}
+
+.feature-tile.disconnected {
+  background: linear-gradient(to bottom right, var(--color-background-alt) 0%, var(--color-background-container) 100%);
+}
+
+/* Dark mode: same tokens apply (design-system overrides --color-success-bg, --color-background-*) */
+.dark-mode .feature-tile:hover {
+  box-shadow: var(--shadow-card);
+}
+
+.feature-tile .ant-card-body {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}

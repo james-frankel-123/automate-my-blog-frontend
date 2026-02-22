@@ -12,11 +12,14 @@ import AdminLinkBar from './components/AdminLinkBar/AdminLinkBar';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
+import CalendarTestbed from './components/CalendarTestbed/CalendarTestbed';
+import SandboxIndexPage from './components/SandboxIndexPage/SandboxIndexPage';
 import { OnboardingFunnelView } from './components/Onboarding';
 import SEOHead from './components/SEOHead';
 import { useWorkflowMode } from './contexts/WorkflowModeContext';
 import { storeReferralInfo } from './utils/referralUtils';
 import { notifyTabReady } from './utils/tabReadyAlert';
+import { PaymentCompletionHandler } from './components/Checkout/PaymentCompletionHandler';
 import './styles/design-system.css';
 import './styles/mobile.css';
 
@@ -220,17 +223,55 @@ const getAntdTheme = (isDark) => ({
 });
 
 const AppContent = () => {
-  const { user, loading, loginContext, isNewRegistration } = useAuth();
+  const { user, loading, loginContext, isNewRegistration, setNavContext } = useAuth();
   const { stepResults } = useWorkflowMode();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [, setActiveTab] = useState('newpost');
 
+  // Determine if user is returning based on account creation time
+  // If account is more than 5 minutes old, they're a returning user (not brand new)
+  // This handles both new registrations and existing users who just logged in
+  const ONBOARDING_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+  const isReturningUser = user && user.createdAt &&
+    (Date.now() - new Date(user.createdAt).getTime() > ONBOARDING_BUFFER_MS);
+
+  // Fallback: also check if they've completed workflow analysis (for existing sessions)
   const hasCompletedAnalysis =
     stepResults?.home?.analysisCompleted &&
     stepResults?.home?.websiteAnalysis?.businessName &&
     stepResults?.home?.websiteAnalysis?.targetAudience &&
     stepResults?.home?.websiteAnalysis?.contentFocus;
-  const isReturningUser = user && hasCompletedAnalysis;
+
+  // Final determination: returning user if either condition is true
+  const isTrulyReturningUser = isReturningUser || (user && hasCompletedAnalysis);
+
+  // Debug logging
+  React.useEffect(() => {
+    if (user) {
+      const p = typeof window !== 'undefined' ? window.location.pathname : '';
+      const fd = (p === '/dashboard' || p.startsWith('/settings/')) && !!user;
+      const stayInFunnel = isNewRegistration && typeof window !== 'undefined' && p !== '/dashboard';
+      const sf = p === '/onboarding' || (!user && !fd) || (user && stayInFunnel);
+      console.log('🔍 [App.js] Returning user check:', {
+        hasUser: !!user,
+        createdAt: user.createdAt,
+        accountAge: user.createdAt ? Date.now() - new Date(user.createdAt).getTime() : 'N/A',
+        bufferMs: ONBOARDING_BUFFER_MS,
+        isReturningUser,
+        hasCompletedAnalysis,
+        isTrulyReturningUser,
+        isNewRegistration,
+        pathname: p,
+        forceDashboard: fd,
+        showFunnel: sf
+      });
+    } else {
+      const p = typeof window !== 'undefined' ? window.location.pathname : '';
+      const fd = (p === '/dashboard' || p.startsWith('/settings/')) && !!user;
+      const sf = p === '/onboarding' || (!user && !fd);
+      console.log('🔍 [App.js] Logged-out user check:', { pathname: p, forceDashboard: fd, showFunnel: sf });
+    }
+  }, [user, isReturningUser, hasCompletedAnalysis, isTrulyReturningUser, isNewRegistration, ONBOARDING_BUFFER_MS]);
 
   // After registration from funnel: keep user in funnel so they stay in place and topic can start generating (don't switch to dashboard until funnel completes)
   const stayInFunnelAfterRegistration = isNewRegistration && typeof window !== 'undefined' && window.location.pathname !== '/dashboard';
@@ -249,6 +290,15 @@ const AppContent = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // When logged-in user sees dashboard, ensure loginContext is 'nav' so sidebar is visible
+  useEffect(() => {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    const isDashboardPath = pathname === '/' || pathname === '/dashboard' || pathname.startsWith('/settings/');
+    if (user && isDashboardPath && loginContext !== 'nav') {
+      setNavContext();
+    }
+  }, [user, loginContext, setNavContext]);
 
   // When auth loading finishes and user might be on another tab, alert in icon/title
   const prevLoadingRef = React.useRef(loading);
@@ -299,6 +349,15 @@ const AppContent = () => {
     );
   }
 
+  // Sandbox index — staging-only page with links to all testbeds/sandbox (shows "Not available" off staging)
+  if (typeof window !== 'undefined' && window.location.pathname === '/sandbox') {
+    return (
+      <SystemHintProvider>
+        <SandboxIndexPage />
+      </SystemHintProvider>
+    );
+  }
+
   // Visual testbed for streaming parser (dev/verification)
   if (typeof window !== 'undefined' && window.location.pathname === '/streaming-testbed') {
     return (
@@ -319,13 +378,26 @@ const AppContent = () => {
     );
   }
 
+  // Calendar testbed — dev/QA for 7-day content calendar states (live API + mock UIs)
+  if (typeof window !== 'undefined' && window.location.pathname === '/calendar-testbed') {
+    return (
+      <SystemHintProvider>
+        <SEOHead />
+        <CalendarTestbed />
+      </SystemHintProvider>
+    );
+  }
+
   // Guided onboarding funnel (Issue #261): show for first-time or logged-out users.
-  // Path /dashboard + logged in forces dashboard (for E2E and direct links).
-  // After registration from funnel, keep showing funnel so user stays in place and topic generation can start.
+  // Show onboarding funnel ONLY for: (1) explicit /onboarding path, (2) logged-out users (unless forcing dashboard),
+  // (3) brand-new registrations still in the funnel. Logged-in users on / always see dashboard, not funnel.
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-  const forceDashboard = pathname === '/dashboard' && user;
+  const isDashboardPath = pathname === '/dashboard' || pathname.startsWith('/settings/');
+  const forceDashboard = isDashboardPath && user;
   const showFunnel =
-    pathname === '/onboarding' || (!forceDashboard && !isReturningUser) || stayInFunnelAfterRegistration;
+    pathname === '/onboarding' ||
+    (!user && !forceDashboard) ||
+    (user && stayInFunnelAfterRegistration);
   if (showFunnel) {
     return (
       <SystemHintProvider>
@@ -344,7 +416,6 @@ const AppContent = () => {
         showDashboard={user && loginContext === 'nav'}
         isMobile={isMobile}
         onActiveTabChange={setActiveTab}
-        forceWorkflowMode={!user}
       />
     </SystemHintProvider>
   );
@@ -364,6 +435,7 @@ const App = () => {
             <AdminLinkBar />
             <WorkflowModeProvider>
               <AnalyticsProvider>
+                <PaymentCompletionHandler />
                 <AppContent />
               </AnalyticsProvider>
             </WorkflowModeProvider>

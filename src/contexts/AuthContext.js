@@ -209,7 +209,7 @@ export const AuthProvider = ({ children }) => {
     
     // Trigger session adoption to transfer anonymous data to user account
     try {
-      const sessionId = sessionStorage.getItem('audience_session_id');
+      const sessionId = localStorage.getItem('audience_session_id');
       if (sessionId) {
         console.log('🔄 Triggering session adoption after login...');
         
@@ -226,7 +226,7 @@ export const AuthProvider = ({ children }) => {
         console.log('✅ Analysis session adoption complete:', analysisAdoptionResult);
         
         // Clear session ID after successful adoption
-        sessionStorage.removeItem('audience_session_id');
+        localStorage.removeItem('audience_session_id');
       }
     } catch (error) {
       console.error('⚠️ Session adoption failed (non-critical):', error.message);
@@ -283,7 +283,7 @@ export const AuthProvider = ({ children }) => {
 
       // Trigger session adoption to transfer anonymous data to user account
       try {
-        const sessionId = sessionStorage.getItem('audience_session_id');
+        const sessionId = localStorage.getItem('audience_session_id');
         if (sessionId) {
           console.log('🔄 Triggering session adoption after registration...');
           
@@ -300,7 +300,7 @@ export const AuthProvider = ({ children }) => {
           console.log('✅ Analysis session adoption complete:', analysisAdoptionResult);
           
           // Clear session ID after successful adoption
-          sessionStorage.removeItem('audience_session_id');
+          localStorage.removeItem('audience_session_id');
         }
       } catch (error) {
         console.error('⚠️ Session adoption failed (non-critical):', error.message);
@@ -517,6 +517,25 @@ export const AuthProvider = ({ children }) => {
     impersonationData,
     startImpersonation,
     endImpersonation,
+    // Refresh user from backend (e.g. after profile/org update)
+    refreshUser: async () => {
+      sessionStorage.removeItem('auth_user_cache');
+      try {
+        const response = await autoBlogAPI.getCurrentUser();
+        setUser(response.user);
+        if (response.user?.organization) {
+          setCurrentOrganization(response.user.organization);
+        } else if (response.user?.organizationId) {
+          setCurrentOrganization({
+            id: response.user.organizationId,
+            name: response.user.organizationName,
+            role: response.user.organizationRole
+          });
+        }
+      } catch (e) {
+        console.error('refreshUser failed:', e);
+      }
+    },
   };
 
   return (

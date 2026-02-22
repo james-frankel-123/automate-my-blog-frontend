@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { Menu, Button, Avatar, Dropdown, message, Spin } from 'antd';
+import { Menu, Button, Avatar, Dropdown, Drawer, message, Spin } from 'antd';
 import api from '../../services/api';
 import {
   DashboardOutlined,
   FileTextOutlined,
   SettingOutlined,
+  SoundOutlined,
+  GoogleOutlined,
   UserOutlined,
   LogoutOutlined,
   EditOutlined,
@@ -16,16 +18,17 @@ import {
   CloseOutlined,
   PlusOutlined,
   BarChartOutlined,
+  MenuOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import { useAnalytics } from '../../contexts/AnalyticsContext';
 import DashboardTab from './DashboardTab';
-import PostsTab from './PostsTab';
-import AudienceSegmentsTab from './AudienceSegmentsTab';
 import SettingsTab from './SettingsTab';
+import VoiceAdaptationTab from '../VoiceAdaptation/VoiceAdaptationTab';
+import GoogleIntegrationsTab from '../Integrations/GoogleIntegrationsTab';
 import SandboxTab from './SandboxTab';
-import LoggedOutProgressHeader from './LoggedOutProgressHeader';
+import ReturningUserDashboard from './ReturningUserDashboard';
 import AuthModal from '../Auth/AuthModal';
 // ADMIN COMPONENTS - Super user only
 import AdminUsersTab from './AdminUsersTab';
@@ -54,12 +57,14 @@ const DashboardLayout = ({
   completedWorkflowSteps: _completedWorkflowSteps = [],
   stepResults: _propStepResults = {},
   onEditWorkflowStep: _onEditWorkflowStep,
-  // Force workflow mode for logged-out users
-  forceWorkflowMode = false,
   // When handed off from funnel (topic selected): land on Posts so generation can start
   initialActiveTab = null
 }) => {
-  const [activeTab, setActiveTab] = useState(initialActiveTab || 'dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (initialActiveTab) return initialActiveTab;
+    if (typeof window !== 'undefined' && window.location.pathname === '/settings/voice-adaptation') return 'voice-adaptation';
+    return 'dashboard';
+  });
   const {
     user: contextUser,
     logout,
@@ -69,7 +74,6 @@ const DashboardLayout = ({
     impersonationData,
     endImpersonation,
     isNewRegistration,
-    clearNewRegistration,
     loading
   } = useAuth();
   
@@ -91,20 +95,15 @@ const DashboardLayout = ({
   
   // Restore collapsed state (needed for sidebar)
   const [collapsed, _setCollapsed] = useState(false);
-  const [_hasSeenSaveProject, setHasSeenSaveProject] = useState(null);
+  // Mobile: hamburger drawer open state
+  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   
-  // Step management for logged-out users
-  const [currentStep, setCurrentStep] = useState(0);
-  const [completedSteps, setCompletedSteps] = useState([]);
-  const [visibleSections, setVisibleSections] = useState(['home']); // Start with only home visible
+  // ReturningUserDashboard state (hasStrategies/strategiesLoading used for future logic)
+  const [_hasStrategies, setHasStrategies] = useState(false);
+  const [_strategiesLoading, setStrategiesLoading] = useState(true);
   
-  // Dashboard visibility for workflow mode - start hidden in workflow mode  
-  const [showDashboardLocal, setShowDashboardLocal] = useState(false);
-  const [projectMode, setProjectMode] = useState(!user || forceWorkflowMode); // Start in project mode for logged-out users or when forced
-  const [showSaveProjectButton, setShowSaveProjectButton] = useState(false);
-  const [projectJustSaved, setProjectJustSaved] = useState(false);
-  // Show sidebar when user has dashboard access, or when they just registered from onboarding (stay in place, show menu)
-  const effectiveShowDashboard = (showDashboard || showDashboardLocal) || isNewRegistration;
+  // Show sidebar when user has dashboard access or is new registration
+  const effectiveShowDashboard = showDashboard || isNewRegistration;
 
   // Quota tracking state
   const [userCredits, setUserCredits] = useState(null);
@@ -131,6 +130,35 @@ const DashboardLayout = ({
 
   // Pricing modal state
   const [showPricingModal, setShowPricingModal] = useState(false);
+
+  // Check if user has strategies for ReturningUserDashboard
+  useEffect(() => {
+    async function checkStrategies() {
+      if (!user) {
+        setHasStrategies(false);
+        setStrategiesLoading(false);
+        return;
+      }
+
+      try {
+        console.log('🔍 DashboardLayout: Checking strategies...', { user: !!user });
+        const response = await api.getUserAudiences({ limit: 10 });
+        const strategies = response?.audiences || [];
+        console.log('✅ DashboardLayout: Strategies check result:', {
+          strategiesCount: strategies.length,
+          hasStrategies: strategies.length > 0
+        });
+        setHasStrategies(strategies.length > 0);
+      } catch (error) {
+        console.error('❌ DashboardLayout: Failed to check strategies:', error);
+        setHasStrategies(false);
+      } finally {
+        setStrategiesLoading(false);
+      }
+    }
+
+    checkStrategies();
+  }, [user, isNewRegistration]);
 
   // Fetch user quota (memoized to prevent infinite loops)
   const refreshQuota = useCallback(async () => {
@@ -253,31 +281,11 @@ const DashboardLayout = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- trackEvent from analytics context
   }, [user, loading, refreshQuota]); // Re-run when user or loading changes
 
-  // Check if user has seen Save Project button before and handle login/registration
-  useEffect(() => {
-    if (user) {
-      const savedState = localStorage.getItem(`hasSeenSaveProject_${user.id}`);
-      const hasSeenBefore = savedState === 'true';
-      setHasSeenSaveProject(hasSeenBefore);
-      
-      if (isNewRegistration && !hasSeenBefore) {
-        // New user just completed registration - keep in workflow mode
-        setProjectMode(true);
-        setShowSaveProjectButton(true);
-        // Show sidebar immediately so user stays in place and sees navigation (per onboarding UX)
-        setShowDashboardLocal(true);
-      } else {
-        // Returning user logging in - go directly to focus mode
-        setProjectMode(false);
-        setShowDashboardLocal(true); // Show sidebar immediately for returning users
-      }
-    }
-  }, [user, isNewRegistration]);
   
   // Add intersection observer for scroll-based menu highlighting
   useEffect(() => {
     // Only set up observer if we're in the scrollable sections view (not settings/admin tabs)
-    if (!user || activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
+    if (!user || activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox') {
       return;
     }
 
@@ -376,7 +384,7 @@ const DashboardLayout = ({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTab excluded to prevent feedback loop
-  }, [user, onActiveTabChange, projectMode, showDashboardLocal]); // Note: activeTab excluded to prevent feedback loop (observer sets activeTab → useEffect restarts → observer resets)
+  }, [user, onActiveTabChange]); // Note: activeTab excluded to prevent feedback loop (observer sets activeTab → useEffect restarts → observer resets)
 
   // After registration from onboarding: stay in place, slight autoscroll to show blog generation area
   const hasScrolledForNewRegistrationRef = useRef(false);
@@ -384,7 +392,7 @@ const DashboardLayout = ({
     if (!user || !isNewRegistration || hasScrolledForNewRegistrationRef.current) return;
     hasScrolledForNewRegistrationRef.current = true;
     const scrollToContent = () => {
-      const postsSection = document.getElementById('posts');
+      const postsSection = document.getElementById('dashboard-posts');
       const audienceSection = document.getElementById('audience-segments');
       if (postsSection) {
         setActiveTab('posts');
@@ -413,9 +421,15 @@ const DashboardLayout = ({
       user: user?.id 
     });
     
-    // For settings, switch to settings tab (not part of scrollable sections)
-    if (newTab === 'settings' || newTab.startsWith('admin-')) {
+    // For settings, voice adaptation, google integrations, and admin tabs: switch tab (not part of scrollable sections)
+    if (newTab === 'settings' || newTab === 'voice-adaptation' || newTab === 'google-integrations' || newTab.startsWith('admin-')) {
       setActiveTab(newTab);
+      if (newTab === 'voice-adaptation' && typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/settings/voice-adaptation');
+      }
+      if (newTab === 'google-integrations' && typeof window !== 'undefined') {
+        window.history.replaceState({}, '', '/settings/google-integrations');
+      }
       if (onActiveTabChange) {
         onActiveTabChange(newTab);
       }
@@ -423,10 +437,14 @@ const DashboardLayout = ({
     }
 
     // For main sections, scroll to section instead of switching tabs
+    // Posts lives inside Audience (#dashboard-posts); no standalone section#posts
     let sectionId;
     switch (newTab) {
       case 'dashboard':
         sectionId = 'home';
+        break;
+      case 'posts':
+        sectionId = 'dashboard-posts';
         break;
       default:
         sectionId = newTab;
@@ -482,14 +500,7 @@ const DashboardLayout = ({
     }
   };
   
-  // Step management functions for logged-out workflow progression
-  const completeStep = (stepIndex) => {
-    if (!completedSteps.includes(stepIndex)) {
-      setCompletedSteps(prev => [...prev, stepIndex]);
-    }
-  };
-
-  // Scroll to section with retries so we don't scroll before React has mounted the section (e.g. after adding to visibleSections)
+  // Scroll to section with retries so we don't scroll before React has mounted the section
   const scrollToSectionWhenReady = (sectionId, delaysMs = [50, 150, 300, 500]) => {
     let scrolled = false;
     const tryScroll = () => {
@@ -503,68 +514,26 @@ const DashboardLayout = ({
     delaysMs.forEach((delay) => setTimeout(tryScroll, delay));
   };
 
-  const advanceToNextStep = () => {
-    const nextStep = currentStep + 1;
-    if (nextStep <= 4) { // Max 5 steps (0-4)
-      setCurrentStep(nextStep);
-      
-      // Make next section visible
-      const sectionMap = ['home', 'audience-segments', 'posts', 'posts', 'posts']; // Step 2-4 all use posts section for different phases
-      const nextSection = sectionMap[nextStep];
-      
-      if (!visibleSections.includes(nextSection)) {
-        setVisibleSections(prev => [...prev, nextSection]);
-      }
-      
-      // Complete current step
-      completeStep(currentStep);
-      
-      // Scroll to next section when it's in the DOM (retry so we don't run before React has mounted it)
-      scrollToSectionWhenReady(nextSection);
-    }
-  };
-
   // When handed off from funnel with initialActiveTab, scroll to that section once mounted
   useEffect(() => {
     if (initialActiveTab && initialActiveTab !== 'dashboard') {
-      const sectionId = initialActiveTab === 'posts' ? 'posts' : initialActiveTab === 'audience-segments' ? 'audience-segments' : 'home';
+      const sectionId = initialActiveTab === 'posts' ? 'dashboard-posts' : initialActiveTab === 'audience-segments' ? 'audience-segments' : 'home';
       scrollToSectionWhenReady(sectionId);
     }
   }, [initialActiveTab]);
 
-  const handleStepClick = (stepIndex) => {
-    // Only allow navigation to completed steps or current step
-    if (completedSteps.includes(stepIndex) || stepIndex === currentStep) {
-      setCurrentStep(stepIndex);
-      
-      const sectionMap = ['home', 'audience-segments', 'posts', 'posts', 'posts'];
-      const targetSection = sectionMap[stepIndex];
-      
-      const section = document.getElementById(targetSection);
-      if (section) {
-        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }
-  };
-
-
-  // Base menu items available to all users
+  // Base menu items: Home, Audience, Posts (always for logged-in users)
   const baseMenuItems = [
-    {
-      key: 'dashboard',
-      icon: <DashboardOutlined />,
-      label: 'Home',
-    },
-    {
-      key: 'audience-segments',
-      icon: <TeamOutlined />,
-      label: 'Audience',
-    },
-    {
-      key: 'posts',
-      icon: <FileTextOutlined />,
-      label: 'Posts',
-    },
+    { key: 'dashboard', icon: <DashboardOutlined />, label: 'Home' },
+    { key: 'audience-segments', icon: <TeamOutlined />, label: 'Audience' },
+    { key: 'posts', icon: <FileTextOutlined />, label: 'Posts' },
+  ];
+
+  // Settings / account items in left nav (moved from user dropdown)
+  const settingsNavItems = [
+    { key: 'settings', icon: <SettingOutlined />, label: 'Settings' },
+    { key: 'voice-adaptation', icon: <SoundOutlined />, label: 'Voice adaptation' },
+    { key: 'google-integrations', icon: <GoogleOutlined />, label: 'Google integrations' },
   ];
 
   // Admin menu items - conditionally added based on permissions
@@ -625,19 +594,13 @@ const DashboardLayout = ({
     });
   }
 
-  const menuItems = [...baseMenuItems, ...adminMenuItems];
+  const menuItems = [...baseMenuItems, ...settingsNavItems, ...adminMenuItems];
 
   const userMenuItems = [
     {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profile',
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-      onClick: () => handleTabChange('settings'),
     },
     {
       type: 'divider',
@@ -652,10 +615,14 @@ const DashboardLayout = ({
 
   const renderContent = () => {
     // Special tabs that don't use scrollable layout
-    if (activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
+    if (activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' || activeTab === 'comprehensive-analysis' || activeTab === 'user-analytics') {
       switch (activeTab) {
         case 'settings':
           return <SettingsTab />;
+        case 'voice-adaptation':
+          return <VoiceAdaptationTab />;
+        case 'google-integrations':
+          return <GoogleIntegrationsTab />;
         case 'comprehensive-analysis':
           return <ComprehensiveAnalysisTab />;
         case 'admin-users':
@@ -673,112 +640,57 @@ const DashboardLayout = ({
         case 'sandbox':
           return <SandboxTab />;
         default:
-          return <DashboardTab />;
+          return <DashboardTab onNavigateToTab={(tab) => setActiveTab(tab)} />;
       }
     }
 
-    // Main scrollable layout with all sections
+    // Tab-based layout (logged-in only): Home, Audience (carousel + posts), optional standalone Posts when in workflow
     return (
       <div style={{ padding: 0 }}>
-
-        {/* Home Section (formerly Dashboard) - Always visible */}
-        {(user || visibleSections.includes('home')) && (
-          <section id="home" style={{ 
-            minHeight: '100vh',
-            background: 'var(--color-background-body)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-6)',
-            marginBottom: 'var(--space-6)'
-          }}>
-            <DashboardTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)} 
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-              showSaveProjectButton={showSaveProjectButton}
-              isNewRegistration={isNewRegistration}
-              onSaveProject={null} // Save Project button is now in the header
-              projectJustSaved={projectJustSaved}
-              onCreateNewPost={() => {
-                // Enter project mode and start workflow
-                if (user && !projectMode) {
-                  setProjectMode(true);
-                }
-                
-                // Check if website analysis is completed
-                const isAnalysisCompleted = stepResults.home?.analysisCompleted;
-                
-                setTimeout(() => {
-                  if (!isAnalysisCompleted) {
-                    // Navigate to Home section for analysis first
-                    const homeSection = document.getElementById('home');
-                    if (homeSection) {
-                      homeSection.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                      });
+        {user && (
+          <>
+            <section id="home" style={{
+              minHeight: '100vh',
+              background: 'var(--color-background-body)',
+              borderRadius: 'var(--radius-md)',
+              padding: 'var(--space-6)',
+              marginBottom: 'var(--space-6)'
+            }}>
+              <DashboardTab
+                isNewRegistration={isNewRegistration}
+                onNavigateToTab={(tab) => setActiveTab(tab)}
+                onCreateNewPost={() => {
+                  const isAnalysisCompleted = stepResults.home?.analysisCompleted;
+                  setTimeout(() => {
+                    if (!isAnalysisCompleted) {
+                      document.getElementById('home')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
+                      message.success('Complete website analysis first, then select your audience');
+                    } else {
+                      document.getElementById('audience-segments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
+                      message.success('Starting guided creation project');
                     }
-                    setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
-                    message.success('Complete website analysis first, then select your audience');
-                  } else {
-                    // Navigate to audience section (normal flow)
-                    const audienceSection = document.getElementById('audience-segments');
-                    if (audienceSection) {
-                      audienceSection.scrollIntoView({ 
-                        behavior: 'smooth', 
-                        block: 'start' 
-                      });
-                    }
-                    setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
-                    message.success('Starting guided creation project');
-                  }
-                }, 100);
-              }}
-            />
-          </section>
-        )}
+                  }, 100);
+                }}
+              />
+            </section>
 
-        {/* Audience Section - Unlocked after step 1 (light motion) */}
-        {((!user && visibleSections.includes('audience-segments')) || (user && (!projectMode || stepResults.home.analysisCompleted))) && (
-          <section id="audience-segments" className="workflow-section-enter" style={{ 
-            minHeight: '100vh',
-            background: 'var(--color-background-body)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-6)',
-            marginBottom: 'var(--space-6)'
-          }}>
-            <AudienceSegmentsTab 
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-            />
-          </section>
-        )}
-
-        {/* Posts Section - Unlocked after step 2, or for new registrations from onboarding (have analysis) */}
-        {((!user && visibleSections.includes('posts')) || (user && (!projectMode || stepResults.audience?.customerStrategy || (isNewRegistration && stepResults.home?.analysisCompleted)))) && (
-          <section id="posts" className="workflow-section-enter" style={{ 
-            minHeight: '100vh',
-            background: 'var(--color-background-body)',
-            borderRadius: 'var(--radius-md)',
-            padding: 'var(--space-6)',
-            marginBottom: 'var(--space-6)'
-          }}>
-            <PostsTab
-              forceWorkflowMode={forceWorkflowMode || (user && projectMode)}
-              currentStep={!user && forceWorkflowMode ? currentStep : undefined}
-              onNextStep={!user && forceWorkflowMode ? advanceToNextStep : undefined}
-              onEnterProjectMode={user && !projectMode ? () => setProjectMode(true) : undefined}
-              onQuotaUpdate={refreshQuota}
-              onOpenPricingModal={() => setShowPricingModal(true)}
-            />
-          </section>
+            <section id="audience-segments" className="workflow-section-enter" style={{
+              minHeight: '100vh',
+              background: 'var(--color-background-body)',
+              marginBottom: 'var(--space-6)'
+            }}>
+              <ReturningUserDashboard
+                onQuotaUpdate={refreshQuota}
+                onOpenPricingModal={() => setShowPricingModal(true)}
+              />
+            </section>
+          </>
         )}
       </div>
     );
   };
-
-  /** When true, LoggedOutProgressHeader is rendered; content area and FABs must use padding/position to sit below it. */
-  const showLoggedOutProgressHeader = (!user && forceWorkflowMode) || (user && isNewRegistration && projectMode);
 
   return (
     <>
@@ -793,49 +705,6 @@ const DashboardLayout = ({
           }
         }
       `}</style>
-      
-      {/* Progress Header for Logged-Out Users and New Registrations */}
-      {showLoggedOutProgressHeader ? (
-        <LoggedOutProgressHeader
-          currentStep={currentStep}
-          completedSteps={completedSteps}
-          onStepClick={handleStepClick}
-          showAuthModal={showAuthModal}
-          setShowAuthModal={setShowAuthModal}
-          authContext={authContext}
-          setAuthContext={setAuthContext}
-          user={user}
-          isNewRegistration={isNewRegistration}
-          showSaveProjectButton={showSaveProjectButton}
-          onSaveProject={() => {
-            // Scroll to top with smooth animation
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // Set project just saved state
-            setProjectJustSaved(true);
-            
-            // Apply state changes
-            setShowDashboardLocal(true);
-            setShowSaveProjectButton(false);
-            setHasSeenSaveProject(true);
-            setProjectMode(false); // Exit project mode when saving
-            
-            // Clear registration flag since user has now saved their project
-            clearNewRegistration();
-            
-            // Save to localStorage so user never sees this button again
-            if (user) {
-              localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
-            }
-            
-            // Clear "just saved" state after 10 seconds
-            setTimeout(() => setProjectJustSaved(false), 10000);
-            
-            setHint(systemVoice.hint.savedProgress, 'success', 5000);
-            message.success('Project saved! Dashboard is now available via sidebar.');
-          }}
-        />
-      ) : null}
 
       {/* One consistent slot for hints */}
       <SystemHint />
@@ -945,86 +814,61 @@ const DashboardLayout = ({
         </div>
       )}
 
-      {/* Mobile Navigation - only shows on mobile; touch-friendly 44px targets */}
+      {/* Mobile: hamburger menu drawer (replaces bottom nav to accommodate all items) */}
       {user && isMobile && (
-        <div
-          data-mobile-bottom-nav
-          className="mobile-bottom-nav"
-          style={{
-            position: 'fixed',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            background: 'var(--color-background-body)',
-            borderTop: '1px solid var(--color-border-base)',
-            padding: '12px 8px max(12px, env(safe-area-inset-bottom))',
-            zIndex: 20,
-            display: 'flex',
-            justifyContent: 'space-around',
-            alignItems: 'center',
-            boxShadow: 'var(--shadow-sm)',
-            minHeight: '56px'
-          }}
+        <Drawer
+          title={null}
+          placement="left"
+          open={mobileDrawerOpen}
+          onClose={() => setMobileDrawerOpen(false)}
+          width={280}
+          bodyStyle={{ padding: 0, display: 'flex', flexDirection: 'column', height: '100%' }}
+          headerStyle={{ borderBottom: '1px solid var(--color-border-base)' }}
+          styles={{ body: { flex: 1, overflow: 'auto' } }}
         >
-          {menuItems.slice(0, 6).map((item) => (
-            <Button
-              key={item.key}
-              type={activeTab === item.key ? 'primary' : 'text'}
-              icon={item.icon}
-              onClick={() => handleTabChange(item.key)}
-              style={{
-                border: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 'auto',
-                padding: '10px 6px',
-                fontSize: '11px',
-                minWidth: '56px',
-                minHeight: '44px',
-                gap: 4
+          <div style={{ padding: 'var(--space-4)', borderBottom: '1px solid var(--color-border-base)' }}>
+            <h3 style={{ margin: 0, fontSize: 'var(--font-size-lg)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text-primary)' }}>
+              Automate My Blog
+            </h3>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            <Menu
+              mode="inline"
+              selectedKeys={[activeTab]}
+              items={menuItems}
+              onClick={({ key }) => {
+                handleTabChange(key);
+                setMobileDrawerOpen(false);
               }}
-            >
-              {item.label}
-            </Button>
-          ))}
-          
-          {/* User Menu for Mobile */}
-          <Dropdown
-            menu={{ items: userMenuItems }}
-            trigger={['click']}
-            placement="topRight"
-          >
+              style={{ border: 'none', padding: 'var(--space-2) 0' }}
+            />
+          </div>
+          <div style={{
+            borderTop: '1px solid var(--color-border-base)',
+            padding: 'var(--space-4)',
+            background: 'var(--color-background-body)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <Avatar icon={<UserOutlined />} style={{ backgroundColor: 'var(--color-primary)' }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.firstName} {user?.lastName}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user?.email}
+                </div>
+              </div>
+            </div>
             <Button
               type="text"
-              style={{
-                border: 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 'auto',
-                padding: '10px 6px',
-                fontSize: '11px',
-                minWidth: '56px',
-                minHeight: '44px'
-              }}
+              icon={<LogoutOutlined />}
+              onClick={() => { setMobileDrawerOpen(false); logout(); }}
+              style={{ width: '100%', justifyContent: 'flex-start' }}
             >
-              <Avatar 
-                icon={<UserOutlined />} 
-                style={{ 
-                  backgroundColor: 'var(--color-primary)',
-                  width: '24px',
-                  height: '24px',
-                  fontSize: '12px',
-                  marginBottom: '4px'
-                }}
-              />
-              <span style={{ fontSize: '11px' }}>Profile</span>
+              Logout
             </Button>
-          </Dropdown>
-        </div>
+          </div>
+        </Drawer>
       )}
 
 
@@ -1032,34 +876,52 @@ const DashboardLayout = ({
         {(() => {
           return (
         <div
-          className={showLoggedOutProgressHeader ? 'dashboard-content-below-fixed-header' : undefined}
+          className={undefined}
           style={{
-            padding: isMobile ? 'var(--space-4) var(--space-4) calc(80px + env(safe-area-inset-bottom, 0px)) var(--space-4)' : 'var(--space-6)',
+            padding: isMobile ? 'var(--space-4)' : 'var(--space-6)',
             background: 'var(--color-gray-50)',
             overflow: 'auto',
-            ...(showLoggedOutProgressHeader ? {} : { paddingTop: '24px' }),
-            // So ThinkingPanel sticks above mobile bottom nav when present
-            '--thinking-panel-sticky-bottom': isMobile ? '56px' : '0',
+            paddingTop: 'var(--space-6)',
+            '--thinking-panel-sticky-bottom': '0',
           }}
         >
           {/* Floating Action Buttons - below LoggedOutProgressHeader when it is visible (mobile + desktop) */}
           {user && (
           <div
-            className={showLoggedOutProgressHeader ? 'dashboard-fabs-below-fixed-header' : undefined}
+            className={undefined}
             style={{
             position: 'fixed',
-            top: showLoggedOutProgressHeader
-              ? (isMobile ? 'calc(56px + env(safe-area-inset-top, 0px) + 12px)' : 'calc(88px + env(safe-area-inset-top, 0px) + 12px)')
-              : (isMobile ? '16px' : '29px'),
+            top: isMobile ? '16px' : '29px',
             right: isMobile ? '12px' : '29px',
             left: isMobile ? '12px' : undefined,
             zIndex: 999,
             display: 'flex',
             flexWrap: isMobile ? 'wrap' : 'nowrap',
             alignItems: 'center',
-            justifyContent: isMobile ? 'flex-end' : undefined,
-            gap: isMobile ? 8 : 12
+            justifyContent: isMobile ? 'space-between' : undefined,
+            gap: isMobile ? 'var(--space-2)' : 'var(--space-3)'
           }}>
+            {/* Mobile: hamburger to open nav drawer */}
+            {isMobile && (
+              <Button
+                type="text"
+                icon={<MenuOutlined style={{ fontSize: 20 }} />}
+                onClick={() => setMobileDrawerOpen(true)}
+                style={{
+                  background: 'var(--color-background-body)',
+                  padding: 'var(--space-2)',
+                  borderRadius: 'var(--radius-lg)',
+                  boxShadow: 'var(--shadow-md)',
+                  border: '2px solid var(--color-border-base)',
+                  minWidth: 44,
+                  minHeight: 44,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+                aria-label="Open menu"
+              />
+            )}
             {/* Theme Toggle */}
             <div style={{
               background: 'var(--color-background-body)',
@@ -1161,118 +1023,45 @@ const DashboardLayout = ({
                 </Button>
               )}
 
-              {/* Create New Post Button - Show when NOT in project mode */}
-              {!projectMode && (
-                <Button 
-                  type="primary"
-                  size="large"
-                  icon={<PlusOutlined style={{ fontSize: '16px' }} />}
-                  onClick={() => {
-                    // Enter project mode and start workflow
-                    setProjectMode(true);
-                    
-                    // Check if website analysis is completed
-                    const isAnalysisCompleted = stepResults.home?.analysisCompleted;
-                    
-                    setTimeout(() => {
-                      if (!isAnalysisCompleted) {
-                        // Navigate to Home section for analysis first
-                        const homeSection = document.getElementById('home');
-                        if (homeSection) {
-                          homeSection.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start' 
-                          });
-                        }
-                        setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
-                        message.success('Complete website analysis first, then select your audience');
-                      } else {
-                        // Navigate to audience section (normal flow)
-                        const audienceSection = document.getElementById('audience-segments');
-                        if (audienceSection) {
-                          audienceSection.scrollIntoView({ 
-                            behavior: 'smooth', 
-                            block: 'start' 
-                          });
-                        }
-                        setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
-                        message.success('Starting guided creation project');
-                      }
-                    }, 100);
-                  }}
-                  style={{
-                    backgroundColor: 'var(--color-primary)',
-                    borderColor: 'var(--color-primary)',
-                    fontWeight: 'var(--font-weight-semibold)',
-                    boxShadow: 'none',
-                    border: '2px solid var(--color-primary)',
-                    marginRight: projectMode ? '0' : '0' // No margin when alone
-                  }}
-                >
-                  Create New Post
-                </Button>
-              )}
-              
-              {/* Exit Project Button - Show when in project mode */}
-              {projectMode && (
-                showSaveProjectButton ? (
-                  <Button
-                    type="primary"
-                    onClick={() => {
-                      setShowDashboardLocal(true);
-                      setShowSaveProjectButton(false);
-                      setHasSeenSaveProject(true);
-                      setProjectMode(false); // Exit project mode when saving
-
-                      // Clear registration flag since user has now saved their project
-                      clearNewRegistration();
-
-                      // Save to localStorage so user never sees this button again
-                      if (user) {
-                        localStorage.setItem(`hasSeenSaveProject_${user.id}`, 'true');
-                      }
-                      message.success('Project saved! Dashboard is now available via sidebar.');
-                    }}
-                    style={{
-                      backgroundColor: 'var(--color-success)',
-                      borderColor: 'var(--color-success)',
-                      fontWeight: 600
-                    }}
-                  >
-                    💾 Save Project
-                  </Button>
-                ) : (
-                  <Button
-                    type="primary"
-                    danger
-                    size="large"
-                    onClick={() => {
-                      setProjectMode(false);
-                      message.success('Exited project mode. Full dashboard now available.');
-                    }}
-                    style={{
-                      backgroundColor: 'var(--color-error)',
-                      borderColor: 'var(--color-error)',
-                      color: 'var(--color-text-on-primary)',
-                      fontWeight: 600,
-                      boxShadow: 'none',
-                      border: '2px solid var(--color-error)'
-                    }}
-                  >
-                    🚪 Exit Project Mode
-                  </Button>
-                )
-              )}
+              {/* Create New Post Button */}
+              <Button
+                type="primary"
+                size="large"
+                icon={<PlusOutlined style={{ fontSize: '16px' }} />}
+                onClick={() => {
+                  const isAnalysisCompleted = stepResults.home?.analysisCompleted;
+                  setTimeout(() => {
+                    if (!isAnalysisCompleted) {
+                      document.getElementById('home')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setHint('Complete website analysis first, then select your audience.', 'hint', 6000);
+                      message.success('Complete website analysis first, then select your audience');
+                    } else {
+                      document.getElementById('audience-segments')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      setHint(systemVoice.hint.chooseAudienceNext, 'success', 5000);
+                      message.success('Starting guided creation project');
+                    }
+                  }, 100);
+                }}
+                style={{
+                  backgroundColor: 'var(--color-primary)',
+                  borderColor: 'var(--color-primary)',
+                  fontWeight: 'var(--font-weight-semibold)',
+                  boxShadow: 'none',
+                  border: '2px solid var(--color-primary)'
+                }}
+              >
+                Create New Post
+              </Button>
               </>
             )
           </div>
           )}
 
           <div style={{
-            background: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
-            borderRadius: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
+            background: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--color-background-body)' : 'transparent',
+            borderRadius: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--radius-lg)' : '0',
             minHeight: '100%',
-            padding: activeTab === 'settings' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
+            padding: activeTab === 'settings' || activeTab === 'voice-adaptation' || activeTab === 'google-integrations' || activeTab.startsWith('admin-') || activeTab === 'sandbox' ? 'var(--space-6)' : '0'
           }}>
             {renderContent()}
           </div>
@@ -1366,7 +1155,7 @@ const DashboardLayout = ({
             setShowAuthModal(false);
             setAuthContext(null);
             setActiveTab('posts');
-            scrollToSectionWhenReady('posts');
+            scrollToSectionWhenReady('dashboard-posts');
           }}
         />
       )}

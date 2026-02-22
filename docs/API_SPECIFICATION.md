@@ -494,6 +494,18 @@ Content-Type: application/json
 }
 ```
 
+## 📅 Content Calendar (30-day)
+
+When users subscribe to a strategy, the backend generates a 30-day content calendar (blog post ideas). All endpoints require **JWT** (`Authorization: Bearer <token>`). Full request/response shapes and frontend behavior are in [docs/CONTENT_CALENDAR_FRONTEND_HANDOFF.md](CONTENT_CALENDAR_FRONTEND_HANDOFF.md).
+
+| Purpose | Method | Endpoint |
+|--------|--------|----------|
+| All subscribed strategies + calendars | GET | `/api/v1/strategies/content-calendar` |
+| Single strategy/audience (by ID) | GET | `/api/v1/audiences/:id` |
+| List audiences (+ `has_content_calendar`) | GET | `/api/v1/audiences` |
+
+- **401** if not authenticated. **404** if audience/strategy not found.
+
 ## 🚨 Error Handling
 
 ### Standard Error Response Format

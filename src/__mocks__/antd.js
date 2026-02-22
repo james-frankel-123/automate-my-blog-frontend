@@ -90,14 +90,32 @@ export const Space = ({ children, direction, size, ...props }) => (
   </div>
 );
 
+export const Tag = ({ children, color, icon, ...props }) => (
+  <span data-testid="tag" data-color={color} {...props}>
+    {icon}
+    {children}
+  </span>
+);
+
 export const Typography = {
-  Text: ({ children, type, ...props }) => <span data-testid="text" {...props}>{children}</span>,
+  Text: ({ children, type, strong, ...props }) => <span data-testid="text" {...props}>{children}</span>,
   Title: ({ children, level, ...props }) => {
     const Tag = `h${level || 1}`;
     return <Tag data-testid="title" {...props}>{children}</Tag>;
   },
   Paragraph: ({ children, ...props }) => <p data-testid="paragraph" {...props}>{children}</p>,
   Link: ({ children, ...props }) => <a data-testid="link" {...props}>{children}</a>,
+};
+
+export const Drawer = ({ open, onClose, children, title, placement, width, bodyStyle, headerStyle, styles, ...props }) => {
+  if (!open) return null;
+  return (
+    <div data-testid="drawer" data-placement={placement} style={{ width: width || 280 }} {...props}>
+      {title != null && <div data-testid="drawer-title">{title}</div>}
+      <button data-testid="drawer-close" onClick={onClose} type="button">Close</button>
+      <div data-testid="drawer-body" style={bodyStyle}>{children}</div>
+    </div>
+  );
 };
 
 export const Modal = ({ open, visible, children, onCancel, onOk, title, footer, ...props }) => {
@@ -210,7 +228,7 @@ export const Skeleton = ({ active, paragraph, title, children, ...props }) => (
   </div>
 );
 
-export const Card = ({ children, title, extra, ...props }) => (
+export const Card = ({ children, title, extra, bodyStyle, ...props }) => (
   <div data-testid="card" {...props}>
     {title && <div data-testid="card-title">{title}</div>}
     {extra && <div data-testid="card-extra">{extra}</div>}
@@ -368,7 +386,9 @@ export default {
   Form,
   Alert,
   Space,
+  Tag,
   Typography,
+  Drawer,
   Modal,
   Tabs,
   Menu,

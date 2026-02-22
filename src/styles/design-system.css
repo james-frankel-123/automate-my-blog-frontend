@@ -1131,11 +1131,13 @@ body {
 }
 
 /* Content preview: blockquotes and titles (headings) in dark mode */
-.dark-mode blockquote {
+.dark-mode blockquote,
+.dark-mode .html-preview-container blockquote {
   color: var(--color-text-secondary);
   background-color: var(--color-background-elevated);
   border-left-color: var(--color-primary);
   border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 }
 
 /* HTMLPreview: markdown tweet card, placeholder, related badges – dark mode */

@@ -170,18 +170,20 @@ class JobsAPI {
   /**
    * Build SSE stream URL for job. EventSource does not send headers; token in query.
    * @param {string} jobId
+   * @param {string|null} [sessionId] - Explicit session ID to use (preferred over storage reads).
+   *   Pass the same sessionId used to create the job so the ownership check always matches.
    * @returns {string}
    */
-  getJobStreamUrl(jobId) {
+  getJobStreamUrl(jobId, sessionId = null) {
     const path = `/api/v1/jobs/${encodeURIComponent(jobId)}/stream`;
     const url = `${this.baseURL}${path}`;
     const token = localStorage.getItem('accessToken');
     if (token) {
       return `${url}?token=${encodeURIComponent(token)}`;
     }
-    const sessionId = sessionStorage.getItem('audience_session_id');
-    if (sessionId) {
-      return `${url}?sessionId=${encodeURIComponent(sessionId)}`;
+    const sid = sessionId || sessionStorage.getItem('audience_session_id');
+    if (sid) {
+      return `${url}?sessionId=${encodeURIComponent(sid)}`;
     }
     return url;
   }
@@ -190,18 +192,19 @@ class JobsAPI {
    * Build SSE URL for narrative stream (Issue #157). Separate endpoint from job stream.
    * GET /api/v1/jobs/:jobId/narrative-stream - conversational scraping/analysis narrative.
    * @param {string} jobId
+   * @param {string|null} [sessionId] - Explicit session ID to use (preferred over storage reads).
    * @returns {string}
    */
-  getNarrativeStreamUrl(jobId) {
+  getNarrativeStreamUrl(jobId, sessionId = null) {
     const path = `/api/v1/jobs/${encodeURIComponent(jobId)}/narrative-stream`;
     const url = `${this.baseURL}${path}`;
     const token = localStorage.getItem('accessToken');
     if (token) {
       return `${url}?token=${encodeURIComponent(token)}`;
     }
-    const sessionId = sessionStorage.getItem('audience_session_id');
-    if (sessionId) {
-      return `${url}?sessionId=${encodeURIComponent(sessionId)}`;
+    const sid = sessionId || sessionStorage.getItem('audience_session_id');
+    if (sid) {
+      return `${url}?sessionId=${encodeURIComponent(sid)}`;
     }
     return url;
   }
@@ -217,7 +220,7 @@ class JobsAPI {
    */
   connectToNarrativeStream(jobId, handlers = {}, options = {}) {
     return new Promise((resolve) => {
-      const url = this.getNarrativeStreamUrl(jobId);
+      const url = this.getNarrativeStreamUrl(jobId, options.sessionId ?? null);
       const eventSource = new EventSource(url);
       let settled = false;
 
@@ -318,7 +321,7 @@ class JobsAPI {
     const streamTimeoutMs = options.streamTimeoutMs ?? DEFAULT_STREAM_TIMEOUT_MS;
 
     return new Promise((resolve, reject) => {
-      const url = this.getJobStreamUrl(jobId);
+      const url = this.getJobStreamUrl(jobId, options.sessionId ?? null);
       let eventSource = null;
       let settled = false;
       let reconnectAttempt = 0;

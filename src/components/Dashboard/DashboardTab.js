@@ -1,17 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Button, Typography } from 'antd';
+import { Card, Row, Col, Button, Typography, message } from 'antd';
+import {
+  RiseOutlined,
+  SearchOutlined,
+  BarChartOutlined,
+  CalendarOutlined,
+  SoundOutlined
+} from '@ant-design/icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTabMode } from '../../hooks/useTabMode';
 import { useWorkflowMode } from '../../contexts/WorkflowModeContext';
 import WebsiteAnalysisStepStandalone from '../Workflow/steps/WebsiteAnalysisStepStandalone';
 import UnifiedWorkflowHeader from './UnifiedWorkflowHeader';
+import FeatureTile from './FeatureTile';
+import MiniCalendarWidget from './MiniCalendarWidget';
 import autoBlogAPI from '../../services/api';
 import { systemVoice } from '../../copy/systemVoice';
 
 const { Text, Paragraph } = Typography;
 
 
-const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMode, showSaveProjectButton = false, onSaveProject, isNewRegistration = false, projectJustSaved = false, onCreateNewPost }) => {
+const DashboardTab = ({ onNextStep, isNewRegistration = false, onCreateNewPost, onNavigateToTab }) => {
   const { user } = useAuth();
   const tabMode = useTabMode('dashboard');
   const {
@@ -38,6 +47,14 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   const [textAnimationComplete, setTextAnimationComplete] = useState(false);
   const [inputIsEditing, setInputIsEditing] = useState(true); // Track input editing state for header fade
 
+  // Feature dashboard state (for focus mode)
+  const [integrations, setIntegrations] = useState({
+    trends: { connected: false, summary: '', loading: true },
+    searchConsole: { connected: false, summary: '', loading: true },
+    analytics: { connected: false, summary: '', loading: true },
+    voice: { connected: false, summary: '', loading: true, samplesCount: 0 }
+  });
+
   // Load cached analysis for logged-in users
   useEffect(() => {
     
@@ -50,7 +67,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
       // Analysis state check
       
       // Load for authenticated users who don't have complete analysis data
-      if (user && !forceWorkflowMode && tabMode.mode === 'focus' && !hasValidAnalysisData) {
+      if (user && tabMode.mode === 'focus' && !hasValidAnalysisData) {
         try {
           const response = await autoBlogAPI.getRecentAnalysis();
           
@@ -84,7 +101,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
 
     loadCachedAnalysis();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional; many workflow setters used inside
-  }, [user, tabMode.mode, forceWorkflowMode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
+  }, [user, tabMode.mode, stepResults.home.websiteAnalysis?.businessName]); // Re-run when user, mode, or analysis data changes
 
   // Initialize session for anonymous users
   useEffect(() => {
@@ -102,14 +119,50 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
     handleSessionInitialization();
   }, [user, sessionId, tabMode.mode, initializeSession]);
 
+  // Fetch integration statuses for feature dashboard (focus mode only)
+  useEffect(() => {
+    const fetchIntegrations = async () => {
+      if (!user || tabMode.mode !== 'focus') {
+        return;
+      }
+      try {
+        try {
+          const voiceSamples = await autoBlogAPI.listVoiceSamples(user.organizationId);
+          const samplesCount = voiceSamples?.samples?.length || 0;
+          let summary = '';
+          if (samplesCount > 0) {
+            const profile = voiceSamples.samples[0];
+            summary = `${samplesCount} writing sample${samplesCount > 1 ? 's' : ''} uploaded. `;
+            if (profile?.tone) summary += `Tone: ${profile.tone}. `;
+            summary += 'Voice profile ready for content generation.';
+          }
+          setIntegrations(prev => ({
+            ...prev,
+            voice: { connected: samplesCount > 0, samplesCount, summary, loading: false }
+          }));
+        } catch (error) {
+          console.warn('Voice samples feature not available:', error.message);
+          setIntegrations(prev => ({
+            ...prev,
+            voice: { connected: false, samplesCount: 0, summary: '', loading: false }
+          }));
+        }
+        setIntegrations(prev => ({
+          ...prev,
+          trends: { connected: false, summary: '', loading: false },
+          searchConsole: { connected: false, summary: '', loading: false },
+          analytics: { connected: false, summary: '', loading: false }
+        }));
+      } catch (error) {
+        console.error('Failed to fetch integrations:', error);
+      }
+    };
+    fetchIntegrations();
+  }, [user, tabMode.mode]);
+
   // Handle create new post action
   const handleCreateNewPost = () => {
-    // Navigate to posts tab or trigger post creation
-    if (onEnterProjectMode) {
-      onEnterProjectMode();
-    } else {
-      tabMode.enterWorkflowMode();
-    }
+    tabMode.enterWorkflowMode();
   };
 
   // Handle analysis completion from standalone component
@@ -145,16 +198,54 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
   
   // Handle continue to next step - scroll to audience section in workflow mode
   const handleContinueToAudience = () => {
-    
-    // Scroll to audience section immediately
     const audienceSection = document.getElementById('audience-segments');
     if (audienceSection) {
-      audienceSection.scrollIntoView({ 
-        behavior: 'smooth', 
-        block: 'start' 
-      });
+      audienceSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
       console.error('Could not find audience-segments section');
+    }
+  };
+
+  const handleFeatureTileConnect = (service) => {
+    if (!onNavigateToTab) return;
+    switch (service) {
+      case 'trends':
+      case 'search-console':
+      case 'analytics':
+        onNavigateToTab('google-integrations');
+        message.info(`Navigate to Google Integrations to connect ${service}`);
+        break;
+      case 'voice-adaptation':
+        onNavigateToTab('voice-adaptation');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleFeatureTileViewDetails = (service) => {
+    if (!onNavigateToTab) return;
+    switch (service) {
+      case 'trends':
+      case 'search-console':
+      case 'analytics':
+        onNavigateToTab('google-integrations');
+        break;
+      case 'voice-adaptation':
+        onNavigateToTab('voice-adaptation');
+        break;
+      case 'calendar':
+        onNavigateToTab('posts');
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleCalendarDateClick = () => {
+    if (onNavigateToTab) {
+      onNavigateToTab('posts');
+      message.info('Opening posts calendar...');
     }
   };
 
@@ -174,14 +265,10 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
         <UnifiedWorkflowHeader
           user={user}
           onCreateNewPost={onCreateNewPost || handleCreateNewPost}
-          forceWorkflowMode={forceWorkflowMode}
           currentStep={currentStep}
           analysisCompleted={stepResults.home.analysisCompleted}
-          showSaveProjectButton={showSaveProjectButton}
-          onSaveProject={onSaveProject}
           isNewRegistration={isNewRegistration}
           completedSteps={[]} // Will be populated based on workflow progress
-          projectJustSaved={projectJustSaved}
           enableSequentialAnimation={currentStep === 0}
           onSequenceComplete={() => setTextAnimationComplete(true)}
           inputIsEditing={inputIsEditing}
@@ -209,7 +296,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
           position: 'relative'
         }}>
           {/* Website Analysis Section - Always show for authenticated users */}
-          {((tabMode.mode === 'workflow' || forceWorkflowMode) || user) && (
+          {(tabMode.mode === 'workflow' || user) && (
             <div
               key="website-analysis"
               style={{
@@ -258,7 +345,7 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
                 />
                 
                 {/* Continue Button + anticipatory suggestion - Show after analysis completes and only in workflow mode */}
-                {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && (tabMode.mode === 'workflow' || forceWorkflowMode) && (
+                {stepResults.home.analysisCompleted && stepResults.home.websiteAnalysis && tabMode.mode === 'workflow' && (
                   <Card style={{ marginTop: 'var(--space-4)' }}>
                     <div style={{ textAlign: 'center', padding: 'var(--space-4)' }}>
                       <Paragraph style={{ marginBottom: 'var(--space-3)', fontSize: 'var(--font-size-base)', color: 'var(--color-text-primary)' }}>
@@ -287,19 +374,82 @@ const DashboardTab = ({ forceWorkflowMode = false, onNextStep, onEnterProjectMod
             </div>
           )}
 
-        {/* FOCUS MODE: Full Dashboard Features (Premium) - Only show when explicitly in dashboard mode */}
-        {tabMode.mode === 'focus' && !forceWorkflowMode && (
+        {/* FOCUS MODE: Full Dashboard Features - Only show when logged in and in focus mode */}
+        {tabMode.mode === 'focus' && user && (
           <>
-            {/* Dashboard Features - Enhanced layout */}
+            {/* Dashboard Features - Feature tiles + mini calendar */}
             <div
               key="dashboard-features"
               style={{
-                animation: user ? 'fadeInUp 0.6s ease-out' : 'none',
-                animationFillMode: 'both'
+                animation: 'fadeInUp 0.6s ease-out',
+                animationFillMode: 'both',
+                padding: '24px 0'
               }}
             >
-
-
+              <Row gutter={[24, 24]}>
+                <Col xs={24} sm={24} md={8}>
+                  <FeatureTile
+                    title="Find Emerging Topics"
+                    icon={<RiseOutlined />}
+                    connected={integrations.trends.connected}
+                    summary={integrations.trends.summary || 'See what people are searching for right now. Create content on rising topics before your competitors.'}
+                    loading={integrations.trends.loading}
+                    onConnect={() => handleFeatureTileConnect('trends')}
+                    onViewDetails={() => handleFeatureTileViewDetails('trends')}
+                  />
+                </Col>
+                <Col xs={24} sm={24} md={8}>
+                  <FeatureTile
+                    title="Improve Search Rankings"
+                    icon={<SearchOutlined />}
+                    connected={integrations.searchConsole.connected}
+                    summary={integrations.searchConsole.summary || "Track your Google rankings and discover keywords where you're close to page 1. Automatically create content to boost visibility."}
+                    loading={integrations.searchConsole.loading}
+                    onConnect={() => handleFeatureTileConnect('search-console')}
+                    onViewDetails={() => handleFeatureTileViewDetails('search-console')}
+                  />
+                </Col>
+                <Col xs={24} sm={24} md={8}>
+                  <FeatureTile
+                    title="Track What Converts"
+                    icon={<BarChartOutlined />}
+                    connected={integrations.analytics.connected}
+                    summary={integrations.analytics.summary || 'See which content drives leads and customers. Automatically create more content following your best-performing patterns.'}
+                    loading={integrations.analytics.loading}
+                    onConnect={() => handleFeatureTileConnect('analytics')}
+                    onViewDetails={() => handleFeatureTileViewDetails('analytics')}
+                  />
+                </Col>
+                <Col xs={24} sm={24} md={12}>
+                  <Card
+                    title={
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <CalendarOutlined />
+                        <span>Upcoming Posts</span>
+                      </div>
+                    }
+                    extra={
+                      <Button type="link" onClick={() => handleFeatureTileViewDetails('calendar')}>
+                        View Calendar →
+                      </Button>
+                    }
+                    style={{ height: '100%', minHeight: 220 }}
+                  >
+                    <MiniCalendarWidget onDateClick={handleCalendarDateClick} api={autoBlogAPI} />
+                  </Card>
+                </Col>
+                <Col xs={24} sm={24} md={12}>
+                  <FeatureTile
+                    title="Voice Adaptation"
+                    icon={<SoundOutlined />}
+                    connected={integrations.voice.connected}
+                    summary={integrations.voice.summary || 'Upload writing samples so we can learn your voice and generate blog content that sounds like you.'}
+                    loading={integrations.voice.loading}
+                    onConnect={() => handleFeatureTileConnect('voice-adaptation')}
+                    onViewDetails={() => handleFeatureTileViewDetails('voice-adaptation')}
+                  />
+                </Col>
+              </Row>
             </div>
             
             {/* CSS animations for dashboard features */}

@@ -45,6 +45,16 @@ jest.mock('../../Workflow/steps/WebsiteAnalysisStepStandalone', () => ({
   </div>
 ));
 
+jest.mock('../FeatureTile', () => ({ title, onConnect, onViewDetails }) => (
+  <div data-testid="feature-tile" data-title={title}>
+    <span>{title}</span>
+    <button data-testid={`tile-connect-${title.replace(/\s+/g, '-').toLowerCase()}`} onClick={onConnect}>Connect</button>
+    <button data-testid={`tile-view-${title.replace(/\s+/g, '-').toLowerCase()}`} onClick={onViewDetails}>View Details</button>
+  </div>
+));
+
+jest.mock('../MiniCalendarWidget', () => () => <div data-testid="mini-calendar-widget" />);
+
 // Mock useAuth hook
 const mockAuthValue = {
   user: null,
@@ -55,13 +65,14 @@ jest.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => mockAuthValue,
 }));
 
-// Mock useTabMode hook
+// Mock useTabMode hook (mode can be overridden for focus-mode tests)
+const mockTabModeReturn = {
+  mode: 'workflow',
+  enterWorkflowMode: jest.fn(),
+  enterFocusMode: jest.fn(),
+};
 jest.mock('../../../hooks/useTabMode', () => ({
-  useTabMode: () => ({
-    mode: 'workflow',
-    enterWorkflowMode: jest.fn(),
-    enterFocusMode: jest.fn(),
-  }),
+  useTabMode: () => mockTabModeReturn,
 }));
 
 // Mock useWorkflowMode hook
@@ -131,7 +142,7 @@ describe('DashboardTab', () => {
     });
 
     it('shows workflow mode by default', () => {
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
       expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();
     });
   });
@@ -147,7 +158,7 @@ describe('DashboardTab', () => {
     });
 
     it('allows website analysis for guests', () => {
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
       expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();
     });
   });
@@ -180,7 +191,7 @@ describe('DashboardTab', () => {
         contentFocus: 'Content',
       };
 
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
 
       expect(screen.getByText(/Continue to Audience/i)).toBeInTheDocument();
     });
@@ -188,7 +199,7 @@ describe('DashboardTab', () => {
     it('does not show continue button before analysis', () => {
       mockWorkflowModeValue.stepResults.home.analysisCompleted = false;
 
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
 
       expect(screen.queryByText(/Continue to Audience/i)).not.toBeInTheDocument();
     });
@@ -202,42 +213,11 @@ describe('DashboardTab', () => {
         contentFocus: 'Content',
       };
 
-      renderDashboardTab({ forceWorkflowMode: true, onNextStep });
+      renderDashboardTab({ onNextStep });
 
       fireEvent.click(screen.getByText(/Next Step: Audience Selection/i));
       
       expect(onNextStep).toHaveBeenCalled();
-    });
-  });
-
-  describe('Project Mode', () => {
-    it('respects forceWorkflowMode prop', () => {
-      renderDashboardTab({ forceWorkflowMode: true });
-      expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();
-    });
-
-    it('handles onEnterProjectMode callback', async () => {
-      const onEnterProjectMode = jest.fn();
-      mockAuthValue.user = createMockUser();
-
-      renderDashboardTab({ onEnterProjectMode });
-
-      fireEvent.click(screen.getByTestId('create-post-btn'));
-      
-      expect(onEnterProjectMode).toHaveBeenCalled();
-    });
-  });
-
-  describe('Save Project', () => {
-    it('shows save project button when showSaveProjectButton is true', () => {
-      mockAuthValue.user = createMockUser();
-      
-      renderDashboardTab({ 
-        showSaveProjectButton: true,
-        isNewRegistration: true 
-      });
-
-      expect(screen.getByTestId('workflow-header')).toBeInTheDocument();
     });
   });
 
@@ -246,10 +226,51 @@ describe('DashboardTab', () => {
       mockAuthValue.user = null;
       mockWorkflowModeValue.sessionId = null;
 
-      renderDashboardTab({ forceWorkflowMode: true });
+      renderDashboardTab();
 
       // Should render the website analysis step
       expect(screen.getByTestId('website-analysis-step')).toBeInTheDocument();
+    });
+  });
+
+  describe('Focus mode (feature tiles and calendar)', () => {
+    beforeEach(() => {
+      mockAuthValue.user = createMockUser({ firstName: 'Jane', organizationId: 'org-1' });
+      mockTabModeReturn.mode = 'focus';
+    });
+
+    afterEach(() => {
+      mockTabModeReturn.mode = 'workflow';
+    });
+
+    it('renders feature tiles and mini calendar when in focus mode and logged in', async () => {
+      renderDashboardTab();
+
+      expect(await screen.findAllByTestId('feature-tile')).toHaveLength(4);
+      expect(screen.getByTestId('mini-calendar-widget')).toBeInTheDocument();
+      expect(screen.getByText('Find Emerging Topics')).toBeInTheDocument();
+      expect(screen.getByText('Upcoming Posts')).toBeInTheDocument();
+    });
+
+    it('calls onNavigateToTab when Connect on a tile is clicked', async () => {
+      const onNavigateToTab = jest.fn();
+      renderDashboardTab({ onNavigateToTab });
+
+      await screen.findAllByTestId('feature-tile');
+      const connectBtn = screen.getByTestId('tile-connect-voice-adaptation');
+      fireEvent.click(connectBtn);
+
+      expect(onNavigateToTab).toHaveBeenCalledWith('voice-adaptation');
+    });
+
+    it('calls onNavigateToTab when View Calendar is clicked', async () => {
+      const onNavigateToTab = jest.fn();
+      renderDashboardTab({ onNavigateToTab });
+
+      await screen.findByTestId('mini-calendar-widget');
+      fireEvent.click(screen.getByRole('button', { name: /View Calendar/i }));
+
+      expect(onNavigateToTab).toHaveBeenCalledWith('posts');
     });
   });
 });

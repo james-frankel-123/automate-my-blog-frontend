@@ -12,8 +12,13 @@ const createIcon = (name) => {
 
 // Common icons used in the app
 export const DashboardOutlined = createIcon('DashboardOutlined');
+export const LoginOutlined = createIcon('LoginOutlined');
+export const UserAddOutlined = createIcon('UserAddOutlined');
+export const GoogleOutlined = createIcon('GoogleOutlined');
+export const RocketOutlined = createIcon('RocketOutlined');
 export const FileTextOutlined = createIcon('FileTextOutlined');
 export const SettingOutlined = createIcon('SettingOutlined');
+export const SoundOutlined = createIcon('SoundOutlined');
 export const UserOutlined = createIcon('UserOutlined');
 export const LogoutOutlined = createIcon('LogoutOutlined');
 export const EditOutlined = createIcon('EditOutlined');
@@ -28,7 +33,9 @@ export const BarChartOutlined = createIcon('BarChartOutlined');
 export const LockOutlined = createIcon('LockOutlined');
 export const StarOutlined = createIcon('StarOutlined');
 export const ThunderboltOutlined = createIcon('ThunderboltOutlined');
+export const RiseOutlined = createIcon('RiseOutlined');
 export const SearchOutlined = createIcon('SearchOutlined');
+export const FireOutlined = createIcon('FireOutlined');
 export const BulbOutlined = createIcon('BulbOutlined');
 export const CheckOutlined = createIcon('CheckOutlined');
 export const ReloadOutlined = createIcon('ReloadOutlined');
@@ -102,8 +109,13 @@ export const HighlightOutlined = createIcon('HighlightOutlined');
 
 export default {
   DashboardOutlined,
+  LoginOutlined,
+  UserAddOutlined,
+  GoogleOutlined,
+  RocketOutlined,
   FileTextOutlined,
   SettingOutlined,
+  SoundOutlined,
   UserOutlined,
   LogoutOutlined,
   EditOutlined,
@@ -118,7 +130,9 @@ export default {
   LockOutlined,
   StarOutlined,
   ThunderboltOutlined,
+  RiseOutlined,
   SearchOutlined,
+  FireOutlined,
   BulbOutlined,
   CheckOutlined,
   ReloadOutlined,
