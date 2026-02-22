@@ -1234,21 +1234,27 @@ test.describe('E2E (mocked backend)', () => {
       expect(found).toBeTruthy();
     });
 
-    test('should toggle sidebar collapse on mobile', async ({ page }) => {
+    test('should open and close mobile nav drawer (hamburger menu)', async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 667 });
       await page.reload();
       await page.waitForLoadState('load');
       await page.waitForTimeout(500);
       await removeOverlay(page);
-      const menuToggle = page.locator('.ant-layout-sider-trigger, [data-testid="menu-toggle"], button[aria-label*="menu" i]').first();
-      if (await menuToggle.isVisible({ timeout: 3000 }).catch(() => false)) {
-        const sidebar = page.locator('.ant-layout-sider').first();
-        const collapsedBefore = await sidebar.evaluate((el) => el.classList.contains('ant-layout-sider-collapsed'));
-        await menuToggle.click();
-        await page.waitForTimeout(200);
-        const collapsedAfter = await sidebar.evaluate((el) => el.classList.contains('ant-layout-sider-collapsed'));
-        expect(collapsedAfter).not.toBe(collapsedBefore);
-      }
+      // Mobile uses hamburger to open a drawer (no desktop sidebar)
+      const menuToggle = page.locator('button[aria-label="Open menu"]').first();
+      await expect(menuToggle).toBeVisible({ timeout: 5000 });
+      await menuToggle.click();
+      await page.waitForTimeout(300);
+      // Drawer opens: antd drawer is visible with nav menu inside
+      const drawer = page.locator('.ant-drawer').first();
+      await expect(drawer).toBeVisible({ timeout: 3000 });
+      await expect(page.locator('.ant-drawer .ant-menu, .ant-drawer nav').first()).toBeVisible({ timeout: 2000 });
+      // Close drawer via close button (mask can be covered by panel on narrow viewport)
+      await page.locator('.ant-drawer-close').first().click({ timeout: 3000 });
+      await page.waitForTimeout(600);
+      // When closed, drawer content (menu) is not visible
+      const drawerMenu = page.locator('.ant-drawer .ant-menu').first();
+      await expect(drawerMenu).not.toBeVisible();
     });
   });
 
