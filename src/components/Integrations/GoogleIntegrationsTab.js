@@ -414,7 +414,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
 
   const checkConnection = useCallback(async () => {
     try {
-      const response = await api.get(`/api/v1/google/oauth/status/${service}`);
+      const response = await api.makeRequest(`/api/v1/google/oauth/status/${service}`);
       setIsConnected(response.connected || false);
     } catch (err) {
       console.error('Failed to check connection:', err);
@@ -578,7 +578,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
 
   const handleConnect = async () => {
     try {
-      const response = await api.get(`/api/v1/google/oauth/authorize/${service}`);
+      const response = await api.makeRequest(`/api/v1/google/oauth/authorize/${service}`);
 
       // Special case: Service doesn't require OAuth (e.g., Google Trends)
       if (response.success && response.noOAuthRequired) {
@@ -611,7 +611,7 @@ function IntegrationTabContent({ service, title, icon, shortDescription }) {
 
   const handleDisconnect = async () => {
     try {
-      const response = await api.delete(`/api/v1/google/oauth/disconnect/${service}`);
+      const response = await api.makeRequest(`/api/v1/google/oauth/disconnect/${service}`, { method: 'DELETE' });
       if (response.success) {
         message.success(`${title} disconnected`);
         setIsConnected(false);

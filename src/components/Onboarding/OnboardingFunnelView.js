@@ -157,11 +157,39 @@ function OnboardingFunnelView() {
   const [topicNarrationStreaming, setTopicNarrationStreaming] = useState(false);
   const [contentNarrationContent, setContentNarrationContent] = useState('');
   const [contentNarrationStreaming, setContentNarrationStreaming] = useState(false);
+  const [contentNarrationComplete, setContentNarrationComplete] = useState(false);
   const [headerAnimationComplete, setHeaderAnimationComplete] = useState(false);
   const [_holdTightNarrationComplete, setHoldTightNarrationComplete] = useState(false);
   const [audienceNarrationComplete, setAudienceNarrationComplete] = useState(false);
   const [topicNarrationComplete, setTopicNarrationComplete] = useState(false);
   const sectionRefs = useRef({});
+
+  // Stable ref setters — defined with useCallback so they're not recreated on every render.
+  // Inline arrow functions as refs fire on every re-render (50ms during streaming), flooding
+  // logs and triggering ResizeObserver prematurely.
+  const setWebsiteInputRef = useCallback((el) => {
+    sectionRefs.current.websiteInput = el;
+    if (el) { const r = el.getBoundingClientRect(); console.log(`🎯 [ref:MOUNT] t=${Date.now()} key=websiteInput absoluteTop=${Math.round(r.top + window.pageYOffset)} viewportTop=${Math.round(r.top)}`); }
+  }, []);
+  const setAnalysisNarrationRef = useCallback((el) => {
+    sectionRefs.current.analysisNarration = el;
+    if (el) { const r = el.getBoundingClientRect(); console.log(`🎯 [ref:MOUNT] t=${Date.now()} key=analysisNarration absoluteTop=${Math.round(r.top + window.pageYOffset)} viewportTop=${Math.round(r.top)}`); }
+  }, []);
+  const setAudienceNarrationRef = useCallback((el) => {
+    sectionRefs.current.audienceNarration = el;
+    sectionRefs.current.audienceOutput = el;
+    if (el) { const r = el.getBoundingClientRect(); console.log(`🎯 [ref:MOUNT] t=${Date.now()} key=audienceNarration absoluteTop=${Math.round(r.top + window.pageYOffset)} viewportTop=${Math.round(r.top)}`); }
+  }, []);
+  const setTopicNarrationRef = useCallback((el) => {
+    sectionRefs.current.topicNarration = el;
+    sectionRefs.current.topicOutput = el;
+    if (el) { const r = el.getBoundingClientRect(); console.log(`🎯 [ref:MOUNT] t=${Date.now()} key=topicNarration absoluteTop=${Math.round(r.top + window.pageYOffset)} viewportTop=${Math.round(r.top)}`); }
+  }, []);
+  const setContentNarrationRef = useCallback((el) => {
+    sectionRefs.current.contentNarration = el;
+    if (el) { const r = el.getBoundingClientRect(); console.log(`🎯 [ref:MOUNT] t=${Date.now()} key=contentNarration absoluteTop=${Math.round(r.top + window.pageYOffset)} viewportTop=${Math.round(r.top)}`); }
+  }, []);
+
   const analysisNarrationStreamStartedRef = useRef(false);
   const audienceNarrationStreamStartedRef = useRef(false);
   const topicNarrationStreamStartedRef = useRef(false);
@@ -228,18 +256,20 @@ function OnboardingFunnelView() {
 
   const scrollTo = (key) => {
     const el = sectionRefs.current[key];
-    if (!el) return;
-
-    // Calculate target position with offset from top
+    const t = Date.now();
+    if (!el) {
+      console.log(`🎯 [scroll:MISS] t=${t} key=${key} — element not in DOM, scroll skipped`);
+      return;
+    }
     const elementRect = el.getBoundingClientRect();
     const absoluteElementTop = elementRect.top + window.pageYOffset;
-    const offsetTop = 100; // 100px from top of viewport
+    const offsetTop = 100;
     const targetScrollPosition = absoluteElementTop - offsetTop;
-
-    window.scrollTo({
-      top: targetScrollPosition,
-      behavior: 'smooth'
-    });
+    const pageHeight = document.documentElement.scrollHeight;
+    const maxScroll = pageHeight - window.innerHeight;
+    const reachable = targetScrollPosition <= maxScroll;
+    console.log(`🎯 [scroll:FIRE] t=${t} key=${key} absoluteTop=${Math.round(absoluteElementTop)} viewportTop=${Math.round(elementRect.top)} scrollY=${Math.round(window.pageYOffset)} → target=${Math.round(targetScrollPosition)} pageH=${pageHeight} maxScroll=${Math.round(maxScroll)} ${reachable ? '✅' : '⚠️ PAGE TOO SHORT'}`);
+    window.scrollTo({ top: targetScrollPosition, behavior: 'smooth' });
   };
 
   const prevUnlocked = useRef({ ...DEFAULT_UNLOCKED });
@@ -299,14 +329,66 @@ function OnboardingFunnelView() {
     }
   }, [unlocked.analysisNarration]);
   useEffect(() => {
-    const keys = ['analysisNarration', 'analysisOutput', 'audienceNarration', 'audienceOutput', 'topicNarration', 'topicOutput', 'signupGate', 'contentNarration'];
+    // analysisNarration excluded here — handled by ResizeObserver below (page grows after unlock)
+    // analysisOutput excluded — points to EditConfirmActions (too far down)
+    const keys = ['audienceNarration', 'topicNarration', 'signupGate', 'contentNarration'];
     keys.forEach((key) => {
       if (unlocked[key] && !prevUnlocked.current[key]) {
-        setTimeout(() => scrollTo(key), 150);
+        const scheduleT = Date.now();
+        console.log(`🎯 [scroll:SCHED] t=${scheduleT} key=${key} just unlocked — scroll in 400ms`);
+        setTimeout(() => scrollTo(key), 400);
       }
     });
     prevUnlocked.current = { ...unlocked };
   }, [unlocked]);
+
+  // analysisNarration scroll: the websiteInput section expands significantly after analysis
+  // completes (checklist animates in, "hold tight" text grows) so a fixed delay races the
+  // layout. Instead, watch the websiteInput section with ResizeObserver and scroll to
+  // analysisNarration once it stops changing.
+  useEffect(() => {
+    if (!unlocked.analysisNarration) return;
+
+    console.log(`🎯 [scroll:SCHED] t=${Date.now()} key=analysisNarration — waiting for websiteInput to stabilize`);
+
+    const websiteInputEl = sectionRefs.current.websiteInput;
+    if (!websiteInputEl) {
+      console.log(`🎯 [scroll:SCHED] t=${Date.now()} key=analysisNarration no websiteInput ref — fallback 1500ms`);
+      const tid = setTimeout(() => scrollTo('analysisNarration'), 1500);
+      return () => clearTimeout(tid);
+    }
+
+    let debounceTimer = null;
+    const observer = new ResizeObserver(() => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        observer.disconnect();
+        console.log(`🎯 [scroll:STABLE] t=${Date.now()} key=analysisNarration websiteInput stabilized — scrolling`);
+        scrollTo('analysisNarration');
+      }, 250); // 250ms quiet after last size change
+    });
+
+    observer.observe(websiteInputEl);
+
+    const safetyTimer = setTimeout(() => {
+      observer.disconnect();
+      clearTimeout(debounceTimer);
+      console.log(`🎯 [scroll:SAFETY] t=${Date.now()} key=analysisNarration safety timeout — scrolling`);
+      scrollTo('analysisNarration');
+    }, 3000);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(debounceTimer);
+      clearTimeout(safetyTimer);
+    };
+  }, [unlocked.analysisNarration]);
+
+  useEffect(() => {
+    if (contentNarrationComplete) {
+      setTimeout(() => scrollTo('contentGeneration'), 150);
+    }
+  }, [contentNarrationComplete]);
 
   // Show audience placeholders briefly when section first appears, then reveal carousel
   useEffect(() => {
@@ -320,23 +402,36 @@ function OnboardingFunnelView() {
     console.log('🕐 [OnboardingFunnelView] Audience narration complete - unlocking audience cards');
     setAudienceNarrationComplete(true);
     setUnlocked((u) => ({ ...u, audienceOutput: true }));
+    // Corrective scroll: the initial scroll fired when the page was too short (only the
+    // narration text, no cards yet). After cards render they add ~1800px and target becomes
+    // reachable. 500ms gives React time to render the cards and the browser to reflow.
+    console.log(`🎯 [scroll:SCHED] t=${Date.now()} key=audienceNarration cards unlocked — corrective scroll in 500ms`);
+    setTimeout(() => scrollTo('audienceNarration'), 500);
   }, []);
 
   const unlockTopicOutput = useCallback(() => {
     console.log('🕐 [OnboardingFunnelView] Topic narration complete - unlocking topic cards');
     setTopicNarrationComplete(true);
     setUnlocked((u) => ({ ...u, topicOutput: true }));
+    // Same corrective scroll pattern as audience
+    console.log(`🎯 [scroll:SCHED] t=${Date.now()} key=topicNarration cards unlocked — corrective scroll in 500ms`);
+    setTimeout(() => scrollTo('topicNarration'), 500);
   }, []);
 
   const handleContentNarrationComplete = useCallback(() => {
     setFunnelComplete(true);
+    setContentNarrationComplete(true);
   }, []);
 
-  // When analysis starts loading, scroll to "What I found" placeholders so they're visible
+  // When analysis starts loading, scroll to the website input section so the "hold tight"
+  // typing narration (which starts at 500ms) is prominent at the top of the viewport.
   const prevLoading = useRef(false);
   useEffect(() => {
     if (loading && !prevLoading.current) {
-      setTimeout(() => scrollTo('analysisOutput'), 400);
+      const scheduleT = Date.now();
+      // 600ms: fires after the 500ms typing-start delay so "hold tight" text is already visible
+      console.log(`🎯 [scroll:SCHED] t=${scheduleT} key=websiteInput loading started — scroll in 600ms`);
+      setTimeout(() => scrollTo('websiteInput'), 600);
       lastProgressAtRef.current = Date.now();
       reassuranceStepRef.current = 0;
     }
@@ -815,7 +910,7 @@ function OnboardingFunnelView() {
     setEditMode(false);
     setOriginalAnalysisSnapshot(null);
     setEditedBusinessProfile(null);
-    setUnlocked((u) => ({ ...u, audienceNarration: true, audienceOutput: true }));
+    setUnlocked((u) => ({ ...u, audienceNarration: true }));
   }, [analysis, businessProfile]);
 
   const handleEditAnalysis = useCallback(() => {
@@ -875,7 +970,7 @@ function OnboardingFunnelView() {
 
   const handleSelectAudience = useCallback((index) => {
     setSelectedAudienceIndex(index);
-    setUnlocked((u) => ({ ...u, topicNarration: true, topicOutput: true }));
+    setUnlocked((u) => ({ ...u, topicNarration: true }));
   }, []);
 
   const handleSelectTopic = useCallback((index) => {
@@ -919,10 +1014,10 @@ function OnboardingFunnelView() {
     setStartContentGenerationTrigger((prev) => prev + 1);
   }, []);
 
-  // Start content generation when content narration section unlocks (same flow as PostsTab)
+  // Start content generation when content narration finishes streaming (same flow as PostsTab)
   useEffect(() => {
     if (
-      !unlocked.contentNarration ||
+      !contentNarrationComplete ||
       contentGenerationStartedRef.current ||
       selectedTopicIndex == null ||
       !hasAnalysis
@@ -1191,8 +1286,8 @@ function OnboardingFunnelView() {
       return;
     }
     startOnboardingContentGeneration();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content section unlocks; contentIdeas intentionally not useMemo
-  }, [unlocked.contentNarration, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis, hasSufficientCTAs, organizationCTAs.length, startContentGenerationTrigger]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once when content narration completes; contentIdeas intentionally not useMemo
+  }, [contentNarrationComplete, selectedTopicIndex, hasAnalysis, contentIdeas.length, fetchedTopicItems, analysis, hasSufficientCTAs, organizationCTAs.length, startContentGenerationTrigger]);
 
   const iconUrls = analysis.iconUrls || analysis.cardIcons || {};
   const analysisCards = [
@@ -1267,7 +1362,7 @@ function OnboardingFunnelView() {
         onSequenceComplete={() => setHeaderAnimationComplete(true)}
       />
 
-      <section ref={(el) => (sectionRefs.current.websiteInput = el)}>
+      <section ref={setWebsiteInputRef}>
         <WebsiteInputSection
           websiteUrl={websiteUrl}
           setWebsiteUrl={setWebsiteUrl}
@@ -1285,10 +1380,10 @@ function OnboardingFunnelView() {
       {!loading && unlocked.analysisNarration && hasAnalysis && (
         <>
         {/* Phase 1: Narration (always shows) */}
-        <section ref={(el) => (sectionRefs.current.analysisNarration = el)} style={{ marginTop: 32 }}>
+        <section ref={setAnalysisNarrationRef} style={{ marginTop: 32 }}>
           <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
             <StreamingNarration
-            content={analysisNarrationContent || `I analyzed ${analysis?.businessName || 'your website'} and found valuable insights. Here's what stands out.`}
+            content={analysisNarrationContent}
             isStreaming={analysisNarrationStreaming}
             onComplete={unlockAnalysisOutput}
             dataTestId="analysis-narration"
@@ -1404,14 +1499,15 @@ function OnboardingFunnelView() {
       )}
 
       {unlocked.audienceNarration && (
-        <section ref={(el) => { sectionRefs.current.audienceNarration = el; sectionRefs.current.audienceOutput = el; }} style={{ marginTop: 32 }}>
+        <section ref={setAudienceNarrationRef} style={{ marginTop: 32 }}>
           <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <StreamingNarration
-            content={audienceNarrationContent || "I identified audience segments that match your offering. Choose one to focus on."}
+            content={audienceNarrationContent}
             isStreaming={audienceNarrationStreaming}
             onComplete={unlockAudienceOutput}
             dataTestId="audience-narration"
             enableTypingEffect={true}
+            fallbackText="I identified audience segments that match your offering. Choose one to focus on."
           />
           {audienceNarrationComplete && (
             <>
@@ -1505,7 +1601,7 @@ function OnboardingFunnelView() {
                   If no segments appear above, you can continue to the next step.
                 </Typography.Text>
                 <div style={{ textAlign: 'center' }}>
-                  <Button type="primary" onClick={() => { setSelectedAudienceIndex(0); setUnlocked((u) => ({ ...u, topicNarration: true, topicOutput: true })); }}>
+                  <Button type="primary" onClick={() => { setSelectedAudienceIndex(0); setUnlocked((u) => ({ ...u, topicNarration: true })); }}>
                     Continue
                   </Button>
                 </div>
@@ -1519,14 +1615,15 @@ function OnboardingFunnelView() {
       )}
 
       {unlocked.topicNarration && (
-        <section ref={(el) => { sectionRefs.current.topicNarration = el; sectionRefs.current.topicOutput = el; }} style={{ marginTop: 32 }}>
+        <section ref={setTopicNarrationRef} style={{ marginTop: 32 }}>
           <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <StreamingNarration
-            content={topicNarrationContent || (topicsLoading ? "I'm looking for topics that will resonate with your audience…" : "Based on your audience, here are topics that will resonate. Pick one for your article.")}
+            content={topicNarrationContent}
             isStreaming={topicNarrationStreaming}
             onComplete={unlockTopicOutput}
             dataTestId="topic-narration"
             enableTypingEffect={true}
+            fallbackText="Based on your audience, here are topics that will resonate. Pick one for your article."
           />
           {topicNarrationComplete && (
             <>
@@ -1599,20 +1696,22 @@ function OnboardingFunnelView() {
       )}
 
       {unlocked.contentNarration && (
-        <section ref={(el) => (sectionRefs.current.contentNarration = el)} style={{ marginTop: 32 }}>
+        <section ref={setContentNarrationRef} style={{ marginTop: 32 }}>
           <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
           <StreamingNarration
-            content={contentNarrationContent || "I'll create your article next. You can edit and export it when it's ready."}
+            content={contentNarrationContent}
             isStreaming={contentNarrationStreaming}
             onComplete={handleContentNarrationComplete}
             dataTestId="content-narration"
+            enableTypingEffect={true}
+            fallbackText="I'll create your article next. You can edit and export it when it's ready."
           />
           </motion.div>
         </section>
       )}
 
       {/* Content generation on same page: related content search + existing content component */}
-      {unlocked.contentNarration && (
+      {contentNarrationComplete && (
         <section ref={(el) => (sectionRefs.current.contentGeneration = el)} style={{ marginTop: 40, marginBottom: 48 }}>
           <motion.div initial={sectionInitial} animate={sectionAnimate} transition={sectionTransition}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
