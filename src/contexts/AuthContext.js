@@ -517,6 +517,25 @@ export const AuthProvider = ({ children }) => {
     impersonationData,
     startImpersonation,
     endImpersonation,
+    // Refresh user from backend (e.g. after profile/org update)
+    refreshUser: async () => {
+      sessionStorage.removeItem('auth_user_cache');
+      try {
+        const response = await autoBlogAPI.getCurrentUser();
+        setUser(response.user);
+        if (response.user?.organization) {
+          setCurrentOrganization(response.user.organization);
+        } else if (response.user?.organizationId) {
+          setCurrentOrganization({
+            id: response.user.organizationId,
+            name: response.user.organizationName,
+            role: response.user.organizationRole
+          });
+        }
+      } catch (e) {
+        console.error('refreshUser failed:', e);
+      }
+    },
   };
 
   return (

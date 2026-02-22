@@ -144,7 +144,7 @@ export function WebsiteInputSection({
         </div>
       )}
 
-      {(loading || analysisComplete) && holdTightComplete && (
+      {showStreamingText && holdTightComplete && (
         <div style={{ marginTop: 20, maxWidth: 500, marginLeft: 'auto', marginRight: 'auto' }}>
           {(analysisProgress || scanningMessage || analysisComplete) ? (
             <ChecklistProgress

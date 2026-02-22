@@ -35,6 +35,7 @@ export function StreamingNarration({
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const containerRef = useRef(null);
+  const hasBeenStreamingRef = useRef(false);
 
   useEffect(() => {
     if (!isStreaming) {
@@ -43,10 +44,14 @@ export function StreamingNarration({
   }, [isStreaming]);
 
   useEffect(() => {
+    if (isStreaming) hasBeenStreamingRef.current = true;
+  }, [isStreaming]);
+
+  useEffect(() => {
     if (!onComplete || hasCalledComplete) return;
 
     const typingComplete = !enableTypingEffect || !isTyping;
-    const done = !isStreaming && typingComplete;
+    const done = !isStreaming && typingComplete && (hasBeenStreamingRef.current || !!content);
 
     if (done) {
       console.log('🕐 [StreamingNarration] Narration complete — calling onComplete');
@@ -86,11 +91,8 @@ export function StreamingNarration({
       }}
     >
       {showLoading ? (
-        <div data-testid="narration-loading">
-          <Paragraph style={{ ...NARRATION_STYLE, color: 'var(--color-text-tertiary)', marginBottom: 0 }}>
-            Preparing your personalized message…
-          </Paragraph>
-        </div>
+        // Blank while waiting for the first streaming chunk — no placeholder text
+        <div data-testid="narration-loading" />
       ) : (
         <Paragraph style={textStyle}>
           {displayContent}

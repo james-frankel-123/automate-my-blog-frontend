@@ -143,7 +143,7 @@ export const analysisAPI = {
             onContentNarrationComplete: (data) => {
               if (options.onContentNarrationComplete) options.onContentNarrationComplete(data);
             },
-          });
+          }, { sessionId });
         } catch (streamErr) {
           console.warn('Job stream not available, falling back to polling:', streamErr?.message);
           finalStatus = await jobsAPI.pollJobStatus(jobId, {

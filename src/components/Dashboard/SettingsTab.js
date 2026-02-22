@@ -8,7 +8,7 @@ import { SOCIAL_PLATFORMS, socialProfileLink } from '../../utils/socialProfiles'
 const { Title, Text, Paragraph } = Typography;
 
 const ProfileSettings = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [profileData, setProfileData] = useState({
@@ -55,7 +55,7 @@ const ProfileSettings = () => {
 
       // Execute both updates
       await Promise.all([profileUpdatePromise, organizationUpdatePromise]);
-      
+      await refreshUser();
       message.success('Profile and organization updated successfully!');
     } catch (error) {
       console.error('Profile save error:', error);
