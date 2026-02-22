@@ -13,6 +13,7 @@ import DashboardLayout from './components/Dashboard/DashboardLayout';
 import StreamingTestbed from './components/StreamingTestbed/StreamingTestbed';
 import ComponentLibrary from './components/ComponentLibrary/ComponentLibrary';
 import CalendarTestbed from './components/CalendarTestbed/CalendarTestbed';
+import SandboxIndexPage from './components/SandboxIndexPage/SandboxIndexPage';
 import { OnboardingFunnelView } from './components/Onboarding';
 import SEOHead from './components/SEOHead';
 import { useWorkflowMode } from './contexts/WorkflowModeContext';
@@ -345,6 +346,15 @@ const AppContent = () => {
           Loading…
         </span>
       </div>
+    );
+  }
+
+  // Sandbox index — staging-only page with links to all testbeds/sandbox (shows "Not available" off staging)
+  if (typeof window !== 'undefined' && window.location.pathname === '/sandbox') {
+    return (
+      <SystemHintProvider>
+        <SandboxIndexPage />
+      </SystemHintProvider>
     );
   }
 
